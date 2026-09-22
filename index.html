@@ -50,6 +50,15 @@
     .row b{font-size:14px}
     .row small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#2a2a2a;font-size:11px;margin-right:5px}
+    .actual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+    .actual-btn{background:#242424;color:#fff;border:1px solid #3b3b3b;border-radius:12px;padding:13px 6px;font-size:14px;font-weight:800}
+    .actual-btn.selected{background:var(--orange);color:#111;border-color:var(--orange)}
+    .compare-box{margin-top:12px;background:#101010;border:1px solid #333;border-radius:14px;padding:13px}
+    .compare-line{display:flex;justify-content:space-between;gap:12px;margin-top:6px;font-size:14px}
+    .compare-result{font-size:18px;font-weight:900;text-align:center;margin-top:11px}
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .summary .metric{padding:10px;text-align:center}
+    .summary .value{font-size:18px}
     .footer-note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:14px}
     .hidden{display:none}
   </style>
@@ -85,15 +94,37 @@
       <div class="big" id="detected">—</div>
       <div class="status" id="detail">GeoJSON을 불러온 후 GPS를 확인하세요.</div>
     </div>
+    <div style="margin-top:14px">
+      <div class="label">실제 위치 선택</div>
+      <div class="actual-grid" id="actualGrid">
+        <button type="button" class="actual-btn" data-value="페어웨이">페어웨이</button>
+        <button type="button" class="actual-btn" data-value="러프">러프</button>
+        <button type="button" class="actual-btn" data-value="그린">그린</button>
+        <button type="button" class="actual-btn" data-value="벙커">벙커</button>
+        <button type="button" class="actual-btn" data-value="티">티</button>
+        <button type="button" class="actual-btn" data-value="기타">기타</button>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="label">판정 비교</div>
+      <div class="compare-line"><span>실제 위치</span><b id="actualValue">—</b></div>
+      <div class="compare-line"><span>JGI 판정</span><b id="jgiValue">—</b></div>
+      <div class="compare-result" id="compareResult">실제 위치를 선택하세요.</div>
+    </div>
     <div style="margin-top:12px">
       <div class="label" style="margin-bottom:7px">메모 (선택)</div>
-      <input id="note" type="text" placeholder="예: 실제 위치 = 페어웨이 가장자리"/>
+      <input id="note" type="text" placeholder="예: 페어웨이 오른쪽 가장자리"/>
     </div>
-    <button class="btn btn-primary" id="recordBtn">현재 위치 기록</button>
+    <button class="btn btn-primary" id="recordBtn">비교 결과 기록</button>
   </div>
 
   <div class="card">
     <div class="section-title">4. 테스트 기록</div>
+    <div class="summary">
+      <div class="metric"><div class="label">총 테스트</div><div class="value" id="totalTests">0</div></div>
+      <div class="metric"><div class="label">일치</div><div class="value" id="matchTests">0</div></div>
+      <div class="metric"><div class="label">판정 정확도</div><div class="value" id="matchRate">—</div></div>
+    </div>
     <div id="history" class="history"></div>
     <button class="btn btn-dark" id="jsonBtn">JSON 내보내기</button>
     <button class="btn btn-dark" id="csvBtn">CSV 내보내기</button>
@@ -114,6 +145,7 @@
   let geojson = null;
   let current = null;
   let currentDetection = {feature:'—', hole:'—', matched:null};
+  let actualSelection = null;
 
   const priority = {
     '그린': 60,
@@ -272,6 +304,32 @@
     const acc = current?.accuracy;
     const accText = typeof acc === 'number' ? `GPS ±${acc.toFixed(1)} m` : 'GPS 정확도 알 수 없음';
     $('detail').textContent = `${accText}${currentDetection.hole !== '—' ? ' · 홀 ' + currentDetection.hole : ''}`;
+    renderComparison();
+  }
+
+  function renderComparison(){
+    $('actualValue').textContent = actualSelection ?? '—';
+    $('jgiValue').textContent = currentDetection.feature ?? '—';
+    const host = $('compareResult');
+    if (!actualSelection) {
+      host.textContent = '실제 위치를 선택하세요.';
+      host.className = 'compare-result';
+      return;
+    }
+    if (!current || currentDetection.feature === '—' || currentDetection.feature === '코스 데이터 없음') {
+      host.textContent = 'GPS 판정 후 비교합니다.';
+      host.className = 'compare-result';
+      return;
+    }
+    const match = actualSelection === currentDetection.feature;
+    host.textContent = match ? '✅ 일치' : '❌ 불일치';
+    host.className = 'compare-result ' + (match ? 'good' : 'bad');
+  }
+
+  function clearActualSelection(){
+    actualSelection = null;
+    document.querySelectorAll('.actual-btn').forEach(btn => btn.classList.remove('selected'));
+    renderComparison();
   }
 
   function readRecords(){
@@ -288,6 +346,13 @@
     const records = readRecords();
     const host = $('history');
     host.innerHTML = '';
+
+    const comparable = records.filter(r => r.actual_feature);
+    const matched = comparable.filter(r => r.is_match === true).length;
+    $('totalTests').textContent = comparable.length;
+    $('matchTests').textContent = matched;
+    $('matchRate').textContent = comparable.length ? Math.round((matched / comparable.length) * 100) + '%' : '—';
+
     if (!records.length) {
       host.innerHTML = '<div class="status">아직 기록된 위치가 없습니다.</div>';
       return;
@@ -295,11 +360,15 @@
     records.slice().reverse().forEach((r, idx) => {
       const div = document.createElement('div');
       div.className = 'row';
+      const compare = r.actual_feature
+        ? `<br/>실제: <b>${escapeHtml(r.actual_feature)}</b> · JGI: <b>${escapeHtml(r.detected_feature)}</b> · <b class="${r.is_match ? 'good' : 'bad'}">${r.is_match ? '✅ 일치' : '❌ 불일치'}</b>`
+        : '';
       div.innerHTML = `
         <b>${escapeHtml(r.detected_feature)} ${r.hole && r.hole !== '—' ? '· 홀 ' + escapeHtml(String(r.hole)) : ''}</b>
         <small>
-          <span class="pill">±${Number(r.accuracy).toFixed(1)} m</span>
-          ${escapeHtml(r.timestamp_local)}<br/>
+          <span class="pill">GPS ±${Number(r.accuracy).toFixed(1)} m</span>
+          ${escapeHtml(r.timestamp_local)}
+          ${compare}<br/>
           ${Number(r.latitude).toFixed(7)}, ${Number(r.longitude).toFixed(7)}
           ${r.note ? '<br/>메모: '+escapeHtml(r.note) : ''}
         </small>`;
@@ -322,7 +391,7 @@
   }
 
   function toCSV(records){
-    const cols = ['timestamp_iso','timestamp_local','latitude','longitude','accuracy','detected_feature','hole','note'];
+    const cols = ['timestamp_iso','timestamp_local','latitude','longitude','accuracy','actual_feature','detected_feature','is_match','hole','note'];
     const q = (v) => `"${String(v ?? '').replace(/"/g,'""')}"`;
     return [cols.join(','), ...records.map(r => cols.map(c=>q(r[c])).join(','))].join('\n');
   }
@@ -402,6 +471,14 @@
     });
   });
 
+  document.querySelectorAll('.actual-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      actualSelection = btn.dataset.value;
+      document.querySelectorAll('.actual-btn').forEach(b => b.classList.toggle('selected', b === btn));
+      renderComparison();
+    });
+  });
+
   $('recordBtn').addEventListener('click', () => {
     if (!current) {
       alert('먼저 현재 GPS를 확인하세요.');
@@ -409,6 +486,10 @@
     }
     if (!geojson) {
       alert('먼저 코스 GeoJSON을 불러오세요.');
+      return;
+    }
+    if (!actualSelection) {
+      alert('실제 위치를 먼저 선택하세요.');
       return;
     }
     const d = classify(current.longitude, current.latitude);
@@ -422,7 +503,9 @@
       latitude: current.latitude,
       longitude: current.longitude,
       accuracy: current.accuracy,
+      actual_feature: actualSelection,
       detected_feature: d.feature,
+      is_match: actualSelection === d.feature,
       hole: d.hole,
       note: $('note').value.trim()
     };
@@ -430,6 +513,7 @@
     records.push(rec);
     writeRecords(records);
     $('note').value = '';
+    clearActualSelection();
   });
 
   $('jsonBtn').addEventListener('click', () => {
