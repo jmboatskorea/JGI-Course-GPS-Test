@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b0b0b" />
-  <title>JGI COURSE GPS TEST</title>
+  <title>JGI 코스 GPS 테스트</title>
   <style>
     :root{
       --bg:#0b0b0b; --panel:#171717; --panel2:#222; --text:#f7f7f7;
@@ -56,53 +56,53 @@
 </head>
 <body>
 <div class="app">
-  <div class="brand">JGI COURSE GPS TEST</div>
-  <div class="sub">Standalone POC · No login · No server · No DB</div>
+  <div class="brand">JGI 코스 GPS 테스트</div>
+  <div class="sub">독립 테스트 버전 · 로그인 없음 · 서버 없음 · DB 없음</div>
 
   <div class="card">
-    <div class="section-title">1. LOAD COURSE GEOJSON</div>
+    <div class="section-title">1. 코스 GeoJSON 불러오기</div>
     <input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json"/>
-    <button class="btn btn-dark" id="loadBtn">LOAD FILE</button>
-    <div id="geoStatus" class="status">No GeoJSON loaded.</div>
+    <button class="btn btn-dark" id="loadBtn">파일 불러오기</button>
+    <div id="geoStatus" class="status">불러온 GeoJSON 파일이 없습니다.</div>
   </div>
 
   <div class="card">
-    <div class="section-title">2. CURRENT GPS</div>
+    <div class="section-title">2. 현재 GPS</div>
     <div class="grid">
-      <div class="metric"><div class="label">Latitude</div><div class="value" id="lat">—</div></div>
-      <div class="metric"><div class="label">Longitude</div><div class="value" id="lng">—</div></div>
-      <div class="metric"><div class="label">Accuracy</div><div class="value" id="acc">—</div></div>
-      <div class="metric"><div class="label">Hole</div><div class="value" id="hole">—</div></div>
+      <div class="metric"><div class="label">위도</div><div class="value" id="lat">—</div></div>
+      <div class="metric"><div class="label">경도</div><div class="value" id="lng">—</div></div>
+      <div class="metric"><div class="label">GPS 정확도</div><div class="value" id="acc">—</div></div>
+      <div class="metric"><div class="label">홀</div><div class="value" id="hole">—</div></div>
     </div>
-    <button class="btn btn-dark" id="gpsBtn">GET CURRENT GPS</button>
-    <div id="gpsStatus" class="status">GPS not read yet.</div>
+    <button class="btn btn-dark" id="gpsBtn">현재 GPS 확인</button>
+    <div id="gpsStatus" class="status">아직 GPS를 확인하지 않았습니다.</div>
   </div>
 
   <div class="card">
-    <div class="section-title">3. COURSE POSITION</div>
+    <div class="section-title">3. 코스 위치 판정</div>
     <div class="feature">
-      <div class="label">Detected Area</div>
+      <div class="label">현재 위치</div>
       <div class="big" id="detected">—</div>
-      <div class="status" id="detail">Load GeoJSON and get GPS.</div>
+      <div class="status" id="detail">GeoJSON을 불러온 후 GPS를 확인하세요.</div>
     </div>
     <div style="margin-top:12px">
-      <div class="label" style="margin-bottom:7px">Optional Note</div>
-      <input id="note" type="text" placeholder="e.g. actual position = fairway edge"/>
+      <div class="label" style="margin-bottom:7px">메모 (선택)</div>
+      <input id="note" type="text" placeholder="예: 실제 위치 = 페어웨이 가장자리"/>
     </div>
-    <button class="btn btn-primary" id="recordBtn">RECORD POSITION</button>
+    <button class="btn btn-primary" id="recordBtn">현재 위치 기록</button>
   </div>
 
   <div class="card">
-    <div class="section-title">4. TEST HISTORY</div>
+    <div class="section-title">4. 테스트 기록</div>
     <div id="history" class="history"></div>
-    <button class="btn btn-dark" id="jsonBtn">EXPORT JSON</button>
-    <button class="btn btn-dark" id="csvBtn">EXPORT CSV</button>
-    <button class="btn btn-danger" id="clearBtn">CLEAR LOCAL TEST DATA</button>
+    <button class="btn btn-dark" id="jsonBtn">JSON 내보내기</button>
+    <button class="btn btn-dark" id="csvBtn">CSV 내보내기</button>
+    <button class="btn btn-danger" id="clearBtn">저장된 테스트 기록 삭제</button>
   </div>
 
   <div class="footer-note">
-    GPS on mobile browsers normally requires HTTPS (or localhost) and location permission.
-    A reported accuracy above ±10 m is flagged as low accuracy. This POC stores records only in this browser.
+    모바일 브라우저에서 GPS를 사용하려면 일반적으로 HTTPS와 위치 권한이 필요합니다.
+    GPS 정확도가 ±10m보다 크면 정확도 낮음으로 표시합니다. 테스트 기록은 이 브라우저에만 저장됩니다.
   </div>
 </div>
 
@@ -116,13 +116,13 @@
   let currentDetection = {feature:'—', hole:'—', matched:null};
 
   const priority = {
-    'GREEN': 60,
-    'BUNKER': 55,
-    'WATER': 50,
-    'TEE': 40,
-    'FAIRWAY': 30,
-    'ROUGH': 20,
-    'OTHER': 0
+    '그린': 60,
+    '벙커': 55,
+    '워터': 50,
+    '티': 40,
+    '페어웨이': 30,
+    '러프': 20,
+    '기타': 0
   };
 
   function propsOf(feature){
@@ -138,13 +138,13 @@
     const water = String(p.water || '').toLowerCase();
     const landuse = String(p.landuse || '').toLowerCase();
 
-    if (golf === 'green') return 'GREEN';
-    if (golf === 'bunker') return 'BUNKER';
-    if (golf === 'tee') return 'TEE';
-    if (golf === 'fairway') return 'FAIRWAY';
-    if (golf === 'rough') return 'ROUGH';
-    if (golf === 'water_hazard' || golf === 'lateral_water_hazard') return 'WATER';
-    if (natural === 'water' || water || landuse === 'reservoir' || landuse === 'basin') return 'WATER';
+    if (golf === 'green') return '그린';
+    if (golf === 'bunker') return '벙커';
+    if (golf === 'tee') return '티';
+    if (golf === 'fairway') return '페어웨이';
+    if (golf === 'rough') return '러프';
+    if (golf === 'water_hazard' || golf === 'lateral_water_hazard') return '워터';
+    if (natural === 'water' || water || landuse === 'reservoir' || landuse === 'basin') return '워터';
     return null;
   }
 
@@ -236,7 +236,7 @@
 
   function classify(lng, lat){
     if (!geojson || !Array.isArray(geojson.features)) {
-      return {feature:'NO COURSE', hole:'—', matched:null};
+      return {feature:'코스 데이터 없음', hole:'—', matched:null};
     }
     const point = [lng, lat];
     const hits = [];
@@ -251,7 +251,7 @@
     }
 
     hits.sort((a,b) => b.score-a.score);
-    let best = hits[0] || {type:'OTHER', feature:null, score:0, hole:null};
+    let best = hits[0] || {type:'기타', feature:null, score:0, hole:null};
 
     let hole = best.hole;
     if (!hole) {
@@ -270,8 +270,8 @@
     $('detected').textContent = currentDetection.feature;
     $('hole').textContent = currentDetection.hole ?? '—';
     const acc = current?.accuracy;
-    const accText = typeof acc === 'number' ? `GPS ±${acc.toFixed(1)} m` : 'GPS accuracy unknown';
-    $('detail').textContent = `${accText}${currentDetection.hole !== '—' ? ' · Hole ' + currentDetection.hole : ''}`;
+    const accText = typeof acc === 'number' ? `GPS ±${acc.toFixed(1)} m` : 'GPS 정확도 알 수 없음';
+    $('detail').textContent = `${accText}${currentDetection.hole !== '—' ? ' · 홀 ' + currentDetection.hole : ''}`;
   }
 
   function readRecords(){
@@ -289,19 +289,19 @@
     const host = $('history');
     host.innerHTML = '';
     if (!records.length) {
-      host.innerHTML = '<div class="status">No positions recorded yet.</div>';
+      host.innerHTML = '<div class="status">아직 기록된 위치가 없습니다.</div>';
       return;
     }
     records.slice().reverse().forEach((r, idx) => {
       const div = document.createElement('div');
       div.className = 'row';
       div.innerHTML = `
-        <b>${escapeHtml(r.detected_feature)} ${r.hole && r.hole !== '—' ? '· Hole ' + escapeHtml(String(r.hole)) : ''}</b>
+        <b>${escapeHtml(r.detected_feature)} ${r.hole && r.hole !== '—' ? '· 홀 ' + escapeHtml(String(r.hole)) : ''}</b>
         <small>
           <span class="pill">±${Number(r.accuracy).toFixed(1)} m</span>
           ${escapeHtml(r.timestamp_local)}<br/>
           ${Number(r.latitude).toFixed(7)}, ${Number(r.longitude).toFixed(7)}
-          ${r.note ? '<br/>Note: '+escapeHtml(r.note) : ''}
+          ${r.note ? '<br/>메모: '+escapeHtml(r.note) : ''}
         </small>`;
       host.appendChild(div);
     });
@@ -330,14 +330,14 @@
   $('loadBtn').addEventListener('click', async () => {
     const file = $('geoFile').files?.[0];
     if (!file) {
-      $('geoStatus').textContent = 'Choose a .geojson or .json file first.';
+      $('geoStatus').textContent = '먼저 .geojson 또는 .json 파일을 선택하세요.';
       $('geoStatus').className = 'status bad';
       return;
     }
     try {
       const parsed = JSON.parse(await file.text());
       if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
-        throw new Error('GeoJSON must be a FeatureCollection.');
+        throw new Error('GeoJSON 형식이 FeatureCollection이어야 합니다.');
       }
       geojson = parsed;
       const counts = {};
@@ -346,7 +346,7 @@
         if (t) counts[t] = (counts[t] || 0) + 1;
       }
       $('geoStatus').textContent =
-        `Loaded ${geojson.features.length} features · ` +
+        `총 ${geojson.features.length}개 요소 불러옴 · ` +
         Object.entries(counts).map(([k,v])=>`${k} ${v}`).join(' · ');
       $('geoStatus').className = 'status good';
 
@@ -356,18 +356,18 @@
       }
     } catch (e) {
       geojson = null;
-      $('geoStatus').textContent = 'Could not load GeoJSON: ' + e.message;
+      $('geoStatus').textContent = 'GeoJSON을 불러오지 못했습니다: ' + e.message;
       $('geoStatus').className = 'status bad';
     }
   });
 
   $('gpsBtn').addEventListener('click', () => {
     if (!navigator.geolocation) {
-      $('gpsStatus').textContent = 'Geolocation is not supported by this browser.';
+      $('gpsStatus').textContent = '이 브라우저는 위치 기능을 지원하지 않습니다.';
       $('gpsStatus').className = 'status bad';
       return;
     }
-    $('gpsStatus').textContent = 'Reading high-accuracy GPS…';
+    $('gpsStatus').textContent = '고정밀 GPS 위치를 확인하는 중…';
     $('gpsStatus').className = 'status';
     navigator.geolocation.getCurrentPosition(pos => {
       current = {
@@ -384,15 +384,15 @@
       renderDetection();
 
       if (current.accuracy > 10) {
-        $('gpsStatus').textContent = 'LOW ACCURACY — move to open sky and try again.';
+        $('gpsStatus').textContent = 'GPS 정확도 낮음 — 하늘이 열린 곳에서 다시 시도하세요.';
         $('gpsStatus').className = 'status bad';
       } else {
-        $('gpsStatus').textContent = 'GPS ready.';
+        $('gpsStatus').textContent = 'GPS 준비 완료.';
         $('gpsStatus').className = 'status good';
       }
     }, err => {
-      let msg = err.message || 'Unable to read location.';
-      if (err.code === 1) msg = 'Location permission denied. Enable location permission for this site.';
+      let msg = err.message || '현재 위치를 읽을 수 없습니다.';
+      if (err.code === 1) msg = '위치 권한이 거부되었습니다. 이 사이트의 위치 권한을 허용하세요.';
       $('gpsStatus').textContent = msg;
       $('gpsStatus').className = 'status bad';
     }, {
@@ -404,11 +404,11 @@
 
   $('recordBtn').addEventListener('click', () => {
     if (!current) {
-      alert('Get current GPS first.');
+      alert('먼저 현재 GPS를 확인하세요.');
       return;
     }
     if (!geojson) {
-      alert('Load a course GeoJSON first.');
+      alert('먼저 코스 GeoJSON을 불러오세요.');
       return;
     }
     const d = classify(current.longitude, current.latitude);
@@ -443,7 +443,7 @@
   });
 
   $('clearBtn').addEventListener('click', () => {
-    if (confirm('Clear all locally stored test records?')) {
+    if (confirm('이 브라우저에 저장된 모든 테스트 기록을 삭제할까요?')) {
       localStorage.removeItem(STORAGE_KEY);
       renderHistory();
     }
