@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <title>JGI COURSE GPS TEST</title>
+  <style>
+    :root{
+      --bg:#0b0b0b; --panel:#171717; --panel2:#222; --text:#f7f7f7;
+      --muted:#a8a8a8; --orange:#ff7a00; --green:#57d163; --red:#ff5c5c; --line:#343434;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    }
+    .app{max-width:720px;margin:0 auto;padding:18px 14px 40px}
+    .brand{font-weight:900;font-size:22px;letter-spacing:.5px}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px}
+    .card{
+      background:var(--panel); border:1px solid var(--line); border-radius:18px;
+      padding:16px; margin-top:14px;
+    }
+    .section-title{font-weight:800;font-size:14px;letter-spacing:.35px;margin-bottom:12px}
+    .btn{
+      width:100%; border:0; border-radius:15px; padding:16px 14px;
+      font-size:17px; font-weight:900; cursor:pointer; margin-top:10px;
+    }
+    .btn-primary{background:var(--orange);color:#111}
+    .btn-dark{background:#2a2a2a;color:#fff;border:1px solid #3f3f3f}
+    .btn-danger{background:#321818;color:#ffb2b2;border:1px solid #5d2323}
+    input[type=file]{width:100%;color:#ddd}
+    textarea,input[type=text]{
+      width:100%; background:#101010;color:#fff;border:1px solid #383838;
+      border-radius:12px;padding:12px;font-size:15px;
+    }
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .metric{background:#101010;border:1px solid #333;border-radius:14px;padding:12px}
+    .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .value{font-size:19px;font-weight:900;margin-top:4px;word-break:break-word}
+    .feature{
+      text-align:center;background:#101010;border:1px solid #333;border-radius:16px;padding:18px 12px;
+    }
+    .feature .big{font-size:28px;font-weight:1000;color:var(--orange)}
+    .status{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.45}
+    .good{color:var(--green)!important}.bad{color:var(--red)!important}
+    .history{display:flex;flex-direction:column;gap:8px}
+    .row{background:#101010;border:1px solid #303030;border-radius:12px;padding:10px}
+    .row b{font-size:14px}
+    .row small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#2a2a2a;font-size:11px;margin-right:5px}
+    .footer-note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:14px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">JGI COURSE GPS TEST</div>
+  <div class="sub">Standalone POC · No login · No server · No DB</div>
+
+  <div class="card">
+    <div class="section-title">1. LOAD COURSE GEOJSON</div>
+    <input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json"/>
+    <button class="btn btn-dark" id="loadBtn">LOAD FILE</button>
+    <div id="geoStatus" class="status">No GeoJSON loaded.</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">2. CURRENT GPS</div>
+    <div class="grid">
+      <div class="metric"><div class="label">Latitude</div><div class="value" id="lat">—</div></div>
+      <div class="metric"><div class="label">Longitude</div><div class="value" id="lng">—</div></div>
+      <div class="metric"><div class="label">Accuracy</div><div class="value" id="acc">—</div></div>
+      <div class="metric"><div class="label">Hole</div><div class="value" id="hole">—</div></div>
+    </div>
+    <button class="btn btn-dark" id="gpsBtn">GET CURRENT GPS</button>
+    <div id="gpsStatus" class="status">GPS not read yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">3. COURSE POSITION</div>
+    <div class="feature">
+      <div class="label">Detected Area</div>
+      <div class="big" id="detected">—</div>
+      <div class="status" id="detail">Load GeoJSON and get GPS.</div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="label" style="margin-bottom:7px">Optional Note</div>
+      <input id="note" type="text" placeholder="e.g. actual position = fairway edge"/>
+    </div>
+    <button class="btn btn-primary" id="recordBtn">RECORD POSITION</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">4. TEST HISTORY</div>
+    <div id="history" class="history"></div>
+    <button class="btn btn-dark" id="jsonBtn">EXPORT JSON</button>
+    <button class="btn btn-dark" id="csvBtn">EXPORT CSV</button>
+    <button class="btn btn-danger" id="clearBtn">CLEAR LOCAL TEST DATA</button>
+  </div>
+
+  <div class="footer-note">
+    GPS on mobile browsers normally requires HTTPS (or localhost) and location permission.
+    A reported accuracy above ±10 m is flagged as low accuracy. This POC stores records only in this browser.
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = 'jgi_course_gps_test_records_v1';
+
+  let geojson = null;
+  let current = null;
+  let currentDetection = {feature:'—', hole:'—', matched:null};
+
+  const priority = {
+    'GREEN': 60,
+    'BUNKER': 55,
+    'WATER': 50,
+    'TEE': 40,
+    'FAIRWAY': 30,
+    'ROUGH': 20,
+    'OTHER': 0
+  };
+
+  function propsOf(feature){
+    const p = feature && feature.properties ? feature.properties : {};
+    const t = p.tags && typeof p.tags === 'object' ? p.tags : {};
+    return {...p, ...t};
+  }
+
+  function canonicalType(feature){
+    const p = propsOf(feature);
+    const golf = String(p.golf || '').toLowerCase();
+    const natural = String(p.natural || '').toLowerCase();
+    const water = String(p.water || '').toLowerCase();
+    const landuse = String(p.landuse || '').toLowerCase();
+
+    if (golf === 'green') return 'GREEN';
+    if (golf === 'bunker') return 'BUNKER';
+    if (golf === 'tee') return 'TEE';
+    if (golf === 'fairway') return 'FAIRWAY';
+    if (golf === 'rough') return 'ROUGH';
+    if (golf === 'water_hazard' || golf === 'lateral_water_hazard') return 'WATER';
+    if (natural === 'water' || water || landuse === 'reservoir' || landuse === 'basin') return 'WATER';
+    return null;
+  }
+
+  function getHoleRef(feature){
+    const p = propsOf(feature);
+    return p.ref ?? p.hole ?? p.hole_number ?? p['ref:hole'] ?? null;
+  }
+
+  function pointInRing(point, ring){
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1];
+      const xj = ring[j][0], yj = ring[j][1];
+      const intersect = ((yi > y) !== (yj > y)) &&
+        (x < (xj - xi) * (y - yi) / ((yj - yi) || Number.EPSILON) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pointInPolygon(point, coords){
+    if (!coords || !coords.length) return false;
+    if (!pointInRing(point, coords[0])) return false;
+    for (let i = 1; i < coords.length; i++) {
+      if (pointInRing(point, coords[i])) return false;
+    }
+    return true;
+  }
+
+  function pointInGeometry(point, geometry){
+    if (!geometry) return false;
+    if (geometry.type === 'Polygon') return pointInPolygon(point, geometry.coordinates);
+    if (geometry.type === 'MultiPolygon') {
+      return geometry.coordinates.some(poly => pointInPolygon(point, poly));
+    }
+    return false;
+  }
+
+  // Equirectangular approximation; adequate for short golf-course distances.
+  function distanceMeters(a, b){
+    const R = 6371000;
+    const lat1 = a[1] * Math.PI/180, lat2 = b[1] * Math.PI/180;
+    const dLat = (b[1]-a[1]) * Math.PI/180;
+    const dLon = (b[0]-a[0]) * Math.PI/180;
+    const x = dLon * Math.cos((lat1+lat2)/2);
+    const y = dLat;
+    return Math.sqrt(x*x+y*y) * R;
+  }
+
+  function distancePointToSegment(p, a, b){
+    const lat0 = p[1] * Math.PI/180;
+    const mPerDegLat = 111132;
+    const mPerDegLon = 111320 * Math.cos(lat0);
+    const px = p[0]*mPerDegLon, py = p[1]*mPerDegLat;
+    const ax = a[0]*mPerDegLon, ay = a[1]*mPerDegLat;
+    const bx = b[0]*mPerDegLon, by = b[1]*mPerDegLat;
+    const vx = bx-ax, vy = by-ay;
+    const wx = px-ax, wy = py-ay;
+    const vv = vx*vx+vy*vy;
+    const t = vv === 0 ? 0 : Math.max(0, Math.min(1, (wx*vx+wy*vy)/vv));
+    const dx = px-(ax+t*vx), dy=py-(ay+t*vy);
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+
+  function nearestHoleLine(point){
+    if (!geojson || !Array.isArray(geojson.features)) return null;
+    let best = null;
+    for (const f of geojson.features) {
+      const p = propsOf(f);
+      if (String(p.golf || '').toLowerCase() !== 'hole') continue;
+      const g = f.geometry;
+      if (!g) continue;
+      let lines = [];
+      if (g.type === 'LineString') lines = [g.coordinates];
+      if (g.type === 'MultiLineString') lines = g.coordinates;
+      for (const line of lines) {
+        for (let i=0;i<line.length-1;i++){
+          const d = distancePointToSegment(point, line[i], line[i+1]);
+          if (!best || d < best.distance) {
+            best = {distance:d, ref:getHoleRef(f), feature:f};
+          }
+        }
+      }
+    }
+    // Avoid assigning a far-away hole centerline by accident.
+    return best && best.distance <= 120 ? best : null;
+  }
+
+  function classify(lng, lat){
+    if (!geojson || !Array.isArray(geojson.features)) {
+      return {feature:'NO COURSE', hole:'—', matched:null};
+    }
+    const point = [lng, lat];
+    const hits = [];
+
+    for (const f of geojson.features) {
+      const type = canonicalType(f);
+      if (!type) continue;
+      if (!['Polygon','MultiPolygon'].includes(f.geometry?.type)) continue;
+      if (pointInGeometry(point, f.geometry)) {
+        hits.push({type, feature:f, score:priority[type] ?? 0, hole:getHoleRef(f)});
+      }
+    }
+
+    hits.sort((a,b) => b.score-a.score);
+    let best = hits[0] || {type:'OTHER', feature:null, score:0, hole:null};
+
+    let hole = best.hole;
+    if (!hole) {
+      const near = nearestHoleLine(point);
+      if (near && near.ref != null) hole = near.ref;
+    }
+
+    return {
+      feature: best.type,
+      hole: hole ?? '—',
+      matched: best.feature
+    };
+  }
+
+  function renderDetection(){
+    $('detected').textContent = currentDetection.feature;
+    $('hole').textContent = currentDetection.hole ?? '—';
+    const acc = current?.accuracy;
+    const accText = typeof acc === 'number' ? `GPS ±${acc.toFixed(1)} m` : 'GPS accuracy unknown';
+    $('detail').textContent = `${accText}${currentDetection.hole !== '—' ? ' · Hole ' + currentDetection.hole : ''}`;
+  }
+
+  function readRecords(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function writeRecords(records){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    renderHistory();
+  }
+
+  function renderHistory(){
+    const records = readRecords();
+    const host = $('history');
+    host.innerHTML = '';
+    if (!records.length) {
+      host.innerHTML = '<div class="status">No positions recorded yet.</div>';
+      return;
+    }
+    records.slice().reverse().forEach((r, idx) => {
+      const div = document.createElement('div');
+      div.className = 'row';
+      div.innerHTML = `
+        <b>${escapeHtml(r.detected_feature)} ${r.hole && r.hole !== '—' ? '· Hole ' + escapeHtml(String(r.hole)) : ''}</b>
+        <small>
+          <span class="pill">±${Number(r.accuracy).toFixed(1)} m</span>
+          ${escapeHtml(r.timestamp_local)}<br/>
+          ${Number(r.latitude).toFixed(7)}, ${Number(r.longitude).toFixed(7)}
+          ${r.note ? '<br/>Note: '+escapeHtml(r.note) : ''}
+        </small>`;
+      host.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  function download(name, text, type){
+    const blob = new Blob([text], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  function toCSV(records){
+    const cols = ['timestamp_iso','timestamp_local','latitude','longitude','accuracy','detected_feature','hole','note'];
+    const q = (v) => `"${String(v ?? '').replace(/"/g,'""')}"`;
+    return [cols.join(','), ...records.map(r => cols.map(c=>q(r[c])).join(','))].join('\n');
+  }
+
+  $('loadBtn').addEventListener('click', async () => {
+    const file = $('geoFile').files?.[0];
+    if (!file) {
+      $('geoStatus').textContent = 'Choose a .geojson or .json file first.';
+      $('geoStatus').className = 'status bad';
+      return;
+    }
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
+        throw new Error('GeoJSON must be a FeatureCollection.');
+      }
+      geojson = parsed;
+      const counts = {};
+      for (const f of geojson.features) {
+        const t = canonicalType(f);
+        if (t) counts[t] = (counts[t] || 0) + 1;
+      }
+      $('geoStatus').textContent =
+        `Loaded ${geojson.features.length} features · ` +
+        Object.entries(counts).map(([k,v])=>`${k} ${v}`).join(' · ');
+      $('geoStatus').className = 'status good';
+
+      if (current) {
+        currentDetection = classify(current.longitude, current.latitude);
+        renderDetection();
+      }
+    } catch (e) {
+      geojson = null;
+      $('geoStatus').textContent = 'Could not load GeoJSON: ' + e.message;
+      $('geoStatus').className = 'status bad';
+    }
+  });
+
+  $('gpsBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      $('gpsStatus').textContent = 'Geolocation is not supported by this browser.';
+      $('gpsStatus').className = 'status bad';
+      return;
+    }
+    $('gpsStatus').textContent = 'Reading high-accuracy GPS…';
+    $('gpsStatus').className = 'status';
+    navigator.geolocation.getCurrentPosition(pos => {
+      current = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        timestamp: pos.timestamp
+      };
+      $('lat').textContent = current.latitude.toFixed(7);
+      $('lng').textContent = current.longitude.toFixed(7);
+      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
+
+      currentDetection = classify(current.longitude, current.latitude);
+      renderDetection();
+
+      if (current.accuracy > 10) {
+        $('gpsStatus').textContent = 'LOW ACCURACY — move to open sky and try again.';
+        $('gpsStatus').className = 'status bad';
+      } else {
+        $('gpsStatus').textContent = 'GPS ready.';
+        $('gpsStatus').className = 'status good';
+      }
+    }, err => {
+      let msg = err.message || 'Unable to read location.';
+      if (err.code === 1) msg = 'Location permission denied. Enable location permission for this site.';
+      $('gpsStatus').textContent = msg;
+      $('gpsStatus').className = 'status bad';
+    }, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    });
+  });
+
+  $('recordBtn').addEventListener('click', () => {
+    if (!current) {
+      alert('Get current GPS first.');
+      return;
+    }
+    if (!geojson) {
+      alert('Load a course GeoJSON first.');
+      return;
+    }
+    const d = classify(current.longitude, current.latitude);
+    currentDetection = d;
+    renderDetection();
+
+    const now = new Date();
+    const rec = {
+      timestamp_iso: now.toISOString(),
+      timestamp_local: now.toLocaleString(),
+      latitude: current.latitude,
+      longitude: current.longitude,
+      accuracy: current.accuracy,
+      detected_feature: d.feature,
+      hole: d.hole,
+      note: $('note').value.trim()
+    };
+    const records = readRecords();
+    records.push(rec);
+    writeRecords(records);
+    $('note').value = '';
+  });
+
+  $('jsonBtn').addEventListener('click', () => {
+    const records = readRecords();
+    download('jgi_gps_test_data.json', JSON.stringify(records, null, 2), 'application/json');
+  });
+
+  $('csvBtn').addEventListener('click', () => {
+    const records = readRecords();
+    download('jgi_gps_test_data.csv', toCSV(records), 'text/csv;charset=utf-8');
+  });
+
+  $('clearBtn').addEventListener('click', () => {
+    if (confirm('Clear all locally stored test records?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      renderHistory();
+    }
+  });
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>
