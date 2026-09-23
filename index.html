@@ -480,10 +480,6 @@
   });
 
   $('recordBtn').addEventListener('click', () => {
-    if (!current) {
-      alert('먼저 현재 GPS를 확인하세요.');
-      return;
-    }
     if (!geojson) {
       alert('먼저 코스 GeoJSON을 불러오세요.');
       return;
@@ -492,28 +488,73 @@
       alert('실제 위치를 먼저 선택하세요.');
       return;
     }
-    const d = classify(current.longitude, current.latitude);
-    currentDetection = d;
-    renderDetection();
+    if (!navigator.geolocation) {
+      alert('이 브라우저는 위치 기능을 지원하지 않습니다.');
+      return;
+    }
 
-    const now = new Date();
-    const rec = {
-      timestamp_iso: now.toISOString(),
-      timestamp_local: now.toLocaleString(),
-      latitude: current.latitude,
-      longitude: current.longitude,
-      accuracy: current.accuracy,
-      actual_feature: actualSelection,
-      detected_feature: d.feature,
-      is_match: actualSelection === d.feature,
-      hole: d.hole,
-      note: $('note').value.trim()
-    };
-    const records = readRecords();
-    records.push(rec);
-    writeRecords(records);
-    $('note').value = '';
-    clearActualSelection();
+    const btn = $('recordBtn');
+    btn.disabled = true;
+    btn.textContent = '새 GPS 측정 중…';
+
+    navigator.geolocation.getCurrentPosition(pos => {
+      current = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        timestamp: pos.timestamp
+      };
+
+      $('lat').textContent = current.latitude.toFixed(7);
+      $('lng').textContent = current.longitude.toFixed(7);
+      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
+
+      const d = classify(current.longitude, current.latitude);
+      currentDetection = d;
+      renderDetection();
+
+      const measuredAt = new Date(pos.timestamp || Date.now());
+      const rec = {
+        timestamp_iso: measuredAt.toISOString(),
+        timestamp_local: measuredAt.toLocaleString(),
+        latitude: current.latitude,
+        longitude: current.longitude,
+        accuracy: current.accuracy,
+        actual_feature: actualSelection,
+        detected_feature: d.feature,
+        is_match: actualSelection === d.feature,
+        hole: d.hole,
+        note: $('note').value.trim()
+      };
+
+      const records = readRecords();
+      records.push(rec);
+      writeRecords(records);
+
+      $('note').value = '';
+
+      if (current.accuracy > 10) {
+        $('gpsStatus').textContent = '기록 완료 · GPS 정확도 낮음 — 하늘이 열린 곳에서 다시 시도하세요.';
+        $('gpsStatus').className = 'status bad';
+      } else {
+        $('gpsStatus').textContent = '새 GPS 좌표로 기록 완료.';
+        $('gpsStatus').className = 'status good';
+      }
+
+      btn.disabled = false;
+      btn.textContent = '비교 결과 기록';
+    }, err => {
+      let msg = err.message || '현재 위치를 읽을 수 없습니다.';
+      if (err.code === 1) msg = '위치 권한이 거부되었습니다. 이 사이트의 위치 권한을 허용하세요.';
+      $('gpsStatus').textContent = msg;
+      $('gpsStatus').className = 'status bad';
+      btn.disabled = false;
+      btn.textContent = '비교 결과 기록';
+    }, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    });
   });
 
   $('jsonBtn').addEventListener('click', () => {
