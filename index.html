@@ -91,6 +91,9 @@
     .map-legend{position:absolute;left:10px;top:10px;margin:0;display:grid;gap:6px;padding:9px 10px;background:#06131dde;border:1px solid #496273;border-radius:12px;font-size:10px;pointer-events:none}
     .map-legend span::before{width:11px;height:11px;vertical-align:-1px}
     .map-message{position:absolute;left:12px;right:12px;bottom:10px;text-align:center;font-size:11px;color:#fff;background:#07131ddb;border-radius:8px;padding:6px;pointer-events:none}
+    .map-attribution{position:absolute;bottom:0;right:0;left:0;padding:3px 6px;background:#ffffffeb;color:#17212a;font-size:9px;line-height:1.3;text-align:right}.map-attribution a{color:#124d80}
+    .satellite-status{position:absolute;left:10px;top:10px;max-width:65%;padding:6px;background:#07131ddd;color:white;font-size:11px;border-radius:6px;pointer-events:none}.satellite-status:empty{display:none}
+    .map-stage.satellite .map-legend{display:none}.map-stage.satellite .map-message{bottom:34px}
     .map-message:empty{display:none}.map-top-tools{position:absolute;right:10px;top:10px;display:flex;gap:5px}
     .nav-hole{width:34px;height:34px;border-radius:50%;border:1px solid #496273;color:white;background:#07131de8;font-size:20px;cursor:pointer}.nav-hole:disabled{opacity:.35}
     .strategy-card{margin:0 10px;border:1px solid #40576a;border-radius:16px;padding:14px;background:linear-gradient(130deg,#0c1d29,#051018);display:grid;grid-template-columns:1fr 1.2fr;gap:14px}
@@ -106,13 +109,15 @@
 <body>
 <div class="app">
   <section class="player-screen" aria-label="Old Course Player Strategy">
-    <header class="player-header"><div><div class="brand">JAGORAWI GOLF CLUB</div><div class="sub">OLD COURSE</div></div><div class="map-mode" aria-label="Map style"><button class="selected" aria-pressed="true">Vector</button><button disabled title="Satellite is preparing">Satellite · Soon</button></div></header>
+    <header class="player-header"><div><div class="brand">JAGORAWI GOLF CLUB</div><div class="sub">OLD COURSE</div></div><div class="map-mode" aria-label="Map style"><button id="vectorMode" aria-pressed="false">Vector</button><button id="satelliteMode" class="selected" aria-pressed="true">Satellite</button></div></header>
     <nav id="roundHole" aria-label="Select hole"></nav>
     <div class="hole-info"><strong id="holeTitle">Hole 1</strong><span id="holePar" hidden></span><span id="holeDistance" hidden></span><span id="holeSI" hidden></span></div>
     <div class="map-stage">
       <svg id="courseMap" viewBox="0 0 360 540" role="img" aria-label="Selected hole strategy map"></svg>
       <div class="map-legend"><span style="--swatch:#c3df72">Tee</span><span style="--swatch:#61a760">Fairway</span><span style="--swatch:#a1e6a0">Green</span><span style="--swatch:#f1d398">Bunker</span><span style="--swatch:#65b8e9">Water</span><span style="--swatch:#294d38">Rough</span></div>
       <div class="map-top-tools"><button id="prevHole" class="nav-hole" aria-label="Previous hole">‹</button><button id="nextHole" class="nav-hole" aria-label="Next hole">›</button></div>
+      <div id="satelliteStatus" class="satellite-status" role="status"></div>
+      <div id="mapAttribution" class="map-attribution" hidden></div>
       <div id="mapStatus" class="map-message" role="status"></div>
     </div>
     <div class="strategy-card"><div><div class="label">Current Position</div><div id="positionInfo" class="value position-value">Waiting for GPS</div><div id="gpsSummary" class="gps-summary" role="status">GPS ready to start</div></div><div><div class="label">Distance to Green</div><div id="greenDistance" class="value">—</div><div class="elevation">Elevation · Unavailable</div></div></div>
@@ -656,6 +661,69 @@
     if (text) el.textContent = text;
     return el;
   }
+  // POC provider only. Replace URL, attribution and zoom limit together.
+  // Public World Imagery tiles; no private credential belongs in this client.
+  // Commercial provider/licensing selection is intentionally deferred.
+  const SATELLITE_PROVIDER = Object.freeze({
+    url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 19,
+    attribution: 'Tiles © <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Sources: Esri, Vantor, Earthstar Geographics, and the GIS User Community'
+  });
+  let mapMode = 'satellite';
+  let satelliteCache = null;
+  // Normalized Web Mercator shared by imagery and every vector overlay.
+  function mercator(p) {
+    const lat = Math.max(-85.05112878, Math.min(85.05112878, p[1])) * Math.PI / 180;
+    return [(p[0]+180)/360, (1-Math.log(Math.tan(Math.PI/4+lat/2))/Math.PI)/2];
+  }
+  function drawSatellite(svg, projectWorld, scale, latitude, width, height, mask) {
+    const zoom = Math.max(0, Math.min(SATELLITE_PROVIDER.maxZoom,
+      Math.ceil(Math.log2(scale * 2*Math.PI*6371000*Math.cos(latitude*Math.PI/180) / 256))));
+    const n = 2**zoom;
+    const a = projectWorld([0,0]), b = projectWorld([1/n,0]), c = projectWorld([0,1/n]);
+    const u=[b[0]-a[0],b[1]-a[1]], v=[c[0]-a[0],c[1]-a[1]];
+    const det=u[0]*v[1]-u[1]*v[0];
+    const inverse=(x,y)=>[((x-a[0])*v[1]-(y-a[1])*v[0])/det, (u[0]*(y-a[1])-u[1]*(x-a[0]))/det];
+    const corners=[[0,0],[width,0],[0,height],[width,height]].map(p=>inverse(...p));
+    const key=JSON.stringify([round.hole,zoom,a,u,v,width,height,mask]);
+    if (satelliteCache?.key === key) {
+      svg.appendChild(satelliteCache.group);
+      $('satelliteStatus').textContent=satelliteCache.message;
+      return;
+    }
+    const group=svgNode('g',{id:'satelliteLayer', ...(mask ? {mask:'url(#holeContextMask)'} : {})});
+    const state={key,group,message:'Loading satellite…',pending:0,failed:0};
+    satelliteCache=state; svg.appendChild(group);
+    const settle=failed=>{
+      state.pending--; if(failed) state.failed++;
+      state.message=state.failed ? 'Satellite unavailable / incomplete · Tap Vector' : state.pending ? 'Loading satellite…' : '';
+      if(satelliteCache===state && group.isConnected && mapMode==='satellite') $('satelliteStatus').textContent=state.message;
+    };
+    const x0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[0])))), x1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[0]))));
+    const y0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[1])))), y1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[1]))));
+    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) {
+      const pos=projectWorld([x/n,y/n]);
+      const tile=svgNode('image',{width:256.2,height:256.2,preserveAspectRatio:'none',
+        transform:`matrix(${u[0]/256} ${u[1]/256} ${v[0]/256} ${v[1]/256} ${pos[0]} ${pos[1]})`});
+      state.pending++;
+      let done=false;
+      const finish=failed=>{if(done)return;done=true;clearTimeout(timer);settle(failed);};
+      const timer=setTimeout(()=>finish(true),12000);
+      tile.addEventListener('load',()=>finish(false),{once:true});
+      tile.addEventListener('error',()=>finish(true),{once:true});
+      tile.setAttribute('href',SATELLITE_PROVIDER.url.replace('{z}',zoom).replace('{x}',x).replace('{y}',y));
+      group.appendChild(tile);
+    }
+    $('satelliteStatus').textContent=state.message;
+  }
+  function setMapMode(mode) {
+    mapMode=mode;
+    for(const value of ['vector','satellite']) {
+      $(value+'Mode').classList.toggle('selected',value===mode);
+      $(value+'Mode').setAttribute('aria-pressed',String(value===mode));
+    }
+    renderVectorMap();
+  }
   function saveRound() {
     try { localStorage.setItem(ROUND_KEY, JSON.stringify(round)); $('roundStorageStatus').textContent = ''; }
     catch { $('roundStorageStatus').textContent = '라운드 상태를 저장할 수 없습니다. 새로고침 시 초기화될 수 있습니다.'; }
@@ -737,6 +805,11 @@
   }
   function renderVectorMap() {
     const svg = $('courseMap'); svg.replaceChildren();
+    const satellite = mapMode === 'satellite';
+    svg.parentElement.classList.toggle('satellite', satellite);
+    $('mapAttribution').hidden = !satellite;
+    $('mapAttribution').innerHTML = satellite ? SATELLITE_PROVIDER.attribution : '';
+    $('satelliteStatus').textContent = '';
     const width = 360, height = Math.max(350, Math.round(360 * (svg.clientHeight || 540) / (svg.clientWidth || 360)));
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     for (const id of ['holePar','holeDistance','holeSI']) { $(id).hidden = true; $(id).textContent = ''; }
@@ -776,21 +849,24 @@
     const greenCenter = green ? centerOf(green) : null;
     const focus = lineCoords.length ? lineCoords : matching.flatMap(f=>coordinatesOf(f.geometry));
     if (!focus.length) { empty(`Hole ${round.hole} 데이터 없음 · ref / hole 번호가 있는 Old Course GeoJSON이 필요합니다.`); return; }
-    const origin = focus[0], rad = Math.PI/180, metres = 6371000*rad;
-    const local = p => [(p[0]-origin[0])*metres*Math.cos(origin[1]*rad), -(p[1]-origin[1])*metres];
+    const origin = focus[0], rad = Math.PI/180;
+    const worldOrigin=mercator(origin), worldMetres=2*Math.PI*6371000*Math.cos(origin[1]*rad);
+    const localWorld=p=>[(p[0]-worldOrigin[0])*worldMetres,(p[1]-worldOrigin[1])*worldMetres];
+    const local = p => localWorld(mercator(p));
     // OSM hole centerlines run tee to green. Rotate the projection, not the source data.
     const end = lineCoords.length > 1 ? local(lineCoords[lineCoords.length-1]) : null;
     const angle = end && Math.hypot(...end)>1 ? -Math.PI/2-Math.atan2(end[1],end[0]) : 0;
     const xy = p => { const [x,y]=local(p); return [x*Math.cos(angle)-y*Math.sin(angle),x*Math.sin(angle)+y*Math.cos(angle)]; };
-    const bounds = [...focus, ...matching.filter(f=>canonicalType(f)).flatMap(f=>coordinatesOf(f.geometry)), ...(green ? coordinatesOf(green.geometry) : [])].map(xy);
-    const minX=Math.min(...bounds.map(p=>p[0]))-22, maxX=Math.max(...bounds.map(p=>p[0]))+22;
-    const minY=Math.min(...bounds.map(p=>p[1]))-32, maxY=Math.max(...bounds.map(p=>p[1]))+22;
-    const scale=Math.min(320/(maxX-minX),(height-40)/(maxY-minY));
+    // Fit selected playable geometry only; broad rough/water polygons must not shrink the hole.
+    const bounds = [...focus, ...matching.filter(f=>['티','페어웨이','그린'].includes(canonicalType(f))).flatMap(f=>coordinatesOf(f.geometry)), ...(green ? coordinatesOf(green.geometry) : [])].map(xy);
+    const minX=Math.min(...bounds.map(p=>p[0]))-35, maxX=Math.max(...bounds.map(p=>p[0]))+35;
+    const minY=Math.min(...bounds.map(p=>p[1]))-20, maxY=Math.max(...bounds.map(p=>p[1]))+15;
+    const scale=Math.min(344/(maxX-minX),(height-24)/(maxY-minY));
     const project=p=>{const [x,y]=xy(p);return [180+(x-(minX+maxX)/2)*scale,height/2+(y-(minY+maxY)/2)*scale];};
     const pathLine=coords=>coords.map((p,i)=>(i?'L':'M')+project(p).join(',')).join(' ');
     const colors={'러프':'#294d38','페어웨이':'#61a760','티':'#c3df72','그린':'#a1e6a0','벙커':'#f1d398','워터':'#65b8e9'};
-    // Pilot the isolated hole view on 1–2 only. This changes display, never source geometry or GPS classification.
-    const isolated = [1,2].includes(round.hole) && lineCoords.length > 1;
+    // Keep satellite context local on all nine holes; preserve the Vector pilot. This changes display, never source geometry or GPS classification.
+    const isolated = (satellite || [1,2].includes(round.hole)) && lineCoords.length > 1;
     const selected = features.filter(f => holeNumber(f) === round.hole && canonicalType(f));
     if (green && !selected.includes(green)) selected.push(green);
     if (isolated) {
@@ -811,14 +887,18 @@
       // A display-only corridor includes nearby hazards but clips their distant branches.
       // Explicitly selected surfaces are included whole, with a small surrounding margin.
       const defs=svgNode('defs'), mask=svgNode('mask',{id:'holeContextMask',maskUnits:'userSpaceOnUse',x:0,y:0,width,height});
-      mask.appendChild(svgNode('path',{d:pathLine(lineCoords),fill:'none',stroke:'white','stroke-width':70*scale,'stroke-linecap':'round','stroke-linejoin':'round'}));
-      for(const f of selected) {
+      mask.appendChild(svgNode('path',{d:pathLine(lineCoords),fill:'none',stroke:'white','stroke-width':(satellite?110:70)*scale,'stroke-linecap':'round','stroke-linejoin':'round'}));
+      for(const f of selected.filter(f=>!satellite || ['티','페어웨이','그린'].includes(canonicalType(f)))) {
         const d=polygonPath(f);
         if(d) mask.appendChild(svgNode('path',{d,fill:'white',stroke:'white','stroke-width':30*scale,'stroke-linejoin':'round','fill-rule':'evenodd'}));
       }
       defs.appendChild(mask);svg.appendChild(defs);
     }
-    const surface = svgNode('g',{id:'courseSurfaceLayer'}); svg.appendChild(surface);
+    if(satellite) {
+      const projectWorld=p=>{const [x,y]=localWorld(p);return [180+(x*Math.cos(angle)-y*Math.sin(angle)-(minX+maxX)/2)*scale,height/2+(x*Math.sin(angle)+y*Math.cos(angle)-(minY+maxY)/2)*scale];};
+      drawSatellite(svg,projectWorld,scale,origin[1],width,height,isolated);
+    }
+    const surface = svgNode('g',{id:'courseSurfaceLayer',display:satellite?'none':'inline'}); svg.appendChild(surface);
     const nearbyHazards = svgNode('g', isolated ? {mask:'url(#holeContextMask)', 'data-layer':'nearby-hazards'} : {});
     surface.appendChild(nearbyHazards);
     const drawSurface = (f,parent) => {
@@ -871,6 +951,8 @@
     $('mapStatus').textContent = `${!greenCenter?'Green Center unavailable · Distance references unavailable':''}${gpsNote ? 'GPS position outside this hole' : ''}`;
   }
   for(let hole=1;hole<=9;hole++) {const button=document.createElement('button');button.type='button';button.dataset.hole=hole;button.textContent=hole;button.setAttribute('aria-label',`Hole ${hole}`);button.addEventListener('click',()=>changeHole(hole));$('roundHole').appendChild(button);}
+  $('vectorMode').addEventListener('click',()=>setMapMode('vector'));
+  $('satelliteMode').addEventListener('click',()=>setMapMode('satellite'));
   window.addEventListener('resize', renderVectorMap);
   $('prevHole').addEventListener('click',()=>changeHole(round.hole-1));
   $('nextHole').addEventListener('click',()=>changeHole(round.hole+1));
