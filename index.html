@@ -61,12 +61,38 @@
     .summary .value{font-size:18px}
     .footer-note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:14px}
     .hidden{display:none}
+      .round-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .round-heading label{font-weight:800;font-size:20px}
+    #roundHole{min-height:48px;background:#252525;color:#fff;border:1px solid #777;border-radius:12px;padding:8px 16px;font-size:20px;font-weight:800}
+    .mode-later{background:transparent;color:#aaa;border:1px solid #555;border-radius:12px;padding:9px;font-size:11px}
+    .btn:disabled{opacity:.45;cursor:default}
+    #courseMap{display:block;width:100%;height:auto;background:#294d38;border:1px solid #52755c;border-radius:14px;margin-top:14px}
+    #courseMap text{font-family:inherit;paint-order:stroke;stroke:#163125;stroke-width:3px;stroke-linejoin:round;fill:#fff;font-size:11px}
+    .map-legend{display:flex;flex-wrap:wrap;gap:9px 14px;margin-top:12px;font-size:11px;color:#ddd}
+    .map-legend span::before{content:'';display:inline-block;background:var(--swatch);width:10px;height:10px;border-radius:3px;margin-right:5px}
+    .terrain-panel{margin-top:14px;border:1px dashed #555;border-radius:12px;padding:12px;font-size:13px}
+    button:focus-visible,select:focus-visible{outline:3px solid #fff;outline-offset:3px}
   </style>
 </head>
 <body>
 <div class="app">
   <div class="brand">JGI 코스 GPS 테스트</div>
   <div class="sub">독립 테스트 버전 · 로그인 없음 · 서버 없음 · DB 없음</div>
+
+  <section class="card round-card" aria-label="Old Course Round Tracker">
+    <div class="section-title">JAGORAWI · OLD COURSE</div>
+    <div class="round-heading"><label for="roundHole">Hole</label><select id="roundHole" aria-label="Old Course 홀 선택"></select><span class="pill">Vector</span><button class="mode-later" disabled>Satellite · 준비 중</button></div>
+    <div class="grid"><button id="prevHole" class="btn btn-dark">← Prev Hole</button><button id="nextHole" class="btn btn-dark">Next Hole →</button></div>
+    <button id="roundStart" class="btn btn-primary">Round Start</button>
+    <div id="roundStatus" class="status" role="status"></div>
+    <div id="trackingStatus" class="status" role="status">GPS 대기 중</div>
+    <div id="roundStorageStatus" class="status bad"></div>
+    <svg id="courseMap" viewBox="0 0 360 460" role="img" aria-label="선택한 홀의 벡터 지도"></svg>
+    <div id="mapStatus" class="status" role="status"></div>
+    <div class="map-legend"><span style="--swatch:#c3df72">Tee</span><span style="--swatch:#61a760">Fairway</span><span style="--swatch:#a1e6a0">Green</span><span style="--swatch:#f1d398">Bunker</span><span style="--swatch:#65b8e9">Water</span><span style="--swatch:#294d38">Rough / 배경</span><span style="--swatch:#fff">Centerline</span><span style="--swatch:#2688ff">GPS</span></div>
+    <div class="status">기준선: Green Center에서 50 / 100 / 150 / 200m · N ↑</div>
+    <div class="terrain-panel"><b>Terrain / Elevation</b><div id="terrainStatus" class="status"></div><div id="elevationInfo" class="status"></div></div>
+  </section>
 
   <div class="card">
     <div class="section-title">1. 코스 GeoJSON 불러오기</div>
@@ -299,6 +325,11 @@
   }
 
   function renderDetection(){
+    renderVectorMap();
+    if (watchId === null && current) {
+      trackingMessage = `GPS 측정 완료 · ±${current.accuracy.toFixed(1)}m · 연속 추적 꺼짐`;
+      renderRound();
+    }
     $('detected').textContent = currentDetection.feature;
     $('hole').textContent = currentDetection.hole ?? '—';
     const acc = current?.accuracy;
@@ -409,6 +440,7 @@
         throw new Error('GeoJSON 형식이 FeatureCollection이어야 합니다.');
       }
       geojson = parsed;
+      renderVectorMap();
       const counts = {};
       for (const f of geojson.features) {
         const t = canonicalType(f);
@@ -425,6 +457,7 @@
       }
     } catch (e) {
       geojson = null;
+      renderVectorMap();
       $('geoStatus').textContent = 'GeoJSON을 불러오지 못했습니다: ' + e.message;
       $('geoStatus').className = 'status bad';
     }
@@ -573,6 +606,190 @@
       renderHistory();
     }
   });
+
+  // Round shell uses its own key; GPS comparison records retain their original format.
+  const ROUND_KEY = 'jgi_old_course_round_v1';
+  let round = {hole:1, startedAt:null};
+  try {
+    const saved = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');
+    if (saved && Number.isInteger(saved.hole) && saved.hole >= 1 && saved.hole <= 9) {
+      round.hole = saved.hole;
+      if (typeof saved.startedAt === 'string' && Number.isFinite(Date.parse(saved.startedAt))) round.startedAt = saved.startedAt;
+    }
+  } catch { /* A blocked or invalid round store must not prevent the GPS test. */ }
+  let watchId = null;
+  let trackingMessage = 'GPS 대기 중';
+  let lastFixAt = 0;
+  const NS = 'http://www.w3.org/2000/svg';
+  function svgNode(tag, attrs = {}, text = '') {
+    const el = document.createElementNS(NS, tag);
+    for (const [key,value] of Object.entries(attrs)) el.setAttribute(key, value);
+    if (text) el.textContent = text;
+    return el;
+  }
+  function saveRound() {
+    try { localStorage.setItem(ROUND_KEY, JSON.stringify(round)); $('roundStorageStatus').textContent = ''; }
+    catch { $('roundStorageStatus').textContent = '라운드 상태를 저장할 수 없습니다. 새로고침 시 초기화될 수 있습니다.'; }
+  }
+  function renderRound() {
+    $('roundHole').value = String(round.hole);
+    $('prevHole').disabled = round.hole === 1;
+    $('nextHole').disabled = round.hole === 9;
+    $('roundStatus').textContent = round.startedAt ? '라운드 진행 중 · ' + new Date(round.startedAt).toLocaleString() : '시작 전 · Old Course 1–9';
+    $('roundStart').textContent = !round.startedAt ? 'Round Start' : watchId === null ? 'GPS 추적 재개' : 'GPS 추적 중';
+    $('roundStart').disabled = watchId !== null;
+    $('trackingStatus').textContent = trackingMessage;
+  }
+  function startTracking() {
+    if (!navigator.geolocation) { trackingMessage = 'GPS 사용 불가 · 위치 기능 미지원'; renderRound(); return; }
+    if (watchId !== null) return;
+    trackingMessage = 'GPS 위치 확인 중…';
+    watchId = navigator.geolocation.watchPosition(pos => {
+      current = {latitude:pos.coords.latitude, longitude:pos.coords.longitude, accuracy:pos.coords.accuracy, timestamp:pos.timestamp};
+      lastFixAt = pos.timestamp || Date.now();
+      $('lat').textContent = current.latitude.toFixed(7);
+      $('lng').textContent = current.longitude.toFixed(7);
+      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
+      trackingMessage = `GPS 추적 중 · ±${current.accuracy.toFixed(1)}m${current.accuracy > 10 ? ' · 정확도 낮음' : ''}`;
+      $('gpsStatus').textContent = trackingMessage;
+      $('gpsStatus').className = 'status ' + (current.accuracy > 10 ? 'bad' : 'good');
+      currentDetection = classify(current.longitude, current.latitude);
+      renderDetection();
+      renderRound();
+    }, err => {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      trackingMessage = err.code === 1 ? 'GPS 권한 거부 · 위치 권한을 허용한 후 재개하세요.' : 'GPS 수신 실패 · 추적을 재개하세요.';
+      renderRound(); renderVectorMap();
+    }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+    renderRound();
+  }
+  function changeHole(hole) { round.hole = Math.max(1, Math.min(9, hole)); saveRound(); renderRound(); renderVectorMap(); }
+  function coordinatesOf(geometry) {
+    const out = [];
+    function visit(coords) {
+      if (!Array.isArray(coords)) return;
+      if (Number.isFinite(coords[0]) && Number.isFinite(coords[1])) out.push(coords);
+      else coords.forEach(visit);
+    }
+    visit(geometry?.coordinates);
+    return out;
+  }
+  function holeNumber(feature) {
+    const ref = String(getHoleRef(feature) ?? '').trim();
+    return /^0?[1-9]$/.test(ref) ? Number(ref) : null;
+  }
+  function centerOf(feature) {
+    if (feature.geometry?.type === 'Point') return feature.geometry.coordinates;
+    // Polygon area centroid, excluding holes. Coordinates stay local to avoid precision loss.
+    const polygons = feature.geometry?.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry?.type === 'MultiPolygon' ? feature.geometry.coordinates : [];
+    const origin = coordinatesOf(feature.geometry)[0];
+    if (!origin) return null;
+    let area = 0, cx = 0, cy = 0;
+    for (const poly of polygons) for (let r = 0; r < poly.length; r++) {
+      const ring = poly[r]; let a = 0, x = 0, y = 0;
+      for (let i=0;i<ring.length;i++) {
+        const p=ring[i], q=ring[(i+1)%ring.length];
+        const px=p[0]-origin[0], py=p[1]-origin[1], qx=q[0]-origin[0], qy=q[1]-origin[1];
+        const cross=px*qy-qx*py; a+=cross; x+=(px+qx)*cross; y+=(py+qy)*cross;
+      }
+      if (Math.abs(a)>1e-16) { const weight=(r===0?1:-1)*Math.abs(a); area+=weight; cx+=x/(3*a)*weight; cy+=y/(3*a)*weight; }
+    }
+    return area > 0 ? [origin[0]+cx/area,origin[1]+cy/area] : null;
+  }
+  function featureElevation(feature) {
+    // Only explicit metre-valued OSM ele metadata; do not infer altitude from geometry or GPS.
+    const value = propsOf(feature).ele;
+    if (typeof value !== 'number' && typeof value !== 'string') return null;
+    const match = String(value).trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:m)?$/);
+    return match && Number.isFinite(Number(match[1])) ? Number(match[1]) : null;
+  }
+  function renderVectorMap() {
+    const svg = $('courseMap'); svg.replaceChildren();
+    svg.appendChild(svgNode('title', {}, `Jagorawi Old Course · Hole ${round.hole}`));
+    const terrain = svgNode('g', {id:'terrainShadingLayer', 'data-state':'unavailable', 'aria-label':'Terrain shading unavailable'});
+    svg.appendChild(terrain);
+    $('terrainStatus').textContent = 'Elevation data unavailable · 지형 음영용 고도 모델 없음';
+    $('elevationInfo').textContent = '현재 위치 → Green 고도차 / 경사: 사용 불가 · 공통 기준의 지면고도 데이터 필요';
+    const empty = message => { $('mapStatus').textContent = message; svg.appendChild(svgNode('text',{x:180,y:220,'text-anchor':'middle'},'홀 지도 데이터 대기 중')); };
+    if (!geojson) { empty('Old Course GeoJSON 파일을 아래에서 불러오세요.'); return; }
+    const features = geojson.features.filter(f => coordinatesOf(f.geometry).length);
+    const matching = features.filter(f => holeNumber(f) === round.hole);
+    const lines = matching.filter(f => String(propsOf(f).golf).toLowerCase() === 'hole' && ['LineString','MultiLineString'].includes(f.geometry.type));
+    if (lines.length > 1) { empty('동일 홀 번호가 중복됩니다. Old Course 전용 GeoJSON을 불러오세요.'); return; }
+    const line = lines[0];
+    const lineCoords = line ? coordinatesOf(line.geometry) : [];
+    const greens = features.filter(f => canonicalType(f) === '그린' && centerOf(f));
+    let candidates = greens.filter(f => holeNumber(f) === round.hole);
+    if (!candidates.length && lineCoords.length) {
+      const end = lineCoords[lineCoords.length-1];
+      candidates = greens.filter(f => getHoleRef(f) == null && (pointInGeometry(end,f.geometry) || distanceMeters(end,centerOf(f)) <= 40));
+    }
+    const green = candidates.length === 1 ? candidates[0] : null;
+    const greenCenter = green ? centerOf(green) : null;
+    const focus = lineCoords.length ? lineCoords : matching.flatMap(f=>coordinatesOf(f.geometry));
+    if (!focus.length) { empty(`Hole ${round.hole} 데이터 없음 · ref / hole 번호가 있는 Old Course GeoJSON이 필요합니다.`); return; }
+    const origin = focus[0], rad = Math.PI/180, metres = 6371000*rad;
+    const xy = p => [(p[0]-origin[0])*metres*Math.cos(origin[1]*rad), -(p[1]-origin[1])*metres];
+    const bounds = focus.map(xy);
+    if (greenCenter) { const c=xy(greenCenter); bounds.push([c[0]-215,c[1]-215],[c[0]+215,c[1]+215]); }
+    const minX=Math.min(...bounds.map(p=>p[0]))-25, maxX=Math.max(...bounds.map(p=>p[0]))+25;
+    const minY=Math.min(...bounds.map(p=>p[1]))-25, maxY=Math.max(...bounds.map(p=>p[1]))+25;
+    const scale=Math.min(320/(maxX-minX),420/(maxY-minY));
+    const project=p=>{const [x,y]=xy(p);return [180+(x-(minX+maxX)/2)*scale,230+(y-(minY+maxY)/2)*scale];};
+    const pathLine=coords=>coords.map((p,i)=>(i?'L':'M')+project(p).join(',')).join(' ');
+    const colors={'러프':'#294d38','페어웨이':'#61a760','티':'#c3df72','그린':'#a1e6a0','벙커':'#f1d398','워터':'#65b8e9'};
+    const surface = svgNode('g',{id:'courseSurfaceLayer'}); svg.appendChild(surface);
+    for (const f of features.slice().sort((a,b)=>(priority[canonicalType(a)]||0)-(priority[canonicalType(b)]||0))) {
+      const color=colors[canonicalType(f)], g=f.geometry; if (!color) continue;
+      const polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+      if (polys.length) surface.appendChild(svgNode('path',{d:polys.map(poly=>poly.map(ring=>pathLine(ring)+' Z').join(' ')).join(' '),fill:color,stroke:'#193b2b','stroke-width':.8,'fill-rule':'evenodd'}));
+      else if(g.type==='Point') {const p=project(g.coordinates);surface.appendChild(svgNode('circle',{cx:p[0],cy:p[1],r:4,fill:color}));}
+    }
+    if (line) {
+      const parts=line.geometry.type==='LineString'?[line.geometry.coordinates]:line.geometry.coordinates;
+      svg.appendChild(svgNode('path',{d:parts.map(pathLine).join(' '),fill:'none',stroke:'#fff','stroke-width':1.8,'stroke-dasharray':'6 5'}));
+    }
+    if (greenCenter) {
+      const [cx,cy]=project(greenCenter);
+      for (const distance of [200,150,100,50]) {
+        const r=distance*scale;
+        svg.appendChild(svgNode('circle',{cx,cy,r,fill:'none',stroke:'#fff','stroke-opacity':.6,'stroke-width':1,'stroke-dasharray':'3 4'}));
+        svg.appendChild(svgNode('text',{x:cx,y:cy+r-4,'text-anchor':'middle'},`${distance}m`));
+      }
+      svg.appendChild(svgNode('circle',{cx,cy,r:3,fill:'#fff',stroke:'#173b25'}));
+      svg.appendChild(svgNode('text',{x:cx+7,y:cy-7},'Green Center'));
+      const base=featureElevation(green);
+      if (base !== null) for (const f of matching) {
+        const elevation=featureElevation(f), c=centerOf(f);
+        if (elevation===null || !c) continue;
+        const [x,y]=project(c), difference=Math.round(elevation-base);
+        svg.appendChild(svgNode('text',{x,y:y+16},`${difference>0?'+':''}${difference}m (Green 기준)`));
+      }
+    }
+    let gpsNote='';
+    if(current) {
+      const [x,y]=project([current.longitude,current.latitude]);
+      if(x>=8 && x<=352 && y>=8 && y<=452) {
+        const stale=Date.now()-current.timestamp>30000;
+        svg.appendChild(svgNode('circle',{cx:x,cy:y,r:Math.min(600,Math.max(0,current.accuracy*scale)),fill:'#2688ff','fill-opacity':.12,stroke:'#2688ff','stroke-opacity':.5}));
+        svg.appendChild(svgNode('circle',{id:'gpsMapMarker',cx:x,cy:y,r:6,fill:stale?'#888':'#2688ff',stroke:'#fff','stroke-width':2}));
+        svg.appendChild(svgNode('text',{x:Math.min(290,Math.max(35,x)),y:Math.max(18,y-12),'text-anchor':'middle'},stale?'마지막 GPS':'현재 GPS'));
+      } else gpsNote=' · GPS: 선택 홀 지도 밖';
+    }
+    $('mapStatus').textContent = `Hole ${round.hole}${!line?' · 중심선 없음':''}${!greenCenter?' · Green Center 확인 불가: 거리 기준선 사용 불가':''}${gpsNote}`;
+  }
+  for(let hole=1;hole<=9;hole++) {const option=document.createElement('option');option.value=hole;option.textContent=hole;$('roundHole').appendChild(option);}
+  $('roundHole').addEventListener('change',()=>changeHole(Number($('roundHole').value)));
+  $('prevHole').addEventListener('click',()=>changeHole(round.hole-1));
+  $('nextHole').addEventListener('click',()=>changeHole(round.hole+1));
+  $('roundStart').addEventListener('click',()=>{if(!round.startedAt){round.startedAt=new Date().toISOString();saveRound();}startTracking();});
+  setInterval(()=>{
+    if(watchId!==null && lastFixAt && Date.now()-lastFixAt>30000){trackingMessage='GPS 신호 대기 중 · 마지막 위치는 오래된 좌표입니다.';renderRound();}
+    if(current) renderVectorMap();
+  },15000);
+  renderRound(); renderVectorMap();
+  // Reload restores the round, but location permission/tracking resumes only on an explicit tap.
 
   renderHistory();
 })();
