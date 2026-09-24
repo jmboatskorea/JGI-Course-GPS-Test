@@ -707,7 +707,7 @@
     return out;
   }
   function holeNumber(feature) {
-    const ref = String(getHoleRef(feature) ?? '').trim();
+    const ref = String(getHoleRef(feature) ?? propsOf(feature).holeNumber ?? '').trim();
     return /^0?[1-9]$/.test(ref) ? Number(ref) : null;
   }
   function centerOf(feature) {
@@ -770,7 +770,7 @@
     let candidates = greens.filter(f => holeNumber(f) === round.hole);
     if (!candidates.length && lineCoords.length) {
       const end = lineCoords[lineCoords.length-1];
-      candidates = greens.filter(f => getHoleRef(f) == null && (pointInGeometry(end,f.geometry) || distanceMeters(end,centerOf(f)) <= 40));
+      candidates = greens.filter(f => holeNumber(f) === null && (pointInGeometry(end,f.geometry) || distanceMeters(end,centerOf(f)) <= 40));
     }
     const green = candidates.length === 1 ? candidates[0] : null;
     const greenCenter = green ? centerOf(green) : null;
@@ -789,12 +789,51 @@
     const project=p=>{const [x,y]=xy(p);return [180+(x-(minX+maxX)/2)*scale,height/2+(y-(minY+maxY)/2)*scale];};
     const pathLine=coords=>coords.map((p,i)=>(i?'L':'M')+project(p).join(',')).join(' ');
     const colors={'러프':'#294d38','페어웨이':'#61a760','티':'#c3df72','그린':'#a1e6a0','벙커':'#f1d398','워터':'#65b8e9'};
+    // Pilot the isolated hole view on 1–2 only. This changes display, never source geometry or GPS classification.
+    const isolated = [1,2].includes(round.hole) && lineCoords.length > 1;
+    const selected = features.filter(f => holeNumber(f) === round.hole && canonicalType(f));
+    if (green && !selected.includes(green)) selected.push(green);
+    if (isolated) {
+      // Some tee boxes lack a hole number. Keep those at this line's tee end only,
+      // and only if no other known hole starts closer. Do not reassign source metadata.
+      const starts=features.filter(f=>String(propsOf(f).golf).toLowerCase()==='hole' && ['LineString','MultiLineString'].includes(f.geometry.type)).map(f=>({feature:f,start:coordinatesOf(f.geometry)[0]}));
+      for(const f of features.filter(f=>holeNumber(f)===null && canonicalType(f)==='티')) {
+        const c=centerOf(f);if(!c) continue;
+        const distance=distanceMeters(c,lineCoords[0]);
+        if(distance<=45 && !starts.some(other=>other.feature!==line && distanceMeters(c,other.start)<=distance)) selected.push(f);
+      }
+    }
+    const polygonPath = f => {
+      const g=f.geometry, polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+      return polys.map(poly=>poly.map(ring=>pathLine(ring)+' Z').join(' ')).join(' ');
+    };
+    if (isolated) {
+      // A display-only corridor includes nearby hazards but clips their distant branches.
+      // Explicitly selected surfaces are included whole, with a small surrounding margin.
+      const defs=svgNode('defs'), mask=svgNode('mask',{id:'holeContextMask',maskUnits:'userSpaceOnUse',x:0,y:0,width,height});
+      mask.appendChild(svgNode('path',{d:pathLine(lineCoords),fill:'none',stroke:'white','stroke-width':70*scale,'stroke-linecap':'round','stroke-linejoin':'round'}));
+      for(const f of selected) {
+        const d=polygonPath(f);
+        if(d) mask.appendChild(svgNode('path',{d,fill:'white',stroke:'white','stroke-width':30*scale,'stroke-linejoin':'round','fill-rule':'evenodd'}));
+      }
+      defs.appendChild(mask);svg.appendChild(defs);
+    }
     const surface = svgNode('g',{id:'courseSurfaceLayer'}); svg.appendChild(surface);
-    for (const f of features.filter(f => holeNumber(f) === null || holeNumber(f) === round.hole).sort((a,b)=>(priority[canonicalType(a)]||0)-(priority[canonicalType(b)]||0))) {
-      const color=colors[canonicalType(f)], g=f.geometry; if (!color) continue;
-      const polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
-      if (polys.length) surface.appendChild(svgNode('path',{d:polys.map(poly=>poly.map(ring=>pathLine(ring)+' Z').join(' ')).join(' '),fill:color,stroke:'#193b2b','stroke-width':.8,'fill-rule':'evenodd'}));
-      else if(g.type==='Point') {const p=project(g.coordinates);surface.appendChild(svgNode('circle',{cx:p[0],cy:p[1],r:4,fill:color}));}
+    const nearbyHazards = svgNode('g', isolated ? {mask:'url(#holeContextMask)', 'data-layer':'nearby-hazards'} : {});
+    surface.appendChild(nearbyHazards);
+    const drawSurface = (f,parent) => {
+      const color=colors[canonicalType(f)], g=f.geometry; if (!color) return;
+      const d=polygonPath(f), attrs={'data-feature-id':String(f.id ?? ''),'data-surface':String(propsOf(f).golf ?? ''),'data-hole':String(holeNumber(f) ?? '')};
+      if(d) parent.appendChild(svgNode('path',{...attrs,d,fill:color,stroke:'#193b2b','stroke-width':.8,'fill-rule':'evenodd'}));
+      else if(g.type==='Point') {const p=project(g.coordinates);parent.appendChild(svgNode('circle',{...attrs,cx:p[0],cy:p[1],r:4,fill:color}));}
+    };
+    const ordered = list => list.slice().sort((a,b)=>(priority[canonicalType(a)]||0)-(priority[canonicalType(b)]||0));
+    if(isolated) {
+      // Unassigned playable surfaces from other holes are not a backdrop for this hole.
+      for(const f of ordered(features.filter(f=>holeNumber(f)===null && ['벙커','워터'].includes(canonicalType(f))))) drawSurface(f,nearbyHazards);
+      for(const f of ordered(selected)) drawSurface(f,surface);
+    } else {
+      for(const f of ordered(features.filter(f=>holeNumber(f)===null || holeNumber(f)===round.hole))) drawSurface(f,surface);
     }
     if (line) {
       const parts=line.geometry.type==='LineString'?[line.geometry.coordinates]:line.geometry.coordinates;
