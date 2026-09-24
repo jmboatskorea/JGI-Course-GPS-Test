@@ -94,8 +94,21 @@
     .map-attribution{position:absolute;bottom:0;right:0;left:0;padding:3px 6px;background:#ffffffeb;color:#17212a;font-size:9px;line-height:1.3;text-align:right}.map-attribution a{color:#124d80}
     .satellite-status{position:absolute;left:10px;top:10px;max-width:65%;padding:6px;background:#07131ddd;color:white;font-size:11px;border-radius:6px;pointer-events:none}.satellite-status:empty{display:none}
     .map-stage.satellite .map-legend{display:none}.map-stage.satellite .map-message{bottom:34px}
-    .map-message:empty{display:none}.map-top-tools{position:absolute;right:10px;top:10px;display:flex;gap:5px}
+    .map-message:empty{display:none}.map-top-tools{position:absolute;right:10px;top:10px;display:flex;gap:5px;z-index:4}
     .nav-hole{width:34px;height:34px;border-radius:50%;border:1px solid #496273;color:white;background:#07131de8;font-size:20px;cursor:pointer}.nav-hole:disabled{opacity:.35}
+    .green-detail-btn{height:34px;border-radius:17px;border:1px solid #496273;color:#fff;background:#07131de8;padding:0 11px;font-size:11px;font-weight:800;cursor:pointer}
+    .green-detail-btn:disabled{opacity:.35}
+    .map-stage.satellite #courseMap{touch-action:none;cursor:grab}
+    .map-stage.satellite #courseMap.dragging{cursor:grabbing}
+    .green-modal{position:fixed;inset:0;z-index:50;background:#02070ccf;display:flex;align-items:flex-end;justify-content:center}
+    .green-modal[hidden]{display:none}
+    .green-sheet{width:min(480px,100%);max-height:92svh;background:#07131d;border:1px solid #40576a;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -18px 60px #0008}
+    .green-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #263d4d}
+    .green-sheet-header strong{font-size:17px}.green-close{width:38px;height:38px;border-radius:50%;border:1px solid #40576a;background:#0d2230;color:#fff;font-size:23px}
+    .green-detail-stage{position:relative;height:min(62svh,520px);background:#294d38}
+    #greenDetailMap{display:block;width:100%;height:100%;background:#294d38}
+    .green-detail-info{padding:12px 16px 16px;color:#b7c9d6;font-size:12px;display:flex;justify-content:space-between;gap:12px;border-top:1px solid #263d4d}
+    .green-detail-info b{color:#fff}
     .strategy-card{margin:0 10px;border:1px solid #40576a;border-radius:16px;padding:14px;background:linear-gradient(130deg,#0c1d29,#051018);display:grid;grid-template-columns:1fr 1.2fr;gap:14px}
     .strategy-card .label{text-transform:none;font-size:12px;color:#d5e1e8;letter-spacing:0}.strategy-card .value{font-size:25px;margin-top:6px}
     .strategy-card .position-value{font-size:14px;line-height:1.5}.strategy-card>div+div{border-left:1px solid #304653;padding-left:14px}
@@ -115,7 +128,7 @@
     <div class="map-stage">
       <svg id="courseMap" viewBox="0 0 360 540" role="img" aria-label="Selected hole strategy map"></svg>
       <div class="map-legend"><span style="--swatch:#c3df72">Tee</span><span style="--swatch:#61a760">Fairway</span><span style="--swatch:#a1e6a0">Green</span><span style="--swatch:#f1d398">Bunker</span><span style="--swatch:#65b8e9">Water</span><span style="--swatch:#294d38">Rough</span></div>
-      <div class="map-top-tools"><button id="prevHole" class="nav-hole" aria-label="Previous hole">‹</button><button id="nextHole" class="nav-hole" aria-label="Next hole">›</button></div>
+      <div class="map-top-tools"><button id="greenDetailBtn" class="green-detail-btn" type="button" disabled>Green</button><button id="prevHole" class="nav-hole" aria-label="Previous hole">‹</button><button id="nextHole" class="nav-hole" aria-label="Next hole">›</button></div>
       <div id="satelliteStatus" class="satellite-status" role="status"></div>
       <div id="mapAttribution" class="map-attribution" hidden></div>
       <div id="mapStatus" class="map-message" role="status"></div>
@@ -123,6 +136,13 @@
     <div class="strategy-card"><div><div class="label">Current Position</div><div id="positionInfo" class="value position-value">Waiting for GPS</div><div id="gpsSummary" class="gps-summary" role="status">GPS ready to start</div></div><div><div class="label">Distance to Green</div><div id="greenDistance" class="value">—</div><div class="elevation">Elevation · Unavailable</div></div></div>
     <div class="player-footer"><button id="roundStart" class="btn btn-primary">Start Round</button></div>
   </section>
+  <div id="greenModal" class="green-modal" hidden role="dialog" aria-modal="true" aria-label="Green Detail">
+    <div class="green-sheet">
+      <div class="green-sheet-header"><strong id="greenDetailTitle">Green Detail</strong><button id="greenClose" class="green-close" type="button" aria-label="Close">×</button></div>
+      <div class="green-detail-stage"><svg id="greenDetailMap" viewBox="0 0 360 440" role="img" aria-label="Green satellite detail"></svg></div>
+      <div class="green-detail-info"><span><b>Green Center</b><br>Satellite detail</span><span><b>Elevation</b><br>Unavailable</span></div>
+    </div>
+  </div>
   <details class="tools"><summary>Course data &amp; GPS details</summary>
     <div id="roundStatus" class="status" role="status"></div><div id="trackingStatus" class="status" role="status"></div><div id="roundStorageStatus" class="status bad"></div>
     <div class="terrain-panel"><b>Terrain / Elevation</b><div id="terrainStatus" class="status"></div><div id="elevationInfo" class="status"></div></div>
@@ -671,6 +691,11 @@
   });
   let mapMode = 'satellite';
   let satelliteCache = null;
+  let mapViewport = null;
+  let mapViewportKey = '';
+  let lastGreenContext = null;
+  const mapPointers = new Map();
+  let lastPinchDistance = null;
   // Normalized Web Mercator shared by imagery and every vector overlay.
   function mercator(p) {
     const lat = Math.max(-85.05112878, Math.min(85.05112878, p[1])) * Math.PI / 180;
@@ -716,8 +741,56 @@
     }
     $('satelliteStatus').textContent=state.message;
   }
+  function pointAlongLine(coords, metres) {
+    if (!Array.isArray(coords) || coords.length < 2) return coords?.[0] || null;
+    let remaining = metres;
+    for (let i=0;i<coords.length-1;i++) {
+      const a=coords[i], b=coords[i+1], segment=distanceMeters(a,b);
+      if (segment >= remaining) {
+        const t = segment > 0 ? remaining/segment : 0;
+        return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];
+      }
+      remaining -= segment;
+    }
+    return coords[coords.length-1];
+  }
+  function clampViewport(v,width,height) {
+    let [x,y,w,h]=v;
+    w=Math.max(70,Math.min(width,w)); h=Math.max(100,Math.min(height,h));
+    x=Math.max(0,Math.min(width-w,x)); y=Math.max(0,Math.min(height-h,y));
+    return [x,y,w,h];
+  }
+  function applyMapViewport() {
+    const svg=$('courseMap');
+    if(!mapViewport) return;
+    svg.setAttribute('viewBox', mapViewport.join(' '));
+  }
+  function initialSatelliteViewport(par,lineCoords,project,width,height) {
+    if (![4,5].includes(par) || !lineCoords || lineCoords.length < 2) return [0,0,width,height];
+    const tee=project(lineCoords[0]);
+    const forward=project(pointAlongLine(lineCoords,270));
+    const y0=Math.min(tee[1],forward[1]), y1=Math.max(tee[1],forward[1]);
+    const segmentH=Math.max(140,y1-y0);
+    const h=Math.min(height,segmentH+46);
+    const w=Math.min(width,Math.max(190,h*(width/height)));
+    const cx=(tee[0]+forward[0])/2;
+    const cy=(tee[1]+forward[1])/2;
+    return clampViewport([cx-w/2,cy-h/2,w,h],width,height);
+  }
+  function zoomViewport(factor,clientX,clientY) {
+    if(!mapViewport) return;
+    const svg=$('courseMap'), rect=svg.getBoundingClientRect();
+    const [x,y,w,h]=mapViewport;
+    const px=x+(clientX-rect.left)/rect.width*w;
+    const py=y+(clientY-rect.top)/rect.height*h;
+    const nw=w*factor, nh=h*factor;
+    const nx=px-(px-x)*factor, ny=py-(py-y)*factor;
+    mapViewport=clampViewport([nx,ny,nw,nh],360,Math.max(350,Math.round(360*(svg.clientHeight||540)/(svg.clientWidth||360))));
+    applyMapViewport();
+  }
   function setMapMode(mode) {
     mapMode=mode;
+    mapViewport=null; mapViewportKey='';
     for(const value of ['vector','satellite']) {
       $(value+'Mode').classList.toggle('selected',value===mode);
       $(value+'Mode').setAttribute('aria-pressed',String(value===mode));
@@ -763,7 +836,7 @@
     }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
     renderRound();
   }
-  function changeHole(hole) { round.hole = Math.max(1, Math.min(9, hole)); saveRound(); renderRound(); renderVectorMap(); }
+  function changeHole(hole) { round.hole = Math.max(1, Math.min(9, hole)); mapViewport=null; mapViewportKey=''; lastGreenContext=null; saveRound(); renderRound(); renderVectorMap(); }
   function coordinatesOf(geometry) {
     const out = [];
     function visit(coords) {
@@ -821,6 +894,7 @@
     svg.appendChild(terrain);
     $('terrainStatus').textContent = 'Elevation data unavailable · 지형 음영용 고도 모델 없음';
     $('elevationInfo').textContent = '현재 위치 → Green 고도차 / 경사: 사용 불가 · 공통 기준의 지면고도 데이터 필요';
+    $('greenDetailBtn').disabled = true; lastGreenContext = null;
     const empty = message => { $('mapStatus').textContent = message; svg.appendChild(svgNode('text',{x:180,y:height/2,'text-anchor':'middle'},'Load course data to view this hole')); };
     if (!geojson) { empty('Open Course data & GPS details below to upload GeoJSON.'); return; }
     const features = geojson.features.filter(f => coordinatesOf(f.geometry).length);
@@ -836,6 +910,7 @@
       $(id).textContent = prefix + Number(value) + suffix; $(id).hidden = false;
     };
     metric('holePar', metadata.par, 'PAR ');
+    const parValue = /^\d+$/.test(String(metadata.par ?? '').trim()) ? Number(metadata.par) : null;
     const length = metadata['length:m'] ?? metadata.distance_m ?? metadata.length;
     if (length != null && /^(\d+(?:\.\d+)?)\s*(?:m)?$/.test(String(length).trim())) metric('holeDistance', String(length).trim().replace(/\s*m$/, ''), '', ' m');
     metric('holeSI', metadata.handicap ?? metadata.stroke_index ?? metadata.si, 'SI ');
@@ -863,6 +938,12 @@
     const minY=Math.min(...bounds.map(p=>p[1]))-20, maxY=Math.max(...bounds.map(p=>p[1]))+15;
     const scale=Math.min(344/(maxX-minX),(height-24)/(maxY-minY));
     const project=p=>{const [x,y]=xy(p);return [180+(x-(minX+maxX)/2)*scale,height/2+(y-(minY+maxY)/2)*scale];};
+    const viewportKey=`${round.hole}|${mapMode}|${width}|${height}|${parValue ?? 'na'}`;
+    if(mapViewportKey!==viewportKey || !mapViewport) {
+      mapViewportKey=viewportKey;
+      mapViewport = satellite ? initialSatelliteViewport(parValue,lineCoords,project,width,height) : [0,0,width,height];
+    }
+    applyMapViewport();
     const pathLine=coords=>coords.map((p,i)=>(i?'L':'M')+project(p).join(',')).join(' ');
     const colors={'러프':'#294d38','페어웨이':'#61a760','티':'#c3df72','그린':'#a1e6a0','벙커':'#f1d398','워터':'#65b8e9'};
     // Keep satellite context local on all nine holes; preserve the Vector pilot. This changes display, never source geometry or GPS classification.
@@ -919,6 +1000,8 @@
       const parts=line.geometry.type==='LineString'?[line.geometry.coordinates]:line.geometry.coordinates;
       svg.appendChild(svgNode('path',{d:parts.map(pathLine).join(' '),fill:'none',stroke:'#fff','stroke-width':1.8,'stroke-dasharray':'6 5'}));
     }
+    $('greenDetailBtn').disabled = !greenCenter;
+    lastGreenContext = greenCenter ? {greenCenter,lineCoords,angle,origin} : null;
     if (greenCenter) {
       const [cx,cy]=project(greenCenter);
       for (const distance of [200,150,100,50]) {
@@ -950,6 +1033,64 @@
     }
     $('mapStatus').textContent = `${!greenCenter?'Green Center unavailable · Distance references unavailable':''}${gpsNote ? 'GPS position outside this hole' : ''}`;
   }
+  function drawSatelliteDetail(svg, projectWorld, scale, latitude, width, height) {
+    const zoom=Math.max(0,Math.min(SATELLITE_PROVIDER.maxZoom,Math.ceil(Math.log2(scale*2*Math.PI*6371000*Math.cos(latitude*Math.PI/180)/256))));
+    const n=2**zoom;
+    const a=projectWorld([0,0]), b=projectWorld([1/n,0]), d=projectWorld([0,1/n]);
+    const u=[b[0]-a[0],b[1]-a[1]], v=[d[0]-a[0],d[1]-a[1]], det=u[0]*v[1]-u[1]*v[0];
+    const inverse=(x,y)=>[((x-a[0])*v[1]-(y-a[1])*v[0])/det,(u[0]*(y-a[1])-u[1]*(x-a[0]))/det];
+    const corners=[[0,0],[width,0],[0,height],[width,height]].map(p=>inverse(...p));
+    const x0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[0])))),x1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[0]))));
+    const y0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[1])))),y1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[1]))));
+    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) {
+      const pos=projectWorld([x/n,y/n]);
+      const tile=svgNode('image',{width:256.2,height:256.2,preserveAspectRatio:'none',transform:`matrix(${u[0]/256} ${u[1]/256} ${v[0]/256} ${v[1]/256} ${pos[0]} ${pos[1]})`});
+      tile.setAttribute('href',SATELLITE_PROVIDER.url.replace('{z}',zoom).replace('{x}',x).replace('{y}',y));
+      svg.appendChild(tile);
+    }
+  }
+  function openGreenDetail() {
+    if(!lastGreenContext) return;
+    const svg=$('greenDetailMap'); svg.replaceChildren();
+    const width=360,height=440; svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
+    const center=lastGreenContext.greenCenter, worldOrigin=mercator(center), worldMetres=2*Math.PI*6371000*Math.cos(center[1]*Math.PI/180);
+    const localWorld=p=>[(p[0]-worldOrigin[0])*worldMetres,(p[1]-worldOrigin[1])*worldMetres];
+    const angle=lastGreenContext.angle || 0, scale=Math.min(width/105,height/105);
+    const projectWorld=p=>{const [x,y]=localWorld(p);return [width/2+(x*Math.cos(angle)-y*Math.sin(angle))*scale,height/2+(x*Math.sin(angle)+y*Math.cos(angle))*scale];};
+    drawSatelliteDetail(svg,projectWorld,scale,center[1],width,height);
+    const [cx,cy]=projectWorld(mercator(center));
+    svg.appendChild(svgNode('circle',{cx,cy,r:6,fill:'#fff',stroke:'#173b25','stroke-width':2}));
+    svg.appendChild(svgNode('path',{d:`M${cx},${cy} v-34 l24,6 -24,9`,fill:'#ff4656',stroke:'#ff4656','stroke-width':2}));
+    svg.appendChild(svgNode('text',{x:cx,y:cy+24,'text-anchor':'middle'},'Green Center'));
+    $('greenDetailTitle').textContent=`Hole ${round.hole} · Green Detail`;
+    $('greenModal').hidden=false;
+  }
+  function closeGreenDetail(){ $('greenModal').hidden=true; }
+
+  const mainMap=$('courseMap');
+  mainMap.addEventListener('wheel',e=>{if(mapMode!=='satellite')return;e.preventDefault();zoomViewport(e.deltaY>0?1.15:.87,e.clientX,e.clientY);},{passive:false});
+  mainMap.addEventListener('pointerdown',e=>{if(mapMode!=='satellite')return;mainMap.setPointerCapture(e.pointerId);mapPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});mainMap.classList.add('dragging');});
+  mainMap.addEventListener('pointermove',e=>{
+    if(mapMode!=='satellite'||!mapPointers.has(e.pointerId)||!mapViewport)return;
+    const prev=mapPointers.get(e.pointerId),rect=mainMap.getBoundingClientRect();
+    mapPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(mapPointers.size===1){
+      const [x,y,w,h]=mapViewport;
+      mapViewport=clampViewport([x-(e.clientX-prev.x)/rect.width*w,y-(e.clientY-prev.y)/rect.height*h,w,h],360,Math.max(350,Math.round(360*(mainMap.clientHeight||540)/(mainMap.clientWidth||360))));
+      applyMapViewport();
+    } else if(mapPointers.size===2){
+      const pts=[...mapPointers.values()],dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      const midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;
+      if(lastPinchDistance) zoomViewport(lastPinchDistance/dist,midX,midY);
+      lastPinchDistance=dist;
+    }
+  });
+  const endPointer=e=>{mapPointers.delete(e.pointerId);if(mapPointers.size<2)lastPinchDistance=null;if(!mapPointers.size)mainMap.classList.remove('dragging');};
+  mainMap.addEventListener('pointerup',endPointer);mainMap.addEventListener('pointercancel',endPointer);
+  $('greenDetailBtn').addEventListener('click',openGreenDetail);
+  $('greenClose').addEventListener('click',closeGreenDetail);
+  $('greenModal').addEventListener('click',e=>{if(e.target===$('greenModal'))closeGreenDetail();});
+
   for(let hole=1;hole<=9;hole++) {const button=document.createElement('button');button.type='button';button.dataset.hole=hole;button.textContent=hole;button.setAttribute('aria-label',`Hole ${hole}`);button.addEventListener('click',()=>changeHole(hole));$('roundHole').appendChild(button);}
   $('vectorMode').addEventListener('click',()=>setMapMode('vector'));
   $('satelliteMode').addEventListener('click',()=>setMapMode('satellite'));
