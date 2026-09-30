@@ -1247,7 +1247,12 @@ function toPar(){
   let s=0,p=0;valid.forEach(h=>{s+=holeScore(h);p+=h.par});return {s,p,d:s-p}
 }
 function allShots(){return round?round.holes.flatMap(h=>h.shots):[]}
-function allStates(){return allShots().filter(s=>s.playerState||s.flo).map(s=>({...((s.playerState||s.flo)),hole:s.hole,club:s.club,distanceM:s.distanceM,endLie:s.endLie}))}
+function allStates(){
+  if(!round)return [];
+  const shotStates=allShots().filter(s=>s.playerState||s.flo).map(s=>({...((s.playerState||s.flo)),hole:s.hole,club:s.club,distanceM:s.distanceM,endLie:s.endLie,type:'SHOT'}));
+  const puttingStates=round.holes.filter(h=>h.puttingState).map(h=>({...h.puttingState,hole:h.hole,club:'PUTTING',distanceM:null,endLie:'GREEN',type:'PUTTING'}));
+  return [...shotStates,...puttingStates];
+}
 function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
 function pct(n,d){return d?Math.round(n/d*100):null}
 function renderOverview(){
@@ -1435,6 +1440,10 @@ function renderPuttHistory(){
 function openPutt(){
   if(!round)return;
   if(round.pending&&!round.pending.result){openShotResult();return}
+  if(round.pending&&round.pending.result){
+    currentLie=round.pending.result.endLie||'GREEN';
+    finalizePending(gpsPoint(),currentLie);
+  }
   resetPuttDraft();renderPuttHistory();$('puttModal').classList.remove('hidden');
 }
 function adjustPuttDistance(delta){
