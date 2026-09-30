@@ -487,6 +487,19 @@ body.round-active .bottomnav{display:none!important}
 .resultChoice.four{grid-template-columns:repeat(4,1fr)}
 .resultChoice.two{grid-template-columns:repeat(2,1fr)}
 
+
+.penaltyTypeChoice{grid-template-columns:repeat(3,1fr)}
+.penaltyStrokeRow{display:grid;grid-template-columns:72px 1fr 72px;gap:8px;align-items:center}
+.penaltyStepBtn{
+  height:54px;border:1px solid #4e3b3d;border-radius:14px;background:#281418;color:#fff;
+  font-size:24px;font-weight:950
+}
+.penaltyStrokeDisplay{
+  height:54px;border:1px solid #4e3b3d;border-radius:14px;background:#120c0e;
+  display:flex;align-items:center;justify-content:center;gap:6px
+}
+.penaltyStrokeDisplay strong{font-size:26px}.penaltyStrokeDisplay span{font-size:12px;color:#d7b9bd}
+
 </style>
 </head>
 <body>
@@ -607,7 +620,7 @@ body.round-active .bottomnav{display:none!important}
               <strong id="clubBasisLabel">기준 거리</strong>
             </div>
             <div class="dockUtility">
-              <button id="penaltyBtn" class="dockAction danger">+1 PEN</button>
+              <button id="penaltyBtn" class="dockAction danger">페널티</button>
               <button id="onGreenBtn" class="dockAction green">그린 도착</button>
             </div>
           </div>
@@ -772,6 +785,31 @@ body.round-active .bottomnav{display:none!important}
   </div>
 </div>
 
+<div id="penaltyModal" class="modal hidden">
+  <div class="sheet penaltySheet">
+    <div class="sheetHead">
+      <div><strong>페널티 입력</strong><div class="sub">원인을 선택하고 벌타 수만 입력합니다.</div></div>
+      <button id="penaltyClose" class="x">×</button>
+    </div>
+
+    <div class="sectionLabel">원인</div>
+    <div id="penaltyTypeChoice" class="choice penaltyTypeChoice">
+      <button data-v="OB">OB</button>
+      <button data-v="HAZARD">해저드</button>
+      <button data-v="LOST_BALL">로스트 볼</button>
+    </div>
+
+    <div class="sectionLabel">벌타</div>
+    <div class="penaltyStrokeRow">
+      <button id="penaltyMinus" class="penaltyStepBtn">−</button>
+      <div class="penaltyStrokeDisplay"><strong id="penaltyStrokeValue">1</strong><span>타</span></div>
+      <button id="penaltyPlus" class="penaltyStepBtn">+</button>
+    </div>
+
+    <button id="savePenaltyBtn" class="btn primary full" style="margin-top:14px">페널티 저장</button>
+  </div>
+</div>
+
 <div id="puttModal" class="modal hidden">
   <div class="sheet puttSheet">
     <div class="sheetHead">
@@ -833,6 +871,7 @@ let stateMode='SMART';
 let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:3,slope:null,break:null,result:null};
+let penaltyDraft={type:null,strokes:1};
 let stateContext={type:'shot',required:false,reason:'',after:null};
 let round=null;
 
@@ -1126,7 +1165,7 @@ function emptyRound(course,nine){
   return {version:2,course,nine,tee,stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,shots:[],putts:0,puttsDetail:[],puttingState:null,
-      penalties:0,completed:false
+      penalties:0,penaltyEvents:[],completed:false
     })),
     pending:null};
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
@@ -1211,7 +1250,8 @@ function renderRound(){
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
   $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'그린 —';
-  $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' shots';
+  $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
+  $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
   const pending=round.pending;
   $('pendingCard').classList.toggle('hidden',!pending);
@@ -1411,7 +1451,38 @@ $('saveShotResultBtn').onclick=()=>{
 
 $('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'사용자 상태 체크',null);
 $('cancelShotBtn').onclick=()=>{if(confirm('선택한 Shot을 취소할까요?')){round.pending=null;save();renderRound()}};
-$('penaltyBtn').onclick=()=>{hole().penalties++;save();renderRound()};
+function resetPenaltyDraft(){
+  penaltyDraft={type:null,strokes:1};
+  setSelected($('penaltyTypeChoice'),'__');
+  $('penaltyStrokeValue').textContent='1';
+}
+$('penaltyBtn').onclick=()=>{resetPenaltyDraft();$('penaltyModal').classList.remove('hidden')};
+$('penaltyClose').onclick=()=>{$('penaltyModal').classList.add('hidden')};
+$('penaltyTypeChoice').onclick=e=>{
+  const v=e.target.closest('button')?.dataset.v;if(!v)return;
+  penaltyDraft.type=v;setSelected($('penaltyTypeChoice'),v);
+};
+$('penaltyMinus').onclick=()=>{
+  penaltyDraft.strokes=Math.max(1,(penaltyDraft.strokes||1)-1);
+  $('penaltyStrokeValue').textContent=String(penaltyDraft.strokes);
+};
+$('penaltyPlus').onclick=()=>{
+  penaltyDraft.strokes=Math.min(9,(penaltyDraft.strokes||1)+1);
+  $('penaltyStrokeValue').textContent=String(penaltyDraft.strokes);
+};
+$('savePenaltyBtn').onclick=()=>{
+  if(!penaltyDraft.type){alert('OB, 해저드, 로스트 볼 중 하나를 선택하세요.');return}
+  const h=hole();
+  h.penaltyEvents=h.penaltyEvents||[];
+  h.penaltyEvents.push({
+    type:penaltyDraft.type,
+    strokes:penaltyDraft.strokes,
+    hole:round.currentHole,
+    at:Date.now()
+  });
+  h.penalties=(h.penalties||0)+penaltyDraft.strokes;
+  save();$('penaltyModal').classList.add('hidden');renderRound();
+};
 $('onGreenBtn').onclick=openPutt;
 
 $('floClose').onclick=()=>{
