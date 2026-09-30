@@ -368,8 +368,8 @@ function renderRound(){
   $('gpsInfo').textContent=gps?gps.lat.toFixed(5)+', '+gps.lng.toFixed(5):'Waiting';
   $('gpsAcc').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'위치 권한 필요';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' shots';
-  $('pendingCard').classList.toggle('hidden',!round.pending);
-  $('clubCard').classList.toggle('hidden',!!round.pending);
+  $('pendingCard').classList.toggle('hidden',!round.pending || !!round.pending.flo);
+  $('clubCard').classList.toggle('hidden',!!round.pending && !round.pending.flo);
   $('lieCard').classList.toggle('hidden',hole().shots.length===0 && !round.pending);
   if(round.pending){
     $('pendingClub').textContent=round.pending.club;
