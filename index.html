@@ -55,9 +55,9 @@ textarea{resize:vertical;min-height:72px}
 .modal{position:fixed;inset:0;background:#02070bd9;z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:min(480px,100%);max-height:94svh;overflow:auto;background:#07131d;border:1px solid #355166;border-radius:22px 22px 0 0;padding:16px 14px max(18px,env(safe-area-inset-bottom))}
 .sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheetHead strong{font-size:24px;line-height:1.2}.x{border:1px solid #355166;background:#0c1c27;color:white;border-radius:50%;width:36px;height:36px;font-size:20px}
-.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.scale button,.choice button{border:1px solid #315168;background:#0b1a24;color:white;border-radius:12px;padding:14px 8px;font-weight:850;font-size:16px;line-height:1.2}.scale button.sel,.choice button.sel{background:var(--blue);border-color:var(--blue)}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.scale button,.choice button{border:1px solid #315168;background:#0b1a24;color:white;border-radius:14px;padding:16px 8px;font-weight:900;font-size:19px;line-height:1.15}.scale button.sel,.choice button.sel{background:var(--blue);border-color:var(--blue)}
 .choice{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.choice.state{grid-template-columns:repeat(4,1fr)}
-.sectionLabel{font-size:16px;font-weight:950;margin:18px 0 9px;line-height:1.25}.helper{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.45}
+.sectionLabel{font-size:19px;font-weight:950;margin:20px 0 10px;line-height:1.2}.helper{font-size:15px;color:var(--muted);margin-top:8px;line-height:1.5}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#061019f2;border-top:1px solid #294153;z-index:40;backdrop-filter:blur(14px);padding-bottom:env(safe-area-inset-bottom)}
 .bottomnav button{border:0;background:transparent;color:#819aaa;padding:10px 2px 9px;font-size:9px;font-weight:800}.bottomnav button b{display:block;font-size:17px;margin-bottom:3px}.bottomnav button.sel{color:#58a5ff}
 .scoreBig{text-align:center;font-size:50px;font-weight:1000;line-height:1}.scoreBig small{display:block;font-size:15px;color:var(--muted);margin-top:7px}
@@ -456,10 +456,10 @@ body.round-active .bottomnav{display:none!important}
 .resultChoice.three{grid-template-columns:repeat(3,1fr)}
 .resultChoice.five{grid-template-columns:repeat(5,1fr)}
 .resultChoice button,.puttResultChoice button{
-  min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;font-size:20px;font-weight:950
+  min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;font-size:27px;font-weight:950
 }
-.resultChoice button span,.puttResultChoice button span{font-size:12px;letter-spacing:.02em;line-height:1.2}
+.resultChoice button span,.puttResultChoice button span{font-size:15px;letter-spacing:.01em;line-height:1.15;font-weight:900}
 .choice button.sel{outline:2px solid #ff9b32;outline-offset:-2px;background:#173429}
 .stateReason{
   border:1px solid rgba(255,155,50,.45);background:rgba(255,145,28,.10);color:#ffd4aa;
@@ -478,8 +478,8 @@ body.round-active .bottomnav{display:none!important}
 .pendingActions{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:420px){
   .resultChoice.five,.puttResultChoice{grid-template-columns:repeat(5,1fr);gap:4px}
-  .resultChoice button,.puttResultChoice button{font-size:20px;min-height:58px;padding:7px 3px}
-  .resultChoice button span,.puttResultChoice button span{font-size:11px}
+  .resultChoice button,.puttResultChoice button{font-size:25px;min-height:68px;padding:8px 3px}
+  .resultChoice button span,.puttResultChoice button span{font-size:14px}
   .roundMapStage{height:62svh;min-height:460px}
 }
 
@@ -729,9 +729,10 @@ body.round-active .bottomnav{display:none!important}
     <div id="endLieChoice" class="choice resultChoice"></div>
 
     <div class="sectionLabel">구질</div>
-    <div id="flightChoice" class="choice resultChoice four">
+    <div id="flightChoice" class="choice resultChoice five">
       <button data-v="HOOK">↶<span>훅</span></button>
       <button data-v="DRAW">⌒<span>드로우</span></button>
+      <button data-v="STRAIGHT">↑<span>똑바로</span></button>
       <button data-v="FADE">⌒<span>페이드</span></button>
       <button data-v="SLICE">↷<span>슬라이스</span></button>
     </div>
