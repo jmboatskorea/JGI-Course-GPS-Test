@@ -1636,6 +1636,12 @@ function renderHoleReview(holeNo){
       '<div class="metric"><div class="k">PUTTS</div><div class="v">'+(h.putts||0)+'</div></div>'+
       '<div class="metric"><div class="k">PEN</div><div class="v">'+(h.penalties||0)+'</div></div>'+
     '</div>'+
+    '<div class="grid2" style="margin-top:9px">'+
+      '<div class="metric"><div class="k">OFF THE TEE</div><div class="s">'+(r.tee.club?safeText(r.tee.club)+' · '+safeText(r.tee.endLie)+' · '+dirLabel(r.tee.direction):'No tee shot')+'</div></div>'+
+      '<div class="metric"><div class="k">APPROACH</div><div class="s">'+r.approach.greenHits+'/'+r.approach.attempts+' Green · Short '+r.approach.short+' · Long '+r.approach.long+'</div></div>'+
+      '<div class="metric"><div class="k">AROUND GREEN</div><div class="s">'+r.around.greenHits+'/'+r.around.attempts+' finished on Green</div></div>'+
+      '<div class="metric"><div class="k">PUTTING</div><div class="s">'+r.putting.putts+' putts'+(r.putting.firstPutt!==null?' · 1st '+Number(r.putting.firstPutt).toFixed(1)+'m':'')+(r.putting.threePutt?' · 3-putt':'')+'</div></div>'+
+    '</div>'+
     '<div class="dataNote"><b>KEY MISS</b> · '+r.keyMiss+'</div>'+
     '<div class="shotLog">'+(shots.length?shots.map((s,i)=>
       '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+safeText(s.club)+'</strong><p>'+
