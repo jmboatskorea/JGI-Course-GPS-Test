@@ -1,0 +1,6 @@
+{
+  "name": "jgi-course-gps-test",
+  "private": true,
+  "scripts": {"convert:course": "node scripts/convert-course.cjs"},
+  "engines": {"node": ">=20"}
+}
