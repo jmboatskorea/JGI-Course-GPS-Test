@@ -303,6 +303,16 @@ select,input,textarea{
   .mapPlaceholder{height:320px}
 }
 
+
+.googleMapShell{padding:0;overflow:hidden;border-style:solid;position:relative}
+.google-map{position:absolute;inset:0;width:100%;height:100%;background:#0b2018}
+.map-load-status{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;background:linear-gradient(145deg,rgba(7,28,20,.96),rgba(5,18,14,.96));transition:opacity .25s ease}
+.map-load-status.ready{opacity:0;pointer-events:none}
+.map-load-status.error{background:linear-gradient(145deg,rgba(52,18,16,.94),rgba(25,9,8,.96))}
+.map-load-status strong{display:block;font-size:18px;margin-top:9px}
+.map-load-status span{display:block;color:#a9c0b2;font-size:12px;line-height:1.5;margin-top:6px}
+.gm-style .gm-style-cc{font-size:9px}
+
 </style>
 </head>
 <body>
@@ -370,11 +380,12 @@ select,input,textarea{
         </div>
       </div>
 
-      <div class="mapPlaceholder">
-        <div class="inside">
+      <div class="mapPlaceholder googleMapShell">
+        <div id="googleMap" class="google-map" aria-label="Jagorawi Old Course satellite map"></div>
+        <div id="mapLoadStatus" class="map-load-status">
           <div class="mapIcon">⌖</div>
-          <strong>Course Map Area</strong>
-          <span>Google Maps + Golf Intelligence<br>연결 예정<br><br>현재는 입력 UX만 검증합니다.</span>
+          <strong>Google Satellite</strong>
+          <span>Jagorawi Old Course 지도를 불러오는 중...</span>
         </div>
       </div>
 
@@ -520,6 +531,78 @@ let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
 let puttDraft={distance:null,count:null};
 let round=null;
 
+// Google Maps V1: one Map instance is created and reused for the full round.
+const GOOGLE_MAPS_API_KEY='AIzaSyBUumg5ijkJorEnMPDUBq0ftjFCmo4McCU';
+const JAGORAWI_OLD_CENTER={lat:-6.454335,lng:106.876760};
+let googleMap=null;
+let playerMarker=null;
+let googleMapsRequested=false;
+
+window.initGoogleMap=function(){
+  const el=$('googleMap');
+  if(!el||!window.google?.maps)return;
+  googleMap=new google.maps.Map(el,{
+    center:JAGORAWI_OLD_CENTER,
+    zoom:16,
+    mapTypeId:'satellite',
+    tilt:0,
+    heading:0,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:false,
+    rotateControl:false,
+    scaleControl:true,
+    zoomControl:true,
+    gestureHandling:'greedy'
+  });
+  const status=$('mapLoadStatus');
+  if(status)status.classList.add('ready');
+  updatePlayerMarker();
+};
+
+window.gm_authFailure=function(){
+  const status=$('mapLoadStatus');
+  if(status){
+    status.classList.remove('ready');
+    status.classList.add('error');
+    status.querySelector('strong').textContent='Google Maps 인증 오류';
+    status.querySelector('span').textContent='API Key · 웹사이트 제한 · Maps JavaScript API 설정을 확인하세요.';
+  }
+};
+
+function loadGoogleMaps(){
+  if(googleMapsRequested||window.google?.maps)return;
+  googleMapsRequested=true;
+  const s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_MAPS_API_KEY)+'&callback=initGoogleMap&v=weekly';
+  s.async=true;
+  s.defer=true;
+  s.onerror=()=>{
+    const status=$('mapLoadStatus');
+    if(status){
+      status.classList.add('error');
+      status.querySelector('strong').textContent='Google Satellite 로드 실패';
+      status.querySelector('span').textContent='네트워크 또는 Google Maps API 설정을 확인하세요.';
+    }
+  };
+  document.head.appendChild(s);
+}
+
+function updatePlayerMarker(){
+  if(!googleMap||!gps||!window.google?.maps)return;
+  const pos={lat:gps.lat,lng:gps.lng};
+  if(!playerMarker){
+    playerMarker=new google.maps.Marker({
+      map:googleMap,
+      position:pos,
+      title:'Player GPS',
+      zIndex:50
+    });
+  }else{
+    playerMarker.setPosition(pos);
+  }
+}
+
 function emptyRound(course,nine){
   return {version:1,course,nine,tee,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({hole:i+1,par:null,shots:[],putts:null,firstPutt:null,penalties:0,completed:false})),
@@ -541,6 +624,7 @@ function startGPS(){
   watchId=navigator.geolocation.watchPosition(p=>{
     gps={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,time:p.timestamp};
     $('gpsTop').innerHTML='<span class="statusDot '+(gps.accuracy>15?'warn':'')+'"></span>±'+Math.round(gps.accuracy)+'m';
+    updatePlayerMarker();
     renderRound();
   },e=>{$('gpsTop').textContent=e.code===1?'GPS 권한 필요':'GPS 오류'},
   {enableHighAccuracy:true,maximumAge:0,timeout:15000});
@@ -708,6 +792,7 @@ function renderStory(){
 }
 
 initScales();
+loadGoogleMaps();
 startGPS();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
