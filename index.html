@@ -583,7 +583,7 @@ body.round-active .bottomnav{display:none!important}
 
         <div class="mapRightControls">
           <button id="recenterBtn" class="mapControlBtn" title="현재 위치로 이동">◎</button>
-          <button id="autoBtn" class="mapControlBtn mapControlText" title="Golf Intelligence 연결 후 자동 방향 정렬">AUTO</button>
+          <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">AUTO</button>
           <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target 삭제">×</button>
         </div>
 
@@ -856,6 +856,7 @@ body.round-active .bottomnav{display:none!important}
   </div>
 </div>
 
+<script src="jagorawi-old-course-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
@@ -886,6 +887,70 @@ let targetLine=null;
 let targetDistanceM=null;
 let greenDistanceM=null; // Golf Intelligence 연결 후 사용
 let googleMapsRequested=false;
+let courseOverlays=[];
+let courseAutoHeading=true;
+
+function courseHoleData(){
+  return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
+}
+function clearCourseOverlays(){
+  courseOverlays.forEach(x=>x.setMap(null));
+  courseOverlays=[];
+}
+function unpackCourseShape(item){
+  const names={H:'HOLE_BOUNDARY',F:'FAIRWAY',B:'BUNKER',G:'GREEN',W:'WATER',P:'WATER_PATH',T:'TEE'};
+  return {type:names[item[0]]||item[0],line:item[1]===1,path:(item[2]||[]).map(p=>({lat:p[0],lng:p[1]}))};
+}
+function courseShapes(h){
+  if(!h)return [];
+  const own=(h.s||[]).map(unpackCourseShape);
+  const water=(h.w||[]).map(i=>window.JGI_OLD_COURSE_DATA?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
+  return own.concat(water);
+}
+function refreshGreenDistance(){
+  const h=courseHoleData();
+  if(!h?.g||!gps){greenDistanceM=null;return}
+  greenDistanceM=hav({lat:gps.lat,lng:gps.lng},{lat:h.g[0],lng:h.g[1]});
+}
+function fitCurrentHole(useHeading=true){
+  if(!googleMap)return;
+  const h=courseHoleData(); if(!h)return;
+  const shapes=courseShapes(h);
+  const boundary=shapes.filter(s=>s.type==='HOLE_BOUNDARY');
+  const source=boundary.length?boundary:shapes;
+  const bounds=new google.maps.LatLngBounds();
+  source.forEach(s=>s.path.forEach(p=>bounds.extend(p)));
+  if(!bounds.isEmpty()){
+    googleMap.fitBounds(bounds,42);
+    google.maps.event.addListenerOnce(googleMap,'idle',()=>{
+      if(courseAutoHeading&&useHeading&&Number.isFinite(h.b)){
+        try{googleMap.setHeading(h.b);googleMap.setTilt(0)}catch{}
+      }
+    });
+  }
+}
+function renderCourseHole(){
+  if(!googleMap||!window.google?.maps)return;
+  clearCourseOverlays();
+  const h=courseHoleData();
+  if(!h)return;
+  const colors={
+    HOLE_BOUNDARY:'#ffffff',FAIRWAY:'#63ee79',BUNKER:'#ffd166',
+    GREEN:'#ed74f4',WATER:'#46beff',WATER_PATH:'#46beff',TEE:'#ff874b'
+  };
+  const z={WATER:1,WATER_PATH:1,HOLE_BOUNDARY:2,FAIRWAY:3,BUNKER:4,TEE:5,GREEN:6};
+  courseShapes(h).forEach(s=>{
+    const c=colors[s.type]||'#ffffff';
+    const common={map:googleMap,strokeColor:c,strokeOpacity:.78,strokeWeight:s.type==='HOLE_BOUNDARY'?2:1.6,clickable:false,zIndex:z[s.type]||2};
+    const overlay=s.line
+      ? new google.maps.Polyline({...common,path:s.path})
+      : new google.maps.Polygon({...common,paths:s.path,fillColor:c,fillOpacity:s.type==='HOLE_BOUNDARY'?.035:(s.type==='WATER'?.14:.22)});
+    courseOverlays.push(overlay);
+  });
+  refreshGreenDistance();
+  fitCurrentHole(true);
+  if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
+}
 
 window.initGoogleMap=function(){
   const el=$('googleMap');
@@ -908,6 +973,7 @@ window.initGoogleMap=function(){
   if(status)status.classList.add('ready');
   googleMap.addListener('click',e=>setTarget(e.latLng));
   updatePlayerMarker();
+  renderCourseHole();
 };
 
 window.gm_authFailure=function(){
@@ -1196,7 +1262,7 @@ function showScreen(name){
   document.body.classList.toggle('round-active',name==='round');
   if(name!=='setup'&&name!=='round')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
-  if(name==='round')renderRound();
+  if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
   if(name==='overview')renderOverview();
   if(name==='performance')render퍼포먼스();
   if(name==='flo')renderFlo();
@@ -1249,8 +1315,9 @@ function renderRound(){
   $('holeTitle').textContent='Hole '+round.currentHole;
   $('holeParText').textContent=hole().par?' · Par '+hole().par:' · 코스 데이터 대기';
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
+  refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
-  $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'그린 —';
+  $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
   $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
@@ -1281,7 +1348,7 @@ function finalizeHoleAfterPutting(){
   h.completed=true;h.completedAt=Date.now();
   save();$('puttModal').classList.add('hidden');clearTarget();
   if(round.currentHole<18){
-    round.currentHole++;currentLie='Unknown';save();renderRound();
+    round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
   }else{
     round.completedAt=Date.now();save();showScreen('overview');
   }
@@ -1391,7 +1458,7 @@ $('resumeRoundBtn').onclick=()=>{round=load();tee=round.tee||'Regular';stateMode
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
   if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}
-  round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';clearTarget();save();renderRound();
+  round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';clearTarget();save();renderRound();renderCourseHole();
 });
 
 $('clubSuggestions').addEventListener('click',e=>{
@@ -1410,7 +1477,7 @@ $('allClubList').addEventListener('click',e=>{
 
 $('recenterBtn').onclick=recenterMap;
 $('clearTargetBtn').onclick=clearTarget;
-$('autoBtn').onclick=()=>alert('Golf Intelligence Tee/Green 데이터 연결 후 AUTO Target/방향 및 AUTO Shot Result 판정을 활성화합니다.');
+$('autoBtn').onclick=()=>{courseAutoHeading=true;fitCurrentHole(true)};
 $('reportBtn').onclick=()=>showScreen('overview');
 
 $('shotResultBtn').onclick=openShotResult;
