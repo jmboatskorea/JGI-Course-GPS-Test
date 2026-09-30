@@ -1,1112 +1,507 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#07131d" />
-  <title>JGI · Player Strategy</title>
-  <style>
-    :root{
-      --bg:#0b0b0b; --panel:#171717; --panel2:#222; --text:#f7f7f7;
-      --muted:#a8a8a8; --orange:#ff7a00; --green:#57d163; --red:#ff5c5c; --line:#343434;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; background:var(--bg); color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    }
-    .app{max-width:720px;margin:0 auto;padding:18px 14px 40px}
-    .brand{font-weight:900;font-size:22px;letter-spacing:.5px}
-    .sub{color:var(--muted);font-size:13px;margin-top:4px}
-    .card{
-      background:var(--panel); border:1px solid var(--line); border-radius:18px;
-      padding:16px; margin-top:14px;
-    }
-    .section-title{font-weight:800;font-size:14px;letter-spacing:.35px;margin-bottom:12px}
-    .btn{
-      width:100%; border:0; border-radius:15px; padding:16px 14px;
-      font-size:17px; font-weight:900; cursor:pointer; margin-top:10px;
-    }
-    .btn-primary{background:var(--orange);color:#111}
-    .btn-dark{background:#2a2a2a;color:#fff;border:1px solid #3f3f3f}
-    .btn-danger{background:#321818;color:#ffb2b2;border:1px solid #5d2323}
-    input[type=file]{width:100%;color:#ddd}
-    textarea,input[type=text]{
-      width:100%; background:#101010;color:#fff;border:1px solid #383838;
-      border-radius:12px;padding:12px;font-size:15px;
-    }
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .metric{background:#101010;border:1px solid #333;border-radius:14px;padding:12px}
-    .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-    .value{font-size:19px;font-weight:900;margin-top:4px;word-break:break-word}
-    .feature{
-      text-align:center;background:#101010;border:1px solid #333;border-radius:16px;padding:18px 12px;
-    }
-    .feature .big{font-size:28px;font-weight:1000;color:var(--orange)}
-    .status{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.45}
-    .good{color:var(--green)!important}.bad{color:var(--red)!important}
-    .history{display:flex;flex-direction:column;gap:8px}
-    .row{background:#101010;border:1px solid #303030;border-radius:12px;padding:10px}
-    .row b{font-size:14px}
-    .row small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#2a2a2a;font-size:11px;margin-right:5px}
-    .actual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-    .actual-btn{background:#242424;color:#fff;border:1px solid #3b3b3b;border-radius:12px;padding:13px 6px;font-size:14px;font-weight:800}
-    .actual-btn.selected{background:var(--orange);color:#111;border-color:var(--orange)}
-    .compare-box{margin-top:12px;background:#101010;border:1px solid #333;border-radius:14px;padding:13px}
-    .compare-line{display:flex;justify-content:space-between;gap:12px;margin-top:6px;font-size:14px}
-    .compare-result{font-size:18px;font-weight:900;text-align:center;margin-top:11px}
-    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-    .summary .metric{padding:10px;text-align:center}
-    .summary .value{font-size:18px}
-    .footer-note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:14px}
-    .hidden{display:none}
-      .round-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .round-heading label{font-weight:800;font-size:20px}
-    #roundHole{min-height:48px;background:#252525;color:#fff;border:1px solid #777;border-radius:12px;padding:8px 16px;font-size:20px;font-weight:800}
-    .mode-later{background:transparent;color:#aaa;border:1px solid #555;border-radius:12px;padding:9px;font-size:11px}
-    .btn:disabled{opacity:.45;cursor:default}
-    #courseMap{display:block;width:100%;height:auto;background:#294d38;border:1px solid #52755c;border-radius:14px;margin-top:14px}
-    #courseMap text{font-family:inherit;paint-order:stroke;stroke:#163125;stroke-width:3px;stroke-linejoin:round;fill:#fff;font-size:11px}
-    .map-legend{display:flex;flex-wrap:wrap;gap:9px 14px;margin-top:12px;font-size:11px;color:#ddd}
-    .map-legend span::before{content:'';display:inline-block;background:var(--swatch);width:10px;height:10px;border-radius:3px;margin-right:5px}
-    .terrain-panel{margin-top:14px;border:1px dashed #555;border-radius:12px;padding:12px;font-size:13px}
-    button:focus-visible,select:focus-visible{outline:3px solid #fff;outline-offset:3px}
-
-    :root{--bg:#07131d;--panel:#0b1a25;--line:#344b5b;--orange:#0075ff;--muted:#a5b7c5}
-    body{background:#050d14}.app{max-width:480px;padding:0 0 20px;background:var(--bg)}
-    .player-screen{min-height:100svh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-    .player-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:18px 14px 12px}
-    .brand{font-size:14px;letter-spacing:.1px;line-height:1.4}.sub{font-size:11px;letter-spacing:1.3px;margin-top:2px}
-    .map-mode{display:flex;border:1px solid #40576a;border-radius:14px;background:#13222e;flex-shrink:0;overflow:hidden}
-    .map-mode button{border:0;color:white;background:none;font-size:12px;padding:12px 10px;font-weight:700}
-    .map-mode .selected{background:#0075ff;border-radius:12px}.map-mode button:disabled{color:#93a7b7}
-    #roundHole{display:grid;grid-template-columns:repeat(9,1fr);gap:0;padding:0;margin:0 12px;min-height:42px;background:#0b1923;border:1px solid #496273;border-radius:12px;overflow:hidden}
-    #roundHole button{min-width:0;border:0;background:transparent;color:#fff;font-size:15px;min-height:42px;border-radius:10px}
-    #roundHole button[aria-pressed=true]{background:#0075ff;font-weight:800}
-    .hole-info{display:flex;align-items:center;justify-content:space-between;padding:12px 17px;gap:8px;min-height:47px}
-    .hole-info strong{font-size:20px}.hole-info span{font-size:15px;font-weight:700}.hole-info [hidden]{display:none}
-    .map-stage{position:relative;flex:1;min-height:350px;overflow:hidden;background:#294d38}
-    #courseMap{position:absolute;inset:0;width:100%;height:100%;margin:0;border:0;border-radius:0}
-    .map-legend{position:absolute;left:10px;top:10px;margin:0;display:grid;gap:6px;padding:9px 10px;background:#06131dde;border:1px solid #496273;border-radius:12px;font-size:10px;pointer-events:none}
-    .map-legend span::before{width:11px;height:11px;vertical-align:-1px}
-    .map-message{position:absolute;left:12px;right:12px;bottom:10px;text-align:center;font-size:11px;color:#fff;background:#07131ddb;border-radius:8px;padding:6px;pointer-events:none}
-    .map-attribution{position:absolute;bottom:0;right:0;left:0;padding:3px 6px;background:#ffffffeb;color:#17212a;font-size:9px;line-height:1.3;text-align:right}.map-attribution a{color:#124d80}
-    .satellite-status{position:absolute;left:10px;top:10px;max-width:65%;padding:6px;background:#07131ddd;color:white;font-size:11px;border-radius:6px;pointer-events:none}.satellite-status:empty{display:none}
-    .map-stage.satellite .map-legend{display:none}.map-stage.satellite .map-message{bottom:34px}
-    .map-message:empty{display:none}.map-top-tools{position:absolute;right:10px;top:10px;display:flex;gap:5px;z-index:4}
-    .nav-hole{width:34px;height:34px;border-radius:50%;border:1px solid #496273;color:white;background:#07131de8;font-size:20px;cursor:pointer}.nav-hole:disabled{opacity:.35}
-    .green-detail-btn{height:34px;border-radius:17px;border:1px solid #496273;color:#fff;background:#07131de8;padding:0 11px;font-size:11px;font-weight:800;cursor:pointer}
-    .green-detail-btn:disabled{opacity:.35}
-    .map-stage.satellite #courseMap{touch-action:none;cursor:grab}
-    .map-stage.satellite #courseMap.dragging{cursor:grabbing}
-    .green-modal{position:fixed;inset:0;z-index:50;background:#02070ccf;display:flex;align-items:flex-end;justify-content:center}
-    .green-modal[hidden]{display:none}
-    .green-sheet{width:min(480px,100%);max-height:92svh;background:#07131d;border:1px solid #40576a;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -18px 60px #0008}
-    .green-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #263d4d}
-    .green-sheet-header strong{font-size:17px}.green-close{width:38px;height:38px;border-radius:50%;border:1px solid #40576a;background:#0d2230;color:#fff;font-size:23px}
-    .green-detail-stage{position:relative;height:min(62svh,520px);background:#294d38}
-    #greenDetailMap{display:block;width:100%;height:100%;background:#294d38}
-    .green-detail-info{padding:12px 16px 16px;color:#b7c9d6;font-size:12px;display:flex;justify-content:space-between;gap:12px;border-top:1px solid #263d4d}
-    .green-detail-info b{color:#fff}
-    .strategy-card{margin:0 10px;border:1px solid #40576a;border-radius:16px;padding:14px;background:linear-gradient(130deg,#0c1d29,#051018);display:grid;grid-template-columns:1fr 1.2fr;gap:14px}
-    .strategy-card .label{text-transform:none;font-size:12px;color:#d5e1e8;letter-spacing:0}.strategy-card .value{font-size:25px;margin-top:6px}
-    .strategy-card .position-value{font-size:14px;line-height:1.5}.strategy-card>div+div{border-left:1px solid #304653;padding-left:14px}
-    .elevation{font-size:11px;color:#a5b7c5;margin-top:5px}.gps-summary{font-size:10px;color:#a5b7c5;margin-top:4px}
-    .player-footer{padding:9px 14px max(12px,env(safe-area-inset-bottom))}.player-footer .btn{margin:0;background:#0075ff;color:white;min-height:54px;position:relative;font-size:18px}.player-footer .btn::after{content:'›';position:absolute;right:18px;font-size:28px;top:9px}
-    .tools{margin:12px;border:1px solid #344b5b;border-radius:14px;padding:12px}.tools>summary{cursor:pointer;font-size:13px;color:#b4c7d6;min-height:24px}.tools .card{padding:12px}.tools .btn{font-size:14px;padding:12px}.tools input{max-width:100%}
-    button,summary{touch-action:manipulation}button:focus-visible,summary:focus-visible{outline:2px solid white;outline-offset:-3px}
-    @media(min-height:800px){.map-stage{min-height:430px}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07131d">
+<title>JGI · AGI Player V1</title>
+<style>
+:root{
+  --bg:#050c12;--panel:#0b1822;--panel2:#102330;--line:#284153;
+  --text:#f4f8fb;--muted:#8fa7b8;--blue:#0b79ff;--green:#44d17a;
+  --red:#ff5d6c;--amber:#ffb648;--purple:#a58cff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#02070b;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:480px;margin:0 auto;min-height:100svh;background:var(--bg);padding-bottom:82px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;background:#07131df2;border-bottom:1px solid #183040;backdrop-filter:blur(14px)}
+.brand{font-weight:900;letter-spacing:.4px}.brand small{display:block;font-weight:700;color:var(--muted);font-size:10px;letter-spacing:1.2px;margin-top:2px}
+.pill{border:1px solid #34536a;background:#0b1a25;color:white;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:800}
+.screen{padding:12px}.hidden{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.title{font-size:16px;font-weight:900}.sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.metric{background:#08131b;border:1px solid #223b4c;border-radius:12px;padding:10px;min-width:0}
+.metric .k{font-size:10px;color:var(--muted)}.metric .v{font-size:18px;font-weight:900;margin-top:3px}.metric .s{font-size:10px;color:#b7c8d4;margin-top:2px}
+.btn{border:0;border-radius:13px;padding:13px 14px;font-weight:900;color:white;background:#203747}
+.btn.primary{background:var(--blue)}.btn.green{background:#0d7e48}.btn.ghost{background:#0c1821;border:1px solid #315168}.btn.danger{background:#3b151a;color:#ffc5cb}.btn.small{padding:9px 11px;font-size:12px}
+.btn.full{width:100%}
+.field{display:grid;gap:6px;margin-top:12px}.field label{font-size:11px;color:var(--muted);font-weight:800}
+select,input,textarea{width:100%;background:#08131b;color:white;border:1px solid #2c4658;border-radius:12px;padding:12px}
+textarea{resize:vertical;min-height:72px}
+.segment{display:flex;background:#08131b;border:1px solid #2b4658;border-radius:12px;overflow:hidden}
+.segment button{flex:1;border:0;background:transparent;color:#bfd0dc;padding:10px 6px;font-size:12px;font-weight:800}
+.segment button.sel{background:var(--blue);color:white}
+.setupHero{padding:22px 14px 10px}.setupHero h1{font-size:28px;margin:0 0 6px}.setupHero p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.mapPlaceholder{height:330px;border:1px dashed #4a6374;border-radius:16px;background:linear-gradient(145deg,#09151e,#0d2230);display:flex;align-items:center;justify-content:center;text-align:center;padding:28px;position:relative;overflow:hidden}
+.mapPlaceholder:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px}
+.mapPlaceholder .inside{position:relative;z-index:2}.mapIcon{font-size:42px;opacity:.65}.mapPlaceholder strong{display:block;font-size:17px;margin-top:10px}.mapPlaceholder span{display:block;color:#8da7b8;font-size:12px;line-height:1.55;margin-top:7px}
+.holebar{display:flex;gap:6px;overflow:auto;padding:2px 0 8px;scrollbar-width:none}.holebar::-webkit-scrollbar{display:none}
+.holebtn{min-width:38px;height:38px;border-radius:11px;border:1px solid #2b4658;background:#0a1720;color:#dce8ef;font-weight:900}
+.holebtn.sel{background:var(--blue);border-color:var(--blue)}
+.statusDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:5px}
+.statusDot.warn{background:var(--amber)}.statusDot.bad{background:var(--red)}
+.clubgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+.club{border:1px solid #315168;background:#0a1720;color:white;border-radius:12px;padding:14px 4px;font-weight:900}
+.club:active{transform:scale(.98)}.club.primary{background:#0d5db6;border-color:#1b83ff}
+.lieRow{display:flex;gap:6px;overflow:auto;scrollbar-width:none}.lie{white-space:nowrap;border:1px solid #315168;background:#08131b;color:#c9d9e2;border-radius:999px;padding:9px 12px;font-size:11px;font-weight:800}
+.lie.sel{background:#163d57;border-color:#4f8bb2;color:white}
+.pending{border-color:#1e75ad;background:linear-gradient(135deg,#0b1b28,#0a2633)}
+.pending .clubName{font-size:27px;font-weight:1000}.pending .hint{font-size:12px;color:#a9c2d1;line-height:1.5;margin-top:6px}
+.floBadge{display:inline-flex;gap:6px;align-items:center;background:#102d21;color:#7ce3a6;border:1px solid #28613f;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}
+.modal{position:fixed;inset:0;background:#02070bd9;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(480px,100%);max-height:94svh;overflow:auto;background:#07131d;border:1px solid #355166;border-radius:22px 22px 0 0;padding:16px 14px max(18px,env(safe-area-inset-bottom))}
+.sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheetHead strong{font-size:19px}.x{border:1px solid #355166;background:#0c1c27;color:white;border-radius:50%;width:36px;height:36px;font-size:20px}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.scale button,.choice button{border:1px solid #315168;background:#0b1a24;color:white;border-radius:10px;padding:11px 4px;font-weight:800}.scale button.sel,.choice button.sel{background:var(--blue);border-color:var(--blue)}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.choice.state{grid-template-columns:repeat(4,1fr)}
+.sectionLabel{font-size:12px;font-weight:900;margin:14px 0 7px}.helper{font-size:10px;color:var(--muted);margin-top:5px}
+.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#061019f2;border-top:1px solid #294153;z-index:40;backdrop-filter:blur(14px);padding-bottom:env(safe-area-inset-bottom)}
+.bottomnav button{border:0;background:transparent;color:#819aaa;padding:10px 2px 9px;font-size:9px;font-weight:800}.bottomnav button b{display:block;font-size:17px;margin-bottom:3px}.bottomnav button.sel{color:#58a5ff}
+.scoreBig{text-align:center;font-size:50px;font-weight:1000;line-height:1}.scoreBig small{display:block;font-size:15px;color:var(--muted);margin-top:7px}
+.scorecard{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}.scoreCell{background:#08131b;border:1px solid #213a4b;border-radius:9px;text-align:center;padding:7px 2px;font-size:10px}.scoreCell b{display:block;font-size:14px;margin-top:3px}
+.sgBox{text-align:center;padding:16px}.sgBox .big{font-size:28px;font-weight:1000;color:#8ea5b4}.pendingText{color:#8ea5b4;font-size:12px;line-height:1.55}
+.barRow{display:grid;grid-template-columns:72px 1fr 34px;gap:8px;align-items:center;margin:8px 0;font-size:11px}.bar{height:8px;background:#0a151d;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue);border-radius:99px}.bar.think i{background:var(--red)}.bar.routine i{background:var(--green)}
+.storyBlock{border-left:3px solid #315168;padding:11px 12px;background:#08131b;border-radius:0 12px 12px 0;margin-top:9px}.storyBlock strong{font-size:13px}.storyBlock p{font-size:12px;color:#c3d2db;line-height:1.55;margin:6px 0 0}
+.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}
+.note{font-size:11px;color:var(--muted);line-height:1.5}
+hr{border:0;border-top:1px solid #203746;margin:12px 0}
+@media(min-width:700px){body{padding:24px 0}.app{border:1px solid #1f3444;border-radius:22px;overflow:hidden;min-height:calc(100svh - 48px)}.bottomnav{bottom:24px;border-radius:0 0 22px 22px}}
+</style>
 </head>
 <body>
 <div class="app">
-  <section class="player-screen" aria-label="Old Course Player Strategy">
-    <header class="player-header"><div><div class="brand">JAGORAWI GOLF CLUB</div><div class="sub">OLD COURSE</div></div><div class="map-mode" aria-label="Map style"><button id="vectorMode" aria-pressed="false">Vector</button><button id="satelliteMode" class="selected" aria-pressed="true">Satellite</button></div></header>
-    <nav id="roundHole" aria-label="Select hole"></nav>
-    <div class="hole-info"><strong id="holeTitle">Hole 1</strong><span id="holePar" hidden></span><span id="holeDistance" hidden></span><span id="holeSI" hidden></span></div>
-    <div class="map-stage">
-      <svg id="courseMap" viewBox="0 0 360 540" role="img" aria-label="Selected hole strategy map"></svg>
-      <div class="map-legend"><span style="--swatch:#c3df72">Tee</span><span style="--swatch:#61a760">Fairway</span><span style="--swatch:#a1e6a0">Green</span><span style="--swatch:#f1d398">Bunker</span><span style="--swatch:#65b8e9">Water</span><span style="--swatch:#294d38">Rough</span></div>
-      <div class="map-top-tools"><button id="greenDetailBtn" class="green-detail-btn" type="button" disabled>Green</button><button id="prevHole" class="nav-hole" aria-label="Previous hole">‹</button><button id="nextHole" class="nav-hole" aria-label="Next hole">›</button></div>
-      <div id="satelliteStatus" class="satellite-status" role="status"></div>
-      <div id="mapAttribution" class="map-attribution" hidden></div>
-      <div id="mapStatus" class="map-message" role="status"></div>
-    </div>
-    <div class="strategy-card"><div><div class="label">Current Position</div><div id="positionInfo" class="value position-value">Waiting for GPS</div><div id="gpsSummary" class="gps-summary" role="status">GPS ready to start</div></div><div><div class="label">Distance to Green</div><div id="greenDistance" class="value">—</div><div class="elevation">Elevation · Unavailable</div></div></div>
-    <div class="player-footer"><button id="roundStart" class="btn btn-primary">Start Round</button></div>
-  </section>
-  <div id="greenModal" class="green-modal" hidden role="dialog" aria-modal="true" aria-label="Green Detail">
-    <div class="green-sheet">
-      <div class="green-sheet-header"><strong id="greenDetailTitle">Green Detail</strong><button id="greenClose" class="green-close" type="button" aria-label="Close">×</button></div>
-      <div class="green-detail-stage"><svg id="greenDetailMap" viewBox="0 0 360 440" role="img" aria-label="Green satellite detail"></svg></div>
-      <div class="green-detail-info"><span><b>Green Center</b><br>Satellite detail</span><span><b>Elevation</b><br>Unavailable</span></div>
-    </div>
-  </div>
-  <details class="tools"><summary>Course data &amp; GPS details</summary>
-    <div id="roundStatus" class="status" role="status"></div><div id="trackingStatus" class="status" role="status"></div><div id="roundStorageStatus" class="status bad"></div>
-    <div class="terrain-panel"><b>Terrain / Elevation</b><div id="terrainStatus" class="status"></div><div id="elevationInfo" class="status"></div></div>
+  <header class="topbar">
+    <div class="brand">AGI PLAYER<small>PRO ROUND INTELLIGENCE · V1</small></div>
+    <button id="gpsTop" class="pill">GPS 준비</button>
+  </header>
 
-  <div class="card">
-    <div class="section-title">1. 코스 GeoJSON 불러오기</div>
-    <input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json"/>
-    <button class="btn btn-dark" id="loadBtn">파일 불러오기</button>
-    <div id="geoStatus" class="status">불러온 GeoJSON 파일이 없습니다.</div>
-  </div>
-
-  <div class="card">
-    <div class="section-title">2. 현재 GPS</div>
-    <div class="grid">
-      <div class="metric"><div class="label">위도</div><div class="value" id="lat">—</div></div>
-      <div class="metric"><div class="label">경도</div><div class="value" id="lng">—</div></div>
-      <div class="metric"><div class="label">GPS 정확도</div><div class="value" id="acc">—</div></div>
-      <div class="metric"><div class="label">홀</div><div class="value" id="hole">—</div></div>
-    </div>
-    <button class="btn btn-dark" id="gpsBtn">현재 GPS 확인</button>
-    <div id="gpsStatus" class="status">아직 GPS를 확인하지 않았습니다.</div>
-  </div>
-
-  <div class="card">
-    <div class="section-title">3. 코스 위치 판정</div>
-    <div class="feature">
-      <div class="label">현재 위치</div>
-      <div class="big" id="detected">—</div>
-      <div class="status" id="detail">GeoJSON을 불러온 후 GPS를 확인하세요.</div>
-    </div>
-    <div style="margin-top:14px">
-      <div class="label">실제 위치 선택</div>
-      <div class="actual-grid" id="actualGrid">
-        <button type="button" class="actual-btn" data-value="페어웨이">페어웨이</button>
-        <button type="button" class="actual-btn" data-value="러프">러프</button>
-        <button type="button" class="actual-btn" data-value="그린">그린</button>
-        <button type="button" class="actual-btn" data-value="벙커">벙커</button>
-        <button type="button" class="actual-btn" data-value="티">티</button>
-        <button type="button" class="actual-btn" data-value="기타">기타</button>
+  <main>
+    <section id="setupScreen" class="screen">
+      <div class="setupHero">
+        <h1>Start Round</h1>
+        <p>현재 버전은 Map 없이 Shot + FLO 입력 흐름을 먼저 검증합니다.</p>
       </div>
-    </div>
-    <div class="compare-box">
-      <div class="label">판정 비교</div>
-      <div class="compare-line"><span>실제 위치</span><b id="actualValue">—</b></div>
-      <div class="compare-line"><span>JGI 판정</span><b id="jgiValue">—</b></div>
-      <div class="compare-result" id="compareResult">실제 위치를 선택하세요.</div>
-    </div>
-    <div style="margin-top:12px">
-      <div class="label" style="margin-bottom:7px">메모 (선택)</div>
-      <input id="note" type="text" placeholder="예: 페어웨이 오른쪽 가장자리"/>
-    </div>
-    <button class="btn btn-primary" id="recordBtn">비교 결과 기록</button>
-  </div>
+      <div class="card">
+        <div class="field">
+          <label>COURSE</label>
+          <select id="courseSelect">
+            <option>Jagorawi Golf & Country Club</option>
+            <option>Emeralda Golf Club</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>COURSE / NINE</label>
+          <input id="courseNine" value="Old Course" placeholder="Old Course / River / Lake ...">
+        </div>
+        <div class="field">
+          <label>TEE</label>
+          <div class="segment" id="teeSegment">
+            <button data-v="Back">Back</button><button class="sel" data-v="Regular">Regular</button><button data-v="Front">Front</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="title">V1 입력 원칙</div>
+        <div class="sub">클럽 선택 → 실제 샷 → 바로 FLO → 이동 → 다음 클럽 선택</div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="metric"><div class="k">SHOT</div><div class="v">1 Tap</div><div class="s">클럽으로 시작</div></div>
+          <div class="metric"><div class="k">FLO</div><div class="v">바로 입력</div><div class="s">샷 직후</div></div>
+        </div>
+      </div>
+      <button id="startRoundBtn" class="btn primary full">Start Round</button>
+      <button id="resumeRoundBtn" class="btn ghost full hidden" style="margin-top:8px">Resume Saved Round</button>
+    </section>
 
-  <div class="card">
-    <div class="section-title">4. 테스트 기록</div>
-    <div class="summary">
-      <div class="metric"><div class="label">총 테스트</div><div class="value" id="totalTests">0</div></div>
-      <div class="metric"><div class="label">일치</div><div class="value" id="matchTests">0</div></div>
-      <div class="metric"><div class="label">판정 정확도</div><div class="value" id="matchRate">—</div></div>
-    </div>
-    <div id="history" class="history"></div>
-    <button class="btn btn-dark" id="jsonBtn">JSON 내보내기</button>
-    <button class="btn btn-dark" id="csvBtn">CSV 내보내기</button>
-    <button class="btn btn-danger" id="clearBtn">저장된 테스트 기록 삭제</button>
-  </div>
+    <section id="roundScreen" class="screen hidden">
+      <div class="row between" style="margin-bottom:6px">
+        <div><div id="roundCourse" class="title">Course</div><div id="roundNine" class="sub">Course</div></div>
+        <button id="endRoundBtn" class="btn ghost small">Round 종료</button>
+      </div>
+      <div id="holebar" class="holebar"></div>
+      <div class="row between" style="margin:2px 0 8px">
+        <div><strong id="holeTitle">Hole 1</strong> <span id="holeParText" class="sub">Par 선택 필요</span></div>
+        <div id="liveScore" class="pill">0 shots</div>
+      </div>
 
-  <div class="footer-note">
-    모바일 브라우저에서 GPS를 사용하려면 일반적으로 HTTPS와 위치 권한이 필요합니다.
-    GPS 정확도가 ±10m보다 크면 정확도 낮음으로 표시합니다. 테스트 기록은 이 브라우저에만 저장됩니다.
+      <div id="parChooser" class="card">
+        <div class="title">이 홀 Par 선택</div>
+        <div class="sub">Golf Intelligence 연결 후 자동으로 들어옵니다.</div>
+        <div class="segment" style="margin-top:10px">
+          <button data-par="3">Par 3</button><button data-par="4">Par 4</button><button data-par="5">Par 5</button>
+        </div>
+      </div>
+
+      <div class="mapPlaceholder">
+        <div class="inside">
+          <div class="mapIcon">⌖</div>
+          <strong>Course Map Area</strong>
+          <span>Google Maps + Golf Intelligence<br>연결 예정<br><br>현재는 입력 UX만 검증합니다.</span>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <div class="metric"><div class="k">CURRENT GPS</div><div id="gpsInfo" class="v" style="font-size:14px">Waiting</div><div id="gpsAcc" class="s">—</div></div>
+        <div class="metric"><div class="k">TO GREEN</div><div class="v">—</div><div class="s">Map 연결 후</div></div>
+      </div>
+
+      <div id="lieCard" class="card">
+        <div class="row between"><div><div class="title">현재 Lie</div><div class="sub">지금은 수동 · Map 연결 후 자동 판정</div></div><div id="lieAutoLabel" class="pill">Manual</div></div>
+        <div id="lieRow" class="lieRow" style="margin-top:10px">
+          <button class="lie sel" data-lie="Unknown">Unknown</button>
+          <button class="lie" data-lie="Fairway">Fairway</button>
+          <button class="lie" data-lie="Rough">Rough</button>
+          <button class="lie" data-lie="Bunker">Bunker</button>
+          <button class="lie" data-lie="Recovery">Recovery</button>
+        </div>
+      </div>
+
+      <div id="pendingCard" class="card pending hidden">
+        <div class="row between"><div><div class="sub">SHOT READY</div><div id="pendingClub" class="clubName">Driver</div></div><span id="pendingGPS" class="pill">GPS</span></div>
+        <div class="hint">현재 위치가 Shot Start로 저장되었습니다.<br>실제 샷을 한 뒤 바로 FLO를 입력하세요.</div>
+        <button id="shotHitFloBtn" class="btn primary full" style="margin-top:12px">샷 완료 · FLO 입력</button>
+        <button id="cancelShotBtn" class="btn ghost full" style="margin-top:7px">잘못 선택 · 취소</button>
+      </div>
+
+      <div id="clubCard" class="card">
+        <div class="row between"><div><div class="title">Club 선택</div><div class="sub">클럽을 누르면 현재 GPS에서 Shot이 시작됩니다.</div></div><button id="penaltyBtn" class="btn danger small">Penalty +1</button></div>
+        <div id="clubgrid" class="clubgrid"></div>
+        <button id="onGreenBtn" class="btn green full" style="margin-top:10px">ON GREEN · 퍼팅으로 이동</button>
+      </div>
+
+      <div id="lastShotCard" class="card hidden">
+        <div class="row between"><div><div class="title">Last Shot</div><div id="lastShotText" class="sub"></div></div><span class="floBadge">FLO 저장됨</span></div>
+      </div>
+    </section>
+
+    <section id="overviewScreen" class="screen hidden">
+      <div class="title">Round Overview</div><div id="overviewCourse" class="sub"></div>
+      <div class="card" style="margin-top:10px"><div id="scoreBig" class="scoreBig">—<small>Completed holes</small></div></div>
+      <div class="grid4">
+        <div class="metric"><div class="k">HOLES</div><div id="ovHoles" class="v">0</div></div>
+        <div class="metric"><div class="k">PUTTS</div><div id="ovPutts" class="v">0</div></div>
+        <div class="metric"><div class="k">PEN</div><div id="ovPen" class="v">0</div></div>
+        <div class="metric"><div class="k">FLO</div><div id="ovFlo" class="v">0</div></div>
+      </div>
+      <div class="card"><div class="title">Scorecard</div><div id="scorecard" class="scorecard" style="margin-top:10px"></div></div>
+    </section>
+
+    <section id="performanceScreen" class="screen hidden">
+      <div class="title">Performance</div><div class="sub">현실적으로 계산 가능한 항목부터 표시합니다.</div>
+      <div class="card sgBox">
+        <div class="title">Strokes Gained</div>
+        <div class="big">연결 대기</div>
+        <div class="pendingText">정확한 SG는 Course distance/lie + Benchmark DB가 연결된 뒤 계산합니다.<br>현재는 임의 수치를 만들지 않습니다.</div>
+      </div>
+      <div class="card">
+        <div class="title">Key Stats</div>
+        <div class="grid3" style="margin-top:10px">
+          <div class="metric"><div class="k">FIR</div><div id="statFir" class="v">—</div><div class="s">Lie 입력 기준</div></div>
+          <div class="metric"><div class="k">GIR</div><div id="statGir" class="v">—</div></div>
+          <div class="metric"><div class="k">PUTTS</div><div id="statPutts" class="v">0</div></div>
+          <div class="metric"><div class="k">AVG DRIVE</div><div id="statDrive" class="v">—</div><div class="s">GPS 기준</div></div>
+          <div class="metric"><div class="k">PENALTIES</div><div id="statPen" class="v">0</div></div>
+          <div class="metric"><div class="k">SCRAMBLE</div><div id="statScramble" class="v">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="floScreen" class="screen hidden">
+      <div class="title">FLO Performance</div><div class="sub">FLO 점수 하나로 합치지 않고 실제 Shot 결과와 연결합니다.</div>
+      <div class="card">
+        <div class="title">Today</div>
+        <div class="grid3" style="margin-top:10px">
+          <div class="metric"><div class="k">COMMITMENT</div><div id="floCommit" class="v">—</div></div>
+          <div class="metric"><div class="k">THINKING</div><div id="floThink" class="v">—</div></div>
+          <div class="metric"><div class="k">ROUTINE FULL</div><div id="floRoutine" class="v">—</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="title">FLO by Hole</div><div id="floBars" style="margin-top:10px"></div></div>
+      <div class="card"><div class="title">Observed Pattern</div><div id="floPattern" class="pendingText" style="margin-top:8px">FLO가 쌓이면 샷 결과와 함께 패턴을 표시합니다.</div></div>
+    </section>
+
+    <section id="storyScreen" class="screen hidden">
+      <div class="title">Round Story & Next Focus</div><div class="sub">현재는 로컬 규칙 기반 Preview · 이후 Player Agent가 생성</div>
+      <div id="storyContent" class="card" style="margin-top:10px"></div>
+      <div class="card"><div class="title">Next Focus</div><div id="nextFocus" class="pendingText" style="margin-top:8px"></div></div>
+    </section>
+  </main>
+
+  <nav id="bottomnav" class="bottomnav hidden">
+    <button data-screen="round" class="sel"><b>⛳</b>ROUND</button>
+    <button data-screen="overview"><b>▦</b>OVERVIEW</button>
+    <button data-screen="performance"><b>◎</b>STATS</button>
+    <button data-screen="flo"><b>◉</b>FLO</button>
+    <button data-screen="story"><b>✦</b>STORY</button>
+  </nav>
+</div>
+
+<div id="floModal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheetHead"><div><strong>샷 직후 FLO</strong><div id="floShotLabel" class="sub"></div></div><button id="floClose" class="x">×</button></div>
+    <div class="sectionLabel">Commitment</div>
+    <div id="commitScale" class="scale"></div>
+    <div class="helper">1 = 확신 낮음 · 5 = 완전히 Commit</div>
+    <div class="sectionLabel">Thinking Load</div>
+    <div id="thinkScale" class="scale"></div>
+    <div class="helper">1 = Automatic · 5 = Overthinking</div>
+    <div class="sectionLabel">Routine</div>
+    <div id="routineChoice" class="choice">
+      <button data-v="Full">Full</button><button data-v="Partial">Partial</button><button data-v="Broken">Broken</button>
+    </div>
+    <div class="sectionLabel">State</div>
+    <div id="stateChoice" class="choice state">
+      <button data-v="Calm">Calm</button><button data-v="Confident">Confident</button><button data-v="Tense">Tense</button><button data-v="Frustrated">Frustrated</button>
+    </div>
+    <div class="field"><label>NOTE · OPTIONAL</label><textarea id="floNote" placeholder="Good tempo, rushed routine..."></textarea></div>
+    <button id="saveFloBtn" class="btn primary full" style="margin-top:12px">Save FLO & Continue</button>
   </div>
-  </details>
+</div>
+
+<div id="puttModal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheetHead"><div><strong>On Green</strong><div class="sub">퍼팅은 V1에서 간단 입력</div></div><button id="puttClose" class="x">×</button></div>
+    <div class="sectionLabel">First Putt Distance · approx.</div>
+    <div id="puttDist" class="choice" style="grid-template-columns:repeat(5,1fr)">
+      <button data-v="<2m">&lt;2m</button><button data-v="2-4m">2-4</button><button data-v="4-6m">4-6</button><button data-v="6-10m">6-10</button><button data-v="10m+">10+</button>
+    </div>
+    <div class="sectionLabel">Total Putts</div>
+    <div id="puttCount" class="choice" style="grid-template-columns:repeat(4,1fr)">
+      <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4+</button>
+    </div>
+    <button id="savePuttBtn" class="btn primary full" style="margin-top:14px">Save Putting · Hole Complete</button>
+  </div>
 </div>
 
 <script>
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const STORAGE_KEY = 'jgi_course_gps_test_records_v1';
+const $=id=>document.getElementById(id);
+const STORAGE='agi_player_v1_round';
+const clubs=['DR','3W','5W','3I','4I','5I','6I','7I','8I','9I','PW','50°','54°','58°','Putter','More'];
+let gps=null, watchId=null, tee='Regular', currentLie='Unknown';
+let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
+let puttDraft={distance:null,count:null};
+let round=null;
 
-  let geojson = null;
-  let current = null;
-  let currentDetection = {feature:'—', hole:'—', matched:null};
-  let actualSelection = null;
-
-  const priority = {
-    '그린': 60,
-    '벙커': 55,
-    '워터': 50,
-    '티': 40,
-    '페어웨이': 30,
-    '러프': 20,
-    '기타': 0
-  };
-
-  function propsOf(feature){
-    const p = feature && feature.properties ? feature.properties : {};
-    const t = p.tags && typeof p.tags === 'object' ? p.tags : {};
-    return {...p, ...t};
-  }
-
-  function canonicalType(feature){
-    const p = propsOf(feature);
-    const golf = String(p.golf || '').toLowerCase();
-    const natural = String(p.natural || '').toLowerCase();
-    const water = String(p.water || '').toLowerCase();
-    const landuse = String(p.landuse || '').toLowerCase();
-
-    if (golf === 'green') return '그린';
-    if (golf === 'bunker') return '벙커';
-    if (golf === 'tee') return '티';
-    if (golf === 'fairway') return '페어웨이';
-    if (golf === 'rough') return '러프';
-    if (golf === 'water_hazard' || golf === 'lateral_water_hazard') return '워터';
-    if (natural === 'water' || water || landuse === 'reservoir' || landuse === 'basin') return '워터';
-    return null;
-  }
-
-  function getHoleRef(feature){
-    const p = propsOf(feature);
-    return p.ref ?? p.hole ?? p.hole_number ?? p['ref:hole'] ?? null;
-  }
-
-  function pointInRing(point, ring){
-    const x = point[0], y = point[1];
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const xi = ring[i][0], yi = ring[i][1];
-      const xj = ring[j][0], yj = ring[j][1];
-      const intersect = ((yi > y) !== (yj > y)) &&
-        (x < (xj - xi) * (y - yi) / ((yj - yi) || Number.EPSILON) + xi);
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
-
-  function pointInPolygon(point, coords){
-    if (!coords || !coords.length) return false;
-    if (!pointInRing(point, coords[0])) return false;
-    for (let i = 1; i < coords.length; i++) {
-      if (pointInRing(point, coords[i])) return false;
-    }
-    return true;
-  }
-
-  function pointInGeometry(point, geometry){
-    if (!geometry) return false;
-    if (geometry.type === 'Polygon') return pointInPolygon(point, geometry.coordinates);
-    if (geometry.type === 'MultiPolygon') {
-      return geometry.coordinates.some(poly => pointInPolygon(point, poly));
-    }
-    return false;
-  }
-
-  // Equirectangular approximation; adequate for short golf-course distances.
-  function distanceMeters(a, b){
-    const R = 6371000;
-    const lat1 = a[1] * Math.PI/180, lat2 = b[1] * Math.PI/180;
-    const dLat = (b[1]-a[1]) * Math.PI/180;
-    const dLon = (b[0]-a[0]) * Math.PI/180;
-    const x = dLon * Math.cos((lat1+lat2)/2);
-    const y = dLat;
-    return Math.sqrt(x*x+y*y) * R;
-  }
-
-  function distancePointToSegment(p, a, b){
-    const lat0 = p[1] * Math.PI/180;
-    const mPerDegLat = 111132;
-    const mPerDegLon = 111320 * Math.cos(lat0);
-    const px = p[0]*mPerDegLon, py = p[1]*mPerDegLat;
-    const ax = a[0]*mPerDegLon, ay = a[1]*mPerDegLat;
-    const bx = b[0]*mPerDegLon, by = b[1]*mPerDegLat;
-    const vx = bx-ax, vy = by-ay;
-    const wx = px-ax, wy = py-ay;
-    const vv = vx*vx+vy*vy;
-    const t = vv === 0 ? 0 : Math.max(0, Math.min(1, (wx*vx+wy*vy)/vv));
-    const dx = px-(ax+t*vx), dy=py-(ay+t*vy);
-    return Math.sqrt(dx*dx+dy*dy);
-  }
-
-  function nearestHoleLine(point){
-    if (!geojson || !Array.isArray(geojson.features)) return null;
-    let best = null;
-    for (const f of geojson.features) {
-      const p = propsOf(f);
-      if (String(p.golf || '').toLowerCase() !== 'hole') continue;
-      const g = f.geometry;
-      if (!g) continue;
-      let lines = [];
-      if (g.type === 'LineString') lines = [g.coordinates];
-      if (g.type === 'MultiLineString') lines = g.coordinates;
-      for (const line of lines) {
-        for (let i=0;i<line.length-1;i++){
-          const d = distancePointToSegment(point, line[i], line[i+1]);
-          if (!best || d < best.distance) {
-            best = {distance:d, ref:getHoleRef(f), feature:f};
-          }
-        }
-      }
-    }
-    // Avoid assigning a far-away hole centerline by accident.
-    return best && best.distance <= 120 ? best : null;
-  }
-
-  function classify(lng, lat){
-    if (!geojson || !Array.isArray(geojson.features)) {
-      return {feature:'코스 데이터 없음', hole:'—', matched:null};
-    }
-    const point = [lng, lat];
-    const hits = [];
-
-    for (const f of geojson.features) {
-      const type = canonicalType(f);
-      if (!type) continue;
-      if (!['Polygon','MultiPolygon'].includes(f.geometry?.type)) continue;
-      if (pointInGeometry(point, f.geometry)) {
-        hits.push({type, feature:f, score:priority[type] ?? 0, hole:getHoleRef(f)});
-      }
-    }
-
-    hits.sort((a,b) => b.score-a.score);
-    let best = hits[0] || {type:'기타', feature:null, score:0, hole:null};
-
-    let hole = best.hole;
-    if (!hole) {
-      const near = nearestHoleLine(point);
-      if (near && near.ref != null) hole = near.ref;
-    }
-
-    return {
-      feature: best.type,
-      hole: hole ?? '—',
-      matched: best.feature
-    };
-  }
-
-  function renderDetection(){
-    renderVectorMap();
-    if (watchId === null && current) {
-      trackingMessage = `GPS 측정 완료 · ±${current.accuracy.toFixed(1)}m · 연속 추적 꺼짐`;
-      renderRound();
-    }
-    $('detected').textContent = currentDetection.feature;
-    $('hole').textContent = currentDetection.hole ?? '—';
-    const acc = current?.accuracy;
-    const accText = typeof acc === 'number' ? `GPS ±${acc.toFixed(1)} m` : 'GPS 정확도 알 수 없음';
-    $('detail').textContent = `${accText}${currentDetection.hole !== '—' ? ' · 홀 ' + currentDetection.hole : ''}`;
-    renderComparison();
-  }
-
-  function renderComparison(){
-    $('actualValue').textContent = actualSelection ?? '—';
-    $('jgiValue').textContent = currentDetection.feature ?? '—';
-    const host = $('compareResult');
-    if (!actualSelection) {
-      host.textContent = '실제 위치를 선택하세요.';
-      host.className = 'compare-result';
-      return;
-    }
-    if (!current || currentDetection.feature === '—' || currentDetection.feature === '코스 데이터 없음') {
-      host.textContent = 'GPS 판정 후 비교합니다.';
-      host.className = 'compare-result';
-      return;
-    }
-    const match = actualSelection === currentDetection.feature;
-    host.textContent = match ? '✅ 일치' : '❌ 불일치';
-    host.className = 'compare-result ' + (match ? 'good' : 'bad');
-  }
-
-  function clearActualSelection(){
-    actualSelection = null;
-    document.querySelectorAll('.actual-btn').forEach(btn => btn.classList.remove('selected'));
-    renderComparison();
-  }
-
-  function readRecords(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch { return []; }
-  }
-
-  function writeRecords(records){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-    renderHistory();
-  }
-
-  function renderHistory(){
-    const records = readRecords();
-    const host = $('history');
-    host.innerHTML = '';
-
-    const comparable = records.filter(r => r.actual_feature);
-    const matched = comparable.filter(r => r.is_match === true).length;
-    $('totalTests').textContent = comparable.length;
-    $('matchTests').textContent = matched;
-    $('matchRate').textContent = comparable.length ? Math.round((matched / comparable.length) * 100) + '%' : '—';
-
-    if (!records.length) {
-      host.innerHTML = '<div class="status">아직 기록된 위치가 없습니다.</div>';
-      return;
-    }
-    records.slice().reverse().forEach((r, idx) => {
-      const div = document.createElement('div');
-      div.className = 'row';
-      const compare = r.actual_feature
-        ? `<br/>실제: <b>${escapeHtml(r.actual_feature)}</b> · JGI: <b>${escapeHtml(r.detected_feature)}</b> · <b class="${r.is_match ? 'good' : 'bad'}">${r.is_match ? '✅ 일치' : '❌ 불일치'}</b>`
-        : '';
-      div.innerHTML = `
-        <b>${escapeHtml(r.detected_feature)} ${r.hole && r.hole !== '—' ? '· 홀 ' + escapeHtml(String(r.hole)) : ''}</b>
-        <small>
-          <span class="pill">GPS ±${Number(r.accuracy).toFixed(1)} m</span>
-          ${escapeHtml(r.timestamp_local)}
-          ${compare}<br/>
-          ${Number(r.latitude).toFixed(7)}, ${Number(r.longitude).toFixed(7)}
-          ${r.note ? '<br/>메모: '+escapeHtml(r.note) : ''}
-        </small>`;
-      host.appendChild(div);
-    });
-  }
-
-  function escapeHtml(s){
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[c]));
-  }
-
-  function download(name, text, type){
-    const blob = new Blob([text], {type});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = name; a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  }
-
-  function toCSV(records){
-    const cols = ['timestamp_iso','timestamp_local','latitude','longitude','accuracy','actual_feature','detected_feature','is_match','hole','note'];
-    const q = (v) => `"${String(v ?? '').replace(/"/g,'""')}"`;
-    return [cols.join(','), ...records.map(r => cols.map(c=>q(r[c])).join(','))].join('\n');
-  }
-
-  $('loadBtn').addEventListener('click', async () => {
-    const file = $('geoFile').files?.[0];
-    if (!file) {
-      $('geoStatus').textContent = '먼저 .geojson 또는 .json 파일을 선택하세요.';
-      $('geoStatus').className = 'status bad';
-      return;
-    }
-    try {
-      const parsed = JSON.parse(await file.text());
-      if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
-        throw new Error('GeoJSON 형식이 FeatureCollection이어야 합니다.');
-      }
-      geojson = parsed;
-      renderVectorMap();
-      const counts = {};
-      for (const f of geojson.features) {
-        const t = canonicalType(f);
-        if (t) counts[t] = (counts[t] || 0) + 1;
-      }
-      $('geoStatus').textContent =
-        `총 ${geojson.features.length}개 요소 불러옴 · ` +
-        Object.entries(counts).map(([k,v])=>`${k} ${v}`).join(' · ');
-      $('geoStatus').className = 'status good';
-
-      if (current) {
-        currentDetection = classify(current.longitude, current.latitude);
-        renderDetection();
-      }
-    } catch (e) {
-      geojson = null;
-      renderVectorMap();
-      $('geoStatus').textContent = 'GeoJSON을 불러오지 못했습니다: ' + e.message;
-      $('geoStatus').className = 'status bad';
-    }
-  });
-
-  $('gpsBtn').addEventListener('click', () => {
-    if (!navigator.geolocation) {
-      $('gpsStatus').textContent = '이 브라우저는 위치 기능을 지원하지 않습니다.';
-      $('gpsStatus').className = 'status bad';
-      return;
-    }
-    $('gpsStatus').textContent = '고정밀 GPS 위치를 확인하는 중…';
-    $('gpsStatus').className = 'status';
-    navigator.geolocation.getCurrentPosition(pos => {
-      current = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        timestamp: pos.timestamp
-      };
-      $('lat').textContent = current.latitude.toFixed(7);
-      $('lng').textContent = current.longitude.toFixed(7);
-      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
-
-      currentDetection = classify(current.longitude, current.latitude);
-      renderDetection();
-
-      if (current.accuracy > 10) {
-        $('gpsStatus').textContent = 'GPS 정확도 낮음 — 하늘이 열린 곳에서 다시 시도하세요.';
-        $('gpsStatus').className = 'status bad';
-      } else {
-        $('gpsStatus').textContent = 'GPS 준비 완료.';
-        $('gpsStatus').className = 'status good';
-      }
-    }, err => {
-      let msg = err.message || '현재 위치를 읽을 수 없습니다.';
-      if (err.code === 1) msg = '위치 권한이 거부되었습니다. 이 사이트의 위치 권한을 허용하세요.';
-      $('gpsStatus').textContent = msg;
-      $('gpsStatus').className = 'status bad';
-    }, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
-    });
-  });
-
-  document.querySelectorAll('.actual-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      actualSelection = btn.dataset.value;
-      document.querySelectorAll('.actual-btn').forEach(b => b.classList.toggle('selected', b === btn));
-      renderComparison();
-    });
-  });
-
-  $('recordBtn').addEventListener('click', () => {
-    if (!geojson) {
-      alert('먼저 코스 GeoJSON을 불러오세요.');
-      return;
-    }
-    if (!actualSelection) {
-      alert('실제 위치를 먼저 선택하세요.');
-      return;
-    }
-    if (!navigator.geolocation) {
-      alert('이 브라우저는 위치 기능을 지원하지 않습니다.');
-      return;
-    }
-
-    const btn = $('recordBtn');
-    btn.disabled = true;
-    btn.textContent = '새 GPS 측정 중…';
-
-    navigator.geolocation.getCurrentPosition(pos => {
-      current = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        timestamp: pos.timestamp
-      };
-
-      $('lat').textContent = current.latitude.toFixed(7);
-      $('lng').textContent = current.longitude.toFixed(7);
-      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
-
-      const d = classify(current.longitude, current.latitude);
-      currentDetection = d;
-      renderDetection();
-
-      const measuredAt = new Date(pos.timestamp || Date.now());
-      const rec = {
-        timestamp_iso: measuredAt.toISOString(),
-        timestamp_local: measuredAt.toLocaleString(),
-        latitude: current.latitude,
-        longitude: current.longitude,
-        accuracy: current.accuracy,
-        actual_feature: actualSelection,
-        detected_feature: d.feature,
-        is_match: actualSelection === d.feature,
-        hole: d.hole,
-        note: $('note').value.trim()
-      };
-
-      const records = readRecords();
-      records.push(rec);
-      writeRecords(records);
-
-      $('note').value = '';
-
-      if (current.accuracy > 10) {
-        $('gpsStatus').textContent = '기록 완료 · GPS 정확도 낮음 — 하늘이 열린 곳에서 다시 시도하세요.';
-        $('gpsStatus').className = 'status bad';
-      } else {
-        $('gpsStatus').textContent = '새 GPS 좌표로 기록 완료.';
-        $('gpsStatus').className = 'status good';
-      }
-
-      btn.disabled = false;
-      btn.textContent = '비교 결과 기록';
-    }, err => {
-      let msg = err.message || '현재 위치를 읽을 수 없습니다.';
-      if (err.code === 1) msg = '위치 권한이 거부되었습니다. 이 사이트의 위치 권한을 허용하세요.';
-      $('gpsStatus').textContent = msg;
-      $('gpsStatus').className = 'status bad';
-      btn.disabled = false;
-      btn.textContent = '비교 결과 기록';
-    }, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
-    });
-  });
-
-  $('jsonBtn').addEventListener('click', () => {
-    const records = readRecords();
-    download('jgi_gps_test_data.json', JSON.stringify(records, null, 2), 'application/json');
-  });
-
-  $('csvBtn').addEventListener('click', () => {
-    const records = readRecords();
-    download('jgi_gps_test_data.csv', toCSV(records), 'text/csv;charset=utf-8');
-  });
-
-  $('clearBtn').addEventListener('click', () => {
-    if (confirm('이 브라우저에 저장된 모든 테스트 기록을 삭제할까요?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      renderHistory();
-    }
-  });
-
-  // Round shell uses its own key; GPS comparison records retain their original format.
-  const ROUND_KEY = 'jgi_old_course_round_v1';
-  let round = {hole:1, startedAt:null};
-  try {
-    const saved = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');
-    if (saved && Number.isInteger(saved.hole) && saved.hole >= 1 && saved.hole <= 9) {
-      round.hole = saved.hole;
-      if (typeof saved.startedAt === 'string' && Number.isFinite(Date.parse(saved.startedAt))) round.startedAt = saved.startedAt;
-    }
-  } catch { /* A blocked or invalid round store must not prevent the GPS test. */ }
-  let watchId = null;
-  let trackingMessage = 'GPS 대기 중';
-  let lastFixAt = 0;
-  const NS = 'http://www.w3.org/2000/svg';
-  function svgNode(tag, attrs = {}, text = '') {
-    const el = document.createElementNS(NS, tag);
-    for (const [key,value] of Object.entries(attrs)) el.setAttribute(key, value);
-    if (text) el.textContent = text;
-    return el;
-  }
-  // POC provider only. Replace URL, attribution and zoom limit together.
-  // Public World Imagery tiles; no private credential belongs in this client.
-  // Commercial provider/licensing selection is intentionally deferred.
-  const SATELLITE_PROVIDER = Object.freeze({
-    url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 19,
-    attribution: 'Tiles © <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Sources: Esri, Vantor, Earthstar Geographics, and the GIS User Community'
-  });
-  let mapMode = 'satellite';
-  let satelliteCache = null;
-  let mapViewport = null;
-  let mapViewportKey = '';
-  let lastGreenContext = null;
-  const mapPointers = new Map();
-  let lastPinchDistance = null;
-  // Normalized Web Mercator shared by imagery and every vector overlay.
-  function mercator(p) {
-    const lat = Math.max(-85.05112878, Math.min(85.05112878, p[1])) * Math.PI / 180;
-    return [(p[0]+180)/360, (1-Math.log(Math.tan(Math.PI/4+lat/2))/Math.PI)/2];
-  }
-  function drawSatellite(svg, projectWorld, scale, latitude, width, height, mask) {
-    const zoom = Math.max(0, Math.min(SATELLITE_PROVIDER.maxZoom,
-      Math.ceil(Math.log2(scale * 2*Math.PI*6371000*Math.cos(latitude*Math.PI/180) / 256))));
-    const n = 2**zoom;
-    const a = projectWorld([0,0]), b = projectWorld([1/n,0]), c = projectWorld([0,1/n]);
-    const u=[b[0]-a[0],b[1]-a[1]], v=[c[0]-a[0],c[1]-a[1]];
-    const det=u[0]*v[1]-u[1]*v[0];
-    const inverse=(x,y)=>[((x-a[0])*v[1]-(y-a[1])*v[0])/det, (u[0]*(y-a[1])-u[1]*(x-a[0]))/det];
-    const corners=[[0,0],[width,0],[0,height],[width,height]].map(p=>inverse(...p));
-    const key=JSON.stringify([round.hole,zoom,a,u,v,width,height,mask]);
-    if (satelliteCache?.key === key) {
-      svg.appendChild(satelliteCache.group);
-      $('satelliteStatus').textContent=satelliteCache.message;
-      return;
-    }
-    const group=svgNode('g',{id:'satelliteLayer', ...(mask ? {mask:'url(#holeContextMask)'} : {})});
-    const state={key,group,message:'Loading satellite…',pending:0,failed:0};
-    satelliteCache=state; svg.appendChild(group);
-    const settle=failed=>{
-      state.pending--; if(failed) state.failed++;
-      state.message=state.failed ? 'Satellite unavailable / incomplete · Tap Vector' : state.pending ? 'Loading satellite…' : '';
-      if(satelliteCache===state && group.isConnected && mapMode==='satellite') $('satelliteStatus').textContent=state.message;
-    };
-    const x0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[0])))), x1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[0]))));
-    const y0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[1])))), y1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[1]))));
-    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) {
-      const pos=projectWorld([x/n,y/n]);
-      const tile=svgNode('image',{width:256.2,height:256.2,preserveAspectRatio:'none',
-        transform:`matrix(${u[0]/256} ${u[1]/256} ${v[0]/256} ${v[1]/256} ${pos[0]} ${pos[1]})`});
-      state.pending++;
-      let done=false;
-      const finish=failed=>{if(done)return;done=true;clearTimeout(timer);settle(failed);};
-      const timer=setTimeout(()=>finish(true),12000);
-      tile.addEventListener('load',()=>finish(false),{once:true});
-      tile.addEventListener('error',()=>finish(true),{once:true});
-      tile.setAttribute('href',SATELLITE_PROVIDER.url.replace('{z}',zoom).replace('{x}',x).replace('{y}',y));
-      group.appendChild(tile);
-    }
-    $('satelliteStatus').textContent=state.message;
-  }
-  function pointAlongLine(coords, metres) {
-    if (!Array.isArray(coords) || coords.length < 2) return coords?.[0] || null;
-    let remaining = metres;
-    for (let i=0;i<coords.length-1;i++) {
-      const a=coords[i], b=coords[i+1], segment=distanceMeters(a,b);
-      if (segment >= remaining) {
-        const t = segment > 0 ? remaining/segment : 0;
-        return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];
-      }
-      remaining -= segment;
-    }
-    return coords[coords.length-1];
-  }
-  function clampViewport(v,width,height) {
-    let [x,y,w,h]=v;
-    w=Math.max(70,Math.min(width,w)); h=Math.max(100,Math.min(height,h));
-    x=Math.max(0,Math.min(width-w,x)); y=Math.max(0,Math.min(height-h,y));
-    return [x,y,w,h];
-  }
-  function applyMapViewport() {
-    const svg=$('courseMap');
-    if(!mapViewport) return;
-    svg.setAttribute('viewBox', mapViewport.join(' '));
-  }
-  function initialSatelliteViewport(par,lineCoords,project,width,height) {
-    if (![4,5].includes(par) || !lineCoords || lineCoords.length < 2) return [0,0,width,height];
-    const tee=project(lineCoords[0]);
-    const forward=project(pointAlongLine(lineCoords,270));
-    const y0=Math.min(tee[1],forward[1]), y1=Math.max(tee[1],forward[1]);
-    const segmentH=Math.max(140,y1-y0);
-    const h=Math.min(height,segmentH+46);
-    const w=Math.min(width,Math.max(190,h*(width/height)));
-    const cx=(tee[0]+forward[0])/2;
-    const cy=(tee[1]+forward[1])/2;
-    return clampViewport([cx-w/2,cy-h/2,w,h],width,height);
-  }
-  function zoomViewport(factor,clientX,clientY) {
-    if(!mapViewport) return;
-    const svg=$('courseMap'), rect=svg.getBoundingClientRect();
-    const [x,y,w,h]=mapViewport;
-    const px=x+(clientX-rect.left)/rect.width*w;
-    const py=y+(clientY-rect.top)/rect.height*h;
-    const nw=w*factor, nh=h*factor;
-    const nx=px-(px-x)*factor, ny=py-(py-y)*factor;
-    mapViewport=clampViewport([nx,ny,nw,nh],360,Math.max(350,Math.round(360*(svg.clientHeight||540)/(svg.clientWidth||360))));
-    applyMapViewport();
-  }
-  function setMapMode(mode) {
-    mapMode=mode;
-    mapViewport=null; mapViewportKey='';
-    for(const value of ['vector','satellite']) {
-      $(value+'Mode').classList.toggle('selected',value===mode);
-      $(value+'Mode').setAttribute('aria-pressed',String(value===mode));
-    }
-    renderVectorMap();
-  }
-  function saveRound() {
-    try { localStorage.setItem(ROUND_KEY, JSON.stringify(round)); $('roundStorageStatus').textContent = ''; }
-    catch { $('roundStorageStatus').textContent = '라운드 상태를 저장할 수 없습니다. 새로고침 시 초기화될 수 있습니다.'; }
-  }
-  function renderRound() {
-    document.querySelectorAll('#roundHole button').forEach(btn => btn.setAttribute('aria-pressed', String(Number(btn.dataset.hole) === round.hole)));
-    $('holeTitle').textContent = `Hole ${round.hole}`;
-    $('prevHole').disabled = round.hole === 1;
-    $('nextHole').disabled = round.hole === 9;
-    $('roundStatus').textContent = round.startedAt ? '라운드 진행 중 · ' + new Date(round.startedAt).toLocaleString() : '시작 전 · Old Course 1–9';
-    $('roundStart').textContent = !round.startedAt ? 'Start Round' : watchId === null ? 'Resume Round' : 'Round in Progress';
-    $('roundStart').disabled = watchId !== null;
-    $('trackingStatus').textContent = trackingMessage;
-    $('gpsSummary').textContent = watchId !== null ? (!current ? 'Finding GPS…' : Date.now()-current.timestamp>30000 ? 'GPS signal lost · Last position' : `GPS ±${Math.round(current.accuracy)} m`) : round.startedAt ? 'GPS paused · Details below' : 'GPS ready to start';
-  }
-  function startTracking() {
-    if (!navigator.geolocation) { trackingMessage = 'GPS 사용 불가 · 위치 기능 미지원'; renderRound(); return; }
-    if (watchId !== null) return;
-    trackingMessage = 'GPS 위치 확인 중…';
-    watchId = navigator.geolocation.watchPosition(pos => {
-      current = {latitude:pos.coords.latitude, longitude:pos.coords.longitude, accuracy:pos.coords.accuracy, timestamp:pos.timestamp};
-      lastFixAt = pos.timestamp || Date.now();
-      $('lat').textContent = current.latitude.toFixed(7);
-      $('lng').textContent = current.longitude.toFixed(7);
-      $('acc').textContent = `±${current.accuracy.toFixed(1)} m`;
-      trackingMessage = `GPS 추적 중 · ±${current.accuracy.toFixed(1)}m${current.accuracy > 10 ? ' · 정확도 낮음' : ''}`;
-      $('gpsStatus').textContent = trackingMessage;
-      $('gpsStatus').className = 'status ' + (current.accuracy > 10 ? 'bad' : 'good');
-      currentDetection = classify(current.longitude, current.latitude);
-      renderDetection();
-      renderRound();
-    }, err => {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-      trackingMessage = err.code === 1 ? 'GPS 권한 거부 · 위치 권한을 허용한 후 재개하세요.' : 'GPS 수신 실패 · 추적을 재개하세요.';
-      renderRound(); renderVectorMap();
-    }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+function emptyRound(course,nine){
+  return {version:1,course,nine,tee,startedAt:Date.now(),completedAt:null,currentHole:1,
+    holes:Array.from({length:18},(_,i)=>({hole:i+1,par:null,shots:[],putts:null,firstPutt:null,penalties:0,completed:false})),
+    pending:null};
+}
+function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
+function load(){try{return JSON.parse(localStorage.getItem(STORAGE)||'null')}catch{return null}}
+function hav(a,b){
+  if(!a||!b)return null; const R=6371000,d=Math.PI/180;
+  const p1=a.lat*d,p2=b.lat*d,dp=(b.lat-a.lat)*d,dl=(b.lng-a.lng)*d;
+  const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function gpsPoint(){return gps?{lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy,time:Date.now()}:null}
+function startGPS(){
+  if(!navigator.geolocation){$('gpsTop').textContent='GPS 불가';return}
+  if(watchId!==null)return;
+  $('gpsTop').textContent='GPS 찾는 중';
+  watchId=navigator.geolocation.watchPosition(p=>{
+    gps={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,time:p.timestamp};
+    $('gpsTop').innerHTML='<span class="statusDot '+(gps.accuracy>15?'warn':'')+'"></span>±'+Math.round(gps.accuracy)+'m';
     renderRound();
-  }
-  function changeHole(hole) { round.hole = Math.max(1, Math.min(9, hole)); mapViewport=null; mapViewportKey=''; lastGreenContext=null; saveRound(); renderRound(); renderVectorMap(); }
-  function coordinatesOf(geometry) {
-    const out = [];
-    function visit(coords) {
-      if (!Array.isArray(coords)) return;
-      if (Number.isFinite(coords[0]) && Number.isFinite(coords[1])) out.push(coords);
-      else coords.forEach(visit);
-    }
-    visit(geometry?.coordinates);
-    return out;
-  }
-  function holeNumber(feature) {
-    const ref = String(getHoleRef(feature) ?? propsOf(feature).holeNumber ?? '').trim();
-    return /^0?[1-9]$/.test(ref) ? Number(ref) : null;
-  }
-  function centerOf(feature) {
-    if (feature.geometry?.type === 'Point') return feature.geometry.coordinates;
-    // Polygon area centroid, excluding holes. Coordinates stay local to avoid precision loss.
-    const polygons = feature.geometry?.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry?.type === 'MultiPolygon' ? feature.geometry.coordinates : [];
-    const origin = coordinatesOf(feature.geometry)[0];
-    if (!origin) return null;
-    let area = 0, cx = 0, cy = 0;
-    for (const poly of polygons) for (let r = 0; r < poly.length; r++) {
-      const ring = poly[r]; let a = 0, x = 0, y = 0;
-      for (let i=0;i<ring.length;i++) {
-        const p=ring[i], q=ring[(i+1)%ring.length];
-        const px=p[0]-origin[0], py=p[1]-origin[1], qx=q[0]-origin[0], qy=q[1]-origin[1];
-        const cross=px*qy-qx*py; a+=cross; x+=(px+qx)*cross; y+=(py+qy)*cross;
-      }
-      if (Math.abs(a)>1e-16) { const weight=(r===0?1:-1)*Math.abs(a); area+=weight; cx+=x/(3*a)*weight; cy+=y/(3*a)*weight; }
-    }
-    return area > 0 ? [origin[0]+cx/area,origin[1]+cy/area] : null;
-  }
-  function featureElevation(feature) {
-    // Only explicit metre-valued OSM ele metadata; do not infer altitude from geometry or GPS.
-    const value = propsOf(feature).ele;
-    if (typeof value !== 'number' && typeof value !== 'string') return null;
-    const match = String(value).trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:m)?$/);
-    return match && Number.isFinite(Number(match[1])) ? Number(match[1]) : null;
-  }
-  function renderVectorMap() {
-    const svg = $('courseMap'); svg.replaceChildren();
-    const satellite = mapMode === 'satellite';
-    svg.parentElement.classList.toggle('satellite', satellite);
-    $('mapAttribution').hidden = !satellite;
-    $('mapAttribution').innerHTML = satellite ? SATELLITE_PROVIDER.attribution : '';
-    $('satelliteStatus').textContent = '';
-    const width = 360, height = Math.max(350, Math.round(360 * (svg.clientHeight || 540) / (svg.clientWidth || 360)));
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    for (const id of ['holePar','holeDistance','holeSI']) { $(id).hidden = true; $(id).textContent = ''; }
-    $('greenDistance').textContent = '—';
-    const names = {'그린':'Green','티':'Tee','페어웨이':'Fairway','러프':'Rough','벙커':'Bunker','워터':'Water'};
-    $('positionInfo').textContent = current ? (names[currentDetection.feature] || 'GPS located') : 'Waiting for GPS';
-    svg.appendChild(svgNode('title', {}, `Jagorawi Old Course · Hole ${round.hole}`));
-    const terrain = svgNode('g', {id:'terrainShadingLayer', 'data-state':'unavailable', 'aria-label':'Terrain shading unavailable'});
-    svg.appendChild(terrain);
-    $('terrainStatus').textContent = 'Elevation data unavailable · 지형 음영용 고도 모델 없음';
-    $('elevationInfo').textContent = '현재 위치 → Green 고도차 / 경사: 사용 불가 · 공통 기준의 지면고도 데이터 필요';
-    $('greenDetailBtn').disabled = true; lastGreenContext = null;
-    const empty = message => { $('mapStatus').textContent = message; svg.appendChild(svgNode('text',{x:180,y:height/2,'text-anchor':'middle'},'Load course data to view this hole')); };
-    if (!geojson) { empty('Open Course data & GPS details below to upload GeoJSON.'); return; }
-    const features = geojson.features.filter(f => coordinatesOf(f.geometry).length);
-    const matching = features.filter(f => holeNumber(f) === round.hole);
-    const lines = matching.filter(f => String(propsOf(f).golf).toLowerCase() === 'hole' && ['LineString','MultiLineString'].includes(f.geometry.type));
-    if (lines.length > 1) { empty('동일 홀 번호가 중복됩니다. Old Course 전용 GeoJSON을 불러오세요.'); return; }
-    const line = lines[0];
-    const lineCoords = line ? coordinatesOf(line.geometry) : [];
-    // Display only explicit metadata from this hole's centerline; never infer scorecard values.
-    const metadata = line ? propsOf(line) : {};
-    const metric = (id, value, prefix='', suffix='') => {
-      if (value == null || !/^\d+(?:\.\d+)?$/.test(String(value).trim()) || Number(value)<=0) return;
-      $(id).textContent = prefix + Number(value) + suffix; $(id).hidden = false;
-    };
-    metric('holePar', metadata.par, 'PAR ');
-    const parValue = /^\d+$/.test(String(metadata.par ?? '').trim()) ? Number(metadata.par) : null;
-    const length = metadata['length:m'] ?? metadata.distance_m ?? metadata.length;
-    if (length != null && /^(\d+(?:\.\d+)?)\s*(?:m)?$/.test(String(length).trim())) metric('holeDistance', String(length).trim().replace(/\s*m$/, ''), '', ' m');
-    metric('holeSI', metadata.handicap ?? metadata.stroke_index ?? metadata.si, 'SI ');
-    const greens = features.filter(f => canonicalType(f) === '그린' && centerOf(f));
-    let candidates = greens.filter(f => holeNumber(f) === round.hole);
-    if (!candidates.length && lineCoords.length) {
-      const end = lineCoords[lineCoords.length-1];
-      candidates = greens.filter(f => holeNumber(f) === null && (pointInGeometry(end,f.geometry) || distanceMeters(end,centerOf(f)) <= 40));
-    }
-    const green = candidates.length === 1 ? candidates[0] : null;
-    const greenCenter = green ? centerOf(green) : null;
-    const focus = lineCoords.length ? lineCoords : matching.flatMap(f=>coordinatesOf(f.geometry));
-    if (!focus.length) { empty(`Hole ${round.hole} 데이터 없음 · ref / hole 번호가 있는 Old Course GeoJSON이 필요합니다.`); return; }
-    const origin = focus[0], rad = Math.PI/180;
-    const worldOrigin=mercator(origin), worldMetres=2*Math.PI*6371000*Math.cos(origin[1]*rad);
-    const localWorld=p=>[(p[0]-worldOrigin[0])*worldMetres,(p[1]-worldOrigin[1])*worldMetres];
-    const local = p => localWorld(mercator(p));
-    // OSM hole centerlines run tee to green. Rotate the projection, not the source data.
-    const end = lineCoords.length > 1 ? local(lineCoords[lineCoords.length-1]) : null;
-    const angle = end && Math.hypot(...end)>1 ? -Math.PI/2-Math.atan2(end[1],end[0]) : 0;
-    const xy = p => { const [x,y]=local(p); return [x*Math.cos(angle)-y*Math.sin(angle),x*Math.sin(angle)+y*Math.cos(angle)]; };
-    // Fit selected playable geometry only; broad rough/water polygons must not shrink the hole.
-    const bounds = [...focus, ...matching.filter(f=>['티','페어웨이','그린'].includes(canonicalType(f))).flatMap(f=>coordinatesOf(f.geometry)), ...(green ? coordinatesOf(green.geometry) : [])].map(xy);
-    const minX=Math.min(...bounds.map(p=>p[0]))-35, maxX=Math.max(...bounds.map(p=>p[0]))+35;
-    const minY=Math.min(...bounds.map(p=>p[1]))-20, maxY=Math.max(...bounds.map(p=>p[1]))+15;
-    const scale=Math.min(344/(maxX-minX),(height-24)/(maxY-minY));
-    const project=p=>{const [x,y]=xy(p);return [180+(x-(minX+maxX)/2)*scale,height/2+(y-(minY+maxY)/2)*scale];};
-    const viewportKey=`${round.hole}|${mapMode}|${width}|${height}|${parValue ?? 'na'}`;
-    if(mapViewportKey!==viewportKey || !mapViewport) {
-      mapViewportKey=viewportKey;
-      mapViewport = satellite ? initialSatelliteViewport(parValue,lineCoords,project,width,height) : [0,0,width,height];
-    }
-    applyMapViewport();
-    const pathLine=coords=>coords.map((p,i)=>(i?'L':'M')+project(p).join(',')).join(' ');
-    const colors={'러프':'#294d38','페어웨이':'#61a760','티':'#c3df72','그린':'#a1e6a0','벙커':'#f1d398','워터':'#65b8e9'};
-    // Keep satellite context local on all nine holes; preserve the Vector pilot. This changes display, never source geometry or GPS classification.
-    const isolated = (satellite || [1,2].includes(round.hole)) && lineCoords.length > 1;
-    const selected = features.filter(f => holeNumber(f) === round.hole && canonicalType(f));
-    if (green && !selected.includes(green)) selected.push(green);
-    if (isolated) {
-      // Some tee boxes lack a hole number. Keep those at this line's tee end only,
-      // and only if no other known hole starts closer. Do not reassign source metadata.
-      const starts=features.filter(f=>String(propsOf(f).golf).toLowerCase()==='hole' && ['LineString','MultiLineString'].includes(f.geometry.type)).map(f=>({feature:f,start:coordinatesOf(f.geometry)[0]}));
-      for(const f of features.filter(f=>holeNumber(f)===null && canonicalType(f)==='티')) {
-        const c=centerOf(f);if(!c) continue;
-        const distance=distanceMeters(c,lineCoords[0]);
-        if(distance<=45 && !starts.some(other=>other.feature!==line && distanceMeters(c,other.start)<=distance)) selected.push(f);
-      }
-    }
-    const polygonPath = f => {
-      const g=f.geometry, polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
-      return polys.map(poly=>poly.map(ring=>pathLine(ring)+' Z').join(' ')).join(' ');
-    };
-    if (isolated) {
-      // A display-only corridor includes nearby hazards but clips their distant branches.
-      // Explicitly selected surfaces are included whole, with a small surrounding margin.
-      const defs=svgNode('defs'), mask=svgNode('mask',{id:'holeContextMask',maskUnits:'userSpaceOnUse',x:0,y:0,width,height});
-      mask.appendChild(svgNode('path',{d:pathLine(lineCoords),fill:'none',stroke:'white','stroke-width':(satellite?110:70)*scale,'stroke-linecap':'round','stroke-linejoin':'round'}));
-      for(const f of selected.filter(f=>!satellite || ['티','페어웨이','그린'].includes(canonicalType(f)))) {
-        const d=polygonPath(f);
-        if(d) mask.appendChild(svgNode('path',{d,fill:'white',stroke:'white','stroke-width':30*scale,'stroke-linejoin':'round','fill-rule':'evenodd'}));
-      }
-      defs.appendChild(mask);svg.appendChild(defs);
-    }
-    if(satellite) {
-      const projectWorld=p=>{const [x,y]=localWorld(p);return [180+(x*Math.cos(angle)-y*Math.sin(angle)-(minX+maxX)/2)*scale,height/2+(x*Math.sin(angle)+y*Math.cos(angle)-(minY+maxY)/2)*scale];};
-      drawSatellite(svg,projectWorld,scale,origin[1],width,height,isolated);
-    }
-    const surface = svgNode('g',{id:'courseSurfaceLayer',display:satellite?'none':'inline'}); svg.appendChild(surface);
-    const nearbyHazards = svgNode('g', isolated ? {mask:'url(#holeContextMask)', 'data-layer':'nearby-hazards'} : {});
-    surface.appendChild(nearbyHazards);
-    const drawSurface = (f,parent) => {
-      const color=colors[canonicalType(f)], g=f.geometry; if (!color) return;
-      const d=polygonPath(f), attrs={'data-feature-id':String(f.id ?? ''),'data-surface':String(propsOf(f).golf ?? ''),'data-hole':String(holeNumber(f) ?? '')};
-      if(d) parent.appendChild(svgNode('path',{...attrs,d,fill:color,stroke:'#193b2b','stroke-width':.8,'fill-rule':'evenodd'}));
-      else if(g.type==='Point') {const p=project(g.coordinates);parent.appendChild(svgNode('circle',{...attrs,cx:p[0],cy:p[1],r:4,fill:color}));}
-    };
-    const ordered = list => list.slice().sort((a,b)=>(priority[canonicalType(a)]||0)-(priority[canonicalType(b)]||0));
-    if(isolated) {
-      // Unassigned playable surfaces from other holes are not a backdrop for this hole.
-      for(const f of ordered(features.filter(f=>holeNumber(f)===null && ['벙커','워터'].includes(canonicalType(f))))) drawSurface(f,nearbyHazards);
-      for(const f of ordered(selected)) drawSurface(f,surface);
-    } else {
-      for(const f of ordered(features.filter(f=>holeNumber(f)===null || holeNumber(f)===round.hole))) drawSurface(f,surface);
-    }
-    if (line) {
-      const parts=line.geometry.type==='LineString'?[line.geometry.coordinates]:line.geometry.coordinates;
-      svg.appendChild(svgNode('path',{d:parts.map(pathLine).join(' '),fill:'none',stroke:'#fff','stroke-width':1.8,'stroke-dasharray':'6 5'}));
-    }
-    $('greenDetailBtn').disabled = !greenCenter;
-    lastGreenContext = greenCenter ? {greenCenter,lineCoords,angle,origin} : null;
-    if (greenCenter) {
-      const [cx,cy]=project(greenCenter);
-      for (const distance of [200,150,100,50]) {
-        const r=distance*scale;
-        svg.appendChild(svgNode('circle',{cx,cy,r,fill:'none',stroke:'#fff','stroke-opacity':.6,'stroke-width':1,'stroke-dasharray':'3 4'}));
-        svg.appendChild(svgNode('text',{x:Math.max(28,Math.min(330,cx)),y:cy+r-4,'text-anchor':'middle'},`${distance}m`));
-      }
-      svg.appendChild(svgNode('circle',{cx,cy,r:3,fill:'#fff',stroke:'#173b25'}));
-      svg.appendChild(svgNode('path',{d:`M${cx},${cy} v-25 l19,5 -19,7`,fill:'#ff4656',stroke:'#ff4656','stroke-width':2}));
-      svg.appendChild(svgNode('text',{x:Math.max(100,Math.min(260,cx)),y:cy+18,'text-anchor':'middle'},'Green Center'));
-      if (current) $('greenDistance').textContent = `${Math.round(distanceMeters([current.longitude,current.latitude],greenCenter))} m`;
-      const base=featureElevation(green);
-      if (base !== null) for (const f of matching) {
-        const elevation=featureElevation(f), c=centerOf(f);
-        if (elevation===null || !c) continue;
-        const [x,y]=project(c), difference=Math.round(elevation-base);
-        svg.appendChild(svgNode('text',{x,y:y+16},`${difference>0?'+':''}${difference}m (Green 기준)`));
-      }
-    }
-    let gpsNote='';
-    if(current) {
-      const [x,y]=project([current.longitude,current.latitude]);
-      if(x>=8 && x<=352 && y>=8 && y<=height-8) {
-        const stale=Date.now()-current.timestamp>30000;
-        svg.appendChild(svgNode('circle',{cx:x,cy:y,r:Math.min(600,Math.max(0,current.accuracy*scale)),fill:'#2688ff','fill-opacity':.12,stroke:'#2688ff','stroke-opacity':.5}));
-        svg.appendChild(svgNode('circle',{id:'gpsMapMarker',cx:x,cy:y,r:6,fill:stale?'#888':'#2688ff',stroke:'#fff','stroke-width':2}));
-        svg.appendChild(svgNode('text',{x:Math.min(290,Math.max(35,x)),y:Math.max(18,y-12),'text-anchor':'middle'},stale?'마지막 GPS':'현재 GPS'));
-      } else gpsNote=' · GPS: 선택 홀 지도 밖';
-    }
-    $('mapStatus').textContent = `${!greenCenter?'Green Center unavailable · Distance references unavailable':''}${gpsNote ? 'GPS position outside this hole' : ''}`;
-  }
-  function drawSatelliteDetail(svg, projectWorld, scale, latitude, width, height) {
-    const zoom=Math.max(0,Math.min(SATELLITE_PROVIDER.maxZoom,Math.ceil(Math.log2(scale*2*Math.PI*6371000*Math.cos(latitude*Math.PI/180)/256))));
-    const n=2**zoom;
-    const a=projectWorld([0,0]), b=projectWorld([1/n,0]), d=projectWorld([0,1/n]);
-    const u=[b[0]-a[0],b[1]-a[1]], v=[d[0]-a[0],d[1]-a[1]], det=u[0]*v[1]-u[1]*v[0];
-    const inverse=(x,y)=>[((x-a[0])*v[1]-(y-a[1])*v[0])/det,(u[0]*(y-a[1])-u[1]*(x-a[0]))/det];
-    const corners=[[0,0],[width,0],[0,height],[width,height]].map(p=>inverse(...p));
-    const x0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[0])))),x1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[0]))));
-    const y0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p[1])))),y1=Math.min(n-1,Math.floor(Math.max(...corners.map(p=>p[1]))));
-    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) {
-      const pos=projectWorld([x/n,y/n]);
-      const tile=svgNode('image',{width:256.2,height:256.2,preserveAspectRatio:'none',transform:`matrix(${u[0]/256} ${u[1]/256} ${v[0]/256} ${v[1]/256} ${pos[0]} ${pos[1]})`});
-      tile.setAttribute('href',SATELLITE_PROVIDER.url.replace('{z}',zoom).replace('{x}',x).replace('{y}',y));
-      svg.appendChild(tile);
-    }
-  }
-  function openGreenDetail() {
-    if(!lastGreenContext) return;
-    const svg=$('greenDetailMap'); svg.replaceChildren();
-    const width=360,height=440; svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
-    const center=lastGreenContext.greenCenter, worldOrigin=mercator(center), worldMetres=2*Math.PI*6371000*Math.cos(center[1]*Math.PI/180);
-    const localWorld=p=>[(p[0]-worldOrigin[0])*worldMetres,(p[1]-worldOrigin[1])*worldMetres];
-    const angle=lastGreenContext.angle || 0, scale=Math.min(width/105,height/105);
-    const projectWorld=p=>{const [x,y]=localWorld(p);return [width/2+(x*Math.cos(angle)-y*Math.sin(angle))*scale,height/2+(x*Math.sin(angle)+y*Math.cos(angle))*scale];};
-    drawSatelliteDetail(svg,projectWorld,scale,center[1],width,height);
-    const [cx,cy]=projectWorld(mercator(center));
-    svg.appendChild(svgNode('circle',{cx,cy,r:6,fill:'#fff',stroke:'#173b25','stroke-width':2}));
-    svg.appendChild(svgNode('path',{d:`M${cx},${cy} v-34 l24,6 -24,9`,fill:'#ff4656',stroke:'#ff4656','stroke-width':2}));
-    svg.appendChild(svgNode('text',{x:cx,y:cy+24,'text-anchor':'middle'},'Green Center'));
-    $('greenDetailTitle').textContent=`Hole ${round.hole} · Green Detail`;
-    $('greenModal').hidden=false;
-  }
-  function closeGreenDetail(){ $('greenModal').hidden=true; }
-
-  const mainMap=$('courseMap');
-  mainMap.addEventListener('wheel',e=>{if(mapMode!=='satellite')return;e.preventDefault();zoomViewport(e.deltaY>0?1.15:.87,e.clientX,e.clientY);},{passive:false});
-  mainMap.addEventListener('pointerdown',e=>{if(mapMode!=='satellite')return;mainMap.setPointerCapture(e.pointerId);mapPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});mainMap.classList.add('dragging');});
-  mainMap.addEventListener('pointermove',e=>{
-    if(mapMode!=='satellite'||!mapPointers.has(e.pointerId)||!mapViewport)return;
-    const prev=mapPointers.get(e.pointerId),rect=mainMap.getBoundingClientRect();
-    mapPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(mapPointers.size===1){
-      const [x,y,w,h]=mapViewport;
-      mapViewport=clampViewport([x-(e.clientX-prev.x)/rect.width*w,y-(e.clientY-prev.y)/rect.height*h,w,h],360,Math.max(350,Math.round(360*(mainMap.clientHeight||540)/(mainMap.clientWidth||360))));
-      applyMapViewport();
-    } else if(mapPointers.size===2){
-      const pts=[...mapPointers.values()],dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
-      const midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;
-      if(lastPinchDistance) zoomViewport(lastPinchDistance/dist,midX,midY);
-      lastPinchDistance=dist;
-    }
+  },e=>{$('gpsTop').textContent=e.code===1?'GPS 권한 필요':'GPS 오류'},
+  {enableHighAccuracy:true,maximumAge:0,timeout:15000});
+}
+function hole(){return round?.holes[round.currentHole-1]}
+function showScreen(name){
+  ['setup','round','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
+  if(name!=='setup')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
+  document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
+  if(name==='round')renderRound();
+  if(name==='overview')renderOverview();
+  if(name==='performance')renderPerformance();
+  if(name==='flo')renderFlo();
+  if(name==='story')renderStory();
+}
+function initScales(){
+  ['commitScale','thinkScale'].forEach(id=>{
+    for(let i=1;i<=5;i++){const b=document.createElement('button');b.textContent=i;b.dataset.v=i;$(id).appendChild(b)}
   });
-  const endPointer=e=>{mapPointers.delete(e.pointerId);if(mapPointers.size<2)lastPinchDistance=null;if(!mapPointers.size)mainMap.classList.remove('dragging');};
-  mainMap.addEventListener('pointerup',endPointer);mainMap.addEventListener('pointercancel',endPointer);
-  $('greenDetailBtn').addEventListener('click',openGreenDetail);
-  $('greenClose').addEventListener('click',closeGreenDetail);
-  $('greenModal').addEventListener('click',e=>{if(e.target===$('greenModal'))closeGreenDetail();});
+  clubs.forEach(c=>{const b=document.createElement('button');b.className='club'+(c==='DR'?' primary':'');b.textContent=c;b.dataset.club=c;$('clubgrid').appendChild(b)});
+  for(let i=1;i<=18;i++){const b=document.createElement('button');b.className='holebtn';b.textContent=i;b.dataset.hole=i;$('holebar').appendChild(b)}
+}
+function setSelected(container,value){
+  container.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',String(b.dataset.v)===String(value)||String(b.dataset.par)===String(value)));
+}
+function resetFlo(){floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};['commitScale','thinkScale','routineChoice','stateChoice'].forEach(id=>setSelected($(id),'__'));$('floNote').value=''}
+function openFlo(){
+  if(!round?.pending)return;
+  resetFlo();
+  $('floShotLabel').textContent='Hole '+round.currentHole+' · '+round.pending.club;
+  $('floModal').classList.remove('hidden');
+}
+function finalizePending(endPoint,endLie){
+  if(!round.pending)return null;
+  const p=round.pending;
+  const shot={
+    id:p.id,hole:round.currentHole,club:p.club,start:p.start,end:endPoint||null,
+    startLie:p.startLie||'Unknown',endLie:endLie||'Unknown',
+    distanceM:hav(p.start,endPoint),startedAt:p.startedAt,
+    flo:p.flo||null
+  };
+  hole().shots.push(shot); round.pending=null; save(); return shot;
+}
+function startShot(club){
+  if(!hole().par){alert('먼저 이 홀의 Par를 선택하세요.');return}
+  if(round.pending){
+    if(!round.pending.flo){openFlo();return}
+    finalizePending(gpsPoint(),currentLie);
+  }
+  if(!gps){alert('GPS 위치를 먼저 확인해 주세요.');startGPS();return}
+  round.pending={id:'s'+Date.now(),club,start:gpsPoint(),startLie:hole().shots.length===0?'Tee':currentLie,startedAt:Date.now(),flo:null};
+  save();renderRound();
+}
+function renderRound(){
+  if(!round)return;
+  $('roundCourse').textContent=round.course;$('roundNine').textContent=round.nine+' · '+round.tee;
+  $('holeTitle').textContent='Hole '+round.currentHole;
+  $('holeParText').textContent=hole().par?' · Par '+hole().par:' · Par 선택 필요';
+  document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
+  $('parChooser').classList.toggle('hidden',!!hole().par);
+  $('gpsInfo').textContent=gps?gps.lat.toFixed(5)+', '+gps.lng.toFixed(5):'Waiting';
+  $('gpsAcc').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'위치 권한 필요';
+  $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' shots';
+  $('pendingCard').classList.toggle('hidden',!round.pending);
+  $('clubCard').classList.toggle('hidden',!!round.pending);
+  $('lieCard').classList.toggle('hidden',hole().shots.length===0 && !round.pending);
+  if(round.pending){
+    $('pendingClub').textContent=round.pending.club;
+    $('pendingGPS').textContent=round.pending.start?'±'+Math.round(round.pending.start.accuracy||0)+'m':'No GPS';
+    $('shotHitFloBtn').textContent=round.pending.flo?'FLO 저장됨 · 이동 후 다음 클럽':'샷 완료 · FLO 입력';
+    $('shotHitFloBtn').disabled=!!round.pending.flo;
+  }
+  const last=hole().shots.at(-1);
+  $('lastShotCard').classList.toggle('hidden',!last);
+  if(last)$('lastShotText').textContent=last.club+' · '+(last.distanceM?Math.round(last.distanceM)+'m':'거리 미확정')+' · '+last.endLie;
+}
+function completeHole(){
+  const h=hole(); if(!h.par){alert('Par를 선택하세요.');return}
+  if(round.pending){
+    if(!round.pending.flo){$('puttModal').classList.add('hidden');openFlo();return}
+    finalizePending(gpsPoint(),'Green');
+  }
+  if(!puttDraft.count){alert('Total Putts를 선택하세요.');return}
+  h.putts=Number(puttDraft.count);h.firstPutt=puttDraft.distance;h.completed=true;h.completedAt=Date.now();
+  save();$('puttModal').classList.add('hidden');puttDraft={distance:null,count:null};
+  if(round.currentHole<18){round.currentHole++;currentLie='Unknown';save();renderRound()}
+  else{round.completedAt=Date.now();save();showScreen('overview')}
+}
+function holeScore(h){return h.completed?h.shots.length+(h.putts||0)+(h.penalties||0):null}
+function toPar(){
+  let s=0,p=0;round.holes.filter(h=>h.completed&&h.par).forEach(h=>{s+=holeScore(h);p+=h.par});return {s,p,d:s-p}
+}
+function allShots(){return round?round.holes.flatMap(h=>h.shots):[]}
+function allFlo(){return allShots().filter(s=>s.flo).map(s=>({...s.flo,hole:s.hole,club:s.club,distanceM:s.distanceM,endLie:s.endLie}))}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
+function pct(n,d){return d?Math.round(n/d*100):null}
+function renderOverview(){
+  if(!round)return;const c=round.holes.filter(h=>h.completed),tp=toPar();
+  $('overviewCourse').textContent=round.course+' · '+round.nine;
+  $('scoreBig').innerHTML=(c.length?tp.s:'—')+'<small>'+(c.length?(tp.d>0?'+':'')+tp.d+' to par':'Completed holes')+'</small>';
+  $('ovHoles').textContent=c.length;$('ovPutts').textContent=c.reduce((a,h)=>a+(h.putts||0),0);
+  $('ovPen').textContent=round.holes.reduce((a,h)=>a+h.penalties,0);$('ovFlo').textContent=allFlo().length;
+  $('scorecard').innerHTML=round.holes.map(h=>'<div class="scoreCell">'+h.hole+'<b>'+(holeScore(h)??'—')+'</b></div>').join('');
+}
+function stats(){
+  const completed=round.holes.filter(h=>h.completed&&h.par);
+  const par45=completed.filter(h=>h.par>=4);
+  let firN=0,firD=0,girN=0;
+  const drives=[];
+  completed.forEach(h=>{
+    if(h.par>=4&&h.shots[0]){firD++; if(h.shots[0].endLie==='Fairway')firN++; if(h.shots[0].distanceM)drives.push(h.shots[0].distanceM)}
+    const onGreenShot=h.shots.length; if(onGreenShot<=h.par-2)girN++;
+  });
+  const misses=completed.filter(h=>h.shots.length>h.par-2);
+  const scr=misses.filter(h=>holeScore(h)<=h.par).length;
+  return {completed,firN,firD,girN,putts:completed.reduce((a,h)=>a+(h.putts||0),0),
+    penalties:completed.reduce((a,h)=>a+h.penalties,0),drive:avg(drives),scr,scrD:misses.length};
+}
+function renderPerformance(){
+  if(!round)return;const s=stats();
+  $('statFir').textContent=s.firD?(s.firN+'/'+s.firD):'—';
+  $('statGir').textContent=s.completed.length?(s.girN+'/'+s.completed.length):'—';
+  $('statPutts').textContent=s.putts;$('statDrive').textContent=s.drive?Math.round(s.drive)+'m':'—';
+  $('statPen').textContent=s.penalties;$('statScramble').textContent=s.scrD?(s.scr+'/'+s.scrD):'—';
+}
+function renderFlo(){
+  const f=allFlo();const ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean)),at=avg(f.map(x=>Number(x.thinking)).filter(Boolean));
+  const rf=f.filter(x=>x.routine==='Full').length;
+  $('floCommit').textContent=ac?ac.toFixed(1):'—';$('floThink').textContent=at?at.toFixed(1):'—';$('floRoutine').textContent=f.length?pct(rf,f.length)+'%':'—';
+  const byHole={};f.forEach(x=>{(byHole[x.hole]??=[]).push(x)});
+  $('floBars').innerHTML=Object.keys(byHole).length?Object.entries(byHole).map(([h,a])=>{
+    const c=avg(a.map(x=>Number(x.commitment))),t=avg(a.map(x=>Number(x.thinking)));
+    return '<div class="barRow"><span>Hole '+h+'</span><div><div class="bar"><i style="width:'+(c/5*100)+'%"></i></div><div class="bar think" style="margin-top:4px"><i style="width:'+(t/5*100)+'%"></i></div></div><b>'+c.toFixed(1)+'</b></div>';
+  }).join(''):'<div class="pendingText">아직 FLO 데이터가 없습니다.</div>';
+  let pattern='FLO가 더 쌓이면 Shot 결과와 함께 패턴을 표시합니다.';
+  if(f.length>=4){
+    if(at>=3.8)pattern='현재 라운드에서 Thinking Load가 높은 편입니다. 결과와 함께 반복되는 구간을 확인하세요.';
+    else if(ac>=4&&at<=2.5)pattern='높은 Commitment와 낮은 Thinking Load 상태가 반복되고 있습니다. 이 상태에서의 Shot 결과를 기준 패턴으로 축적합니다.';
+    else pattern='Commitment와 Thinking Load의 변화가 관찰됩니다. 아직 원인으로 단정하지 않고 Shot 결과와 함께 축적합니다.';
+  }
+  $('floPattern').textContent=pattern;
+}
+function renderStory(){
+  if(!round)return;const s=stats(),f=allFlo(),tp=toPar(),ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean)),at=avg(f.map(x=>Number(x.thinking)).filter(Boolean));
+  const holes=s.completed.length;
+  let blocks=[];
+  if(!holes)blocks.push({t:'아직 완료된 홀이 없습니다',p:'라운드가 진행되면 Score, Shot, FLO를 기반으로 Story가 만들어집니다.'});
+  else{
+    blocks.push({t:'Round snapshot',p:holes+'홀 완료 · '+tp.s+'타 · '+(tp.d>0?'+':'')+tp.d+' to par. Putts '+s.putts+', Penalty '+s.penalties+'.'});
+    if(s.firD)blocks.push({t:'Off the tee',p:'Fairway '+s.firN+'/'+s.firD+' ('+pct(s.firN,s.firD)+'%). 평균 기록 드라이브 '+(s.drive?Math.round(s.drive)+'m':'거리 데이터 부족')+'.'});
+    blocks.push({t:'Green & scoring',p:'GIR '+s.girN+'/'+holes+' ('+pct(s.girN,holes)+'%). Scrambling '+(s.scrD?s.scr+'/'+s.scrD:'데이터 부족')+'.'});
+    if(f.length)blocks.push({t:'FLO connection',p:'Commitment 평균 '+(ac?ac.toFixed(1):'—')+', Thinking Load 평균 '+(at?at.toFixed(1):'—')+'. 현재는 관계 패턴을 표시하며 원인으로 단정하지 않습니다.'});
+  }
+  $('storyContent').innerHTML=blocks.map(b=>'<div class="storyBlock"><strong>'+b.t+'</strong><p>'+b.p+'</p></div>').join('');
+  let focus=[];
+  if(s.completed.length){
+    const girRate=pct(s.girN,s.completed.length);
+    if(girRate!==null&&girRate<55)focus.push('Approach: GIR이 낮은 구간의 거리/클럽 패턴 확인');
+    if(s.putts/s.completed.length>2)focus.push('Putting: 첫 퍼트 거리와 3-putt 패턴 확인');
+    if(at&&at>=3.8)focus.push('FLO: Thinking Load가 높아질 때 Routine 유지');
+    if(ac&&ac<3)focus.push('FLO: Address 전 Commitment를 명확히 결정');
+    if(!focus.length)focus.push('현재 강점 패턴을 유지하면서 다음 라운드 데이터 축적');
+  }else focus.push('라운드를 진행하면 Next Focus가 생성됩니다.');
+  $('nextFocus').innerHTML=focus.map((x,i)=>(i+1)+'. '+x).join('<br><br>');
+}
 
-  for(let hole=1;hole<=9;hole++) {const button=document.createElement('button');button.type='button';button.dataset.hole=hole;button.textContent=hole;button.setAttribute('aria-label',`Hole ${hole}`);button.addEventListener('click',()=>changeHole(hole));$('roundHole').appendChild(button);}
-  $('vectorMode').addEventListener('click',()=>setMapMode('vector'));
-  $('satelliteMode').addEventListener('click',()=>setMapMode('satellite'));
-  window.addEventListener('resize', renderVectorMap);
-  $('prevHole').addEventListener('click',()=>changeHole(round.hole-1));
-  $('nextHole').addEventListener('click',()=>changeHole(round.hole+1));
-  $('roundStart').addEventListener('click',()=>{if(!round.startedAt){round.startedAt=new Date().toISOString();saveRound();}startTracking();});
-  setInterval(()=>{
-    if(watchId!==null && lastFixAt && Date.now()-lastFixAt>30000){trackingMessage='GPS 신호 대기 중 · 마지막 위치는 오래된 좌표입니다.';renderRound();}
-    if(current) renderVectorMap();
-  },15000);
-  renderRound(); renderVectorMap();
-  // Reload restores the round, but location permission/tracking resumes only on an explicit tap.
+initScales();
+startGPS();
+const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
-  renderHistory();
-})();
+$('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
+$('startRoundBtn').onclick=()=>{round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;save();showScreen('round')};
+$('resumeRoundBtn').onclick=()=>{round=load();tee=round.tee||'Regular';showScreen('round')};
+$('holebar').addEventListener('click',e=>{if(!e.target.dataset.hole||!round)return;if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';save();renderRound()});
+$('parChooser').addEventListener('click',e=>{if(!e.target.dataset.par)return;hole().par=Number(e.target.dataset.par);save();renderRound()});
+$('lieRow').addEventListener('click',e=>{if(!e.target.dataset.lie)return;currentLie=e.target.dataset.lie;document.querySelectorAll('.lie').forEach(b=>b.classList.toggle('sel',b.dataset.lie===currentLie))});
+$('clubgrid').addEventListener('click',e=>{if(!e.target.dataset.club)return;if(e.target.dataset.club==='Putter'){$('puttModal').classList.remove('hidden');return}if(e.target.dataset.club==='More'){alert('Custom club은 다음 단계에서 추가합니다.');return}startShot(e.target.dataset.club)});
+$('shotHitFloBtn').onclick=()=>openFlo();
+$('cancelShotBtn').onclick=()=>{if(confirm('선택한 Shot을 취소할까요?')){round.pending=null;save();renderRound()}};
+$('penaltyBtn').onclick=()=>{hole().penalties++;save();renderRound()};
+$('onGreenBtn').onclick=()=>{$('puttModal').classList.remove('hidden')};
+$('floClose').onclick=()=>{$('floModal').classList.add('hidden')};
+$('puttClose').onclick=()=>{$('puttModal').classList.add('hidden')};
+$('commitScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.commitment=Number(e.target.dataset.v);setSelected($('commitScale'),floDraft.commitment)};
+$('thinkScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.thinking=Number(e.target.dataset.v);setSelected($('thinkScale'),floDraft.thinking)};
+$('routineChoice').onclick=e=>{if(!e.target.dataset.v)return;floDraft.routine=e.target.dataset.v;setSelected($('routineChoice'),floDraft.routine)};
+$('stateChoice').onclick=e=>{if(!e.target.dataset.v)return;floDraft.state=e.target.dataset.v;setSelected($('stateChoice'),floDraft.state)};
+$('saveFloBtn').onclick=()=>{
+  if(!floDraft.commitment||!floDraft.thinking||!floDraft.routine||!floDraft.state){alert('Commitment, Thinking, Routine, State를 입력하세요.');return}
+  floDraft.note=$('floNote').value.trim();round.pending.flo={...floDraft,at:Date.now()};save();$('floModal').classList.add('hidden');renderRound()
+};
+$('puttDist').onclick=e=>{if(!e.target.dataset.v)return;puttDraft.distance=e.target.dataset.v;setSelected($('puttDist'),puttDraft.distance)};
+$('puttCount').onclick=e=>{if(!e.target.dataset.v)return;puttDraft.count=Number(e.target.dataset.v);setSelected($('puttCount'),puttDraft.count)};
+$('savePuttBtn').onclick=completeHole;
+$('bottomnav').addEventListener('click',e=>{const b=e.target.closest('button');if(b?.dataset.screen)showScreen(b.dataset.screen)});
+$('endRoundBtn').onclick=()=>{if(confirm('현재 라운드를 종료하고 Overview를 볼까요?')){round.completedAt=Date.now();save();showScreen('overview')}};
+$('gpsTop').onclick=startGPS;
 </script>
 </body>
 </html>
