@@ -313,6 +313,124 @@ select,input,textarea{
 .map-load-status span{display:block;color:#a9c0b2;font-size:12px;line-height:1.5;margin-top:6px}
 .gm-style .gm-style-cc{font-size:9px}
 
+
+/* ===== AGI PLAYER MAP-FIRST ROUND UI ===== */
+.round-map-screen{padding:0!important;overflow:hidden}
+.roundMapStage{
+  position:relative;
+  height:calc(100svh - 64px);
+  min-height:620px;
+  background:#06110c;
+  overflow:hidden;
+}
+.roundMapStage .google-map{position:absolute;inset:0;width:100%;height:100%;background:#0b2018}
+.roundMapStage .map-load-status{position:absolute;inset:0;z-index:12}
+.mapTopPanel{
+  position:absolute;z-index:6;left:10px;right:10px;top:10px;
+  padding:11px 12px 9px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(5,20,14,.91),rgba(5,20,14,.72));
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:0 12px 28px rgba(0,0,0,.24);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.roundCourseLine,.holeLine,.clubDockHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mapCourseName{font-size:15px;font-weight:950;line-height:1.1}
+.mapCourseMeta{font-size:10px;color:#c2d0c7;margin-top:3px}
+.roundTopActions{display:flex;gap:6px}
+.mapMiniBtn{
+  border:1px solid rgba(255,255,255,.24);background:rgba(6,25,18,.58);color:#dce8e1;
+  border-radius:999px;padding:7px 9px;font-size:9px;font-weight:950;letter-spacing:.05em
+}
+.holeLine{margin-top:9px;font-size:12px}
+.holeLine strong{font-size:15px}
+#holeParText{color:#b7c7bd;font-size:10px}
+.mapShotCount{
+  border:1px solid rgba(255,255,255,.18);background:rgba(5,20,15,.62);
+  border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900
+}
+.mapHoleBar{margin-top:8px;padding:0;gap:5px}
+.mapHoleBar .holebtn{min-width:32px;height:32px;border-radius:10px;font-size:11px;background:rgba(5,23,17,.72)}
+.mapHoleBar .holebtn.sel{background:linear-gradient(180deg,#ff9b32,#f16d00)}
+.mapRightControls{
+  position:absolute;z-index:7;right:12px;top:150px;display:grid;gap:7px
+}
+.mapControlBtn{
+  min-width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.25);
+  background:rgba(5,20,15,.82);color:#fff;font-size:20px;font-weight:950;
+  box-shadow:0 8px 20px rgba(0,0,0,.22);backdrop-filter:blur(10px)
+}
+.mapControlText{font-size:9px;letter-spacing:.04em;padding:0 7px}
+#autoBtn{opacity:.72}
+.targetInfo{
+  position:absolute;z-index:7;left:12px;top:150px;max-width:190px;
+  border:1px solid rgba(255,154,50,.55);background:rgba(8,27,20,.88);
+  border-radius:16px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.25);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+.targetEyebrow{font-size:8px;font-weight:950;letter-spacing:.18em;color:#ff9b32}
+.targetDistance{font-size:26px;font-weight:1000;margin-top:2px}
+.targetMeta{font-size:9px;color:#c3d2c8;margin-top:3px;line-height:1.35}
+.mapBottomStatus{
+  position:absolute;z-index:7;left:12px;right:12px;bottom:145px;
+  display:flex;justify-content:space-between;pointer-events:none
+}
+.mapBottomStatus span{
+  border:1px solid rgba(255,255,255,.18);background:rgba(5,20,15,.75);
+  border-radius:999px;padding:7px 10px;font-size:9px;font-weight:900;color:#e6eee9;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
+}
+.clubDock{
+  position:absolute;z-index:8;left:10px;right:10px;bottom:10px;
+  background:rgba(6,24,18,.88);border:1px solid rgba(255,255,255,.24);
+  border-radius:20px;padding:10px;box-shadow:0 16px 34px rgba(0,0,0,.34);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)
+}
+.dockLabel{display:block;font-size:8px;letter-spacing:.17em;color:#82f3a3;font-weight:950}
+#clubBasisLabel{display:block;font-size:12px;margin-top:2px}
+.dockUtility{display:flex;gap:6px}
+.dockAction{
+  min-height:34px;border:1px solid rgba(255,255,255,.18);border-radius:11px;
+  background:rgba(255,255,255,.06);color:#fff;padding:7px 9px;font-size:9px;font-weight:950
+}
+.dockAction.primary{background:linear-gradient(180deg,#43dc82,#149d53);border-color:#7effa4}
+.dockAction.green{background:rgba(24,142,72,.52);border-color:rgba(96,255,143,.45)}
+.dockAction.danger{background:rgba(89,24,31,.48);border-color:rgba(255,103,117,.40);color:#ffc2c8}
+.dockAction.subtle{background:rgba(255,255,255,.04)}
+.clubSuggestions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
+.clubSuggestion{
+  min-height:54px;border:1px solid rgba(255,255,255,.20);border-radius:15px;
+  background:rgba(4,20,15,.76);color:#fff;text-align:left;padding:9px 10px
+}
+.clubSuggestion b{display:block;font-size:17px}
+.clubSuggestion span{display:block;font-size:9px;color:#a9bbb0;margin-top:2px}
+.clubSuggestion.best{border-color:#ff9b32;background:rgba(255,125,18,.16)}
+.clubMoreBtn{
+  width:100%;margin-top:7px;border:0;background:transparent;color:#b7c7bd;
+  font-size:9px;font-weight:950;letter-spacing:.09em;padding:3px
+}
+.pendingStrip{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pendingStrip strong{display:block;font-size:19px}
+.pendingLabel{display:block;font-size:8px;letter-spacing:.15em;color:#7ff39f;font-weight:950}
+.pendingStrip small{display:block;color:#9fb2a7;font-size:9px;margin-top:2px}
+.pendingActions{display:flex;gap:6px}
+.allClubList{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.allClubBtn{
+  min-height:62px;border:1px solid rgba(255,255,255,.18);border-radius:16px;
+  background:rgba(4,20,15,.75);color:#fff;padding:10px;text-align:left
+}
+.allClubBtn b{display:block;font-size:17px}.allClubBtn span{font-size:9px;color:#a8bbb0}
+.clubSheet{max-height:72svh}
+#roundScreen + #overviewScreen{margin-top:0}
+body.round-active .bottomnav{display:none!important}
+@media(max-width:520px){
+  .roundMapStage{height:calc(100svh - 61px);min-height:580px}
+  .mapTopPanel{left:7px;right:7px;top:7px}
+  .mapRightControls{right:9px;top:146px}
+  .targetInfo{left:9px;top:146px}
+  .clubDock{left:7px;right:7px;bottom:7px}
+  .mapBottomStatus{left:9px;right:9px;bottom:143px}
+}
+
 </style>
 </head>
 <body>
@@ -359,67 +477,79 @@ select,input,textarea{
       <button id="resumeRoundBtn" class="btn ghost full hidden" style="margin-top:8px">Resume Saved Round</button>
     </section>
 
-    <section id="roundScreen" class="screen hidden">
-      <div class="row between" style="margin-bottom:6px">
-        <div><div id="roundCourse" class="title">Course</div><div id="roundNine" class="sub">Course</div></div>
-        <button id="endRoundBtn" class="btn ghost small">Round 종료</button>
-      </div>
-      <div id="holebar" class="holebar"></div>
-      <div class="row between" style="margin:2px 0 8px">
-        <div><strong id="holeTitle">Hole 1</strong> <span id="holeParText" class="sub">Course data 대기</span></div>
-        <div id="liveScore" class="pill">0 shots</div>
-      </div>
+    <section id="roundScreen" class="screen hidden round-map-screen">
+      <div class="roundMapStage">
+        <div id="googleMap" class="google-map" aria-label="AGI Player satellite course map"></div>
 
-      <div id="courseDataStatus" class="card course-data-status">
-        <div class="row between">
-          <div>
-            <div class="title">Course Data</div>
-            <div class="sub">Par · Yardage · Hole data는 Golf Intelligence 연결 후 자동 표시</div>
-          </div>
-          <span class="pill waiting-pill">DATA WAIT</span>
-        </div>
-      </div>
-
-      <div class="mapPlaceholder googleMapShell">
-        <div id="googleMap" class="google-map" aria-label="Jagorawi Old Course satellite map"></div>
         <div id="mapLoadStatus" class="map-load-status">
           <div class="mapIcon">⌖</div>
           <strong>Google Satellite</strong>
           <span>Jagorawi Old Course 지도를 불러오는 중...</span>
         </div>
-      </div>
 
-      <div class="grid2" style="margin-top:10px">
-        <div class="metric"><div class="k">CURRENT GPS</div><div id="gpsInfo" class="v" style="font-size:14px">Waiting</div><div id="gpsAcc" class="s">—</div></div>
-        <div class="metric"><div class="k">TO GREEN</div><div class="v">—</div><div class="s">Map 연결 후</div></div>
-      </div>
-
-      <div id="lieCard" class="card">
-        <div class="row between"><div><div class="title">현재 Lie</div><div class="sub">지금은 수동 · Map 연결 후 자동 판정</div></div><div id="lieAutoLabel" class="pill">Manual</div></div>
-        <div id="lieRow" class="lieRow" style="margin-top:10px">
-          <button class="lie sel" data-lie="Unknown">Unknown</button>
-          <button class="lie" data-lie="Fairway">Fairway</button>
-          <button class="lie" data-lie="Rough">Rough</button>
-          <button class="lie" data-lie="Bunker">Bunker</button>
-          <button class="lie" data-lie="Recovery">Recovery</button>
+        <div class="mapTopPanel">
+          <div class="roundCourseLine">
+            <div>
+              <div id="roundCourse" class="mapCourseName">Course</div>
+              <div id="roundNine" class="mapCourseMeta">Course</div>
+            </div>
+            <div class="roundTopActions">
+              <button id="reportBtn" class="mapMiniBtn">REPORT</button>
+              <button id="endRoundBtn" class="mapMiniBtn">END</button>
+            </div>
+          </div>
+          <div class="holeLine">
+            <div><strong id="holeTitle">Hole 1</strong><span id="holeParText"> · Course data 대기</span></div>
+            <span id="liveScore" class="mapShotCount">0 shots</span>
+          </div>
+          <div id="holebar" class="holebar mapHoleBar"></div>
         </div>
-      </div>
 
-      <div id="pendingCard" class="card pending hidden">
-        <div class="row between"><div><div class="sub">SHOT READY</div><div id="pendingClub" class="clubName">Driver</div></div><span id="pendingGPS" class="pill">GPS</span></div>
-        <div class="hint">현재 위치가 Shot Start로 저장되었습니다.<br>실제 샷을 한 뒤 바로 FLO를 입력하세요.</div>
-        <button id="shotHitFloBtn" class="btn primary full" style="margin-top:12px">샷 완료 · FLO 입력</button>
-        <button id="cancelShotBtn" class="btn ghost full" style="margin-top:7px">잘못 선택 · 취소</button>
-      </div>
+        <div class="mapRightControls">
+          <button id="recenterBtn" class="mapControlBtn" title="현재 위치로 이동">◎</button>
+          <button id="autoBtn" class="mapControlBtn mapControlText" title="Golf Intelligence 연결 후 자동 방향 정렬">AUTO</button>
+          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target 삭제">×</button>
+        </div>
 
-      <div id="clubCard" class="card">
-        <div class="row between"><div><div class="title">Club 선택</div><div class="sub">클럽을 누르면 현재 GPS에서 Shot이 시작됩니다.</div></div><button id="penaltyBtn" class="btn danger small">Penalty +1</button></div>
-        <div id="clubgrid" class="clubgrid"></div>
-        <button id="onGreenBtn" class="btn green full" style="margin-top:10px">ON GREEN · 퍼팅으로 이동</button>
-      </div>
+        <div id="targetInfo" class="targetInfo hidden">
+          <div class="targetEyebrow">TARGET</div>
+          <div id="targetDistance" class="targetDistance">—</div>
+          <div id="targetMeta" class="targetMeta">Lie · Slope는 Golf Intelligence 연결 후</div>
+        </div>
 
-      <div id="lastShotCard" class="card hidden">
-        <div class="row between"><div><div class="title">Last Shot</div><div id="lastShotText" class="sub"></div></div><span class="floBadge">FLO 저장됨</span></div>
+        <div class="mapBottomStatus">
+          <span id="greenOverlay">GREEN —</span>
+          <span id="gpsOverlay">GPS —</span>
+        </div>
+
+        <div class="clubDock">
+          <div id="pendingCard" class="pendingStrip hidden">
+            <div>
+              <span id="pendingStatusLabel" class="pendingLabel">SHOT READY</span>
+              <strong id="pendingClub">DR</strong>
+              <small id="pendingGPS"></small>
+            </div>
+            <div class="pendingActions">
+              <button id="shotHitFloBtn" class="dockAction primary">SHOT DONE · FLO</button>
+              <button id="cancelShotBtn" class="dockAction subtle">취소</button>
+            </div>
+          </div>
+
+          <div id="clubReadyPanel">
+            <div class="clubDockHead">
+              <div>
+                <span class="dockLabel">CLUB</span>
+                <strong id="clubBasisLabel">Master Carry</strong>
+              </div>
+              <div class="dockUtility">
+                <button id="penaltyBtn" class="dockAction danger">+1 PEN</button>
+                <button id="onGreenBtn" class="dockAction green">ON GREEN</button>
+              </div>
+            </div>
+            <div id="clubSuggestions" class="clubSuggestions"></div>
+            <button id="clubMoreBtn" class="clubMoreBtn">MORE CLUBS ▾</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -485,6 +615,17 @@ select,input,textarea{
   </nav>
 </div>
 
+<div id="clubModal" class="modal hidden">
+  <div class="sheet clubSheet">
+    <div class="sheetHead">
+      <div><strong>Select Club</strong><div class="sub">Player Master Carry 기준</div></div>
+      <button id="clubClose" class="x">×</button>
+    </div>
+    <div id="allClubList" class="allClubList"></div>
+    <div class="helper" style="margin-top:12px">Master Club Data는 Player Profile과 연결 예정입니다.</div>
+  </div>
+</div>
+
 <div id="floModal" class="modal hidden">
   <div class="sheet">
     <div class="sheetHead"><div><strong>샷 직후 FLO</strong><div id="floShotLabel" class="sub"></div></div><button id="floClose" class="x">×</button></div>
@@ -525,7 +666,14 @@ select,input,textarea{
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
-const clubs=['DR','3W','5W','3I','4I','5I','6I','7I','8I','9I','PW','50°','54°','58°','Putter','More'];
+const DEFAULT_MASTER_CLUBS=[
+  {name:'DR',carry:235},{name:'3W',carry:215},{name:'5W',carry:200},
+  {name:'3I',carry:190},{name:'4I',carry:180},{name:'5I',carry:170},
+  {name:'6I',carry:160},{name:'7I',carry:150},{name:'8I',carry:140},
+  {name:'9I',carry:130},{name:'PW',carry:118},{name:'50°',carry:103},
+  {name:'54°',carry:90},{name:'58°',carry:75},{name:'Putter',carry:0}
+];
+let masterClubs=[];
 let gps=null, watchId=null, tee='Regular', currentLie='Unknown';
 let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
 let puttDraft={distance:null,count:null};
@@ -536,6 +684,10 @@ const GOOGLE_MAPS_API_KEY='AIzaSyBUumg5ijkJorEnMPDUBq0ftjFCmo4McCU';
 const JAGORAWI_OLD_CENTER={lat:-6.454335,lng:106.876760};
 let googleMap=null;
 let playerMarker=null;
+let targetMarker=null;
+let targetLine=null;
+let targetDistanceM=null;
+let greenDistanceM=null; // Golf Intelligence 연결 후 사용
 let googleMapsRequested=false;
 
 window.initGoogleMap=function(){
@@ -557,6 +709,7 @@ window.initGoogleMap=function(){
   });
   const status=$('mapLoadStatus');
   if(status)status.classList.add('ready');
+  googleMap.addListener('click',e=>setTarget(e.latLng));
   updatePlayerMarker();
 };
 
@@ -596,11 +749,112 @@ function updatePlayerMarker(){
       map:googleMap,
       position:pos,
       title:'Player GPS',
-      zIndex:50
+      zIndex:50,
+      icon:{
+        path:google.maps.SymbolPath.CIRCLE,
+        scale:8,
+        fillColor:'#25d86f',
+        fillOpacity:1,
+        strokeColor:'#ffffff',
+        strokeWeight:3
+      }
     });
   }else{
     playerMarker.setPosition(pos);
   }
+  updateTargetDistance();
+}
+
+function getMasterClubs(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('agi_master_clubs')||'null');
+    if(Array.isArray(saved)&&saved.length)return saved;
+  }catch{}
+  return DEFAULT_MASTER_CLUBS.map(x=>({...x}));
+}
+function referenceDistance(){
+  return targetDistanceM||greenDistanceM||null;
+}
+function recommendedClubs(){
+  const usable=masterClubs.filter(c=>c.name!=='Putter'&&Number(c.carry)>0);
+  const d=referenceDistance();
+  if(!d)return usable.slice().sort((a,b)=>b.carry-a.carry).slice(0,3);
+  return usable.slice().sort((a,b)=>Math.abs(a.carry-d)-Math.abs(b.carry-d)).slice(0,3);
+}
+function renderClubSuggestions(){
+  const wrap=$('clubSuggestions'); if(!wrap)return;
+  const d=referenceDistance();
+  const recs=recommendedClubs();
+  $('clubBasisLabel').textContent=targetDistanceM
+    ? 'Target '+Math.round(targetDistanceM)+'m'
+    : (greenDistanceM ? 'Green '+Math.round(greenDistanceM)+'m' : 'Master Carry');
+  wrap.innerHTML=recs.map((club,i)=>
+    '<button class="clubSuggestion '+(i===0?'best':'')+'" data-club="'+club.name+'">'+
+    '<b>'+club.name+'</b><span>'+club.carry+'m carry</span></button>'
+  ).join('');
+}
+function renderAllClubs(){
+  const wrap=$('allClubList'); if(!wrap)return;
+  wrap.innerHTML=masterClubs.map(club=>
+    '<button class="allClubBtn" data-club="'+club.name+'"><b>'+club.name+'</b><span>'+
+    (club.name==='Putter'?'Putting':club.carry+'m carry')+'</span></button>'
+  ).join('');
+}
+function setTarget(latLng){
+  if(!window.google?.maps)return;
+  const pos={lat:latLng.lat(),lng:latLng.lng()};
+  if(!targetMarker){
+    targetMarker=new google.maps.Marker({
+      map:googleMap,position:pos,draggable:true,title:'Target',zIndex:60,
+      icon:{
+        path:google.maps.SymbolPath.CIRCLE,
+        scale:9,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3
+      }
+    });
+    targetMarker.addListener('drag',updateTargetDistance);
+    targetMarker.addListener('dragend',updateTargetDistance);
+  }else targetMarker.setPosition(pos);
+  if(!targetLine){
+    targetLine=new google.maps.Polyline({
+      map:googleMap,strokeColor:'#ffffff',strokeOpacity:.9,strokeWeight:2,
+      icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:2},offset:'0',repeat:'12px'}]
+    });
+  }
+  $('targetInfo').classList.remove('hidden');
+  $('clearTargetBtn').classList.remove('hidden');
+  updateTargetDistance();
+}
+function updateTargetDistance(){
+  if(!targetMarker||!gps){
+    targetDistanceM=null;
+    if(targetMarker){
+      $('targetDistance').textContent='GPS 대기';
+      $('targetMeta').textContent='현재 GPS가 잡히면 Target 거리를 계산합니다.';
+    }
+    renderClubSuggestions();
+    return;
+  }
+  const p={lat:gps.lat,lng:gps.lng};
+  const t=targetMarker.getPosition();
+  const target={lat:t.lat(),lng:t.lng()};
+  targetDistanceM=hav(p,target);
+  $('targetDistance').textContent=Math.round(targetDistanceM)+'m';
+  $('targetMeta').textContent='Lie · Slope는 Golf Intelligence 연결 후';
+  if(targetLine)targetLine.setPath([p,target]);
+  renderClubSuggestions();
+}
+function clearTarget(){
+  if(targetMarker){targetMarker.setMap(null);targetMarker=null}
+  if(targetLine){targetLine.setMap(null);targetLine=null}
+  targetDistanceM=null;
+  $('targetInfo')?.classList.add('hidden');
+  $('clearTargetBtn')?.classList.add('hidden');
+  renderClubSuggestions();
+}
+function recenterMap(){
+  if(!googleMap)return;
+  if(gps){googleMap.panTo({lat:gps.lat,lng:gps.lng});googleMap.setZoom(Math.max(googleMap.getZoom()||16,17))}
+  else{googleMap.panTo(JAGORAWI_OLD_CENTER);googleMap.setZoom(16)}
 }
 
 function emptyRound(course,nine){
@@ -632,7 +886,8 @@ function startGPS(){
 function hole(){return round?.holes[round.currentHole-1]}
 function showScreen(name){
   ['setup','round','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
-  if(name!=='setup')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
+  document.body.classList.toggle('round-active',name==='round');
+  if(name!=='setup'&&name!=='round')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round')renderRound();
   if(name==='overview')renderOverview();
@@ -644,7 +899,9 @@ function initScales(){
   ['commitScale','thinkScale'].forEach(id=>{
     for(let i=1;i<=5;i++){const b=document.createElement('button');b.textContent=i;b.dataset.v=i;$(id).appendChild(b)}
   });
-  clubs.forEach(c=>{const b=document.createElement('button');b.className='club'+(c==='DR'?' primary':'');b.textContent=c;b.dataset.club=c;$('clubgrid').appendChild(b)});
+  masterClubs=getMasterClubs();
+  renderAllClubs();
+  renderClubSuggestions();
   for(let i=1;i<=18;i++){const b=document.createElement('button');b.className='holebtn';b.textContent=i;b.dataset.hole=i;$('holebar').appendChild(b)}
 }
 function setSelected(container,value){
@@ -679,27 +936,28 @@ function startShot(club){
 }
 function renderRound(){
   if(!round)return;
-  $('roundCourse').textContent=round.course;$('roundNine').textContent=round.nine+' · '+round.tee;
+  $('roundCourse').textContent=round.course;
+  $('roundNine').textContent=round.nine+' · '+round.tee;
   $('holeTitle').textContent='Hole '+round.currentHole;
   $('holeParText').textContent=hole().par?' · Par '+hole().par:' · Course data 대기';
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
-  $('gpsInfo').textContent=gps?gps.lat.toFixed(5)+', '+gps.lng.toFixed(5):'Waiting';
-  $('gpsAcc').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'위치 권한 필요';
+  $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
+  $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN —';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' shots';
-  $('pendingCard').classList.toggle('hidden',!round.pending || !!round.pending.flo);
-  $('clubCard').classList.toggle('hidden',!!round.pending && !round.pending.flo);
-  $('lieCard').classList.toggle('hidden',hole().shots.length===0 && !round.pending);
-  if(round.pending){
-    $('pendingClub').textContent=round.pending.club;
-    $('pendingGPS').textContent=round.pending.start?'±'+Math.round(round.pending.start.accuracy||0)+'m':'No GPS';
-    $('shotHitFloBtn').textContent=round.pending.flo?'FLO 저장됨 · 이동 후 다음 클럽':'샷 완료 · FLO 입력';
-    $('shotHitFloBtn').disabled=!!round.pending.flo;
+
+  const pending=round.pending;
+  const needsFlo=!!pending&&!pending.flo;
+  $('pendingCard').classList.toggle('hidden',!pending);
+  $('clubReadyPanel').classList.toggle('hidden',needsFlo);
+
+  if(pending){
+    $('pendingClub').textContent=pending.club;
+    $('pendingGPS').textContent=pending.flo?'FLO 저장됨 · 다음 볼 위치에서 다음 클럽 선택':'Shot Start 저장됨';
+    $('pendingStatusLabel').textContent=pending.flo?'MOVE TO BALL':'SHOT READY';
+    $('shotHitFloBtn').classList.toggle('hidden',!!pending.flo);
   }
-  const last=hole().shots.at(-1);
-  $('lastShotCard').classList.toggle('hidden',!last);
-  if(last)$('lastShotText').textContent=last.club+' · '+(last.distanceM?Math.round(last.distanceM)+'m':'거리 미확정')+' · '+last.endLie;
-}
-function completeHole(){
+  renderClubSuggestions();
+}function completeHole(){
   const h=hole();
   if(round.pending){
     if(!round.pending.flo){$('puttModal').classList.add('hidden');openFlo();return}
@@ -707,7 +965,7 @@ function completeHole(){
   }
   if(!puttDraft.count){alert('Total Putts를 선택하세요.');return}
   h.putts=Number(puttDraft.count);h.firstPutt=puttDraft.distance;h.completed=true;h.completedAt=Date.now();
-  save();$('puttModal').classList.add('hidden');puttDraft={distance:null,count:null};
+  save();$('puttModal').classList.add('hidden');puttDraft={distance:null,count:null};clearTarget();
   if(round.currentHole<18){round.currentHole++;currentLie='Unknown';save();renderRound()}
   else{round.completedAt=Date.now();save();showScreen('overview')}
 }
@@ -799,9 +1057,24 @@ const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('startRoundBtn').onclick=()=>{round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;save();showScreen('round')};
 $('resumeRoundBtn').onclick=()=>{round=load();tee=round.tee||'Regular';showScreen('round')};
-$('holebar').addEventListener('click',e=>{if(!e.target.dataset.hole||!round)return;if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';save();renderRound()});
-$('lieRow').addEventListener('click',e=>{if(!e.target.dataset.lie)return;currentLie=e.target.dataset.lie;document.querySelectorAll('.lie').forEach(b=>b.classList.toggle('sel',b.dataset.lie===currentLie))});
-$('clubgrid').addEventListener('click',e=>{if(!e.target.dataset.club)return;if(e.target.dataset.club==='Putter'){$('puttModal').classList.remove('hidden');return}if(e.target.dataset.club==='More'){alert('Custom club은 다음 단계에서 추가합니다.');return}startShot(e.target.dataset.club)});
+$('holebar').addEventListener('click',e=>{if(!e.target.dataset.hole||!round)return;if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';clearTarget();save();renderRound()});
+$('clubSuggestions').addEventListener('click',e=>{
+  const b=e.target.closest('[data-club]'); if(!b)return;
+  if(b.dataset.club==='Putter'){$('puttModal').classList.remove('hidden');return}
+  startShot(b.dataset.club);
+});
+$('clubMoreBtn').onclick=()=>{$('clubModal').classList.remove('hidden')};
+$('clubClose').onclick=()=>{$('clubModal').classList.add('hidden')};
+$('allClubList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-club]'); if(!b)return;
+  $('clubModal').classList.add('hidden');
+  if(b.dataset.club==='Putter'){$('puttModal').classList.remove('hidden');return}
+  startShot(b.dataset.club);
+});
+$('recenterBtn').onclick=recenterMap;
+$('clearTargetBtn').onclick=clearTarget;
+$('autoBtn').onclick=()=>alert('Golf Intelligence의 Tee/Green 좌표 연결 후 Current GPS → Green 방향 자동 정렬이 활성화됩니다.');
+$('reportBtn').onclick=()=>showScreen('overview');
 $('shotHitFloBtn').onclick=()=>openFlo();
 $('cancelShotBtn').onclick=()=>{if(confirm('선택한 Shot을 취소할까요?')){round.pending=null;save();renderRound()}};
 $('penaltyBtn').onclick=()=>{hole().penalties++;save();renderRound()};
