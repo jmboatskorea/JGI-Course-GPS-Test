@@ -69,12 +69,246 @@ textarea{resize:vertical;min-height:72px}
 .note{font-size:11px;color:var(--muted);line-height:1.5}
 hr{border:0;border-top:1px solid #203746;margin:12px 0}
 @media(min-width:700px){body{padding:24px 0}.app{border:1px solid #1f3444;border-radius:22px;overflow:hidden;min-height:calc(100svh - 48px)}.bottomnav{bottom:24px;border-radius:0 0 22px 22px}}
+
+/* ===== AGI PLAYER · Jimmy Coaching visual language ===== */
+:root{
+  --bg:#07110c;
+  --panel:rgba(10,31,25,.78);
+  --panel2:rgba(18,47,38,.86);
+  --line:rgba(255,255,255,.18);
+  --text:#f8fbf9;
+  --muted:#b9c8bf;
+  --blue:#ff8619;
+  --green:#2bcf72;
+  --red:#ff6674;
+  --amber:#ff9a32;
+  --purple:#9b8cff;
+}
+body{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(54,121,89,.26),transparent 32%),
+    linear-gradient(180deg,#06110c 0%,#081711 45%,#040a07 100%);
+  color:#fff;
+}
+.app{
+  max-width:760px;
+  background:
+    linear-gradient(180deg,rgba(8,26,20,.86),rgba(4,13,9,.96));
+  min-height:100svh;
+  box-shadow:0 0 80px rgba(0,0,0,.34);
+}
+.topbar{
+  padding:calc(15px + env(safe-area-inset-top)) 18px 12px;
+  background:rgba(6,20,15,.76);
+  border-bottom:1px solid rgba(255,255,255,.10);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.brand{font-size:18px;letter-spacing:.02em}
+.brand small{color:#86f3a4;letter-spacing:.18em;margin-top:4px}
+.pill{
+  border:1px solid rgba(255,255,255,.24);
+  background:rgba(11,43,57,.48);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  box-shadow:0 8px 22px rgba(0,0,0,.16);
+}
+.screen{padding:14px 16px 18px}
+.setupHero{padding:28px 4px 14px}
+.setupHero h1{
+  font-size:36px;
+  line-height:.96;
+  letter-spacing:-.045em;
+  margin:0;
+}
+.setupHero h1:after{
+  content:"";
+  display:block;
+  width:48px;
+  height:3px;
+  background:#ff8619;
+  border-radius:999px;
+  margin-top:14px;
+}
+.setupHero p{font-size:12px;color:#d0ddd5;max-width:420px}
+.card{
+  background:rgba(11,34,28,.72);
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:20px;
+  box-shadow:0 14px 30px rgba(0,0,0,.20);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+.title{font-weight:950;letter-spacing:-.01em}
+.sub{color:#c3d1c8}
+.metric{
+  background:rgba(5,23,17,.66);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:15px;
+}
+.metric .k{color:#a8bbb0;font-weight:850;letter-spacing:.08em}
+.metric .v{color:#fff}
+.metric .s{color:#9eb0a5}
+.btn{
+  min-height:52px;
+  border-radius:18px;
+  box-shadow:0 9px 22px rgba(0,0,0,.18);
+}
+.btn.primary{
+  background:linear-gradient(180deg,#43dc82,#149d53);
+  color:#fff;
+  border:1px solid rgba(174,255,184,.78);
+}
+.btn.green{
+  background:linear-gradient(180deg,#43dc82,#149d53);
+  border:1px solid rgba(174,255,184,.70);
+}
+.btn.ghost{
+  background:rgba(6,26,20,.48);
+  border:1px solid rgba(255,255,255,.20);
+}
+.btn.danger{
+  background:rgba(70,20,26,.48);
+  border:1px solid rgba(255,102,116,.34);
+}
+select,input,textarea{
+  background:rgba(4,20,15,.72);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:16px;
+}
+.segment{
+  background:rgba(4,20,15,.72);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:16px;
+}
+.segment button{color:#dce7e1}
+.segment button.sel{
+  background:linear-gradient(180deg,#ff9b32,#f16d00);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+}
+.mapPlaceholder{
+  height:340px;
+  border:1px dashed rgba(131,255,162,.36);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 50% 34%,rgba(47,168,93,.12),transparent 35%),
+    linear-gradient(145deg,rgba(7,28,20,.86),rgba(5,18,14,.96));
+  box-shadow:inset 0 0 42px rgba(0,0,0,.18),0 14px 30px rgba(0,0,0,.14);
+}
+.mapPlaceholder:before{
+  opacity:.35;
+  background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
+}
+.mapIcon{color:#77f39d}
+.mapPlaceholder strong{font-size:19px}
+.mapPlaceholder span{color:#a9c0b2}
+.holebar{padding:4px 0 10px}
+.holebtn{
+  min-width:40px;
+  height:40px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(5,23,17,.72);
+  color:#dce8e1;
+}
+.holebtn.sel{
+  background:linear-gradient(180deg,#ff9b32,#f16d00);
+  border-color:#ff9b32;
+  color:#fff;
+  box-shadow:0 6px 16px rgba(255,122,0,.18);
+}
+.course-data-status{
+  margin-bottom:10px;
+  background:rgba(13,37,31,.66);
+}
+.waiting-pill{
+  color:#ffad61;
+  border-color:rgba(255,154,50,.45);
+  background:rgba(117,57,8,.18);
+}
+.clubgrid{gap:8px}
+.club{
+  min-height:54px;
+  border:1px solid rgba(255,255,255,.20);
+  background:rgba(6,25,19,.76);
+  border-radius:16px;
+  color:#fff;
+  box-shadow:0 6px 16px rgba(0,0,0,.12);
+}
+.club:hover{border-color:rgba(255,154,50,.64)}
+.club.primary{
+  background:linear-gradient(180deg,#ff9b32,#f16d00);
+  border-color:#ff9b32;
+}
+.lie{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(6,24,18,.68);
+  color:#d4e2da;
+}
+.lie.sel{
+  background:rgba(255,122,0,.18);
+  border-color:#ff912c;
+  color:#ffb36d;
+}
+.pending{
+  border-color:rgba(104,255,143,.54);
+  background:linear-gradient(135deg,rgba(13,55,34,.92),rgba(6,34,25,.92));
+  box-shadow:0 0 22px rgba(69,219,116,.10);
+}
+.floBadge{
+  background:rgba(27,84,48,.36);
+  color:#8effad;
+  border-color:rgba(116,255,151,.34);
+}
+.modal{background:rgba(1,8,5,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sheet{
+  background:linear-gradient(180deg,#0a2118,#07130f);
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:26px 26px 0 0;
+  box-shadow:0 -24px 70px rgba(0,0,0,.45);
+}
+.scale button,.choice button{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(4,20,15,.72);
+}
+.scale button.sel,.choice button.sel{
+  background:linear-gradient(180deg,#ff9b32,#f16d00);
+  border-color:#ff9b32;
+}
+.bottomnav{
+  width:min(760px,100%);
+  background:rgba(7,17,12,.96);
+  border-top:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.bottomnav button{color:#96a29b}
+.bottomnav button.sel{
+  color:#ff8619;
+  background:rgba(255,122,0,.08);
+  border-radius:14px;
+}
+.scoreCell,.storyBlock,.bar{
+  background:rgba(5,23,17,.66);
+  border-color:rgba(255,255,255,.12);
+}
+.storyBlock{border-left-color:#ff8619}
+.good{color:#7ff39f}.warn{color:#ffad61}
+@media(max-width:520px){
+  .app{max-width:none}
+  .screen{padding-left:13px;padding-right:13px}
+  .setupHero h1{font-size:34px}
+  .mapPlaceholder{height:320px}
+}
+
 </style>
 </head>
 <body>
 <div class="app">
   <header class="topbar">
-    <div class="brand">AGI PLAYER<small>PRO ROUND INTELLIGENCE · V1</small></div>
+    <div class="brand">AGI PLAYER<small>PLAYER AGENT · ROUND INTELLIGENCE</small></div>
     <button id="gpsTop" class="pill">GPS 준비</button>
   </header>
 
@@ -82,7 +316,7 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
     <section id="setupScreen" class="screen">
       <div class="setupHero">
         <h1>Start Round</h1>
-        <p>현재 버전은 Map 없이 Shot + FLO 입력 흐름을 먼저 검증합니다.</p>
+        <p>PLAY · TRACK · UNDERSTAND · IMPROVE</p>
       </div>
       <div class="card">
         <div class="field">
@@ -126,11 +360,13 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
         <div id="liveScore" class="pill">0 shots</div>
       </div>
 
-      <div id="parChooser" class="card">
-        <div class="title">이 홀 Par 선택</div>
-        <div class="sub">Golf Intelligence 연결 후 자동으로 들어옵니다.</div>
-        <div class="segment" style="margin-top:10px">
-          <button data-par="3">Par 3</button><button data-par="4">Par 4</button><button data-par="5">Par 5</button>
+      <div id="courseDataStatus" class="card course-data-status">
+        <div class="row between">
+          <div>
+            <div class="title">Course Data</div>
+            <div class="sub">Par · Yardage · Hole data는 Golf Intelligence 연결 후 자동 표시</div>
+          </div>
+          <span class="pill waiting-pill">DATA WAIT</span>
         </div>
       </div>
 
@@ -349,7 +585,6 @@ function finalizePending(endPoint,endLie){
   hole().shots.push(shot); round.pending=null; save(); return shot;
 }
 function startShot(club){
-  if(!hole().par){alert('먼저 이 홀의 Par를 선택하세요.');return}
   if(round.pending){
     if(!round.pending.flo){openFlo();return}
     finalizePending(gpsPoint(),currentLie);
@@ -362,9 +597,8 @@ function renderRound(){
   if(!round)return;
   $('roundCourse').textContent=round.course;$('roundNine').textContent=round.nine+' · '+round.tee;
   $('holeTitle').textContent='Hole '+round.currentHole;
-  $('holeParText').textContent=hole().par?' · Par '+hole().par:' · Par 선택 필요';
+  $('holeParText').textContent=hole().par?' · Par '+hole().par:' · Course data 대기';
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
-  $('parChooser').classList.toggle('hidden',!!hole().par);
   $('gpsInfo').textContent=gps?gps.lat.toFixed(5)+', '+gps.lng.toFixed(5):'Waiting';
   $('gpsAcc').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'위치 권한 필요';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' shots';
@@ -382,7 +616,7 @@ function renderRound(){
   if(last)$('lastShotText').textContent=last.club+' · '+(last.distanceM?Math.round(last.distanceM)+'m':'거리 미확정')+' · '+last.endLie;
 }
 function completeHole(){
-  const h=hole(); if(!h.par){alert('Par를 선택하세요.');return}
+  const h=hole();
   if(round.pending){
     if(!round.pending.flo){$('puttModal').classList.add('hidden');openFlo();return}
     finalizePending(gpsPoint(),'Green');
@@ -395,7 +629,9 @@ function completeHole(){
 }
 function holeScore(h){return h.completed?h.shots.length+(h.putts||0)+(h.penalties||0):null}
 function toPar(){
-  let s=0,p=0;round.holes.filter(h=>h.completed&&h.par).forEach(h=>{s+=holeScore(h);p+=h.par});return {s,p,d:s-p}
+  const valid=round.holes.filter(h=>h.completed&&h.par);
+  if(!valid.length)return {s:round.holes.filter(h=>h.completed).reduce((a,h)=>a+(holeScore(h)||0),0),p:null,d:null};
+  let s=0,p=0;valid.forEach(h=>{s+=holeScore(h);p+=h.par});return {s,p,d:s-p}
 }
 function allShots(){return round?round.holes.flatMap(h=>h.shots):[]}
 function allFlo(){return allShots().filter(s=>s.flo).map(s=>({...s.flo,hole:s.hole,club:s.club,distanceM:s.distanceM,endLie:s.endLie}))}
@@ -404,7 +640,7 @@ function pct(n,d){return d?Math.round(n/d*100):null}
 function renderOverview(){
   if(!round)return;const c=round.holes.filter(h=>h.completed),tp=toPar();
   $('overviewCourse').textContent=round.course+' · '+round.nine;
-  $('scoreBig').innerHTML=(c.length?tp.s:'—')+'<small>'+(c.length?(tp.d>0?'+':'')+tp.d+' to par':'Completed holes')+'</small>';
+  $('scoreBig').innerHTML=(c.length?tp.s:'—')+'<small>'+(c.length?(tp.d===null?'Total strokes · Par data pending':(tp.d>0?'+':'')+tp.d+' to par'):'Completed holes')+'</small>';
   $('ovHoles').textContent=c.length;$('ovPutts').textContent=c.reduce((a,h)=>a+(h.putts||0),0);
   $('ovPen').textContent=round.holes.reduce((a,h)=>a+h.penalties,0);$('ovFlo').textContent=allFlo().length;
   $('scorecard').innerHTML=round.holes.map(h=>'<div class="scoreCell">'+h.hole+'<b>'+(holeScore(h)??'—')+'</b></div>').join('');
@@ -453,7 +689,7 @@ function renderStory(){
   let blocks=[];
   if(!holes)blocks.push({t:'아직 완료된 홀이 없습니다',p:'라운드가 진행되면 Score, Shot, FLO를 기반으로 Story가 만들어집니다.'});
   else{
-    blocks.push({t:'Round snapshot',p:holes+'홀 완료 · '+tp.s+'타 · '+(tp.d>0?'+':'')+tp.d+' to par. Putts '+s.putts+', Penalty '+s.penalties+'.'});
+    blocks.push({t:'Round snapshot',p:holes+'홀 완료 · '+tp.s+'타'+(tp.d===null?' · Par data pending':' · '+(tp.d>0?'+':'')+tp.d+' to par')+'. Putts '+s.putts+', Penalty '+s.penalties+'.'});
     if(s.firD)blocks.push({t:'Off the tee',p:'Fairway '+s.firN+'/'+s.firD+' ('+pct(s.firN,s.firD)+'%). 평균 기록 드라이브 '+(s.drive?Math.round(s.drive)+'m':'거리 데이터 부족')+'.'});
     blocks.push({t:'Green & scoring',p:'GIR '+s.girN+'/'+holes+' ('+pct(s.girN,holes)+'%). Scrambling '+(s.scrD?s.scr+'/'+s.scrD:'데이터 부족')+'.'});
     if(f.length)blocks.push({t:'FLO connection',p:'Commitment 평균 '+(ac?ac.toFixed(1):'—')+', Thinking Load 평균 '+(at?at.toFixed(1):'—')+'. 현재는 관계 패턴을 표시하며 원인으로 단정하지 않습니다.'});
@@ -479,7 +715,6 @@ $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e
 $('startRoundBtn').onclick=()=>{round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;save();showScreen('round')};
 $('resumeRoundBtn').onclick=()=>{round=load();tee=round.tee||'Regular';showScreen('round')};
 $('holebar').addEventListener('click',e=>{if(!e.target.dataset.hole||!round)return;if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';save();renderRound()});
-$('parChooser').addEventListener('click',e=>{if(!e.target.dataset.par)return;hole().par=Number(e.target.dataset.par);save();renderRound()});
 $('lieRow').addEventListener('click',e=>{if(!e.target.dataset.lie)return;currentLie=e.target.dataset.lie;document.querySelectorAll('.lie').forEach(b=>b.classList.toggle('sel',b.dataset.lie===currentLie))});
 $('clubgrid').addEventListener('click',e=>{if(!e.target.dataset.club)return;if(e.target.dataset.club==='Putter'){$('puttModal').classList.remove('hidden');return}if(e.target.dataset.club==='More'){alert('Custom club은 다음 단계에서 추가합니다.');return}startShot(e.target.dataset.club)});
 $('shotHitFloBtn').onclick=()=>openFlo();
