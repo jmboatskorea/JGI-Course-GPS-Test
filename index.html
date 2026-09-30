@@ -21,7 +21,7 @@ button{cursor:pointer}
 .pill{border:1px solid #34536a;background:#0b1a25;color:white;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:800}
 .screen{padding:12px}.hidden{display:none!important}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
-.title{font-size:16px;font-weight:900}.sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45}
+.title{font-size:16px;font-weight:900}.sub{font-size:14px;color:var(--muted);margin-top:4px;line-height:1.45}
 .row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .metric{background:#08131b;border:1px solid #223b4c;border-radius:12px;padding:10px;min-width:0}
@@ -54,10 +54,10 @@ textarea{resize:vertical;min-height:72px}
 .floBadge{display:inline-flex;gap:6px;align-items:center;background:#102d21;color:#7ce3a6;border:1px solid #28613f;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}
 .modal{position:fixed;inset:0;background:#02070bd9;z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:min(480px,100%);max-height:94svh;overflow:auto;background:#07131d;border:1px solid #355166;border-radius:22px 22px 0 0;padding:16px 14px max(18px,env(safe-area-inset-bottom))}
-.sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheetHead strong{font-size:19px}.x{border:1px solid #355166;background:#0c1c27;color:white;border-radius:50%;width:36px;height:36px;font-size:20px}
-.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.scale button,.choice button{border:1px solid #315168;background:#0b1a24;color:white;border-radius:10px;padding:11px 4px;font-weight:800}.scale button.sel,.choice button.sel{background:var(--blue);border-color:var(--blue)}
+.sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheetHead strong{font-size:24px;line-height:1.2}.x{border:1px solid #355166;background:#0c1c27;color:white;border-radius:50%;width:36px;height:36px;font-size:20px}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.scale button,.choice button{border:1px solid #315168;background:#0b1a24;color:white;border-radius:12px;padding:14px 8px;font-weight:850;font-size:16px;line-height:1.2}.scale button.sel,.choice button.sel{background:var(--blue);border-color:var(--blue)}
 .choice{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.choice.state{grid-template-columns:repeat(4,1fr)}
-.sectionLabel{font-size:12px;font-weight:900;margin:14px 0 7px}.helper{font-size:10px;color:var(--muted);margin-top:5px}
+.sectionLabel{font-size:16px;font-weight:950;margin:18px 0 9px;line-height:1.25}.helper{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.45}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#061019f2;border-top:1px solid #294153;z-index:40;backdrop-filter:blur(14px);padding-bottom:env(safe-area-inset-bottom)}
 .bottomnav button{border:0;background:transparent;color:#819aaa;padding:10px 2px 9px;font-size:9px;font-weight:800}.bottomnav button b{display:block;font-size:17px;margin-bottom:3px}.bottomnav button.sel{color:#58a5ff}
 .scoreBig{text-align:center;font-size:50px;font-weight:1000;line-height:1}.scoreBig small{display:block;font-size:15px;color:var(--muted);margin-top:7px}
@@ -459,11 +459,11 @@ body.round-active .bottomnav{display:none!important}
   min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:4px;font-size:20px;font-weight:950
 }
-.resultChoice button span,.puttResultChoice button span{font-size:8px;letter-spacing:.04em}
+.resultChoice button span,.puttResultChoice button span{font-size:12px;letter-spacing:.02em;line-height:1.2}
 .choice button.sel{outline:2px solid #ff9b32;outline-offset:-2px;background:#173429}
 .stateReason{
   border:1px solid rgba(255,155,50,.45);background:rgba(255,145,28,.10);color:#ffd4aa;
-  border-radius:12px;padding:9px 10px;font-size:10px;line-height:1.4;margin-bottom:8px
+  border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.45;margin-bottom:10px
 }
 .stateModalActions,.puttActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .puttDistanceRow{display:grid;grid-template-columns:74px 1fr 74px;gap:8px;align-items:center}
@@ -478,8 +478,8 @@ body.round-active .bottomnav{display:none!important}
 .pendingActions{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:420px){
   .resultChoice.five,.puttResultChoice{grid-template-columns:repeat(5,1fr);gap:4px}
-  .resultChoice button,.puttResultChoice button{font-size:17px;min-height:50px;padding:4px 1px}
-  .resultChoice button span,.puttResultChoice button span{font-size:7px}
+  .resultChoice button,.puttResultChoice button{font-size:20px;min-height:58px;padding:7px 3px}
+  .resultChoice button span,.puttResultChoice button span{font-size:11px}
   .roundMapStage{height:62svh;min-height:460px}
 }
 
