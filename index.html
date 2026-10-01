@@ -1492,9 +1492,9 @@ function smoothCenterlinePoints(points,radius=1){
     return {...p,x:x/n,y:y/n};
   });
 }
-function buildCourseIntelligenceModel(h){
+function buildCourseIntelligenceModel(h,holePar=null){
   if(!h?.t||!h?.g)return null;
-  const key=String(h.i??h.id??h.holeId??JSON.stringify(h.t));
+  const key=String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'');
   if(courseIntelligenceCache.has(key))return courseIntelligenceCache.get(key);
 
   const tee={lat:h.t[0],lng:h.t[1]};
@@ -1528,34 +1528,52 @@ function buildCourseIntelligenceModel(h){
   }
   if(!sections.length)return null;
 
-  const smoothed=smoothCenterlinePoints(sections,1);
   let dogleg=null;
-  const win=4;
-  for(let i=win;i<smoothed.length-win;i++){
-    const a=smoothed[i-win],m=smoothed[i],b=smoothed[i+win];
-    const h1=(Math.atan2(m.x-a.x,m.y-a.y)*180/Math.PI+360)%360;
-    const h2=(Math.atan2(b.x-m.x,b.y-m.y)*180/Math.PI+360)%360;
-    const signed=normalizeAngle180(h2-h1);
-    const angle=Math.abs(signed);
-    if(!dogleg||angle>dogleg.angleDeg){
-      const turn=projector.toLatLng({x:m.x,y:m.y});
+  if(Number(holePar)===3){
+    dogleg={
+      applicable:false,
+      direction:'STRAIGHT',
+      angleDeg:0,
+      signedAngleDeg:0,
+      lateralDeviationM:0,
+      turnPoint:null,
+      distanceToTurnM:null,
+      source:'PAR3_NOT_APPLICABLE'
+    };
+  }else{
+    let candidates=sections.filter(sec=>sec.stationM>=gl*.20&&sec.stationM<=gl*.75);
+    if(!candidates.length){
+      const span=Math.max(1,maxS-minS);
+      candidates=sections.filter(sec=>sec.stationM>=minS+span*.15&&sec.stationM<=maxS-span*.15);
+    }
+    if(!candidates.length)candidates=sections;
+    let turnSec=null;
+    candidates.forEach(sec=>{
+      if(!turnSec||Math.abs(sec.centerC)>Math.abs(turnSec.centerC))turnSec=sec;
+    });
+    if(turnSec){
+      const turn={lat:turnSec.lat,lng:turnSec.lng};
+      const h1=bearingDeg(tee,turn);
+      const h2=bearingDeg(turn,green);
+      const signed=normalizeAngle180(h2-h1);
       dogleg={
+        applicable:true,
         direction:signed>0?'RIGHT':signed<0?'LEFT':'STRAIGHT',
-        angleDeg,
+        angleDeg:Math.abs(signed),
         signedAngleDeg:signed,
-        turnPoint:{lat:turn.lat,lng:turn.lng},
+        lateralDeviationM:turnSec.centerC,
+        stationM:turnSec.stationM,
+        turnPoint:turn,
         distanceToTurnM:hav(tee,turn),
-        source:'FAIRWAY_CENTERLINE'
+        source:'TEE_GREEN_FAIRWAY_DEVIATION'
       };
     }
   }
   if(!dogleg){
-    const mid=sections[Math.floor(sections.length/2)];
     dogleg={
-      direction:'STRAIGHT',angleDeg:0,signedAngleDeg:0,
-      turnPoint:{lat:mid.lat,lng:mid.lng},
-      distanceToTurnM:hav(tee,{lat:mid.lat,lng:mid.lng}),
-      source:'FAIRWAY_CENTERLINE'
+      applicable:Number(holePar)!==3,
+      direction:'STRAIGHT',angleDeg:0,signedAngleDeg:0,lateralDeviationM:0,
+      turnPoint:null,distanceToTurnM:null,source:'FALLBACK'
     };
   }
 
@@ -1568,7 +1586,13 @@ function buildCourseIntelligenceModel(h){
       return {type:s.type==='WATER_PATH'?'WATER':s.type,isLine:!!s.line||s.type==='WATER_PATH',xy,centroid,featureIndex:index};
     });
 
-  const model={key,tee,green,projector,u,v,sections,risks,dogleg,source:'GOLF_INTELLIGENCE_GEOMETRY',version:COURSE_INTELLIGENCE_VERSION};
+  const model={
+    key,tee,green,projector,u,v,sections,risks,dogleg,
+    fairwayWidthProfile:sections.map(sec=>({stationM:sec.stationM,widthM:sec.widthM,centerOffsetM:sec.centerC})),
+    profileStepM:step,
+    source:'GOLF_INTELLIGENCE_GEOMETRY',
+    version:COURSE_INTELLIGENCE_VERSION
+  };
   courseIntelligenceCache.set(key,model);
   return model;
 }
@@ -1604,8 +1628,8 @@ function riskSide(start,landing,centroidLL){
   const cross=(b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
   return cross>0?'LEFT':cross<0?'RIGHT':'CENTER';
 }
-function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null){
-  const model=buildCourseIntelligenceModel(h);
+function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null,holePar=null){
+  const model=buildCourseIntelligenceModel(h,holePar);
   if(!model||!start)return {
     fairwayWidth:null,dogleg:null,hazardDistance:null,landingZoneWidth:null,
     courseRisk:{left:null,right:null,narrowness:null,dogleg:null,source:'UNAVAILABLE',version:COURSE_INTELLIGENCE_VERSION}
@@ -1636,6 +1660,7 @@ function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null){
     startWidthM:Number.isFinite(startSec?.widthM)?startSec.widthM:null,
     landingWidthM:Number.isFinite(landingSec?.widthM)?landingSec.widthM:null,
     source:'GOLF_INTELLIGENCE_FAIRWAY_GEOMETRY',
+    profileStepM:model.profileStepM,
     version:COURSE_INTELLIGENCE_VERSION
   };
   const landingZoneWidth=landingSec?{
@@ -1643,6 +1668,7 @@ function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null){
     landingDistanceM:Number.isFinite(landingSec.landingDistanceM)?landingSec.landingDistanceM:null,
     basis:landingSec.landingBasis||null,
     point:{lat:landingPoint.lat,lng:landingPoint.lng},
+    projectionErrorM:Number.isFinite(landingSec.errorM)?landingSec.errorM:null,
     source:'GOLF_INTELLIGENCE_FAIRWAY_GEOMETRY',
     version:COURSE_INTELLIGENCE_VERSION
   }:null;
@@ -1663,8 +1689,10 @@ function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null){
       landingZoneWidthM:fairwayWidth.landingWidthM
     },
     dogleg:model.dogleg?{
+      applicable:model.dogleg.applicable,
       direction:model.dogleg.direction,
       angleDeg:model.dogleg.angleDeg,
+      lateralDeviationM:model.dogleg.lateralDeviationM??null,
       distanceToTurnM:model.dogleg.distanceToTurnM
     }:null,
     source:'GOLF_INTELLIGENCE_GEOMETRY',
@@ -2503,7 +2531,7 @@ function beginPending(club,previousShot=null){
       endGreenDistanceM:null,
       geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1',
       courseIntelligenceVersion:COURSE_INTELLIGENCE_VERSION,
-      ...deriveCourseIntelligence(ch,startSnapshot,master?.carry??null,targetSnapshot),
+      ...deriveCourseIntelligence(ch,startSnapshot,master?.carry??null,targetSnapshot,hole().par),
       sgBenchmarkVersion:window.JGI_SG_BENCHMARK_DATA?.version||null
     },
     result:null,playerState:null,preShotReset:round.nextShotReset||null,queuedClub:null
@@ -3372,7 +3400,16 @@ function renderStory(){
   $('nextFocus').innerHTML='<strong style="color:#82f3a3">'+a.nextAction+'</strong><br><br><span class="dataNote">현재는 오늘의 실제 Shot Log만 사용합니다. Personal Baseline은 약 10라운드 이후 연결합니다.</span>';
 }
 
+function precomputeAllCourseIntelligence(){
+  const holes=window.JGI_OLD_COURSE_DATA?.holes||{};
+  Object.keys(holes).forEach(no=>{
+    const par=scorecardHoleData(Number(no),tee)?.par??null;
+    buildCourseIntelligenceModel(holes[no],par);
+  });
+}
+
 initScales();
+precomputeAllCourseIntelligence();
 loadGoogleMaps();
 sgBenchmarkMode=null;
 stateCollectionLevel=activeSamplingCycleLevel()||normalizeCollectionLevel(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY)||stateCollectionLevel);
