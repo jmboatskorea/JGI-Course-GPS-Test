@@ -985,9 +985,9 @@ body.round-active .bottomnav{display:none!important}
 
       <div class="roundMapStage">
         <div id="googleMap" class="google-map" aria-label="AGI 플레이어 위성 코스 지도"></div>
-        <div id="jgiCourseMap" class="jgiCourseMap hidden" aria-label="JGI Course View">
+        <div id="jgiCourseMap" class="jgiCourseMap hidden" aria-label="JGI 코스 보기">
           <div class="jgiCourseBadge">JGI 코스 · 참고 지도</div>
-          <svg id="jgiCourseSvg" class="jgiCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="JGI course geometry"></svg>
+          <svg id="jgiCourseSvg" class="jgiCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="JGI 코스 지형"></svg>
           <div class="jgiCourseHint">위성사진이 흐리거나 사용할 수 없을 때 참고하세요 · 타깃 지정과 공 위치 지정은 위성 지도에서 사용</div>
         </div>
         <div id="mapLoadStatus" class="map-load-status">
@@ -1001,7 +1001,7 @@ body.round-active .bottomnav{display:none!important}
           <button id="dropBallBtn" class="mapControlBtn mapControlText" title="GPS가 틀릴 때 실제 공 위치를 지도에 지정">공 위치</button>
           <button id="undoLastBtn" class="mapControlBtn mapControlText" title="마지막 입력 취소">UNDO</button>
           <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">자동</button>
-          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target을 중간 기본값으로 재설정">C</button>
+          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="타깃을 중간 기본값으로 재설정">C</button>
         </div>
 
         <div id="targetInfo" class="targetInfo hidden">
@@ -1246,7 +1246,7 @@ body.round-active .bottomnav{display:none!important}
           <div class="metric sgMetric"><div class="k">퍼팅</div><div id="sgPutt" class="v">—</div></div>
         </div>
         <div id="sgPenaltyNote" class="sgPenaltyNote"></div>
-        <div class="sgStatus"><b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. 투어는 공개된 PGA TOUR 기대타수 기준이며, 스크래치 / 핸디 5·10·15·20·25는 JGI V1 모델링 기준입니다.</div>
+        <div class="sgStatus"><b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. 투어는 공개된 PGA 투어 기대타수 기준이며, 스크래치 / 핸디 5·10·15·20·25는 JGI V1 모델링 기준입니다.</div>
       </div>
       <div class="card">
         <div class="title">주요 기록</div>
@@ -2116,7 +2116,7 @@ function renderCourseHole(){
   // GI geometry stays loaded for JGI recognition/logic. It is drawn only in JGI Course View.
   refreshGreenDistance();
   fitCurrentHole(true);
-  if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
+  if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
 }
 
 window.initGoogleMap=function(){
@@ -2158,7 +2158,7 @@ window.gm_authFailure=function(){
     status.classList.remove('ready');
     status.classList.add('error');
     status.querySelector('strong').textContent='Google Maps 인증 오류';
-    status.querySelector('span').textContent='JGI Course View로 전환합니다.';
+    status.querySelector('span').textContent='JGI 코스 보기로 전환합니다.';
   }
   setMapView('JGI');
 };
@@ -2175,7 +2175,7 @@ function loadGoogleMaps(){
     if(status){
       status.classList.add('error');
       status.querySelector('strong').textContent='Google Satellite 로드 실패';
-      status.querySelector('span').textContent='JGI Course View로 전환합니다.';
+      status.querySelector('span').textContent='JGI 코스 보기로 전환합니다.';
     }
     setMapView('JGI');
   };
@@ -2485,7 +2485,7 @@ function openStartPositionModal(){
   if(!round)return;
   const first=!currentHoleHasPreviousShot();
   const mode=effectiveStartPositionMode();
-  $('startPositionModalSub').textContent=first?'첫 샷 시작 위치':'기본은 직전 Shot End가 자동으로 연결됩니다.';
+  $('startPositionModalSub').textContent=first?'첫 샷 시작 위치':'기본은 직전 샷 종료 위치가 자동으로 연결됩니다.';
   if(first){
     $('startPositionChoice').innerHTML=
       '<button data-start-mode="GPS">GPS<span>현재 기기의 GPS 좌표를 사용합니다.</span></button>'+
@@ -2497,7 +2497,7 @@ function openStartPositionModal(){
       '<button data-start-mode="AUTO">AUTO<span>직전 Shot End를 다음 Shot Start로 자동 연결합니다.</span></button>'+
       '<button data-start-mode="GPS">CURRENT GPS<span>현재 GPS 위치로 다음 Shot Start를 수정합니다.</span></button>'+
       '<button data-start-mode="DROP">DROP ON MAP<span>실제 공 위치를 지도에서 직접 지정합니다.</span></button>';
-    $('startPositionModeNote').textContent='PREVIOUS SHOT은 별도 입력하지 않습니다. AUTO가 내부적으로 PREVIOUS_END로 기록합니다.';
+    $('startPositionModeNote').textContent='직전 샷 위치는 별도로 입력하지 않습니다. 자동 연결로 직전 샷 종료 위치를 사용합니다.';
   }
   $('startPositionChoice').querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.startMode===mode));
   $('startPositionModal').classList.remove('hidden');
@@ -2833,7 +2833,7 @@ function beginNextShot(club,previousShot=null){
 function beginPending(club,previousShot=null){
   const startSnapshot=resolveShotStart(previousShot);
   if(!startSnapshot){
-    alert('Shot Start 위치를 확인할 수 없습니다. GPS, TEE BOX 또는 DROP ON MAP을 선택해 주세요.');
+    alert('샷 시작 위치를 확인할 수 없습니다. GPS, 티박스 또는 지도에서 공 위치 지정을 선택해 주세요.');
     startGPS();
     return false;
   }
@@ -2900,11 +2900,11 @@ function finishPendingAndMaybeStart(club=null){
   if(!round?.pending||!round.pending.result)return false;
   const endPoint=gpsPoint();
   if(!endPoint){
-    alert('현재 공 위치를 확인할 수 없습니다. DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    alert('현재 공 위치를 확인할 수 없습니다. 지도에서 샷 종료 위치를 지정해 주세요.');
     return false;
   }
   if(endPoint.source==='GPS'&&!gpsNearCurrentHole()){
-    alert('현재 GPS가 코스 밖입니다. 집에서 테스트 중이라면 DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    alert('현재 GPS가 코스 밖입니다. 집에서 테스트 중이라면 지도에서 샷 종료 위치를 지정해 주세요.');
     return false;
   }
   currentLie=round.pending.result.endLie||currentLie;
@@ -2987,7 +2987,7 @@ function completedRoundSummary(){
 function renderRoundHistoryStatus(){
   const el=$('roundHistoryStatus');if(!el)return;
   const s=completedRoundSummary();
-  el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · Shot '+s.shots+' · Putt '+s.putts;
+  el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · 샷 '+s.shots+' · 퍼트 '+s.putts;
 }
 function isSyntheticRound(r){
   return !!r&&(r.synthetic===true||r.dataSource==='TEST_GENERATED'||String(r.id||'').startsWith('test-hcp6-r'));
@@ -3515,7 +3515,7 @@ function setManualPosition(latLng){
   }else{manualPositionMarker.setPosition(manualPosition);manualPositionMarker.setMap(googleMap)}
   dropMode=false;
   $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치';
-  if($('gpsOverlay'))$('gpsOverlay').textContent='POSITION · MANUAL';
+  if($('gpsOverlay'))$('gpsOverlay').textContent='위치 · 수동 지정';
   renderStartPositionControl();
   renderJgiCourseView();
 }
@@ -3607,13 +3607,13 @@ function startShot(club){
 function renderRound(){
   if(!round)return;
   $('roundCourse').textContent=round.course;
-  $('roundNine').textContent=round.nine+' · '+round.tee+' · SG '+sgBenchmarkInfo(round).label;
-  $('holeTitle').textContent='Hole '+round.currentHole;
+  $('roundNine').textContent=round.nine+' · '+resultTeeLabel(round.tee)+' 티 · SG '+sgBenchmarkInfo(round).label;
+  $('holeTitle').textContent=round.currentHole+'번 홀';
   $('holeParText').textContent=hole().par?' · Par '+hole().par+(hole().teeDistanceM?' · '+hole().teeDistanceM+'m':''):(courseHoleData()?' · GI MAP':' · 코스 데이터 대기');
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
   refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
-  $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
+  $('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
   $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
@@ -3630,7 +3630,7 @@ function renderRound(){
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
     }else{
       $('pendingStatusLabel').textContent='샷 준비';
-      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타겟 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · Shot Start 저장됨';
+      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.add('hidden');
     }
@@ -4300,7 +4300,7 @@ function renderStory(){
   if(!round)return;
   const a=buildLiveAnalysis();
   $('storyContent').innerHTML=Object.values(a.categories).map(x=>categoryCard(x,true)).join('');
-  $('nextFocus').innerHTML='<strong style="color:#82f3a3">'+a.nextAction+'</strong><br><br><span class="dataNote">현재는 오늘의 실제 Shot Log만 사용합니다. Personal Baseline은 약 10라운드 이후 연결합니다.</span>';
+  $('nextFocus').innerHTML='<strong style="color:#82f3a3">'+a.nextAction+'</strong><br><br><span class="dataNote">현재는 오늘의 실제 샷 기록만 사용합니다. 개인 기준선은 약 10라운드 이후 연결합니다.</span>';
 }
 
 function precomputeAllCourseIntelligence(){
@@ -4456,8 +4456,8 @@ $('startPositionChoice').onclick=e=>{
   const b=e.target.closest('[data-start-mode]');if(!b)return;
   const mode=b.dataset.startMode;
   if(mode==='DROP'){activateDropForStart();return}
-  if(mode==='TEE_BOX'&&!teeBoxPoint()){alert('이 홀의 Tee reference 데이터가 없습니다. GPS 또는 DROP ON MAP을 사용해 주세요.');return}
-  if(mode==='GPS'&&!gps){alert('GPS 신호가 아직 없습니다. TEE BOX 또는 DROP ON MAP을 사용할 수 있습니다.');startGPS();return}
+  if(mode==='TEE_BOX'&&!teeBoxPoint()){alert('이 홀의 티박스 기준 데이터가 없습니다. GPS 또는 지도에서 공 위치 지정을 사용해 주세요.');return}
+  if(mode==='GPS'&&!gps){alert('GPS 신호가 아직 없습니다. 티박스 또는 지도에서 공 위치 지정을 사용할 수 있습니다.');startGPS();return}
   startPositionOverride=mode;
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
@@ -4465,7 +4465,7 @@ $('startPositionChoice').onclick=e=>{
 
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
-  if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}
+  if(round.pending){alert('현재 샷을 먼저 완료하세요.');return}
   round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';startPositionOverride=null;clearManualPosition();clearTarget();save();renderRound();renderCourseHole();
 });
 
@@ -4710,7 +4710,7 @@ function openPutt(){
       return;
     }
     if(String(currentLie).toUpperCase()!=='GREEN'&&endPoint.source==='GPS'&&!gpsNearCurrentHole()){
-      alert('현재 GPS가 코스 밖입니다. DROP ON MAP으로 샷 종료 위치를 지정해 주세요.');
+      alert('현재 GPS가 코스 밖입니다. 지도에서 샷 종료 위치를 지정해 주세요.');
       return;
     }
     finalizePending(endPoint,currentLie);
