@@ -704,6 +704,32 @@ body.round-active .bottomnav{display:none!important}
 }
 .historyViewBar .meta{min-width:0}.historyViewBar b{display:block;font-size:11px}.historyViewBar span{display:block;margin-top:2px;color:#7f8e85;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .historyViewBar button{flex:0 0 auto;min-height:36px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#0b120e;color:#fff;padding:7px 9px;font-size:9px;font-weight:900}
+.fullAnalysisHead{margin-top:16px;padding:4px 2px 0}
+.fullAnalysisHead h3{margin:0;font-size:22px;line-height:1.15}
+.fullAnalysisHead p{margin:6px 0 0;color:#899890;font-size:10px;line-height:1.5}
+.analysisDetail{margin-top:9px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#06100b;overflow:hidden}
+.analysisDetail summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:12px 14px;font-size:14px;font-weight:1000}
+.analysisDetail summary::-webkit-details-marker{display:none}
+.analysisDetail summary:after{content:'＋';color:#61ed95;font-size:18px;flex:0 0 auto}
+.analysisDetail[open] summary:after{content:'−'}
+.analysisDetail[open] summary{border-bottom:1px solid rgba(255,255,255,.09)}
+.analysisBody{padding:12px}
+.analysisNote{padding:9px 10px;border-radius:11px;background:#08150e;border:1px solid rgba(255,255,255,.08);color:#98a89f;font-size:9px;line-height:1.5;margin-bottom:10px}
+.analysisKpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.analysisKpi{padding:9px 7px;border-radius:12px;background:#08130d;border:1px solid rgba(255,255,255,.08);text-align:center}
+.analysisKpi b{display:block;font-size:16px}.analysisKpi span{display:block;margin-top:3px;color:#7f8f86;font-size:8px}
+.analysisTableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.analysisTable{width:100%;border-collapse:collapse;min-width:560px;font-size:9px}
+.analysisTable th,.analysisTable td{padding:8px 7px;border-bottom:1px solid rgba(255,255,255,.07);text-align:right;white-space:nowrap}
+.analysisTable th{color:#7f8f86;font-size:8px;font-weight:900;background:#07110c;position:sticky;top:0}
+.analysisTable th:first-child,.analysisTable td:first-child{text-align:left}
+.analysisTable td:first-child{font-weight:900;color:#edf7f1}
+.analysisEmpty{padding:15px 10px;text-align:center;color:#76867d;font-size:10px}
+.analysisSplit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.analysisMini{padding:10px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:#08130d}
+.analysisMini b{display:block;font-size:12px}.analysisMini span{display:block;margin-top:4px;color:#88988f;font-size:9px;line-height:1.4}
+.analysisBadge{display:inline-flex;margin:3px 4px 3px 0;padding:5px 7px;border-radius:999px;border:1px solid rgba(39,242,122,.18);background:rgba(39,242,122,.06);color:#82f3a5;font-size:8px;font-weight:900}
+@media(max-width:430px){.analysisKpis{grid-template-columns:repeat(3,1fr)}.analysisSplit{grid-template-columns:1fr}}
 @media(max-width:430px){
   .introHomeChoices{grid-template-columns:1fr}
   .introHomeBtn{min-height:88px}
@@ -1160,6 +1186,76 @@ body.round-active .bottomnav{display:none!important}
           <div id="multiPatternInsight"></div>
         </div>
 
+        <div class="fullAnalysisHead">
+          <h3>전체 데이터 분석</h3>
+          <p>선택한 라운드의 저장된 샷·코스·타깃·퍼팅·상태 데이터를 항목별로 모두 펼쳐봅니다. 저장되지 않은 정보는 임의로 만들지 않습니다.</p>
+        </div>
+
+        <details class="analysisDetail" open>
+          <summary>1. 라운드 전체 개요</summary>
+          <div id="analysisOverall" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail" open>
+          <summary>2. 획득타수 분석</summary>
+          <div id="analysisSg" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail" open>
+          <summary>3. 티샷 분석</summary>
+          <div id="analysisTee" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>4. 코스 위험요소 분석</summary>
+          <div id="analysisRisk" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>5. 페어웨이 폭 · 착지구역 분석</summary>
+          <div id="analysisWidth" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>6. 어프로치 분석</summary>
+          <div id="analysisApproach" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>7. 클럽별 성능</summary>
+          <div id="analysisClub" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>8. 타깃 선택 분석</summary>
+          <div id="analysisTarget" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>9. 퍼팅 분석</summary>
+          <div id="analysisPutting" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>10. 벌타 · 큰 손실 분석</summary>
+          <div id="analysisPenalty" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>11. 플레이어 상태 분석</summary>
+          <div id="analysisState" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>12. 라운드 진행 구간 분석</summary>
+          <div id="analysisPhase" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>13. 코스 · 홀별 기록</summary>
+          <div id="analysisCourseHole" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>14. 의사결정 분석 · 클럽 × 타깃 × 위험</summary>
+          <div id="analysisDecision" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>15. 수정 전 · 수정 후</summary>
+          <div id="analysisIntervention" class="analysisBody"></div>
+        </details>
+        <div class="card">
+          <div class="title">JGI 종합 관찰</div>
+          <div id="analysisJgiSummary"></div>
+        </div>
+
         <div id="multiAskCard" class="card">
           <div class="title">JGI에게 묻기</div>
           <div class="sub">선택한 라운드가 5개 이상이면 누적 기록을 기준으로 답합니다.</div>
@@ -1233,7 +1329,7 @@ body.round-active .bottomnav{display:none!important}
       <div class="card sgBox">
         <div class="sgHead">
           <div>
-            <div class="title">획득타수(SG)</div>
+            <div class="title">획득타수</div>
             <div id="sgBenchmarkLabel" class="sub">기준 확인 중</div>
             <div id="sgSourcePill" class="sgSourcePill">기준 데이터</div>
           </div>
@@ -1251,7 +1347,7 @@ body.round-active .bottomnav{display:none!important}
       <div class="card">
         <div class="title">주요 기록</div>
         <div class="grid3" style="margin-top:10px">
-          <div class="metric"><div class="k">페어웨이 적중</div><div id="statFir" class="v">—</div><div class="s">Lie 입력 기준</div></div>
+          <div class="metric"><div class="k">페어웨이 적중</div><div id="statFir" class="v">—</div><div class="s">공 위치 입력 기준</div></div>
           <div class="metric"><div class="k">그린 적중</div><div id="statGir" class="v">—</div></div>
           <div class="metric"><div class="k">퍼트</div><div id="statPutts" class="v">0</div></div>
           <div class="metric"><div class="k">평균 드라이버 거리</div><div id="statDrive" class="v">—</div><div class="s">GPS 기준</div></div>
@@ -2799,7 +2895,7 @@ function openStateCheck(type='shot',required=false,reason='',after=null,promptSo
   $('floModal').classList.remove('hidden');
 }
 function specialEventName(type){
-  return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'로스트 볼',RECOVERY:'트러블 상황',THREE_PUTT:'3퍼트 이상',DOUBLE_BOGEY_PLUS:'더블보기 이상',THREE_PUTT_DOUBLE_PLUS:'3퍼트 이상 · 더블보기 이상'})[type]||type;
+  return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'분실구',RECOVERY:'트러블 상황',THREE_PUTT:'3퍼트 이상',DOUBLE_BOGEY_PLUS:'더블보기 이상',THREE_PUTT_DOUBLE_PLUS:'3퍼트 이상 · 더블보기 이상'})[type]||type;
 }
 function queueSpecialEvent(type,detail={}){
   if(!round)return null;
@@ -3430,6 +3526,313 @@ function multiPatternSummary(rounds){
   }));
   return {teeRight,teeTotal,threePutts,penalties,approach,approachMiss};
 }
+
+function multiRows(rounds){
+  const shots=[],putts=[],holes=[],states=[];
+  rounds.forEach((r,ri)=>{
+    (r.holes||[]).forEach(h=>{
+      holes.push({r,ri,h});
+      (h.shots||[]).forEach((s,si)=>{
+        shots.push({r,ri,h,s,si});
+        if(s.playerState||s.flo)states.push({r,h,s,state:s.playerState||s.flo,type:'SHOT'});
+      });
+      (h.puttsDetail||[]).forEach((p,pi)=>{
+        putts.push({r,ri,h,p,pi});
+        if(p.playerState)states.push({r,h,p,state:p.playerState,type:'PUTTING'});
+      });
+      if(h.puttingState&&!((h.puttsDetail||[]).some(p=>p.playerState)))states.push({r,h,state:h.puttingState,type:'PUTTING'});
+    });
+  });
+  return {shots,putts,holes,states};
+}
+function multiPct(n,d){return d?Math.round(n/d*100)+'%':'—'}
+function multiNum(v,digits=1){return Number.isFinite(Number(v))?Number(v).toFixed(digits):'—'}
+function multiSigned(v,digits=2){if(!Number.isFinite(Number(v)))return '—';const n=Number(v);return (n>0?'+':'')+n.toFixed(digits)}
+function multiDirLabel(v){return ({LEFT:'왼쪽',CENTER:'중앙',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||'미확인'}
+function multiTargetLabel(v){return ({LEFT:'왼쪽',CENTER:'중간',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||'미확인'}
+function multiRiskTypeLabel(v){return ({WATER:'물',BUNKER:'벙커',WATER_PATH:'물길'})[String(v||'').toUpperCase()]||v||'기타'}
+function multiPuttSlopeLabel(v){return ({UPHILL:'오르막',FLAT:'평지',DOWNHILL:'내리막'})[String(v||'').toUpperCase()]||v||'미확인'}
+function multiPuttBreakLabel(v){return ({LEFT:'왼쪽',STRAIGHT:'직선',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||v||'미확인'}
+function multiPenaltyLabel(v){return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'분실구'})[String(v||'').toUpperCase()]||v||'기타'}
+function multiTable(headers,rows){
+  if(!rows.length)return '<div class="analysisEmpty">해당 조건의 저장 데이터가 없습니다.</div>';
+  return '<div class="analysisTableWrap"><table class="analysisTable"><thead><tr>'+
+    headers.map(h=>'<th>'+safeText(h)+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(row=>'<tr>'+row.map(v=>'<td>'+String(v??'—')+'</td>').join('')+'</tr>').join('')+
+    '</tbody></table></div>';
+}
+function multiKpis(items){
+  return '<div class="analysisKpis">'+items.map(x=>'<div class="analysisKpi"><b>'+safeText(String(x[1]))+'</b><span>'+safeText(x[0])+'</span></div>').join('')+'</div>';
+}
+function multiSgForRound(r){
+  const info=sgBenchmarkInfo(r),totals={ott:0,app:0,arg:0,putt:0,penalty:0},counts={ott:0,app:0,arg:0,putt:0,missing:0};
+  (r.holes||[]).forEach(h=>{
+    (h.shots||[]).forEach((s,i)=>{
+      const x=computeShotSG(h,s,i,info);if(!x){counts.missing++;return}
+      const cat=sgShotCategory(h,s,i);totals[cat]+=x.value;counts[cat]++;
+    });
+    (h.puttsDetail||[]).forEach((p,i)=>{
+      const x=computePuttSG(h,p,i,info);if(!x){counts.missing++;return}
+      totals.putt+=x.value;counts.putt++;
+    });
+    totals.penalty-=Number(h.penalties||0);
+  });
+  return {info,totals,counts,total:totals.ott+totals.app+totals.arg+totals.putt+totals.penalty};
+}
+function multiShotSg(row){
+  const info=sgBenchmarkInfo(row.r),x=computeShotSG(row.h,row.s,row.si,info);
+  return x?.value??null;
+}
+function multiWidthBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return null;
+  if(n<=20)return '20m 이하';if(n<=25)return '20~25m';if(n<=30)return '25~30m';return '30m 초과';
+}
+function multiApproachBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return null;
+  if(n<100)return '100m 미만';if(n<120)return '100~120m';if(n<140)return '120~140m';if(n<160)return '140~160m';if(n<180)return '160~180m';return '180m 이상';
+}
+function multiPuttBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return null;
+  if(n<=1)return '0~1m';if(n<=2)return '1~2m';if(n<=3)return '2~3m';if(n<=5)return '3~5m';if(n<=8)return '5~8m';return '8m 초과';
+}
+function multiStateValueLabel(key){
+  return ({commitment:'결정 확신',thinking:'생각의 양',tension:'긴장도',routineExecution:'루틴 실행'})[key]||key;
+}
+function renderFullMultiAnalysis(rounds){
+  const data=multiRows(rounds),{shots,putts,holes,states}=data;
+  const scoreRows=rounds.map(r=>({score:resultScore(r),par:resultPar(r),delta:resultToPar(r)}));
+  const scoreVals=scoreRows.map(x=>x.score).filter(Number.isFinite);
+  let birdie=0,par=0,bogey=0,doublePlus=0,frontScore=0,frontPar=0,backScore=0,backPar=0;
+  holes.forEach(({h})=>{
+    const sc=storedHoleScore(h),hp=Number(h.par);if(!Number.isFinite(sc)||!Number.isFinite(hp))return;
+    const d=sc-hp;if(d<0)birdie++;else if(d===0)par++;else if(d===1)bogey++;else doublePlus++;
+    if(h.hole<=9){frontScore+=sc;frontPar+=hp}else{backScore+=sc;backPar+=hp}
+  });
+  $('analysisOverall').innerHTML=
+    '<div class="analysisNote">선택한 라운드 전체를 합산한 실제 저장 데이터입니다.</div>'+
+    multiKpis([['라운드',rounds.length],['전체 샷',shots.length],['전체 퍼트',putts.length],['평균 스코어',scoreVals.length?(scoreVals.reduce((a,b)=>a+b,0)/scoreVals.length).toFixed(1):'—'],['최고 스코어',scoreVals.length?Math.min(...scoreVals):'—'],['최저 스코어',scoreVals.length?Math.max(...scoreVals):'—']])+
+    multiTable(['구분','결과'],[
+      ['버디 이하',birdie+'홀'],['파',par+'홀'],['보기',bogey+'홀'],['더블보기 이상',doublePlus+'홀'],
+      ['전반 평균',rounds.length?multiSigned((frontScore-frontPar)/rounds.length,1):'—'],
+      ['후반 평균',rounds.length?multiSigned((backScore-backPar)/rounds.length,1):'—']
+    ]);
+
+  const sgRows=rounds.map(r=>({r,...multiSgForRound(r)}));
+  const sgTotals=sgRows.reduce((o,x)=>{Object.keys(o).forEach(k=>o[k]+=Number(x.totals[k]||0));return o},{ott:0,app:0,arg:0,putt:0,penalty:0});
+  const sgTotal=Object.values(sgTotals).reduce((a,b)=>a+b,0);
+  $('analysisSg').innerHTML=
+    '<div class="analysisNote">각 라운드 시작 시 고정된 SG 비교 기준으로 계산합니다. 서로 다른 기준을 사용한 라운드가 섞여 있으면 그대로 합산하지 않고 해석에 주의해야 합니다.</div>'+
+    multiKpis([['라운드당 획득타수',multiSigned(sgTotal/Math.max(1,rounds.length))],['티샷/라운드',multiSigned(sgTotals.ott/Math.max(1,rounds.length))],['어프로치/라운드',multiSigned(sgTotals.app/Math.max(1,rounds.length))],['그린 주변/라운드',multiSigned(sgTotals.arg/Math.max(1,rounds.length))],['퍼팅/라운드',multiSigned(sgTotals.putt/Math.max(1,rounds.length))],['벌타 영향/라운드',multiSigned(sgTotals.penalty/Math.max(1,rounds.length))]])+
+    multiTable(['날짜','스코어','비교 기준','전체 획득타수','티샷','어프로치','그린 주변','퍼팅'],sgRows.map(x=>[
+      resultDateLabel(x.r),resultScore(x.r),safeText(x.info.label),multiSigned(x.total),multiSigned(x.totals.ott),multiSigned(x.totals.app),multiSigned(x.totals.arg),multiSigned(x.totals.putt)
+    ]));
+
+  const teeRows=holes.map(x=>({...x,s:x.h.shots?.[0]})).filter(x=>x.s&&Number(x.h.par)>=4);
+  const teeClub={};
+  teeRows.forEach(x=>{
+    const k=x.s.club||'미확인',o=teeClub[k]||(teeClub[k]={n:0,fairway:0,left:0,center:0,right:0,dist:[],sg:[]});
+    o.n++;if(String(x.s.endLie).toUpperCase()==='FAIRWAY')o.fairway++;
+    const d=String(x.s.direction||'').toUpperCase();if(d==='LEFT')o.left++;if(d==='CENTER')o.center++;if(d==='RIGHT')o.right++;
+    if(Number.isFinite(Number(x.s.distanceM)))o.dist.push(Number(x.s.distanceM));
+    const sg=multiShotSg({r:x.r,h:x.h,s:x.s,si:0});if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  $('analysisTee').innerHTML=
+    '<div class="analysisNote">Par 4·5의 첫 샷을 티샷으로 분석합니다.</div>'+
+    multiTable(['클럽','사용','페어웨이','왼쪽','중앙','오른쪽','평균 거리','평균 획득타수'],Object.entries(teeClub).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+      safeText(k),o.n,multiPct(o.fairway,o.n),o.left,o.center,o.right,o.dist.length?Math.round(o.dist.reduce((a,b)=>a+b,0)/o.dist.length)+'m':'—',o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]));
+
+  const riskGroups={};
+  shots.forEach(x=>{
+    const cr=x.s.courseContext?.courseRisk||{};
+    ['left','right'].forEach(side=>{
+      const risk=cr[side];if(!risk||!Number.isFinite(Number(risk.distanceM)))return;
+      const dist=Number(risk.distanceM),band=dist<=15?'15m 이내':dist<=30?'15~30m':'30m 초과';
+      const key=(side==='left'?'왼쪽':'오른쪽')+' · '+multiRiskTypeLabel(risk.type)+' · '+band;
+      const o=riskGroups[key]||(riskGroups[key]={n:0,left:0,right:0,penHoles:new Set(),sg:[]});
+      o.n++;if(x.s.direction==='LEFT')o.left++;if(x.s.direction==='RIGHT')o.right++;if(Number(x.h.penalties)>0)o.penHoles.add(x.r.id+'-'+x.h.hole);
+      const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+    });
+  });
+  $('analysisRisk').innerHTML=
+    '<div class="analysisNote">위험요소와의 거리는 해당 샷의 착지 예상 지점 기준 코스 지형 데이터입니다. 벌타는 현재 저장 구조상 샷이 아니라 홀 단위로 연결되어 있어 ‘벌타 발생 홀’로 표시합니다.</div>'+
+    multiTable(['위험 조건','샷','왼쪽 미스','오른쪽 미스','벌타 발생 홀','평균 획득타수'],Object.entries(riskGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+      safeText(k),o.n,o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]));
+
+  const widthGroups={};
+  teeRows.forEach(x=>{
+    const width=x.s.courseContext?.landingZoneWidth?.widthM??x.s.courseContext?.fairwayWidth?.landingWidthM;
+    const k=multiWidthBucket(width);if(!k)return;
+    const o=widthGroups[k]||(widthGroups[k]={n:0,fairway:0,right:0,left:0,penHoles:new Set(),sg:[]});
+    o.n++;if(String(x.s.endLie).toUpperCase()==='FAIRWAY')o.fairway++;if(x.s.direction==='RIGHT')o.right++;if(x.s.direction==='LEFT')o.left++;
+    if(Number(x.h.penalties)>0)o.penHoles.add(x.r.id+'-'+x.h.hole);
+    const sg=multiShotSg({r:x.r,h:x.h,s:x.s,si:0});if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  const widthOrder=['20m 이하','20~25m','25~30m','30m 초과'];
+  $('analysisWidth').innerHTML=
+    '<div class="analysisNote">티샷의 예상 착지구역 폭을 고정 구간으로 나눠 결과를 비교합니다. 이 구간은 분석용 분류이며 코스 위험 등급을 의미하지 않습니다.</div>'+
+    multiTable(['착지구역 폭','티샷','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','평균 획득타수'],widthOrder.filter(k=>widthGroups[k]).map(k=>{const o=widthGroups[k];return[
+      k,o.n,multiPct(o.fairway,o.n),o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]}));
+
+  const approachRows=shots.filter(x=>x.s.shotIntent==='GREEN_ATTACK');
+  const appGroups={},lieGroups={};
+  approachRows.forEach(x=>{
+    const d=x.s.courseContext?.startGreenDistanceM??x.s.courseContext?.greenDistanceM;
+    const k=multiApproachBucket(d);
+    if(k){
+      const o=appGroups[k]||(appGroups[k]={n:0,green:0,left:0,right:0,short:0,long:0,sg:[]});
+      o.n++;if(x.s.endLie==='GREEN')o.green++;if(x.s.direction==='LEFT')o.left++;if(x.s.direction==='RIGHT')o.right++;if(x.s.depth==='SHORT')o.short++;if(x.s.depth==='LONG')o.long++;
+      const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+    }
+    const lie=lieDisplayLabel(x.s.startLie);
+    const l=lieGroups[lie]||(lieGroups[lie]={n:0,green:0,sg:[]});l.n++;if(x.s.endLie==='GREEN')l.green++;
+    const sg=multiShotSg(x);if(Number.isFinite(sg))l.sg.push(sg);
+  });
+  const appOrder=['100m 미만','100~120m','120~140m','140~160m','160~180m','180m 이상'];
+  $('analysisApproach').innerHTML=
+    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 공 위치 기준으로 분리합니다.</div>'+
+    '<div class="sectionLabel">거리별</div>'+
+    multiTable(['거리','샷','그린 도달','왼쪽','오른쪽','짧음','김','평균 획득타수'],appOrder.filter(k=>appGroups[k]).map(k=>{const o=appGroups[k];return[k,o.n,multiPct(o.green,o.n),o.left,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']}))+
+    '<div class="sectionLabel" style="margin-top:12px">공 위치별</div>'+
+    multiTable(['공 위치','샷','그린 도달','평균 획득타수'],Object.entries(lieGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,multiPct(o.green,o.n),o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']));
+
+  const clubGroups={};
+  shots.forEach(x=>{
+    const k=x.s.club||'미확인',o=clubGroups[k]||(clubGroups[k]={n:0,dist:[],left:0,center:0,right:0,short:0,long:0,sg:[]});
+    o.n++;if(Number.isFinite(Number(x.s.distanceM)))o.dist.push(Number(x.s.distanceM));
+    const dir=String(x.s.direction||'').toUpperCase();if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    if(x.s.depth==='SHORT')o.short++;if(x.s.depth==='LONG')o.long++;
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  $('analysisClub').innerHTML=
+    '<div class="analysisNote">사용된 모든 샷을 클럽별로 모읍니다. 샘플 수가 적은 클럽은 수치 옆의 사용 횟수를 함께 확인해야 합니다.</div>'+
+    multiTable(['클럽','사용','평균 거리','왼쪽','중앙','오른쪽','짧음','김','평균 획득타수'],Object.entries(clubGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+      safeText(k),o.n,o.dist.length?Math.round(o.dist.reduce((a,b)=>a+b,0)/o.dist.length)+'m':'—',o.left,o.center,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]));
+
+  const targetGroups={};
+  shots.forEach(x=>{
+    const k=multiTargetLabel(x.s.targetZone||x.s.target?.zone),o=targetGroups[k]||(targetGroups[k]={n:0,left:0,center:0,right:0,penHoles:new Set(),sg:[]});
+    o.n++;const dir=String(x.s.direction||'').toUpperCase();if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    if(Number(x.h.penalties)>0)o.penHoles.add(x.r.id+'-'+x.h.hole);
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  $('analysisTarget').innerHTML=
+    '<div class="analysisNote">선수의 타깃 선택과 실제 결과 방향을 분리해서 봅니다. 벌타는 현재 홀 단위 기록입니다.</div>'+
+    multiTable(['타깃','샷','실제 왼쪽','실제 중앙','실제 오른쪽','벌타 발생 홀','평균 획득타수'],Object.entries(targetGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+      safeText(k),o.n,o.left,o.center,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]));
+
+  const puttGroups={},slopeGroups={},breakGroups={};
+  putts.forEach(x=>{
+    const k=multiPuttBucket(x.p.distanceM);
+    if(!k)return;
+    const o=puttGroups[k]||(puttGroups[k]={n:0,holed:0,left:0,right:0,short:0,long:0,sg:[]});
+    o.n++;if(x.p.result==='HOLED')o.holed++;if(x.p.result==='MISS_LEFT')o.left++;if(x.p.result==='MISS_RIGHT')o.right++;if(x.p.result==='SHORT')o.short++;if(x.p.result==='LONG')o.long++;
+    const sg=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg?.value))o.sg.push(sg.value);
+    const sl=multiPuttSlopeLabel(x.p.slope);const so=slopeGroups[sl]||(slopeGroups[sl]={n:0,holed:0});so.n++;if(x.p.result==='HOLED')so.holed++;
+    const br=multiPuttBreakLabel(x.p.break);const bo=breakGroups[br]||(breakGroups[br]={n:0,holed:0});bo.n++;if(x.p.result==='HOLED')bo.holed++;
+  });
+  const puttOrder=['0~1m','1~2m','2~3m','3~5m','5~8m','8m 초과'];
+  $('analysisPutting').innerHTML=
+    '<div class="analysisNote">퍼트 거리, 경사, 브레이크와 결과를 저장된 퍼팅 입력 기준으로 분석합니다.</div>'+
+    '<div class="sectionLabel">거리별</div>'+
+    multiTable(['거리','퍼트','성공','왼쪽 미스','오른쪽 미스','짧음','김','평균 획득타수'],puttOrder.filter(k=>puttGroups[k]).map(k=>{const o=puttGroups[k];return[k,o.n,multiPct(o.holed,o.n),o.left,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']}))+
+    '<div class="analysisSplit" style="margin-top:12px"><div><div class="sectionLabel">경사별</div>'+multiTable(['경사','퍼트','성공'],Object.entries(slopeGroups).map(([k,o])=>[safeText(k),o.n,multiPct(o.holed,o.n)]))+'</div><div><div class="sectionLabel">브레이크별</div>'+multiTable(['브레이크','퍼트','성공'],Object.entries(breakGroups).map(([k,o])=>[safeText(k),o.n,multiPct(o.holed,o.n)]))+'</div></div>';
+
+  const penaltyGroups={},penaltyHoleRows=[];
+  holes.forEach(({r,h})=>{
+    (h.penaltyEvents||[]).forEach(p=>{
+      const k=multiPenaltyLabel(p.type),o=penaltyGroups[k]||(penaltyGroups[k]={events:0,strokes:0});o.events++;o.strokes+=Number(p.strokes||1);
+      penaltyHoleRows.push([resultDateLabel(r),safeText(r.nine||'코스'),h.hole+'번 홀',safeText(k),Number(p.strokes||1)+'타',safeText(h.shots?.[0]?.club||'—')]);
+    });
+  });
+  $('analysisPenalty').innerHTML=
+    '<div class="analysisNote">현재 페널티 이벤트는 홀 단위로 저장됩니다. 아래의 ‘첫 클럽’은 해당 홀 첫 샷 클럽이며 벌타 원인 클럽이라고 단정하지 않습니다.</div>'+
+    multiKpis(Object.entries(penaltyGroups).map(([k,o])=>[k,o.strokes+'타']))+
+    multiTable(['날짜','코스','홀','유형','벌타','홀 첫 클럽'],penaltyHoleRows);
+
+  const stateKeys=['commitment','thinking','tension','routineExecution'];
+  let stateHtml='<div class="analysisNote">플레이어 상태는 표본으로 수집됩니다. 상태와 결과의 관계를 보여주며 원인으로 단정하지 않습니다.</div>';
+  stateKeys.forEach(key=>{
+    const groups={};
+    states.filter(x=>x.type==='SHOT'&&Number.isFinite(Number(x.state?.[key]))).forEach(x=>{
+      const v=Number(x.state[key]),o=groups[v]||(groups[v]={n:0,right:0,left:0,green:0});
+      o.n++;if(x.s?.direction==='RIGHT')o.right++;if(x.s?.direction==='LEFT')o.left++;if(x.s?.endLie==='GREEN')o.green++;
+    });
+    stateHtml+='<div class="sectionLabel" style="margin-top:10px">'+multiStateValueLabel(key)+'</div>'+
+      multiTable(['점수','샘플','왼쪽 미스','오른쪽 미스','그린 도달'],Object.entries(groups).sort((a,b)=>Number(a[0])-Number(b[0])).map(([v,o])=>[v,o.n,o.left,o.right,o.green]));
+  });
+  if(!states.length)stateHtml='<div class="analysisEmpty">저장된 플레이어 상태 샘플이 없습니다.</div>';
+  $('analysisState').innerHTML=stateHtml;
+
+  const phases=[
+    {name:'1~3홀',a:1,b:3},{name:'4~6홀',a:4,b:6},{name:'7~9홀',a:7,b:9},
+    {name:'10~12홀',a:10,b:12},{name:'13~15홀',a:13,b:15},{name:'16~18홀',a:16,b:18}
+  ];
+  $('analysisPhase').innerHTML=
+    '<div class="analysisNote">3홀 단위로 스코어와 벌타 변화를 비교합니다.</div>'+
+    multiTable(['구간','평균 스코어','평균 파 대비','벌타'],phases.map(ph=>{
+      let sc=0,pa=0,n=0,pen=0;
+      holes.filter(x=>x.h.hole>=ph.a&&x.h.hole<=ph.b).forEach(x=>{sc+=storedHoleScore(x.h);pa+=Number(x.h.par||0);n++;pen+=Number(x.h.penalties||0)});
+      const perRound=rounds.length||1;
+      return [ph.name,(sc/perRound).toFixed(1),multiSigned((sc-pa)/perRound,1),pen];
+    }));
+
+  const courseGroups={},holeGroups={};
+  holes.forEach(({r,h})=>{
+    const course=(r.course||'골프장')+' · '+(r.nine||'코스'),co=courseGroups[course]||(courseGroups[course]={roundIds:new Set(),score:0,par:0,pen:0});
+    co.roundIds.add(r.id);co.score+=storedHoleScore(h);co.par+=Number(h.par||0);co.pen+=Number(h.penalties||0);
+    const hk=course+' · '+h.hole+'번',ho=holeGroups[hk]||(holeGroups[hk]={n:0,score:0,par:0,pen:0});
+    ho.n++;ho.score+=storedHoleScore(h);ho.par+=Number(h.par||0);ho.pen+=Number(h.penalties||0);
+  });
+  $('analysisCourseHole').innerHTML=
+    '<div class="sectionLabel">코스별</div>'+
+    multiTable(['코스','라운드','평균 스코어','평균 파 대비','벌타'],Object.entries(courseGroups).map(([k,o])=>[safeText(k),o.roundIds.size,(o.score/o.roundIds.size).toFixed(1),multiSigned((o.score-o.par)/o.roundIds.size,1),o.pen]))+
+    '<div class="sectionLabel" style="margin-top:12px">홀별</div>'+
+    multiTable(['코스 · 홀','플레이','평균 타수','평균 파 대비','벌타'],Object.entries(holeGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,(o.score/o.n).toFixed(2),multiSigned((o.score-o.par)/o.n,2),o.pen]));
+
+  const decisions={};
+  teeRows.forEach(x=>{
+    const cr=x.s.courseContext?.courseRisk||{},right=cr.right,left=cr.left;
+    let risk='뚜렷한 근접 위험 없음';
+    if(right&&Number(right.distanceM)<=30)risk='오른쪽 '+multiRiskTypeLabel(right.type)+' 30m 이내';
+    else if(left&&Number(left.distanceM)<=30)risk='왼쪽 '+multiRiskTypeLabel(left.type)+' 30m 이내';
+    const key=(x.s.club||'미확인')+' · '+multiTargetLabel(x.s.targetZone||x.s.target?.zone)+' · '+risk;
+    const o=decisions[key]||(decisions[key]={n:0,fairway:0,right:0,left:0,penHoles:new Set(),sg:[]});
+    o.n++;if(String(x.s.endLie).toUpperCase()==='FAIRWAY')o.fairway++;if(x.s.direction==='RIGHT')o.right++;if(x.s.direction==='LEFT')o.left++;
+    if(Number(x.h.penalties)>0)o.penHoles.add(x.r.id+'-'+x.h.hole);
+    const sg=multiShotSg({r:x.r,h:x.h,s:x.s,si:0});if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  $('analysisDecision').innerHTML=
+    '<div class="analysisNote">티샷에서 실제 선택한 클럽 + 타깃 + 근접 위험요소를 하나의 의사결정 상황으로 묶어 결과를 비교합니다.</div>'+
+    multiTable(['의사결정 조건','샘플','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','평균 획득타수'],Object.entries(decisions).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+      safeText(k),o.n,multiPct(o.fairway,o.n),o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
+    ]));
+
+  const interventionEvents=[];
+  rounds.forEach(r=>(r.specialEvents||[]).forEach(ev=>{
+    const type=String(ev?.type||'').toUpperCase();
+    if(type.includes('ADJUST')||type.includes('INTERVENTION')||type.includes('CORRECT'))interventionEvents.push({r,ev});
+  }));
+  $('analysisIntervention').innerHTML=interventionEvents.length
+    ? multiTable(['날짜','이벤트','홀','메모'],interventionEvents.map(x=>[resultDateLabel(x.r),safeText(x.ev.type),x.ev.hole??'—',safeText(x.ev.note||'—')]))
+    : '<div class="analysisEmpty">아직 ‘수정했어’와 같은 공식 수정 이벤트가 저장된 기록이 없습니다. 이 기능이 연결되면 수정 전·후 동일 상황의 미스율, 벌타, SG 변화를 비교할 수 있습니다.</div>';
+
+  const dr=multiClubRiskStats(rounds,'DR'),w=multiClubRiskStats(rounds,'3W'),p=multiPatternSummary(rounds);
+  const candidates=[
+    {label:'오른쪽 위험지역 티샷',sample:dr.count+w.count,text:dr.count&&w.count?'드라이버 우측 미스 '+dr.right+'/'+dr.count+'회 · 3번 우드 '+w.right+'/'+w.count+'회':'비교 샘플 부족'},
+    {label:'어프로치',sample:p.approach,text:'그린 공략 미스 '+p.approachMiss+'/'+p.approach+'회'},
+    {label:'벌타',sample:p.penalties,text:'총 벌타 '+p.penalties+'타'},
+    {label:'3퍼트',sample:p.threePutts,text:'3퍼트 '+p.threePutts+'회'}
+  ].sort((a,b)=>b.sample-a.sample);
+  $('analysisJgiSummary').innerHTML=
+    '<div class="resultsInsight"><b>현재 데이터에서 먼저 확인할 패턴</b><br>'+safeText(candidates[0].label)+' · '+safeText(candidates[0].text)+' · 샘플 '+candidates[0].sample+'</div>'+
+    '<div class="resultsInsight"><b>관찰 원칙</b><br>현재 화면은 저장된 관계와 반복 횟수를 보여줍니다. 원인을 자동으로 단정하지 않으며, 데이터가 더 쌓일수록 동일 상황 비교가 더 세밀해집니다.</div>';
+}
+
 function renderMultiRoundReview(rounds){
   multiReviewRounds=rounds;
   $('resultsSearchView').classList.add('hidden');$('resultsMultiView').classList.remove('hidden');
@@ -3459,6 +3862,7 @@ function renderMultiRoundReview(rounds){
     '<div class="resultsInsight"><b>퍼팅과 벌타</b><br>3퍼트 '+p.threePutts+'회 · 벌타 '+p.penalties+'타가 기록되었습니다.</div>'
   ];
   $('multiPatternInsight').innerHTML=patterns.join('');
+  renderFullMultiAnalysis(rounds);
   const enough=rounds.length>=5;
   $('multiAskButtons').querySelectorAll('button').forEach(b=>b.disabled=!enough);
   $('multiAskAnswer').innerHTML=enough?'질문을 선택하면 선택한 라운드의 기록만 기준으로 답합니다.':'5라운드 이상을 선택하면 누적 JGI 질문을 사용할 수 있습니다.';
