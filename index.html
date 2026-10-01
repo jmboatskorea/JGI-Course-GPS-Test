@@ -1196,7 +1196,7 @@ body.round-active .bottomnav{display:none!important}
           <div id="analysisOverall" class="analysisBody"></div>
         </details>
         <details class="analysisDetail" open>
-          <summary>2. 획득타수(SG) 분석</summary>
+          <summary>2. 획득타수 분석</summary>
           <div id="analysisSg" class="analysisBody"></div>
         </details>
         <details class="analysisDetail" open>
@@ -1329,7 +1329,7 @@ body.round-active .bottomnav{display:none!important}
       <div class="card sgBox">
         <div class="sgHead">
           <div>
-            <div class="title">획득타수(SG)</div>
+            <div class="title">획득타수</div>
             <div id="sgBenchmarkLabel" class="sub">기준 확인 중</div>
             <div id="sgSourcePill" class="sgSourcePill">기준 데이터</div>
           </div>
@@ -1347,7 +1347,7 @@ body.round-active .bottomnav{display:none!important}
       <div class="card">
         <div class="title">주요 기록</div>
         <div class="grid3" style="margin-top:10px">
-          <div class="metric"><div class="k">페어웨이 적중</div><div id="statFir" class="v">—</div><div class="s">Lie 입력 기준</div></div>
+          <div class="metric"><div class="k">페어웨이 적중</div><div id="statFir" class="v">—</div><div class="s">공 위치 입력 기준</div></div>
           <div class="metric"><div class="k">그린 적중</div><div id="statGir" class="v">—</div></div>
           <div class="metric"><div class="k">퍼트</div><div id="statPutts" class="v">0</div></div>
           <div class="metric"><div class="k">평균 드라이버 거리</div><div id="statDrive" class="v">—</div><div class="s">GPS 기준</div></div>
@@ -2895,7 +2895,7 @@ function openStateCheck(type='shot',required=false,reason='',after=null,promptSo
   $('floModal').classList.remove('hidden');
 }
 function specialEventName(type){
-  return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'로스트 볼',RECOVERY:'트러블 상황',THREE_PUTT:'3퍼트 이상',DOUBLE_BOGEY_PLUS:'더블보기 이상',THREE_PUTT_DOUBLE_PLUS:'3퍼트 이상 · 더블보기 이상'})[type]||type;
+  return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'분실구',RECOVERY:'트러블 상황',THREE_PUTT:'3퍼트 이상',DOUBLE_BOGEY_PLUS:'더블보기 이상',THREE_PUTT_DOUBLE_PLUS:'3퍼트 이상 · 더블보기 이상'})[type]||type;
 }
 function queueSpecialEvent(type,detail={}){
   if(!round)return null;
@@ -3622,8 +3622,8 @@ function renderFullMultiAnalysis(rounds){
   const sgTotal=Object.values(sgTotals).reduce((a,b)=>a+b,0);
   $('analysisSg').innerHTML=
     '<div class="analysisNote">각 라운드 시작 시 고정된 SG 비교 기준으로 계산합니다. 서로 다른 기준을 사용한 라운드가 섞여 있으면 그대로 합산하지 않고 해석에 주의해야 합니다.</div>'+
-    multiKpis([['라운드당 SG',multiSigned(sgTotal/Math.max(1,rounds.length))],['티샷/라운드',multiSigned(sgTotals.ott/Math.max(1,rounds.length))],['어프로치/라운드',multiSigned(sgTotals.app/Math.max(1,rounds.length))],['그린 주변/라운드',multiSigned(sgTotals.arg/Math.max(1,rounds.length))],['퍼팅/라운드',multiSigned(sgTotals.putt/Math.max(1,rounds.length))],['벌타 영향/라운드',multiSigned(sgTotals.penalty/Math.max(1,rounds.length))]])+
-    multiTable(['날짜','스코어','기준','전체 획득타수','티샷','어프로치','그린 주변','퍼팅'],sgRows.map(x=>[
+    multiKpis([['라운드당 획득타수',multiSigned(sgTotal/Math.max(1,rounds.length))],['티샷/라운드',multiSigned(sgTotals.ott/Math.max(1,rounds.length))],['어프로치/라운드',multiSigned(sgTotals.app/Math.max(1,rounds.length))],['그린 주변/라운드',multiSigned(sgTotals.arg/Math.max(1,rounds.length))],['퍼팅/라운드',multiSigned(sgTotals.putt/Math.max(1,rounds.length))],['벌타 영향/라운드',multiSigned(sgTotals.penalty/Math.max(1,rounds.length))]])+
+    multiTable(['날짜','스코어','비교 기준','전체 획득타수','티샷','어프로치','그린 주변','퍼팅'],sgRows.map(x=>[
       resultDateLabel(x.r),resultScore(x.r),safeText(x.info.label),multiSigned(x.total),multiSigned(x.totals.ott),multiSigned(x.totals.app),multiSigned(x.totals.arg),multiSigned(x.totals.putt)
     ]));
 
@@ -3692,10 +3692,10 @@ function renderFullMultiAnalysis(rounds){
   });
   const appOrder=['100m 미만','100~120m','120~140m','140~160m','160~180m','180m 이상'];
   $('analysisApproach').innerHTML=
-    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 Lie 기준으로 분리합니다.</div>'+
+    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 공 위치 기준으로 분리합니다.</div>'+
     '<div class="sectionLabel">거리별</div>'+
     multiTable(['거리','샷','그린 도달','왼쪽','오른쪽','짧음','김','평균 획득타수'],appOrder.filter(k=>appGroups[k]).map(k=>{const o=appGroups[k];return[k,o.n,multiPct(o.green,o.n),o.left,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']}))+
-    '<div class="sectionLabel" style="margin-top:12px">Lie별</div>'+
+    '<div class="sectionLabel" style="margin-top:12px">공 위치별</div>'+
     multiTable(['공 위치','샷','그린 도달','평균 획득타수'],Object.entries(lieGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,multiPct(o.green,o.n),o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']));
 
   const clubGroups={};
@@ -3727,7 +3727,9 @@ function renderFullMultiAnalysis(rounds){
 
   const puttGroups={},slopeGroups={},breakGroups={};
   putts.forEach(x=>{
-    const k=multiPuttBucket(x.p.distanceM),o=puttGroups[k]||(puttGroups[k]={n:0,holed:0,left:0,right:0,short:0,long:0,sg:[]});
+    const k=multiPuttBucket(x.p.distanceM);
+    if(!k)return;
+    const o=puttGroups[k]||(puttGroups[k]={n:0,holed:0,left:0,right:0,short:0,long:0,sg:[]});
     o.n++;if(x.p.result==='HOLED')o.holed++;if(x.p.result==='MISS_LEFT')o.left++;if(x.p.result==='MISS_RIGHT')o.right++;if(x.p.result==='SHORT')o.short++;if(x.p.result==='LONG')o.long++;
     const sg=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg?.value))o.sg.push(sg.value);
     const sl=multiPuttSlopeLabel(x.p.slope);const so=slopeGroups[sl]||(slopeGroups[sl]={n:0,holed:0});so.n++;if(x.p.result==='HOLED')so.holed++;
