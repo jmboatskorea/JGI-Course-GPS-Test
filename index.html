@@ -101,6 +101,13 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .storyCategory .baselinePending{color:#ffad61;font-size:10px;font-weight:850;margin-top:8px}
 @media(max-width:520px){.reviewMap{height:300px}.liveHead h2{font-size:22px}}
 
+/* ===== REVIEW SATELLITE REUSE ===== */
+.reviewMap .google-map{position:absolute;inset:0;width:100%;height:100%;min-height:0;background:#0b2018}
+.reviewMap.satellite-active{display:block}
+.reviewMap .gm-style{border-radius:18px}
+.reviewMapModeNote{font-size:9px;color:#9fb1a6}
+.reviewShotLabel{font-weight:1000}
+
 /* ===== TEST INPUT HISTORY ===== */
 .testHistory{margin-top:12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(4,20,15,.58);overflow:hidden}
 .testHistory summary{cursor:pointer;padding:11px 12px;font-size:11px;font-weight:950;color:#9ff0b5;letter-spacing:.04em}
@@ -962,6 +969,13 @@ body.round-active .bottomnav{display:none!important}
         <div class="title">근거 · 샷 로그</div>
         <div class="sub">JGI 코스 데이터 위에 실제 샷 GPS와 결과를 표시합니다.</div>
         <div id="reviewHoleTabs" class="reviewHoleTabs" style="margin-top:9px"></div>
+        <div class="row between" style="margin-top:2px">
+          <div class="sub" style="margin:0">리뷰 지도</div>
+          <div id="reviewMapToggle" class="mapViewToggle" aria-label="리뷰 지도 보기">
+            <button class="sel" data-review-map="SAT">위성</button>
+            <button data-review-map="JGI">JGI</button>
+          </div>
+        </div>
         <div id="reviewMap" class="reviewMap"></div>
         <div id="holeReviewDetail"></div>
       </div>
@@ -1327,6 +1341,8 @@ let dropMode=false;
 let reviewMap=null;
 let reviewMapObjects=[];
 let selectedReviewHole=null;
+let reviewMapMode='SAT';
+let reviewSatelliteActive=false;
 let mapViewMode='SAT';
 let startPositionOverride=null;
 
@@ -1591,6 +1607,7 @@ window.initGoogleMap=function(){
   const status=$('mapLoadStatus');
   if(status)status.classList.add('ready');
   googleMap.addListener('click',e=>{
+    if(reviewSatelliteActive)return;
     if(dropMode){setManualPosition(e.latLng);return}
     setTarget(e.latLng);
   });
@@ -2113,12 +2130,13 @@ function startGPS(){
 }
 function hole(){return round?.holes[round.currentHole-1]}
 function showScreen(name){
+  if(name!=='overview'&&reviewSatelliteActive)restoreGoogleMapHome();
   ['setup','round','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
   document.body.classList.toggle('round-active',name==='round');
   if(name!=='setup'&&name!=='round')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
-  if(name==='overview')renderOverview();
+  if(name==='overview'){reviewMapMode='SAT';renderOverview();}
   if(name==='performance')render퍼포먼스();
   if(name==='flo')renderFlo();
   if(name==='story')renderStory();
@@ -2579,8 +2597,104 @@ function renderHoleReview(holeNo){
     renderTestHistory(h);
   renderReviewMap(holeNo);
 }
-function clearReviewMapObjects(){reviewMapObjects=[]}
-function renderReviewMap(holeNo){
+function clearReviewMapObjects(){
+  reviewMapObjects.forEach(x=>{try{x.setMap&&x.setMap(null)}catch{}});
+  reviewMapObjects=[];
+}
+function hideRoundMapObjectsForReview(){
+  [playerMarker,targetMarker,targetLine,manualPositionMarker].forEach(x=>{try{x?.setMap&&x.setMap(null)}catch{}});
+}
+function restoreRoundMapObjectsAfterReview(){
+  if(!googleMap)return;
+  if(playerMarker&&gps)playerMarker.setMap(googleMap);
+  if(targetMarker)targetMarker.setMap(googleMap);
+  if(targetLine)targetLine.setMap(googleMap);
+  if(manualPositionMarker&&manualPosition)manualPositionMarker.setMap(googleMap);
+}
+function restoreGoogleMapHome(){
+  const mapEl=$('googleMap');
+  const stage=document.querySelector('.roundMapStage');
+  if(!mapEl||!stage)return;
+  clearReviewMapObjects();
+  if(mapEl.parentElement!==stage)stage.insertBefore(mapEl,$('jgiCourseMap')||stage.firstChild);
+  reviewSatelliteActive=false;
+  $('reviewMap')?.classList.remove('satellite-active');
+  restoreRoundMapObjectsAfterReview();
+  if(googleMap&&window.google?.maps){
+    setTimeout(()=>{
+      google.maps.event.trigger(googleMap,'resize');
+      if(round)renderCourseHole();
+    },30);
+  }
+}
+function renderReviewSatelliteMap(holeNo){
+  const host=$('reviewMap');
+  const mapEl=$('googleMap');
+  const h=round?.holes?.[holeNo-1];
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
+  if(!host||!mapEl||!h||!ch||!googleMap||!window.google?.maps)return false;
+
+  clearReviewMapObjects();
+  hideRoundMapObjectsForReview();
+  host.innerHTML='';
+  host.classList.add('satellite-active');
+  host.appendChild(mapEl);
+  reviewSatelliteActive=true;
+
+  const bounds=new google.maps.LatLngBounds();
+  let has=false;
+  const extend=p=>{if(p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))){bounds.extend(p);has=true}};
+  (h.shots||[]).forEach((s,i)=>{
+    extend(s.start);extend(s.end);
+    if(s.start&&s.target){
+      const target={lat:s.target.lat,lng:s.target.lng};extend(target);
+      const intended=new google.maps.Polyline({
+        map:googleMap,path:[s.start,target],strokeColor:'#3f78ff',
+        strokeOpacity:.82,strokeWeight:2,zIndex:4
+      });
+      reviewMapObjects.push(intended);
+    }
+    if(s.start&&s.end){
+      const line=new google.maps.Polyline({
+        map:googleMap,path:[s.start,s.end],strokeColor:'#ffffff',
+        strokeOpacity:.96,strokeWeight:3,zIndex:5
+      });
+      const marker=new google.maps.Marker({
+        map:googleMap,position:s.end,zIndex:9,
+        label:{text:String(i+1),color:'#111111',fontWeight:'900'},
+        icon:{
+          path:google.maps.SymbolPath.CIRCLE,scale:11,
+          fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2
+        }
+      });
+      reviewMapObjects.push(line,marker);
+    }
+  });
+  if(ch.t){
+    const t={lat:ch.t[0],lng:ch.t[1]};extend(t);
+    const teeMarker=new google.maps.Marker({
+      map:googleMap,position:t,zIndex:7,title:'티박스',
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#ffffff',fillOpacity:1,strokeColor:'#31ef7a',strokeWeight:2}
+    });
+    reviewMapObjects.push(teeMarker);
+  }
+  if(ch.g){
+    const g={lat:ch.g[0],lng:ch.g[1]};extend(g);
+    const greenMarker=new google.maps.Marker({
+      map:googleMap,position:g,zIndex:8,title:'그린',
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#31ef7a',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2}
+    });
+    reviewMapObjects.push(greenMarker);
+  }
+
+  setTimeout(()=>{
+    google.maps.event.trigger(googleMap,'resize');
+    if(has)googleMap.fitBounds(bounds,{top:38,right:28,bottom:38,left:28});
+  },40);
+  return true;
+}
+function renderReviewJgiMap(holeNo){
+  restoreGoogleMapHome();
   const el=$('reviewMap');if(!el)return;
   const h=round?.holes?.[holeNo-1];
   const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
@@ -2636,7 +2750,18 @@ function renderReviewMap(holeNo){
     svg+='<circle cx="'+g.x.toFixed(1)+'" cy="'+g.y.toFixed(1)+'" r="8" fill="#31ef7a" stroke="#ffffff" stroke-width="2" filter="url(#reviewGlow)"/>';
   }
   svg+='</svg>';
+  el.classList.remove('satellite-active');
   el.innerHTML='<div class="reviewMapBadge">JGI 코스뷰 · '+holeNo+'번 홀</div>'+svg;
+}
+function renderReviewMap(holeNo){
+  $('reviewMapToggle')?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.reviewMap===reviewMapMode));
+  if(reviewMapMode==='SAT'){
+    const ok=renderReviewSatelliteMap(holeNo);
+    if(ok)return;
+    reviewMapMode='JGI';
+    $('reviewMapToggle')?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.reviewMap==='JGI'));
+  }
+  renderReviewJgiMap(holeNo);
 }
 function renderLiveReview(){
   const a=buildLiveAnalysis();round.analysisSnapshot=a;save();
@@ -2845,6 +2970,11 @@ $('clearTargetBtn').onclick=clearTarget;
 $('autoBtn').onclick=()=>{courseAutoHeading=true;fitCurrentHole(true)};
 $('reportBtn').onclick=()=>showScreen('overview');
 $('reviewHoleTabs').onclick=e=>{const b=e.target.closest('[data-review-hole]');if(!b)return;selectedReviewHole=Number(b.dataset.reviewHole);renderLiveReview()};
+$('reviewMapToggle').onclick=e=>{
+  const b=e.target.closest('[data-review-map]');if(!b)return;
+  reviewMapMode=b.dataset.reviewMap==='JGI'?'JGI':'SAT';
+  if(selectedReviewHole)renderReviewMap(selectedReviewHole);
+};
 $('askJgiQuick').onclick=e=>{
   const b=e.target.closest('[data-q]');if(!b||!round)return;
   const a=buildLiveAnalysis();
