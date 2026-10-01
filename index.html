@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050807">
-<title>JGI · AGI Player V1</title>
+<title>JGI · AGI 플레이어 V1</title>
 <style>
 :root{
   --bg:#050c12;--panel:#0b1822;--panel2:#102330;--line:#284153;
@@ -648,6 +648,69 @@ body.round-active .bottomnav{display:none!important}
   .introMilestone strong{font-size:20px}.introMilestone b{font-size:9px}
 }
 
+.introHomeChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.introHomeBtn{
+  min-height:112px;border:1px solid rgba(255,255,255,.13);border-radius:18px;
+  background:linear-gradient(180deg,rgba(18,27,22,.96),rgba(8,12,10,.96));
+  color:#fff;text-align:left;padding:15px
+}
+.introHomeBtn strong{display:block;font-size:20px;font-weight:1000}
+.introHomeBtn span{display:block;margin-top:7px;color:#8f9d95;font-size:10px;line-height:1.45;font-weight:800}
+.introHomeBtn.primary{border-color:rgba(39,242,122,.4);background:linear-gradient(180deg,rgba(29,84,49,.32),rgba(8,18,12,.96))}
+.resultsTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.resultsBack{
+  min-height:40px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#09100c;
+  color:#fff;padding:8px 11px;font-size:10px;font-weight:900
+}
+.resultsSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.resultsMetric{padding:11px 7px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#08100b;text-align:center}
+.resultsMetric b{display:block;font-size:23px}.resultsMetric span{display:block;margin-top:3px;color:#809087;font-size:8px;font-weight:900;letter-spacing:.08em}
+.resultsQuick{display:flex;flex-wrap:wrap;gap:6px}
+.resultsQuick button{
+  min-height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:#09110d;color:#b6c1ba;
+  padding:7px 10px;font-size:10px;font-weight:900
+}
+.resultsQuick button.sel{border-color:rgba(39,242,122,.52);background:rgba(39,242,122,.1);color:#70f5a0}
+.resultsFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.resultsFilters .field{margin:0}
+.resultsFilters label{font-size:9px}
+.resultsRoundList{display:grid;gap:8px;margin-top:10px}
+.resultsRoundRow{
+  display:grid;grid-template-columns:26px 74px minmax(0,1fr) auto;gap:9px;align-items:center;
+  border:1px solid rgba(255,255,255,.1);border-radius:15px;background:#08100b;padding:10px
+}
+.resultsRoundRow input{width:18px;height:18px}
+.resultsRoundDate{font-size:9px;color:#7c8b82}.resultsRoundName{font-size:14px;font-weight:1000}
+.resultsRoundCourse{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resultsRoundMeta{font-size:9px;color:#7e8d84;margin-top:2px}
+.resultsRoundScore{text-align:right}.resultsRoundScore b{display:block;font-size:21px}.resultsRoundScore span{font-size:9px;color:#6ef099}
+.resultsRoundOpen{
+  grid-column:2/5;min-height:34px;border:1px solid rgba(39,242,122,.22);border-radius:10px;background:rgba(39,242,122,.06);
+  color:#77f2a3;font-size:9px;font-weight:950
+}
+.resultsActions{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:10px}
+.multiTrend{display:flex;align-items:flex-end;gap:5px;height:105px;margin-top:10px}
+.multiTrendItem{flex:1;text-align:center;min-width:0}.multiTrendBar{width:100%;max-width:36px;margin:0 auto;border-radius:7px 7px 2px 2px;background:#2f8e57}
+.multiTrendScore{font-size:10px;font-weight:1000}.multiTrendLabel{font-size:8px;color:#78867e;margin-top:3px}
+.multiCompare{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.multiCompareCard{border:1px solid rgba(255,255,255,.1);border-radius:14px;background:#08100b;padding:10px}
+.multiCompareCard h4{margin:0 0 7px;font-size:14px}.multiLine{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:10px}
+.multiLine:last-child{border-bottom:0}.multiLine span{color:#829188}
+.resultsInsight{margin-top:8px;padding:10px 11px;border-left:3px solid #2be577;border-radius:0 12px 12px 0;background:#08100b;color:#cbd5cf;font-size:10px;line-height:1.55}
+.resultsInsight b{color:#fff}
+.historyViewBar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 10px 0;padding:9px 10px;
+  border:1px solid rgba(39,242,122,.22);border-radius:13px;background:#07110c
+}
+.historyViewBar .meta{min-width:0}.historyViewBar b{display:block;font-size:11px}.historyViewBar span{display:block;margin-top:2px;color:#7f8e85;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.historyViewBar button{flex:0 0 auto;min-height:36px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#0b120e;color:#fff;padding:7px 9px;font-size:9px;font-weight:900}
+@media(max-width:430px){
+  .introHomeChoices{grid-template-columns:1fr}
+  .introHomeBtn{min-height:88px}
+  .resultsFilters{grid-template-columns:1fr}
+  .resultsRoundRow{grid-template-columns:24px 68px minmax(0,1fr) auto}
+}
+
 /* ===== JGI COURSE VIEW · SATELLITE FALLBACK ===== */
 .mapViewToggle{
   display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;
@@ -757,16 +820,20 @@ body.round-active .bottomnav{display:none!important}
 <body>
 <div class="app">
   <header id="appTopbar" class="topbar hidden">
-    <div class="brand">AGI PLAYER<small>PLAYER AGENT · ROUND INTELLIGENCE</small></div>
+    <div class="brand">AGI 플레이어<small>플레이어 에이전트 · 라운드 인텔리전스</small></div>
     <button id="gpsTop" class="pill">GPS 준비</button>
   </header>
 
   <main>
+    <div id="historyViewBar" class="historyViewBar hidden">
+      <div class="meta"><b id="historyViewTitle">지난 라운드 보기</b><span id="historyViewMeta"></span></div>
+      <button id="backToResultsBtn">← 라운드 결과</button>
+    </div>
 
     <section id="introScreen" class="introScreen">
       <div class="introHeader">
-        <div class="introBrand">JGI <span>PLAYER</span><small>PERSONAL PERFORMANCE INTELLIGENCE</small></div>
-        <div class="introStatus"><i></i> AI ANALYSIS READY</div>
+        <div class="introBrand">JGI <span>플레이어</span><small>개인 경기력 분석</small></div>
+        <div class="introStatus"><i></i> 분석 준비 완료</div>
       </div>
 
       <div class="introHero">
@@ -783,7 +850,7 @@ body.round-active .bottomnav{display:none!important}
       </div>
 
       <div class="introJourney">
-        <div class="introJourneyHead"><b>JGI는 입력할수록 달라집니다.</b><span>YOUR DATA → REAL INSIGHT</span></div>
+        <div class="introJourneyHead"><b>JGI는 입력할수록 달라집니다.</b><span>나의 데이터 → 실제 인사이트</span></div>
         <div class="introMilestones">
           <div class="introMilestone"><strong>1</strong><b>1라운드</b><span>오늘의 문제 확인</span></div>
           <div class="introMilestone"><strong>5</strong><b>5라운드</b><span>반복 패턴 발견</span></div>
@@ -793,37 +860,46 @@ body.round-active .bottomnav{display:none!important}
       </div>
 
       <div class="introTruth">
-        <div class="introTruthLabel">WHY YOUR INPUT MATTERS</div>
+        <div class="introTruthLabel">왜 입력이 중요한가</div>
         <h2>입력하지 않은 플레이는<br><em>JGI도 배울 수 없습니다.</em></h2>
         <p>좋은 샷만 필요한 것이 아닙니다. 미스한 샷, 흔들린 순간, 좋은 선택과 잘못된 선택까지 모두 당신의 경기력 데이터입니다.</p>
         <div class="principle">좋은 라운드를 입력하는 것이 아니라,<br><strong>정확한 당신을 입력하세요.</strong></div>
       </div>
 
-      <button id="enterJgiBtn" class="introCta">내 AI 경기력 분석팀 시작하기 →</button>
+      <div class="introHomeChoices">
+        <button id="enterRoundBtn" class="introHomeBtn primary">
+          <strong>⛳ 라운드</strong>
+          <span>라운드 시작 · 진행 중 라운드 계속하기</span>
+        </button>
+        <button id="enterResultsBtn" class="introHomeBtn">
+          <strong>📊 라운드 결과</strong>
+          <span>지난 라운드 · 누적 분석 · JGI 인사이트</span>
+        </button>
+      </div>
       <div class="introFoot">정확하게 입력할수록 JGI는 당신을 더 정확하게 이해합니다.</div>
     </section>
 
     <section id="setupScreen" class="screen hidden">
       <div class="setupHero">
         <h1>라운드 시작</h1>
-        <p>PLAY · TRACK · UNDERSTAND · IMPROVE</p>
+        <p>플레이 · 기록 · 이해 · 개선</p>
       </div>
       <div class="card">
         <div class="field">
-          <label>COURSE</label>
+          <label>골프장</label>
           <select id="courseSelect">
             <option>Jagorawi Golf & Country Club</option>
             <option>Emeralda Golf Club</option>
           </select>
         </div>
         <div class="field">
-          <label>COURSE / NINE</label>
+          <label>코스</label>
           <input id="courseNine" value="Old Course" placeholder="Old Course / River / Lake ...">
         </div>
         <div class="field">
-          <label>TEE</label>
+          <label>티</label>
           <div class="segment" id="teeSegment">
-            <button data-v="Blue">BLUE</button><button class="sel" data-v="White">WHITE</button><button data-v="Red">RED</button>
+            <button data-v="Blue">블루</button><button class="sel" data-v="White">화이트</button><button data-v="Red">레드</button>
           </div>
         </div>
       </div>
@@ -853,18 +929,18 @@ body.round-active .bottomnav{display:none!important}
         </div>
       </div>
       <div class="card sgSetupCard">
-        <div class="title">Strokes Gained 기준 선택</div>
+        <div class="title">획득타수(SG) 기준 선택</div>
         <div class="sub">테스트 라운드에서 비교할 기준을 시작 전에 직접 선택하세요.</div>
         <div class="field">
           <label>비교 기준 · 필수</label>
           <div class="segment sgBenchmarkSegment" id="sgBenchmarkSegment">
-            <button data-v="TOUR">Tour</button>
-            <button data-v="SCRATCH">Scratch</button>
-            <button data-v="HCP_5">HCP 5</button>
-            <button data-v="HCP_10">HCP 10</button>
-            <button data-v="HCP_15">HCP 15</button>
-            <button data-v="HCP_20">HCP 20</button>
-            <button data-v="HCP_25">HCP 25</button>
+            <button data-v="TOUR">투어</button>
+            <button data-v="SCRATCH">스크래치</button>
+            <button data-v="HCP_5">핸디 5</button>
+            <button data-v="HCP_10">핸디 10</button>
+            <button data-v="HCP_15">핸디 15</button>
+            <button data-v="HCP_20">핸디 20</button>
+            <button data-v="HCP_25">핸디 25</button>
           </div>
           <div id="sgSetupHint" class="sgStatus">라운드를 시작하려면 SG 비교 기준을 하나 선택하세요.</div>
         </div>
@@ -874,11 +950,11 @@ body.round-active .bottomnav{display:none!important}
       <div id="roundHistoryStatus" class="sgStatus" style="margin-top:8px">저장된 완료 라운드 0개</div>
 
       <div class="card" style="margin-top:10px">
-        <div class="title">TEST DATA · Player HCP 6</div>
+        <div class="title">테스트 데이터 · 핸디 6</div>
         <div class="sub">JGI 누적 분석 테스트용 가상 6라운드입니다. 실제 라운드와 구분되어 저장됩니다.</div>
         <div class="grid2" style="margin-top:10px">
-          <button id="seedTestDataBtn" class="btn ghost">6R 테스트 데이터 생성</button>
-          <button id="resetTestDataBtn" class="btn ghost" style="border-color:#7a3940;color:#ffc1c8">TEST DATA RESET</button>
+          <button id="seedTestDataBtn" class="btn ghost">6라운드 테스트 데이터 생성</button>
+          <button id="resetTestDataBtn" class="btn ghost" style="border-color:#7a3940;color:#ffc1c8">테스트 데이터 초기화</button>
         </div>
         <div id="testDataPreview" class="sgStatus" style="margin-top:10px"></div>
       </div>
@@ -893,7 +969,7 @@ body.round-active .bottomnav{display:none!important}
           </div>
           <div class="roundTopActions">
             <div id="mapViewToggle" class="mapViewToggle" aria-label="Map view">
-              <button class="sel" data-map-view="SAT">SAT</button>
+              <button class="sel" data-map-view="SAT">위성</button>
               <button data-map-view="JGI">JGI</button>
             </div>
             <button id="reportBtn" class="mapMiniBtn">리포트</button>
@@ -908,11 +984,11 @@ body.round-active .bottomnav{display:none!important}
       </div>
 
       <div class="roundMapStage">
-        <div id="googleMap" class="google-map" aria-label="AGI Player satellite course map"></div>
-        <div id="jgiCourseMap" class="jgiCourseMap hidden" aria-label="JGI Course View">
-          <div class="jgiCourseBadge">JGI COURSE · REFERENCE VIEW</div>
-          <svg id="jgiCourseSvg" class="jgiCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="JGI course geometry"></svg>
-          <div class="jgiCourseHint">위성사진이 흐리거나 사용할 수 없을 때 참고하세요 · Target 지정과 DROP은 SATELLITE에서 사용</div>
+        <div id="googleMap" class="google-map" aria-label="AGI 플레이어 위성 코스 지도"></div>
+        <div id="jgiCourseMap" class="jgiCourseMap hidden" aria-label="JGI 코스 보기">
+          <div class="jgiCourseBadge">JGI 코스 · 참고 지도</div>
+          <svg id="jgiCourseSvg" class="jgiCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="JGI 코스 지형"></svg>
+          <div class="jgiCourseHint">위성사진이 흐리거나 사용할 수 없을 때 참고하세요 · 타깃 지정과 공 위치 지정은 위성 지도에서 사용</div>
         </div>
         <div id="mapLoadStatus" class="map-load-status">
           <div class="mapIcon">⌖</div>
@@ -922,14 +998,14 @@ body.round-active .bottomnav{display:none!important}
 
         <div class="mapRightControls">
           <button id="recenterBtn" class="mapControlBtn" title="현재 위치로 이동">◎</button>
-          <button id="dropBallBtn" class="mapControlBtn mapControlText" title="GPS가 틀릴 때 실제 공 위치를 지도에 지정">DROP</button>
+          <button id="dropBallBtn" class="mapControlBtn mapControlText" title="GPS가 틀릴 때 실제 공 위치를 지도에 지정">공 위치</button>
           <button id="undoLastBtn" class="mapControlBtn mapControlText" title="마지막 입력 취소">UNDO</button>
-          <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">AUTO</button>
-          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target을 중간 기본값으로 재설정">C</button>
+          <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">자동</button>
+          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="타깃을 중간 기본값으로 재설정">C</button>
         </div>
 
         <div id="targetInfo" class="targetInfo hidden">
-          <div class="targetEyebrow">TARGET</div>
+          <div class="targetEyebrow">타깃</div>
           <div id="targetDistance" class="targetDistance">—</div>
           <div id="targetMeta" class="targetMeta">Lie · Slope는 Golf Intelligence 연결 후</div>
         </div>
@@ -957,7 +1033,7 @@ body.round-active .bottomnav{display:none!important}
         <div id="clubReadyPanel">
           <button id="startPositionBtn" class="startPositionStrip" type="button">
             <span class="left">
-              <span class="eyebrow">START POSITION</span>
+              <span class="eyebrow">샷 시작 위치</span>
               <strong id="startPositionTitle">첫 샷 위치</strong>
               <small id="startPositionHint">GPS 기본 · 필요 시 Tee Box 또는 Drop</small>
             </span>
@@ -965,7 +1041,7 @@ body.round-active .bottomnav{display:none!important}
           </button>
           <div class="targetZoneBlock">
             <div class="targetZoneHead">
-              <b>TARGET</b>
+              <b>타깃</b>
               <span>기본 중간 · 샷마다 선택</span>
             </div>
             <div id="targetZoneSegment" class="targetZoneSegment">
@@ -990,9 +1066,116 @@ body.round-active .bottomnav{display:none!important}
       </div>
     </section>
 
+    <section id="resultsScreen" class="screen hidden">
+      <div id="resultsSearchView">
+        <div class="resultsTop">
+          <div>
+            <div class="eyebrow">JGI · 라운드 결과</div>
+            <h2 style="margin:4px 0 0">라운드 결과</h2>
+            <div class="sub">날짜 · 코스 · 티 · 스코어 조건을 함께 선택해 볼 수 있습니다.</div>
+          </div>
+          <button id="resultsHomeBtn" class="resultsBack">← 홈</button>
+        </div>
+
+        <div class="resultsSummary">
+          <div class="resultsMetric"><b id="resultsCount">0</b><span>라운드</span></div>
+          <div class="resultsMetric"><b id="resultsAverage">—</b><span>평균 스코어</span></div>
+          <div class="resultsMetric"><b id="resultsBest">—</b><span>최고 스코어</span></div>
+        </div>
+
+        <div class="card">
+          <div class="title">빠른 선택</div>
+          <div id="resultsQuick" class="resultsQuick" style="margin-top:9px">
+            <button class="sel" data-range="ALL">전체</button>
+            <button data-range="5">최근 5라운드</button>
+            <button data-range="10">최근 10라운드</button>
+            <button data-range="30D">최근 30일</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="title">복수 조건 검색</div>
+          <div class="resultsFilters" style="margin-top:10px">
+            <div class="field"><label>시작 날짜</label><input id="resultsFromDate" type="date"></div>
+            <div class="field"><label>종료 날짜</label><input id="resultsToDate" type="date"></div>
+            <div class="field"><label>골프장</label><select id="resultsCourse"><option value="">전체</option></select></div>
+            <div class="field"><label>코스</label><select id="resultsNine"><option value="">전체</option></select></div>
+            <div class="field"><label>티</label><select id="resultsTee"><option value="">전체</option></select></div>
+            <div class="field"><label>스코어</label>
+              <select id="resultsScoreRange">
+                <option value="">전체</option>
+                <option value="75">75타 이하</option>
+                <option value="76-80">76~80타</option>
+                <option value="81">81타 이상</option>
+              </select>
+            </div>
+          </div>
+          <button id="resultsClearFilterBtn" class="btn ghost full" style="margin-top:10px">검색 조건 초기화</button>
+        </div>
+
+        <div class="card">
+          <div class="row between">
+            <div><div class="title">라운드 선택</div><div id="resultsSelectionHint" class="sub">한 개 선택 → 기존 라운드 리포트 · 여러 개 선택 → 종합 분석</div></div>
+          </div>
+          <div id="resultsRoundList" class="resultsRoundList"></div>
+          <div class="resultsActions">
+            <button id="resultsSelectAllBtn" class="btn ghost">전체 선택</button>
+            <button id="resultsAnalyzeBtn" class="btn primary">선택 라운드 분석</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultsMultiView" class="hidden">
+        <div class="resultsTop">
+          <div>
+            <div class="eyebrow">JGI · 누적 라운드 분석</div>
+            <h2 id="multiReviewTitle" style="margin:4px 0 0">종합 라운드 리뷰</h2>
+            <div id="multiReviewSub" class="sub"></div>
+          </div>
+          <button id="multiBackBtn" class="resultsBack">← 검색</button>
+        </div>
+
+        <div class="resultsSummary">
+          <div class="resultsMetric"><b id="multiAvgScore">—</b><span>평균 스코어</span></div>
+          <div class="resultsMetric"><b id="multiBestScore">—</b><span>최고 스코어</span></div>
+          <div class="resultsMetric"><b id="multiPenalty">0</b><span>벌타</span></div>
+        </div>
+
+        <div class="card">
+          <div class="title">스코어 변화</div>
+          <div id="multiScoreTrend" class="multiTrend"></div>
+        </div>
+
+        <div class="card">
+          <div class="title">오른쪽 위험지역 · 드라이버와 3번 우드</div>
+          <div class="multiCompare" style="margin-top:10px">
+            <div class="multiCompareCard"><h4>드라이버</h4><div class="multiLine"><span>사용</span><b id="multiDrCount">0회</b></div><div class="multiLine"><span>우측 미스</span><b id="multiDrRight">0회</b></div><div class="multiLine"><span>벌타</span><b id="multiDrPenalty">0회</b></div></div>
+            <div class="multiCompareCard"><h4>3번 우드</h4><div class="multiLine"><span>사용</span><b id="multi3wCount">0회</b></div><div class="multiLine"><span>우측 미스</span><b id="multi3wRight">0회</b></div><div class="multiLine"><span>벌타</span><b id="multi3wPenalty">0회</b></div></div>
+          </div>
+          <div id="multiHazardInsight" class="resultsInsight"></div>
+        </div>
+
+        <div class="card">
+          <div class="title">반복 패턴</div>
+          <div id="multiPatternInsight"></div>
+        </div>
+
+        <div id="multiAskCard" class="card">
+          <div class="title">JGI에게 묻기</div>
+          <div class="sub">선택한 라운드가 5개 이상이면 누적 기록을 기준으로 답합니다.</div>
+          <div id="multiAskButtons" class="askQuick" style="margin-top:10px">
+            <button data-mq="driver">드라이버 문제는?</button>
+            <button data-mq="hazard">오른쪽 위험지역에서는?</button>
+            <button data-mq="loss">어디서 가장 많이 흔들렸어?</button>
+          </div>
+          <div id="multiAskAnswer" class="askAnswer">질문을 선택하면 선택한 라운드의 기록만 기준으로 답합니다.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="overviewScreen" class="screen hidden">
       <div class="liveHead">
-        <div><div class="eyebrow">JGI · 실시간 라운드 인텔리전스</div><h2>실시간 라운드 리뷰</h2><div id="overviewCourse" class="sub"></div></div>
+        <div><div id="overviewEyebrow" class="eyebrow">JGI · 실시간 라운드 인텔리전스</div><h2 id="overviewTitle">실시간 라운드 리뷰</h2><div id="overviewCourse" class="sub"></div></div>
         <div id="liveThrough" class="liveThrough">—번 홀까지</div>
       </div>
 
@@ -1050,7 +1233,7 @@ body.round-active .bottomnav{display:none!important}
       <div class="card sgBox">
         <div class="sgHead">
           <div>
-            <div class="title">Strokes Gained</div>
+            <div class="title">획득타수(SG)</div>
             <div id="sgBenchmarkLabel" class="sub">기준 확인 중</div>
             <div id="sgSourcePill" class="sgSourcePill">기준 데이터</div>
           </div>
@@ -1063,17 +1246,17 @@ body.round-active .bottomnav{display:none!important}
           <div class="metric sgMetric"><div class="k">퍼팅</div><div id="sgPutt" class="v">—</div></div>
         </div>
         <div id="sgPenaltyNote" class="sgPenaltyNote"></div>
-        <div class="sgStatus"><b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. Tour는 공개된 PGA TOUR 기대타수 기준이며, Scratch / HCP 5·10·15·20·25는 JGI V1 모델링 기준입니다.</div>
+        <div class="sgStatus"><b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. 투어는 공개된 PGA 투어 기대타수 기준이며, 스크래치 / 핸디 5·10·15·20·25는 JGI V1 모델링 기준입니다.</div>
       </div>
       <div class="card">
         <div class="title">주요 기록</div>
         <div class="grid3" style="margin-top:10px">
-          <div class="metric"><div class="k">FIR</div><div id="statFir" class="v">—</div><div class="s">Lie 입력 기준</div></div>
-          <div class="metric"><div class="k">GIR</div><div id="statGir" class="v">—</div></div>
-          <div class="metric"><div class="k">PUTTS</div><div id="statPutts" class="v">0</div></div>
-          <div class="metric"><div class="k">AVG DRIVE</div><div id="statDrive" class="v">—</div><div class="s">GPS 기준</div></div>
-          <div class="metric"><div class="k">PENALTIES</div><div id="statPen" class="v">0</div></div>
-          <div class="metric"><div class="k">SCRAMBLE</div><div id="statScramble" class="v">—</div></div>
+          <div class="metric"><div class="k">페어웨이 적중</div><div id="statFir" class="v">—</div><div class="s">Lie 입력 기준</div></div>
+          <div class="metric"><div class="k">그린 적중</div><div id="statGir" class="v">—</div></div>
+          <div class="metric"><div class="k">퍼트</div><div id="statPutts" class="v">0</div></div>
+          <div class="metric"><div class="k">평균 드라이버 거리</div><div id="statDrive" class="v">—</div><div class="s">GPS 기준</div></div>
+          <div class="metric"><div class="k">벌타</div><div id="statPen" class="v">0</div></div>
+          <div class="metric"><div class="k">스크램블</div><div id="statScramble" class="v">—</div></div>
         </div>
       </div>
     </section>
@@ -1094,10 +1277,10 @@ body.round-active .bottomnav{display:none!important}
     </section>
 
     <section id="storyScreen" class="screen hidden">
-      <div class="title">THE STORY OF THIS ROUND</div>
-      <div class="sub">Shot Log → 관찰 패턴 → 다음 행동. 원인을 임의로 단정하지 않습니다.</div>
+      <div class="title">이번 라운드 이야기</div>
+      <div class="sub">샷 기록 → 관찰 패턴 → 다음 행동. 원인을 임의로 단정하지 않습니다.</div>
       <div id="storyContent" style="margin-top:10px"></div>
-      <div class="card"><div class="title">NEXT HOLE · ONE ACTION</div><div id="nextFocus" class="pendingText" style="margin-top:8px"></div></div>
+      <div class="card"><div class="title">다음 홀 · 행동 1개</div><div id="nextFocus" class="pendingText" style="margin-top:8px"></div></div>
     </section>
   </main>
 
@@ -1113,7 +1296,7 @@ body.round-active .bottomnav{display:none!important}
 <div id="clubModal" class="modal hidden">
   <div class="sheet clubSheet">
     <div class="sheetHead">
-      <div><strong>클럽 선택</strong><div class="sub">Player 기준 거리 기준</div></div>
+      <div><strong>클럽 선택</strong><div class="sub">플레이어 기준 거리</div></div>
       <button id="clubClose" class="x">×</button>
     </div>
     <div id="allClubList" class="allClubList"></div>
@@ -1124,7 +1307,7 @@ body.round-active .bottomnav{display:none!important}
 <div id="startPositionModal" class="modal hidden">
   <div class="sheet">
     <div class="sheetHead">
-      <div><strong>START POSITION</strong><div id="startPositionModalSub" class="sub">샷 시작 위치를 확인합니다.</div></div>
+      <div><strong>샷 시작 위치</strong><div id="startPositionModalSub" class="sub">샷 시작 위치를 확인합니다.</div></div>
       <button id="startPositionClose" class="x">×</button>
     </div>
     <div id="startPositionChoice" class="positionChoice"></div>
@@ -1374,6 +1557,11 @@ let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'
 let specialEventContext={event:null,after:null};
 let resetContext={club:null,previousShot:null,value:null};
 let round=null;
+let historicalViewMode=false;
+let historicalRoundBackup=null;
+let resultsQuickRange='ALL';
+let resultsSelectedIds=new Set();
+let multiReviewRounds=[];
 
 // Google Maps V1: one Map instance is created and reused for the full round.
 const GOOGLE_MAPS_API_KEY='AIzaSyBUumg5ijkJorEnMPDUBq0ftjFCmo4McCU';
@@ -1928,7 +2116,7 @@ function renderCourseHole(){
   // GI geometry stays loaded for JGI recognition/logic. It is drawn only in JGI Course View.
   refreshGreenDistance();
   fitCurrentHole(true);
-  if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
+  if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
 }
 
 window.initGoogleMap=function(){
@@ -1970,7 +2158,7 @@ window.gm_authFailure=function(){
     status.classList.remove('ready');
     status.classList.add('error');
     status.querySelector('strong').textContent='Google Maps 인증 오류';
-    status.querySelector('span').textContent='JGI Course View로 전환합니다.';
+    status.querySelector('span').textContent='JGI 코스 보기로 전환합니다.';
   }
   setMapView('JGI');
 };
@@ -1987,7 +2175,7 @@ function loadGoogleMaps(){
     if(status){
       status.classList.add('error');
       status.querySelector('strong').textContent='Google Satellite 로드 실패';
-      status.querySelector('span').textContent='JGI Course View로 전환합니다.';
+      status.querySelector('span').textContent='JGI 코스 보기로 전환합니다.';
     }
     setMapView('JGI');
   };
@@ -2297,7 +2485,7 @@ function openStartPositionModal(){
   if(!round)return;
   const first=!currentHoleHasPreviousShot();
   const mode=effectiveStartPositionMode();
-  $('startPositionModalSub').textContent=first?'첫 샷 시작 위치':'기본은 직전 Shot End가 자동으로 연결됩니다.';
+  $('startPositionModalSub').textContent=first?'첫 샷 시작 위치':'기본은 직전 샷 종료 위치가 자동으로 연결됩니다.';
   if(first){
     $('startPositionChoice').innerHTML=
       '<button data-start-mode="GPS">GPS<span>현재 기기의 GPS 좌표를 사용합니다.</span></button>'+
@@ -2309,7 +2497,7 @@ function openStartPositionModal(){
       '<button data-start-mode="AUTO">AUTO<span>직전 Shot End를 다음 Shot Start로 자동 연결합니다.</span></button>'+
       '<button data-start-mode="GPS">CURRENT GPS<span>현재 GPS 위치로 다음 Shot Start를 수정합니다.</span></button>'+
       '<button data-start-mode="DROP">DROP ON MAP<span>실제 공 위치를 지도에서 직접 지정합니다.</span></button>';
-    $('startPositionModeNote').textContent='PREVIOUS SHOT은 별도 입력하지 않습니다. AUTO가 내부적으로 PREVIOUS_END로 기록합니다.';
+    $('startPositionModeNote').textContent='직전 샷 위치는 별도로 입력하지 않습니다. 자동 연결로 직전 샷 종료 위치를 사용합니다.';
   }
   $('startPositionChoice').querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.startMode===mode));
   $('startPositionModal').classList.remove('hidden');
@@ -2318,7 +2506,7 @@ function activateDropForStart(){
   startPositionOverride='DROP';
   dropMode=true;
   $('dropBallBtn')?.classList.add('active');
-  if($('dropBallBtn'))$('dropBallBtn').textContent='TAP';
+  if($('dropBallBtn'))$('dropBallBtn').textContent='지도 선택';
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
 }
@@ -2645,7 +2833,7 @@ function beginNextShot(club,previousShot=null){
 function beginPending(club,previousShot=null){
   const startSnapshot=resolveShotStart(previousShot);
   if(!startSnapshot){
-    alert('Shot Start 위치를 확인할 수 없습니다. GPS, TEE BOX 또는 DROP ON MAP을 선택해 주세요.');
+    alert('샷 시작 위치를 확인할 수 없습니다. GPS, 티박스 또는 지도에서 공 위치 지정을 선택해 주세요.');
     startGPS();
     return false;
   }
@@ -2712,11 +2900,11 @@ function finishPendingAndMaybeStart(club=null){
   if(!round?.pending||!round.pending.result)return false;
   const endPoint=gpsPoint();
   if(!endPoint){
-    alert('현재 공 위치를 확인할 수 없습니다. DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    alert('현재 공 위치를 확인할 수 없습니다. 지도에서 샷 종료 위치를 지정해 주세요.');
     return false;
   }
   if(endPoint.source==='GPS'&&!gpsNearCurrentHole()){
-    alert('현재 GPS가 코스 밖입니다. 집에서 테스트 중이라면 DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    alert('현재 GPS가 코스 밖입니다. 집에서 테스트 중이라면 지도에서 샷 종료 위치를 지정해 주세요.');
     return false;
   }
   currentLie=round.pending.result.endLie||currentLie;
@@ -2739,7 +2927,7 @@ function emptyRound(course,nine){
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }
-function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
+function save(){if(round&&!historicalViewMode)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function loadCompletedRounds(){
   try{
     const x=JSON.parse(localStorage.getItem(COMPLETED_ROUNDS_KEY)||'[]');
@@ -2799,7 +2987,7 @@ function completedRoundSummary(){
 function renderRoundHistoryStatus(){
   const el=$('roundHistoryStatus');if(!el)return;
   const s=completedRoundSummary();
-  el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · Shot '+s.shots+' · Putt '+s.putts;
+  el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · 샷 '+s.shots+' · 퍼트 '+s.putts;
 }
 function isSyntheticRound(r){
   return !!r&&(r.synthetic===true||r.dataSource==='TEST_GENERATED'||String(r.id||'').startsWith('test-hcp6-r'));
@@ -3046,13 +3234,13 @@ function renderTestDataPreview(){
     if(s.direction==='RIGHT')decisions[s.club].right++;
     decisions[s.club].pen+=Number(h.penalties||0);
   }));
-  const scoreText=rounds.map((r,i)=>'R'+(r.testRoundNo||i+1)+' '+storedRoundScore(r)).join(' · ');
+  const scoreText=rounds.map((r,i)=>(r.testRoundNo||i+1)+'라운드 '+storedRoundScore(r)+'타').join(' · ');
   el.innerHTML=
-    '<b>가상 Player · HCP 6 · '+rounds.length+'R</b><br>'+
+    '<b>가상 플레이어 · 핸디 6 · '+rounds.length+'라운드</b><br>'+
     scoreText+'<br>'+
-    '평균 '+avgScore.toFixed(1)+'타 · Best '+Math.min(...scores)+' · Worst '+Math.max(...scores)+'<br>'+
-    '<span style="color:#b8c9bf">오른쪽 Hazard 테스트: DR '+decisions.DR.n+'회 / 우측 '+decisions.DR.right+' / 벌타 '+decisions.DR.pen+
-    ' · 3W '+decisions['3W'].n+'회 / 우측 '+decisions['3W'].right+' / 벌타 '+decisions['3W'].pen+'</span>';
+    '평균 '+avgScore.toFixed(1)+'타 · 최고 '+Math.min(...scores)+' · 최저 '+Math.max(...scores)+'<br>'+
+    '<span style="color:#b8c9bf">오른쪽 해저드 테스트: 드라이버 '+decisions.DR.n+'회 / 우측 '+decisions.DR.right+' / 벌타 '+decisions.DR.pen+
+    ' · 3번 우드 '+decisions['3W'].n+'회 / 우측 '+decisions['3W'].right+'회 / 벌타 '+decisions['3W'].pen+'타</span>';
 }
 function seedSyntheticTestData(silent=false){
   try{
@@ -3071,7 +3259,7 @@ function seedSyntheticTestData(silent=false){
     saveStateHistory([...realState,...syntheticState].slice(-100));
     localStorage.setItem(TEST_DATA_SEED_KEY,TEST_DATA_SEED_VERSION);
     renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
-    if(!silent)alert('테스트 데이터 6라운드를 생성했습니다.\n\nHCP 6 · 74 / 78 / 80 / 79 / 79 / 80');
+    if(!silent)alert('테스트 데이터 6라운드를 생성했습니다.\n\n핸디 6 · 74 / 78 / 80 / 79 / 79 / 80');
     return true;
   }catch(e){
     console.error(e);
@@ -3093,6 +3281,187 @@ function resetSyntheticTestData(){
   localStorage.setItem(TEST_DATA_SEED_KEY,'RESET');
   renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
   return removed;
+}
+function resultDateKey(r){
+  const d=new Date(Number(r?.startedAt||r?.completedAt||Date.now()));
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function resultDateLabel(r){
+  return resultDateKey(r).replaceAll('-','.');
+}
+function resultScore(r){
+  return (r?.holes||[]).filter(h=>h.completed).reduce((sum,h)=>sum+storedHoleScore(h),0);
+}
+function resultPar(r){
+  return (r?.holes||[]).filter(h=>h.completed&&Number.isFinite(Number(h.par))).reduce((sum,h)=>sum+Number(h.par),0);
+}
+function resultToPar(r){
+  const p=resultPar(r),s=resultScore(r);
+  return p? s-p:null;
+}
+function resultToParLabel(r){
+  const d=resultToPar(r);if(d===null)return '—';
+  return d===0?'이븐':((d>0?'+':'')+d);
+}
+function resultTeeLabel(v){return ({Blue:'블루',White:'화이트',Red:'레드'})[v]||v||'—'}
+function resultRoundLabel(r,index=0){
+  return r?.testRoundNo?r.testRoundNo+'라운드':(resultDateLabel(r)+' · '+(index+1)+'번째');
+}
+function resultFullRounds(){
+  return loadCompletedRounds().filter(r=>r?.fullRound||roundIsFull(r)).sort((a,b)=>Number(b?.startedAt||b?.completedAt||0)-Number(a?.startedAt||a?.completedAt||0));
+}
+function setResultsSelectOptions(){
+  const rounds=resultFullRounds();
+  const fill=(id,values,labelFn=v=>v)=>{
+    const el=$(id);if(!el)return;const prev=el.value;
+    el.innerHTML='<option value="">전체</option>'+[...new Set(values.filter(Boolean))].sort().map(v=>'<option value="'+safeText(v)+'">'+safeText(labelFn(v))+'</option>').join('');
+    if([...el.options].some(o=>o.value===prev))el.value=prev;
+  };
+  fill('resultsCourse',rounds.map(r=>r.course));
+  fill('resultsNine',rounds.map(r=>r.nine));
+  fill('resultsTee',rounds.map(r=>r.tee),resultTeeLabel);
+}
+function filteredResultRounds(){
+  let rounds=resultFullRounds();
+  const from=$('resultsFromDate')?.value||'',to=$('resultsToDate')?.value||'';
+  const course=$('resultsCourse')?.value||'',nine=$('resultsNine')?.value||'',teeV=$('resultsTee')?.value||'',scoreRange=$('resultsScoreRange')?.value||'';
+  rounds=rounds.filter(r=>{
+    const date=resultDateKey(r),score=resultScore(r);
+    if(from&&date<from)return false;if(to&&date>to)return false;
+    if(course&&r.course!==course)return false;if(nine&&r.nine!==nine)return false;if(teeV&&r.tee!==teeV)return false;
+    if(scoreRange==='75'&&score>75)return false;
+    if(scoreRange==='76-80'&&(score<76||score>80))return false;
+    if(scoreRange==='81'&&score<81)return false;
+    return true;
+  });
+  if(resultsQuickRange==='5')rounds=rounds.slice(0,5);
+  if(resultsQuickRange==='10')rounds=rounds.slice(0,10);
+  if(resultsQuickRange==='30D'){
+    const cutoff=Date.now()-30*24*60*60*1000;
+    rounds=rounds.filter(r=>Number(r.startedAt||r.completedAt||0)>=cutoff);
+  }
+  return rounds;
+}
+function renderRoundResultsSearch(){
+  setResultsSelectOptions();
+  const rounds=filteredResultRounds();
+  const scores=rounds.map(resultScore).filter(Number.isFinite);
+  $('resultsCount').textContent=rounds.length;
+  $('resultsAverage').textContent=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):'—';
+  $('resultsBest').textContent=scores.length?Math.min(...scores):'—';
+  $('resultsSelectionHint').textContent='한 개 선택 → 기존 라운드 리포트 · 여러 개 선택 → 종합 분석';
+  const ids=new Set(rounds.map(r=>r.id));resultsSelectedIds=new Set([...resultsSelectedIds].filter(id=>ids.has(id)));
+  $('resultsRoundList').innerHTML=rounds.length?rounds.map((r,i)=>{
+    const score=resultScore(r),checked=resultsSelectedIds.has(r.id)?' checked':'';
+    return '<div class="resultsRoundRow">'+
+      '<input type="checkbox" data-result-check="'+safeText(r.id)+'"'+checked+' aria-label="라운드 선택">'+
+      '<div><div class="resultsRoundDate">'+resultDateLabel(r)+'</div><div class="resultsRoundName">'+safeText(resultRoundLabel(r,i))+'</div></div>'+
+      '<div><div class="resultsRoundCourse">'+safeText(r.course||'골프장')+'</div><div class="resultsRoundMeta">'+safeText(r.nine||'코스')+' · '+resultTeeLabel(r.tee)+' 티</div></div>'+
+      '<div class="resultsRoundScore"><b>'+score+'</b><span>'+resultToParLabel(r)+'</span></div>'+
+      '<button class="resultsRoundOpen" data-result-open="'+safeText(r.id)+'">이 라운드 리포트 보기</button>'+
+    '</div>';
+  }).join(''):'<div class="pendingText">선택한 조건에 저장된 라운드가 없습니다.</div>';
+}
+function showRoundResults(){
+  historicalViewMode=false;
+  $('historyViewBar')?.classList.add('hidden');
+  $('introScreen').classList.add('hidden');
+  $('appTopbar').classList.remove('hidden');
+  $('resultsSearchView').classList.remove('hidden');
+  $('resultsMultiView').classList.add('hidden');
+  showScreen('results');
+  renderRoundResultsSearch();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function returnToJgiHome(){
+  if(reviewSatelliteActive)restoreGoogleMapHome();
+  historicalViewMode=false;historicalRoundBackup=null;multiReviewRounds=[];
+  ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen')?.classList.add('hidden'));
+  $('historyViewBar')?.classList.add('hidden');$('bottomnav').classList.add('hidden');$('appTopbar').classList.add('hidden');$('introScreen').classList.remove('hidden');
+  document.body.classList.remove('round-active');window.scrollTo({top:0,behavior:'smooth'});
+}
+function openHistoricalRound(roundId){
+  const found=loadCompletedRounds().find(r=>r?.id===roundId);if(!found)return;
+  historicalRoundBackup=round?JSON.parse(JSON.stringify(round)):load();
+  historicalViewMode=true;
+  round=normalizeRound(JSON.parse(JSON.stringify(found)));
+  selectedReviewHole=18;
+  const score=resultScore(round);
+  $('historyViewTitle').textContent=resultDateLabel(round)+' · '+safeText(round.course||'골프장')+' · '+score+'타';
+  $('historyViewMeta').textContent=safeText(round.nine||'코스')+' · '+resultTeeLabel(round.tee)+' 티 · '+resultToParLabel(round);
+  $('historyViewBar').classList.remove('hidden');
+  const roundNav=document.querySelector('#bottomnav button[data-screen="round"]');
+  if(roundNav)roundNav.innerHTML='<b>←</b>결과';
+  showScreen('overview');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function exitHistoricalRound(){
+  historicalViewMode=false;
+  round=historicalRoundBackup?normalizeRound(historicalRoundBackup):load();
+  historicalRoundBackup=null;
+  $('historyViewBar').classList.add('hidden');
+  const roundNav=document.querySelector('#bottomnav button[data-screen="round"]');
+  if(roundNav)roundNav.innerHTML='<b>⛳</b>라운드';
+  showRoundResults();
+}
+function rightRiskShot(s){
+  if(!s)return false;
+  if(s.testScenario==='RIGHT_HAZARD_TEE')return true;
+  if(s.courseContext?.courseRisk?.right)return true;
+  return String(s.courseContext?.hazardDistance?.side||'').toUpperCase()==='RIGHT';
+}
+function multiClubRiskStats(rounds,club){
+  const out={count:0,right:0,penalty:0};
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    const s=h.shots?.[0];if(!s||s.club!==club||!rightRiskShot(s))return;
+    out.count++;if(String(s.direction).toUpperCase()==='RIGHT')out.right++;
+    out.penalty+=Number(h.penalties||0);
+  }));
+  return out;
+}
+function multiPatternSummary(rounds){
+  let teeRight=0,teeTotal=0,threePutts=0,penalties=0,approach=0,approachMiss=0;
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    const teeShot=h.shots?.[0];if(teeShot){teeTotal++;if(teeShot.direction==='RIGHT')teeRight++}
+    if((h.puttsDetail||[]).length>=3)threePutts++;
+    penalties+=Number(h.penalties||0);
+    (h.shots||[]).filter(s=>s.shotIntent==='GREEN_ATTACK').forEach(s=>{approach++;if(s.endLie!=='GREEN')approachMiss++});
+  }));
+  return {teeRight,teeTotal,threePutts,penalties,approach,approachMiss};
+}
+function renderMultiRoundReview(rounds){
+  multiReviewRounds=rounds;
+  $('resultsSearchView').classList.add('hidden');$('resultsMultiView').classList.remove('hidden');
+  const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
+  const scores=ordered.map(resultScore).filter(Number.isFinite);
+  $('multiReviewTitle').textContent=rounds.length+'라운드 종합 리뷰';
+  $('multiReviewSub').textContent=resultDateLabel(ordered[0])+' ~ '+resultDateLabel(ordered.at(-1))+' · 선택한 기록 기준';
+  $('multiAvgScore').textContent=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):'—';
+  $('multiBestScore').textContent=scores.length?Math.min(...scores):'—';
+  const totalPen=rounds.reduce((sum,r)=>sum+(r.holes||[]).reduce((a,h)=>a+Number(h.penalties||0),0),0);
+  $('multiPenalty').textContent=totalPen;
+  $('multiScoreTrend').innerHTML=ordered.map((r,i)=>{
+    const score=resultScore(r),height=Math.max(20,100-(score-72)*7);
+    return '<div class="multiTrendItem"><div class="multiTrendScore">'+score+'</div><div class="multiTrendBar" style="height:'+height+'px"></div><div class="multiTrendLabel">'+safeText(resultRoundLabel(r,i))+'</div></div>';
+  }).join('');
+  const dr=multiClubRiskStats(rounds,'DR'),w=multiClubRiskStats(rounds,'3W');
+  $('multiDrCount').textContent=dr.count+'회';$('multiDrRight').textContent=dr.right+'회';$('multiDrPenalty').textContent=dr.penalty+'회';
+  $('multi3wCount').textContent=w.count+'회';$('multi3wRight').textContent=w.right+'회';$('multi3wPenalty').textContent=w.penalty+'회';
+  $('multiHazardInsight').innerHTML='<b>JGI 관찰</b><br>'+
+    (dr.count&&w.count
+      ?'오른쪽 위험지역이 있는 비슷한 티샷에서 드라이버는 '+dr.count+'회 중 우측 미스 '+dr.right+'회, 벌타 '+dr.penalty+'회였고, 3번 우드는 '+w.count+'회 중 우측 미스 '+w.right+'회, 벌타 '+w.penalty+'회가 기록되었습니다.'
+      :'드라이버와 3번 우드를 직접 비교할 수 있는 오른쪽 위험지역 샘플이 아직 충분하지 않습니다.');
+  const p=multiPatternSummary(rounds);
+  const patterns=[
+    '<div class="resultsInsight"><b>티샷</b><br>전체 '+p.teeTotal+'개 티샷 중 우측 미스가 '+p.teeRight+'회 기록되었습니다.</div>',
+    '<div class="resultsInsight"><b>어프로치</b><br>그린 공략 '+p.approach+'회 중 그린에 도달하지 못한 결과가 '+p.approachMiss+'회 기록되었습니다.</div>',
+    '<div class="resultsInsight"><b>퍼팅과 벌타</b><br>3퍼트 '+p.threePutts+'회 · 벌타 '+p.penalties+'타가 기록되었습니다.</div>'
+  ];
+  $('multiPatternInsight').innerHTML=patterns.join('');
+  const enough=rounds.length>=5;
+  $('multiAskButtons').querySelectorAll('button').forEach(b=>b.disabled=!enough);
+  $('multiAskAnswer').innerHTML=enough?'질문을 선택하면 선택한 라운드의 기록만 기준으로 답합니다.':'5라운드 이상을 선택하면 누적 JGI 질문을 사용할 수 있습니다.';
 }
 function normalizeRound(r){
   if(!r)return null;
@@ -3145,8 +3514,8 @@ function setManualPosition(latLng){
     });
   }else{manualPositionMarker.setPosition(manualPosition);manualPositionMarker.setMap(googleMap)}
   dropMode=false;
-  $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='DROP';
-  if($('gpsOverlay'))$('gpsOverlay').textContent='POSITION · MANUAL';
+  $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치';
+  if($('gpsOverlay'))$('gpsOverlay').textContent='위치 · 수동 지정';
   renderStartPositionControl();
   renderJgiCourseView();
 }
@@ -3154,7 +3523,7 @@ function clearManualPosition(){
   manualPosition=null;
   if(manualPositionMarker)manualPositionMarker.setMap(null);
   dropMode=false;
-  if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='DROP'}
+  if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치'}
   renderStartPositionControl();
 }
 function startGPS(){
@@ -3173,11 +3542,12 @@ function startGPS(){
 function hole(){return round?.holes[round.currentHole-1]}
 function showScreen(name){
   if(name!=='overview'&&reviewSatelliteActive)restoreGoogleMapHome();
-  ['setup','round','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
+  ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
   document.body.classList.toggle('round-active',name==='round');
-  if(name!=='setup'&&name!=='round')$('bottomnav').classList.remove('hidden'); else $('bottomnav').classList.add('hidden');
+  if(['setup','round','results'].includes(name))$('bottomnav').classList.add('hidden'); else $('bottomnav').classList.remove('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
+  if(name==='results')renderRoundResultsSearch();
   if(name==='overview'){reviewMapMode='SAT';renderOverview();}
   if(name==='performance')render퍼포먼스();
   if(name==='flo')renderFlo();
@@ -3237,13 +3607,13 @@ function startShot(club){
 function renderRound(){
   if(!round)return;
   $('roundCourse').textContent=round.course;
-  $('roundNine').textContent=round.nine+' · '+round.tee+' · SG '+sgBenchmarkInfo(round).label;
-  $('holeTitle').textContent='Hole '+round.currentHole;
+  $('roundNine').textContent=round.nine+' · '+resultTeeLabel(round.tee)+' 티 · SG '+sgBenchmarkInfo(round).label;
+  $('holeTitle').textContent=round.currentHole+'번 홀';
   $('holeParText').textContent=hole().par?' · Par '+hole().par+(hole().teeDistanceM?' · '+hole().teeDistanceM+'m':''):(courseHoleData()?' · GI MAP':' · 코스 데이터 대기');
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
   refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
-  $('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
+  $('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
   $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
   $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
@@ -3260,7 +3630,7 @@ function renderRound(){
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
     }else{
       $('pendingStatusLabel').textContent='샷 준비';
-      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타겟 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · Shot Start 저장됨';
+      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.add('hidden');
     }
@@ -3335,11 +3705,11 @@ function sgBenchmarkInfo(r=round){
   let mode=r?.sgBenchmarkMode||sgBenchmarkMode||'PLAYER';
   if(mode==='PLAYER'){
     const h=clampNumber(r?.playerHandicap??playerHandicap,0,25);
-    if(h===null)return {mode:'TOUR',requestedMode:'PLAYER',label:'Tour',handicap:null,type:'MEASURED',fallback:true};
-    return {mode:'PLAYER',requestedMode:'PLAYER',label:'HCP '+h.toFixed(1),handicap:h,type:'MODELED',fallback:false};
+    if(h===null)return {mode:'TOUR',requestedMode:'PLAYER',label:'투어',handicap:null,type:'MEASURED',fallback:true};
+    return {mode:'PLAYER',requestedMode:'PLAYER',label:'핸디 '+h.toFixed(1),handicap:h,type:'MODELED',fallback:false};
   }
   const level=data?.levels?.[mode];
-  if(!level)return {mode:'TOUR',requestedMode:mode,label:'Tour',handicap:null,type:'MEASURED',fallback:true};
+  if(!level)return {mode:'TOUR',requestedMode:mode,label:'투어',handicap:null,type:'MEASURED',fallback:true};
   return {mode,requestedMode:mode,label:data.labels?.[mode]||mode,handicap:level.handicap,type:level.type||'MODELED',fallback:false};
 }
 function sgOffset(handicap,bucket){
@@ -3851,6 +4221,8 @@ function renderLiveReview(){
 }
 function renderOverview(){
   if(!round)return;const cH=round.holes.filter(h=>h.completed),tp=toPar();
+  if($('overviewEyebrow'))$('overviewEyebrow').textContent=historicalViewMode?'JGI · 라운드 결과':'JGI · 실시간 라운드 인텔리전스';
+  if($('overviewTitle'))$('overviewTitle').textContent=historicalViewMode?'라운드 리뷰':'실시간 라운드 리뷰';
   $('overviewCourse').textContent=round.course+' · '+round.nine+' · '+({Blue:'블루',White:'화이트',Red:'레드'}[round.tee]||round.tee);
   const parText=tp.d===null?'파 데이터 대기':(tp.d===0?'이븐':((tp.d>0?'+':'')+tp.d+' · 파 기준'));
   $('scoreBig').innerHTML=(cH.length?tp.s:'—')+'<small>'+(cH.length?parText:'완료 홀')+'</small>';
@@ -3887,7 +4259,7 @@ function render퍼포먼스(){
   $('statPen').textContent=s.penalties;$('statScramble').textContent=s.scrD?(s.scr+'/'+s.scrD):'—';
 
   const sg=sgRoundSummary();
-  $('sgBenchmarkLabel').textContent='vs '+sg.info.label+' · 라운드 고정 기준';
+  $('sgBenchmarkLabel').textContent='비교 기준 · '+sg.info.label+' · 라운드 고정';
   $('sgSourcePill').textContent=sg.info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링';
   $('sgSourcePill').className='sgSourcePill '+(sg.info.type==='MEASURED'?'measured':'modeled');
   const values={sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
@@ -3928,7 +4300,7 @@ function renderStory(){
   if(!round)return;
   const a=buildLiveAnalysis();
   $('storyContent').innerHTML=Object.values(a.categories).map(x=>categoryCard(x,true)).join('');
-  $('nextFocus').innerHTML='<strong style="color:#82f3a3">'+a.nextAction+'</strong><br><br><span class="dataNote">현재는 오늘의 실제 Shot Log만 사용합니다. Personal Baseline은 약 10라운드 이후 연결합니다.</span>';
+  $('nextFocus').innerHTML='<strong style="color:#82f3a3">'+a.nextAction+'</strong><br><br><span class="dataNote">현재는 오늘의 실제 샷 기록만 사용합니다. 개인 기준선은 약 10라운드 이후 연결합니다.</span>';
 }
 
 function precomputeAllCourseIntelligence(){
@@ -3957,12 +4329,59 @@ renderRoundHistoryStatus();
 if(localStorage.getItem(TEST_DATA_SEED_KEY)===null)seedSyntheticTestData(true);
 renderTestDataPreview();
 
-$('enterJgiBtn').onclick=()=>{
+$('enterRoundBtn').onclick=()=>{
+  historicalViewMode=false;
   $('introScreen').classList.add('hidden');
   $('appTopbar').classList.remove('hidden');
-  $('setupScreen').classList.remove('hidden');
+  showScreen('setup');
   startGPS();
   window.scrollTo({top:0,behavior:'smooth'});
+};
+$('enterResultsBtn').onclick=showRoundResults;
+
+$('resultsHomeBtn').onclick=returnToJgiHome;
+$('backToResultsBtn').onclick=exitHistoricalRound;
+$('multiBackBtn').onclick=()=>{$('resultsMultiView').classList.add('hidden');$('resultsSearchView').classList.remove('hidden');renderRoundResultsSearch();window.scrollTo({top:0,behavior:'smooth'})};
+$('resultsQuick').onclick=e=>{
+  const b=e.target.closest('[data-range]');if(!b)return;
+  resultsQuickRange=b.dataset.range;
+  $('resultsQuick').querySelectorAll('button').forEach(x=>x.classList.toggle('sel',x===b));
+  resultsSelectedIds.clear();renderRoundResultsSearch();
+};
+['resultsFromDate','resultsToDate','resultsCourse','resultsNine','resultsTee','resultsScoreRange'].forEach(id=>{
+  $(id).addEventListener('change',()=>{resultsSelectedIds.clear();renderRoundResultsSearch()});
+});
+$('resultsClearFilterBtn').onclick=()=>{
+  resultsQuickRange='ALL';resultsSelectedIds.clear();
+  $('resultsQuick').querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.range==='ALL'));
+  ['resultsFromDate','resultsToDate','resultsCourse','resultsNine','resultsTee','resultsScoreRange'].forEach(id=>{$(id).value=''});
+  renderRoundResultsSearch();
+};
+$('resultsRoundList').onclick=e=>{
+  const open=e.target.closest('[data-result-open]');
+  if(open){openHistoricalRound(open.dataset.resultOpen);return}
+  const check=e.target.closest('[data-result-check]');
+  if(check){if(check.checked)resultsSelectedIds.add(check.dataset.resultCheck);else resultsSelectedIds.delete(check.dataset.resultCheck)}
+};
+$('resultsSelectAllBtn').onclick=()=>{
+  const rounds=filteredResultRounds();const allSelected=rounds.length&&rounds.every(r=>resultsSelectedIds.has(r.id));
+  rounds.forEach(r=>{if(allSelected)resultsSelectedIds.delete(r.id);else resultsSelectedIds.add(r.id)});
+  renderRoundResultsSearch();
+};
+$('resultsAnalyzeBtn').onclick=()=>{
+  const rounds=filteredResultRounds().filter(r=>resultsSelectedIds.has(r.id));
+  if(!rounds.length){alert('분석할 라운드를 한 개 이상 선택하세요.');return}
+  if(rounds.length===1){openHistoricalRound(rounds[0].id);return}
+  renderMultiRoundReview(rounds);window.scrollTo({top:0,behavior:'smooth'});
+};
+$('multiAskButtons').onclick=e=>{
+  const b=e.target.closest('[data-mq]');if(!b||b.disabled)return;
+  const rounds=multiReviewRounds,p=multiPatternSummary(rounds),dr=multiClubRiskStats(rounds,'DR'),w=multiClubRiskStats(rounds,'3W');
+  let answer='';
+  if(b.dataset.mq==='driver')answer='<b>드라이버 기록</b><br>선택한 라운드의 티샷 '+p.teeTotal+'개 중 우측 미스가 '+p.teeRight+'회 기록되었습니다. 오른쪽 위험지역 드라이버 샘플은 '+dr.count+'회입니다.';
+  if(b.dataset.mq==='hazard')answer='<b>오른쪽 위험지역</b><br>드라이버 '+dr.count+'회에서 우측 미스 '+dr.right+'회·벌타 '+dr.penalty+'회, 3번 우드 '+w.count+'회에서 우측 미스 '+w.right+'회·벌타 '+w.penalty+'회가 기록되었습니다.';
+  if(b.dataset.mq==='loss')answer='<b>반복 손실 후보</b><br>벌타 '+p.penalties+'타, 3퍼트 '+p.threePutts+'회, 그린 공략 미스 '+p.approachMiss+'회가 기록되었습니다. 아직은 관찰 결과이며 원인을 단정하지 않습니다.';
+  $('multiAskAnswer').innerHTML=answer;
 };
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
@@ -3987,14 +4406,14 @@ $('seedTestDataBtn').onclick=()=>{
   seedSyntheticTestData(false);
 };
 $('resetTestDataBtn').onclick=()=>{
-  if(!confirm('생성된 TEST DATA만 삭제할까요?\n\n실제 입력한 라운드와 클럽 설정은 유지됩니다.'))return;
+  if(!confirm('생성된 테스트 데이터만 삭제할까요?\n\n실제 입력한 라운드와 클럽 설정은 유지됩니다.'))return;
   const n=resetSyntheticTestData();
-  alert('TEST DATA '+n+'라운드를 삭제했습니다.');
+  alert('테스트 데이터 '+n+'라운드를 삭제했습니다.');
 };
 $('startRoundBtn').onclick=()=>{
   tee=normalizeTeeName(tee);
   if(!sgBenchmarkMode){
-    alert('Strokes Gained 비교 기준을 먼저 선택해 주세요.\n\nTour / Scratch / HCP 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
+    alert('획득타수(SG) 비교 기준을 먼저 선택해 주세요.\n\n투어 / 스크래치 / 핸디 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
     $('sgBenchmarkSegment').scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
@@ -4037,8 +4456,8 @@ $('startPositionChoice').onclick=e=>{
   const b=e.target.closest('[data-start-mode]');if(!b)return;
   const mode=b.dataset.startMode;
   if(mode==='DROP'){activateDropForStart();return}
-  if(mode==='TEE_BOX'&&!teeBoxPoint()){alert('이 홀의 Tee reference 데이터가 없습니다. GPS 또는 DROP ON MAP을 사용해 주세요.');return}
-  if(mode==='GPS'&&!gps){alert('GPS 신호가 아직 없습니다. TEE BOX 또는 DROP ON MAP을 사용할 수 있습니다.');startGPS();return}
+  if(mode==='TEE_BOX'&&!teeBoxPoint()){alert('이 홀의 티박스 기준 데이터가 없습니다. GPS 또는 지도에서 공 위치 지정을 사용해 주세요.');return}
+  if(mode==='GPS'&&!gps){alert('GPS 신호가 아직 없습니다. 티박스 또는 지도에서 공 위치 지정을 사용할 수 있습니다.');startGPS();return}
   startPositionOverride=mode;
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
@@ -4046,7 +4465,7 @@ $('startPositionChoice').onclick=e=>{
 
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
-  if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}
+  if(round.pending){alert('현재 샷을 먼저 완료하세요.');return}
   round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';startPositionOverride=null;clearManualPosition();clearTarget();save();renderRound();renderCourseHole();
 });
 
@@ -4079,7 +4498,7 @@ $('dropBallBtn').onclick=()=>{
   if(dropMode&&!round?.pending)startPositionOverride='DROP';
   if(!dropMode&&startPositionOverride==='DROP'&&!manualPosition)startPositionOverride=null;
   $('dropBallBtn').classList.toggle('active',dropMode);
-  $('dropBallBtn').textContent=dropMode?'TAP':'DROP';
+  $('dropBallBtn').textContent=dropMode?'지도 선택':'공 위치';
   renderStartPositionControl();
 };
 $('undoLastBtn').onclick=()=>{
@@ -4291,7 +4710,7 @@ function openPutt(){
       return;
     }
     if(String(currentLie).toUpperCase()!=='GREEN'&&endPoint.source==='GPS'&&!gpsNearCurrentHole()){
-      alert('현재 GPS가 코스 밖입니다. DROP ON MAP으로 샷 종료 위치를 지정해 주세요.');
+      alert('현재 GPS가 코스 밖입니다. 지도에서 샷 종료 위치를 지정해 주세요.');
       return;
     }
     finalizePending(endPoint,currentLie);
@@ -4332,7 +4751,11 @@ $('savePuttBtn').onclick=()=>{
   }
 };
 
-$('bottomnav').addEventListener('click',e=>{const b=e.target.closest('button');if(b?.dataset.screen)showScreen(b.dataset.screen)});
+$('bottomnav').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b?.dataset.screen)return;
+  if(historicalViewMode&&b.dataset.screen==='round'){exitHistoricalRound();return}
+  showScreen(b.dataset.screen);
+});
 $('endRoundBtn').onclick=()=>{
   if(!confirm('현재 라운드를 종료하고 Overview를 볼까요?'))return;
   round.completedAt=Date.now();
