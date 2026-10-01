@@ -2622,32 +2622,6 @@ $('savePenaltyBtn').onclick=()=>{
 };
 $('onGreenBtn').onclick=openPutt;
 
-$('floClose').onclick=()=>{
-  if(stateContext.required)return;
-  $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
-};
-$('stateSkipBtn').onclick=()=>{
-  $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
-};
-$('commitScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.commitment=Number(e.target.dataset.v);setSelected($('commitScale'),floDraft.commitment)};
-$('thinkScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.thinking=Number(e.target.dataset.v);setSelected($('thinkScale'),floDraft.thinking)};
-$('routineChoice').onclick=e=>{if(!e.target.dataset.v)return;floDraft.routine=e.target.dataset.v;setSelected($('routineChoice'),floDraft.routine)};
-$('stateChoice').onclick=e=>{if(!e.target.dataset.v)return;floDraft.state=e.target.dataset.v;setSelected($('stateChoice'),floDraft.state)};
-$('saveFloBtn').onclick=()=>{
-  if(!floDraft.commitment||!floDraft.thinking||!floDraft.routine||!floDraft.state){
-    alert('Commitment, Thinking, Routine, Emotional State를 입력하세요.');return;
-  }
-  floDraft.note=$('floNote').value.trim();
-  const state={...floDraft,source:stateContext.required?'SYSTEM':'USER',reason:stateContext.reason||null,at:Date.now()};
-  if(stateContext.type==='putting')hole().puttingState=state;
-  else if(round.pending)round.pending.playerState=state;
-  save();$('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};
-  if(after)after();else renderRound();
-};
-
 function resetPuttDraft(){
   puttDraft={distanceM:3,slope:null,break:null,result:null};
   $('puttDistanceInput').value='3.0';
