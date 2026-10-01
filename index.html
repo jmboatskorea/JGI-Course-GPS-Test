@@ -1946,6 +1946,7 @@ window.initGoogleMap=function(){
   });
   updatePlayerMarker();
   renderCourseHole();
+  if(round?.pending?.target)showTargetSnapshot(round.pending.target,round.pending.start||null);
 };
 
 window.gm_authFailure=function(){
@@ -3614,7 +3615,17 @@ $('startRoundBtn').onclick=()=>{
   hydrateRoundCourseTruth(round);save();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
-  round=load();startPositionOverride=null;resetTargetZoneSelection();tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
+  round=load();startPositionOverride=null;
+  if(round?.pending){
+    targetZone=round.pending.targetZone||round.pending.target?.zone||'CENTER';
+    targetZoneSource=round.pending.targetSource||round.pending.target?.source||'SYSTEM_DEFAULT';
+    targetManualOverride=round.pending.target?.basis==='MAP_OVERRIDE';
+    targetDistanceReference=round.pending.start||null;
+    renderTargetZoneControl();
+  }else{
+    resetTargetZoneSelection();
+  }
+  tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
   localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
   playerHandicap=clampNumber(round.playerHandicap,0,25);
   sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
