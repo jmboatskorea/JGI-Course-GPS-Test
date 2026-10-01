@@ -101,6 +101,14 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .storyCategory .baselinePending{color:#ffad61;font-size:10px;font-weight:850;margin-top:8px}
 @media(max-width:520px){.reviewMap{height:300px}.liveHead h2{font-size:22px}}
 
+/* ===== TEST INPUT HISTORY ===== */
+.testHistory{margin-top:12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(4,20,15,.58);overflow:hidden}
+.testHistory summary{cursor:pointer;padding:11px 12px;font-size:11px;font-weight:950;color:#9ff0b5;letter-spacing:.04em}
+.testHistoryBody{padding:0 12px 12px;display:grid;gap:8px}
+.testHistoryRow{padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:10px;line-height:1.55;color:#c1d0c6}
+.testHistoryRow b{color:#fff}
+.testHistoryRow .warn{color:#ffb060;font-weight:900}
+
 /* ===== REVIEW COURSE MAP ===== */
 .reviewMap{position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#07130d,#0b1a12)}
 .reviewCourseSvg{display:block;width:100%;height:100%;min-height:300px}
@@ -2058,6 +2066,15 @@ function gpsPoint(){
   if(manualPosition)return {...manualPosition,source:'MANUAL_DROP',time:Date.now()};
   return gps?{lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy,time:gps.time||Date.now(),source:'GPS'}:null;
 }
+function resolveGreenArrivalEndPoint(){
+  if(manualPosition)return {...manualPosition,source:'MANUAL_DROP',time:Date.now()};
+  const resultLie=String(round?.pending?.result?.endLie||'').toUpperCase();
+  const g=greenPointForHole(round?.currentHole);
+  if(resultLie==='GREEN'&&g&&(!gps||!gpsNearCurrentHole())){
+    return {...g,accuracy:null,time:Date.now(),source:'GREEN_REFERENCE'};
+  }
+  return gpsPoint();
+}
 function setManualPosition(latLng){
   if(!window.google?.maps)return;
   manualPosition={lat:latLng.lat(),lng:latLng.lng(),accuracy:0,source:'MANUAL_DROP',time:Date.now()};
@@ -2404,7 +2421,7 @@ function shapeLabel(v){return ({HOOK:'훅',DRAW:'드로우',STRAIGHT:'스트레�
 function dirLabel(v){return ({LEFT:'왼쪽',CENTER:'센터',RIGHT:'오른쪽'})[v]||v||'—'}
 function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목표 거리',LONG:'김'})[v]||v||'—'}
 function lieDisplayLabel(v){return ({TEE:'티',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
-function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정'})[v]||v||'—'}
+function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정',GREEN_REFERENCE:'그린 기준점'})[v]||v||'—'}
 function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'김'})[v]||v||'—'}
 function isAroundGreenShot(s){return Number(s?.courseContext?.greenDistanceM)<=55||['BUNKER','FRINGE'].includes(String(s?.startLie||'').toUpperCase())}
 function countBy(arr,keyFn){const o={};arr.forEach(x=>{const k=keyFn(x);if(k)o[k]=(o[k]||0)+1});return o}
@@ -2498,6 +2515,31 @@ function categoryCard(cat,story=false){
   const cls=cat.key==='approach'?'approach':cat.key==='around'?'around':cat.key==='putting'?'putting':'';
   return '<div class="analysisCard '+cls+(story?' storyCategory':'')+'"><div class="catTop"><span class="catName">'+cat.name+'</span><span class="catValue">'+cat.samples+'개</span></div><div class="catMain">'+cat.main+'</div><div class="catSub">'+cat.sub+'</div><div class="whyBox"><b>오늘 관찰</b><br>'+cat.why+'</div>'+(story?'<div class="baselinePending">나의 평소 · 약 10라운드 이후 개인 기준선과 비교</div>':'')+'</div>';
 }
+function coordText(p){
+  return p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))
+    ? Number(p.lat).toFixed(6)+', '+Number(p.lng).toFixed(6)
+    : '좌표 없음';
+}
+function renderTestHistory(h){
+  const g=greenPointForHole(h.hole);
+  const shotRows=(h.shots||[]).map((s,i)=>{
+    const endToGreen=g&&s.end?hav(s.end,g):null;
+    const suspicious=String(s.endLie||'').toUpperCase()==='GREEN'&&Number.isFinite(endToGreen)&&endToGreen>100;
+    return '<div class="testHistoryRow"><b>샷 '+(i+1)+' · '+safeText(s.club)+'</b><br>'+
+      '시작: '+positionSourceLabel(s.positionSource?.start)+' · '+coordText(s.start)+'<br>'+
+      '종료: '+positionSourceLabel(s.positionSource?.end)+' · '+coordText(s.end)+'<br>'+
+      'Lie: '+lieDisplayLabel(s.startLie)+' → '+lieDisplayLabel(s.endLie)+' · 거리 '+distanceLabel(s.distanceM)+
+      (Number.isFinite(endToGreen)?' · 종료→그린 '+Math.round(endToGreen)+'m':'')+
+      (suspicious?'<br><span class="warn">⚠ 그린 종료로 기록됐지만 종료 좌표가 그린에서 100m 이상 떨어져 있습니다.</span>':'')+
+      '</div>';
+  });
+  const puttRows=(h.puttsDetail||[]).map((p,i)=>
+    '<div class="testHistoryRow"><b>퍼트 '+(i+1)+'</b><br>거리 '+Number(p.distanceM).toFixed(1)+'m · '+puttResultLabel(p.result)+' · '+safeText(p.slope)+' · '+safeText(p.break)+'</div>'
+  );
+  return '<details class="testHistory"><summary>테스트 입력 히스토리 보기</summary><div class="testHistoryBody">'+
+    ([...shotRows,...puttRows].join('')||'<div class="testHistoryRow">아직 저장된 입력이 없습니다.</div>')+
+    '</div></details>';
+}
 function renderHoleReview(holeNo){
   const h=round.holes[holeNo-1];if(!h)return;
   const r=ensureHoleReview(h)||buildHoleReview(h);
@@ -2533,7 +2575,8 @@ function renderHoleReview(holeNo){
           return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼터</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+puttResultLabel(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
         })
       ].join(''):'<div class="pendingText">아직 저장된 샷이 없습니다.</div>')+
-    '</div>';
+    '</div>'+
+    renderTestHistory(h);
   renderReviewMap(holeNo);
 }
 function clearReviewMapObjects(){reviewMapObjects=[]}
@@ -2969,7 +3012,16 @@ function openPutt(){
   if(round.pending&&!round.pending.result){openShotResult();return}
   if(round.pending&&round.pending.result){
     currentLie=round.pending.result.endLie||'GREEN';
-    finalizePending(gpsPoint(),currentLie);
+    const endPoint=resolveGreenArrivalEndPoint();
+    if(!endPoint){
+      alert('샷 종료 위치를 확인할 수 없습니다. 그린 도착이라면 다시 시도하거나 지도에서 위치를 지정해 주세요.');
+      return;
+    }
+    if(String(currentLie).toUpperCase()!=='GREEN'&&endPoint.source==='GPS'&&!gpsNearCurrentHole()){
+      alert('현재 GPS가 코스 밖입니다. DROP ON MAP으로 샷 종료 위치를 지정해 주세요.');
+      return;
+    }
+    finalizePending(endPoint,currentLie);
     clearManualPosition();
   }
   resetPuttDraft();renderPuttHistory();$('puttModal').classList.remove('hidden');
