@@ -2770,6 +2770,12 @@ function archiveRound(r,status=null){
   }
   return ok;
 }
+function getRoundHistoryForAnalysis(){
+  return loadCompletedRounds().filter(r=>r?.fullRound||roundIsFull(r));
+}
+function roundHasRecordedData(r){
+  return !!r&&(r.holes||[]).some(h=>(h?.shots||[]).length||(h?.puttsDetail||[]).length||(h?.penaltyEvents||[]).length);
+}
 function completedRoundSummary(){
   const rounds=loadCompletedRounds();
   const full=rounds.filter(r=>r?.fullRound||roundIsFull(r));
@@ -3676,6 +3682,11 @@ $('startRoundBtn').onclick=()=>{
     alert('Strokes Gained 비교 기준을 먼저 선택해 주세요.\n\nTour / Scratch / HCP 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
     $('sgBenchmarkSegment').scrollIntoView({behavior:'smooth',block:'center'});
     return;
+  }
+  const previousRound=load();
+  if(previousRound&&!previousRound.completedAt&&roundHasRecordedData(previousRound)){
+    previousRound.completedAt=Date.now();
+    archiveRound(previousRound,'PARTIAL');
   }
   startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
