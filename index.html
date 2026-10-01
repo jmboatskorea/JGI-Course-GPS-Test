@@ -561,7 +561,7 @@ body.round-active .bottomnav{display:none!important}
         <div class="field">
           <label>TEE</label>
           <div class="segment" id="teeSegment">
-            <button data-v="Back">백</button><button class="sel" data-v="Regular">레귤러</button><button data-v="Front">프론트</button><button data-v="Ladies">레이디스</button>
+            <button data-v="Blue">BLUE</button><button class="sel" data-v="White">WHITE</button><button data-v="Red">RED</button>
           </div>
         </div>
       </div>
@@ -935,6 +935,7 @@ body.round-active .bottomnav{display:none!important}
 </div>
 
 <script src="jagorawi-old-course-data.js"></script>
+<script src="jagorawi-old-scorecard-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
@@ -946,7 +947,7 @@ const DEFAULT_MASTER_CLUBS=[
   {name:'54°',carry:90,centerWidth:4},{name:'58°',carry:75,centerWidth:4},{name:'Putter',carry:0,centerWidth:null}
 ];
 let masterClubs=[];
-let gps=null, watchId=null, tee='Regular', currentLie='Unknown';
+let gps=null, watchId=null, tee='White', currentLie='Unknown';
 let stateMode='SMART';
 let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
@@ -976,6 +977,37 @@ let selectedReviewHole=null;
 
 function courseHoleData(){
   return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
+}
+function normalizeTeeName(v){
+  return ({Back:'Blue',Regular:'White',Front:'Red',Ladies:'Red'})[v]||v||'White';
+}
+function scorecardHoleData(holeNo,teeName=tee){
+  const h=window.JGI_OLD_SCORECARD_DATA?.holes?.[String(holeNo)]||window.JGI_OLD_SCORECARD_DATA?.holes?.[holeNo]||null;
+  if(!h)return null;
+  const t=normalizeTeeName(teeName);
+  return {...h,tee:t,distanceM:Number(h[t])||null};
+}
+function hydrateRoundCourseTruth(r){
+  if(!r)return r;
+  r.tee=normalizeTeeName(r.tee||tee);
+  (r.holes||[]).forEach((h,i)=>{
+    const sc=scorecardHoleData(h.hole||i+1,r.tee);
+    if(!sc)return;
+    h.par=sc.par;
+    h.teeDistanceM=sc.distanceM;
+    h.strokeIndexMen=sc.indexMen;
+    h.strokeIndexLadies=sc.indexLadies;
+  });
+  r.courseTruth={
+    courseId:22987,
+    source:window.JGI_OLD_SCORECARD_DATA?.source||'Jagorawi Old Course scorecard',
+    distanceUnit:window.JGI_OLD_SCORECARD_DATA?.distanceUnit||'m',
+    tee:r.tee,
+    rating:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.rating??null,
+    slope:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.slope??null,
+    totalDistanceM:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.total??null
+  };
+  return r;
 }
 function clearCourseOverlays(){
   courseOverlays.forEach(x=>x.setMap(null));
@@ -1349,18 +1381,19 @@ function finishPendingAndMaybeStart(club=null){
 }
 
 function emptyRound(course,nine){
-  return {version:3,course,nine,tee,stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:4,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
-      hole:i+1,par:null,shots:[],putts:0,puttsDetail:[],puttingState:null,
+      hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
+      shots:[],putts:0,puttsDetail:[],puttingState:null,
       penalties:0,penaltyEvents:[],completed:false,review:null
     })),
-    analysisSnapshot:null,pending:null};
+    analysisSnapshot:null,pending:null});
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=3;r.analysisSnapshot=r.analysisSnapshot||null;
+  r.version=4;r.analysisSnapshot=r.analysisSnapshot||null;r.tee=normalizeTeeName(r.tee);
   (r.holes||[]).forEach((h,i)=>{h.hole=h.hole||i+1;h.shots=h.shots||[];h.puttsDetail=h.puttsDetail||[];h.penaltyEvents=h.penaltyEvents||[];h.penalties=h.penalties||0;if(h.review===undefined)h.review=null});
-  return r;
+  return hydrateRoundCourseTruth(r);
 }
 function load(){try{return normalizeRound(JSON.parse(localStorage.getItem(STORAGE)||'null'))}catch{return null}}
 function hav(a,b){
@@ -1464,7 +1497,7 @@ function renderRound(){
   $('roundCourse').textContent=round.course;
   $('roundNine').textContent=round.nine+' · '+round.tee;
   $('holeTitle').textContent='Hole '+round.currentHole;
-  $('holeParText').textContent=hole().par?' · Par '+hole().par:(courseHoleData()?' · GI MAP':' · 코스 데이터 대기');
+  $('holeParText').textContent=hole().par?' · Par '+hole().par+(hole().teeDistanceM?' · '+hole().teeDistanceM+'m':''):(courseHoleData()?' · GI MAP':' · 코스 데이터 대기');
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
   refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
@@ -1550,7 +1583,7 @@ function buildHoleReview(h){
   if(dDepth&&dDepthN>=1)missParts.push(dDepthN+'× '+depthLabel(dDepth));
   if((h.penalties||0)>0)missParts.push('Penalty '+h.penalties);
   return {
-    generatedAt:Date.now(),hole:h.hole,par:h.par??null,score:holeScore(h),
+    generatedAt:Date.now(),hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexMen:h.strokeIndexMen??null,strokeIndexLadies:h.strokeIndexLadies??null,score:holeScore(h),
     shotCount:shots.length,putts:putts.length,penalties:h.penalties||0,
     tee:{club:tee?.club||null,endLie:tee?.endLie||null,direction:tee?.direction||null,distanceM:tee?.distanceM??null},
     approach:{attempts:approach.length,greenHits,short:approach.filter(s=>s.depth==='SHORT').length,long:approach.filter(s=>s.depth==='LONG').length},
@@ -1632,7 +1665,7 @@ function renderHoleReview(holeNo){
   $('holeReviewDetail').innerHTML=
     '<div class="grid4" style="margin-top:10px">'+
       '<div class="metric"><div class="k">HOLE</div><div class="v">'+h.hole+'</div></div>'+
-      '<div class="metric"><div class="k">SCORE</div><div class="v">'+(r.score??'—')+'</div><div class="s">'+(h.par?'Par '+h.par:'Par pending')+'</div></div>'+
+      '<div class="metric"><div class="k">SCORE</div><div class="v">'+(r.score??'—')+'</div><div class="s">'+(h.par?'Par '+h.par+(h.teeDistanceM?' · '+h.teeDistanceM+'m':''):'Par pending')+'</div></div>'+
       '<div class="metric"><div class="k">PUTTS</div><div class="v">'+(h.putts||0)+'</div></div>'+
       '<div class="metric"><div class="k">PEN</div><div class="v">'+(h.penalties||0)+'</div></div>'+
     '</div>'+
@@ -1756,8 +1789,8 @@ const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
-$('startRoundBtn').onclick=()=>{round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;save();showScreen('round')};
-$('resumeRoundBtn').onclick=()=>{round=load();tee=round.tee||'Regular';stateMode=round.stateMode||'SMART';showScreen('round')};
+$('startRoundBtn').onclick=()=>{tee=normalizeTeeName(tee);round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;hydrateRoundCourseTruth(round);save();showScreen('round')};
+$('resumeRoundBtn').onclick=()=>{round=load();tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';setSelected($('teeSegment'),tee);showScreen('round')};
 
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
