@@ -619,6 +619,49 @@ body.round-active .bottomnav{display:none!important}
   .introMilestone strong{font-size:20px}.introMilestone b{font-size:9px}
 }
 
+/* ===== JGI COURSE VIEW · SATELLITE FALLBACK ===== */
+.mapViewToggle{
+  display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.17);background:rgba(3,14,10,.68)
+}
+.mapViewToggle button{
+  min-width:38px;height:27px;padding:0 8px;border:0;border-radius:999px;
+  background:transparent;color:#8fa097;font-size:8px;font-weight:1000;letter-spacing:.08em
+}
+.mapViewToggle button.sel{
+  background:#27e978;color:#041109;box-shadow:0 4px 12px rgba(39,233,120,.18)
+}
+.jgiCourseMap{
+  position:absolute;inset:0;z-index:3;overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(38,164,82,.14),transparent 32%),
+    linear-gradient(180deg,#07100b,#020503);
+  pointer-events:none
+}
+.jgiCourseMap:before{
+  content:"";position:absolute;inset:0;opacity:.28;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:28px 28px
+}
+.jgiCourseSvg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.jgiCourseBadge{
+  position:absolute;z-index:2;top:12px;left:12px;
+  border:1px solid rgba(71,255,139,.34);background:rgba(4,20,12,.78);color:#69f79d;
+  border-radius:999px;padding:7px 10px;font-size:8px;font-weight:1000;letter-spacing:.13em
+}
+.jgiCourseHint{
+  position:absolute;z-index:2;left:12px;right:12px;bottom:12px;
+  padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(2,8,5,.76);color:#99aaa0;font-size:9px;font-weight:800;line-height:1.4;text-align:center
+}
+.roundMapStage.jgi-view .mapRightControls{display:none}
+.roundMapStage.jgi-view .map-load-status{display:none}
+@media(max-width:420px){
+  .mapViewToggle button{min-width:34px;padding:0 6px}
+  .roundTopActions{gap:4px}
+  .mapMiniBtn{padding-left:7px;padding-right:7px}
+}
+
 </style>
 </head>
 <body>
@@ -722,6 +765,10 @@ body.round-active .bottomnav{display:none!important}
             <div id="roundNine" class="mapCourseMeta">Course</div>
           </div>
           <div class="roundTopActions">
+            <div id="mapViewToggle" class="mapViewToggle" aria-label="Map view">
+              <button class="sel" data-map-view="SAT">SAT</button>
+              <button data-map-view="JGI">JGI</button>
+            </div>
             <button id="reportBtn" class="mapMiniBtn">리포트</button>
             <button id="endRoundBtn" class="mapMiniBtn">종료</button>
           </div>
@@ -735,6 +782,11 @@ body.round-active .bottomnav{display:none!important}
 
       <div class="roundMapStage">
         <div id="googleMap" class="google-map" aria-label="AGI Player satellite course map"></div>
+        <div id="jgiCourseMap" class="jgiCourseMap hidden" aria-label="JGI Course View">
+          <div class="jgiCourseBadge">JGI COURSE · REFERENCE VIEW</div>
+          <svg id="jgiCourseSvg" class="jgiCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="JGI course geometry"></svg>
+          <div class="jgiCourseHint">위성사진이 흐리거나 사용할 수 없을 때 참고하세요 · Target 지정과 DROP은 SATELLITE에서 사용</div>
+        </div>
         <div id="mapLoadStatus" class="map-load-status">
           <div class="mapIcon">⌖</div>
           <strong>Google Satellite</strong>
@@ -1103,6 +1155,7 @@ let dropMode=false;
 let reviewMap=null;
 let reviewMapObjects=[];
 let selectedReviewHole=null;
+let mapViewMode='SAT';
 
 function courseHoleData(){
   return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
@@ -1205,13 +1258,138 @@ function fitCurrentHole(useHeading=true){
     }catch{}
   });
 }
+function courseViewProjector(h){
+  const shapes=courseShapes(h);
+  const points=shapes.flatMap(s=>s.path||[]);
+  if(h?.t)points.push({lat:h.t[0],lng:h.t[1]});
+  if(h?.g)points.push({lat:h.g[0],lng:h.g[1]});
+  if(!points.length)return null;
+
+  const origin=h?.t?{lat:h.t[0],lng:h.t[1]}:points[0];
+  const mLat=111320;
+  const mLng=111320*Math.cos(origin.lat*Math.PI/180);
+  const local=p=>({x:(p.lng-origin.lng)*mLng,y:(p.lat-origin.lat)*mLat});
+  const tee=local(origin);
+  const green=h?.g?local({lat:h.g[0],lng:h.g[1]}):null;
+  const dx=green?green.x-tee.x:0,dy=green?green.y-tee.y:1;
+  const a=Math.atan2(dx,dy),ca=Math.cos(a),sa=Math.sin(a);
+  const rotate=p=>{const q=local(p);return {x:q.x*ca-q.y*sa,y:q.x*sa+q.y*ca}};
+  const boundary=shapes.filter(s=>s.type==='HOLE_BOUNDARY').flatMap(s=>s.path||[]);
+  const fitPoints=(boundary.length?boundary:points).map(rotate);
+  let minX=Math.min(...fitPoints.map(p=>p.x)),maxX=Math.max(...fitPoints.map(p=>p.x));
+  let minY=Math.min(...fitPoints.map(p=>p.y)),maxY=Math.max(...fitPoints.map(p=>p.y));
+  if(!Number.isFinite(minX)||!Number.isFinite(maxX)||maxX===minX||maxY===minY)return null;
+  const px=Math.max(12,(maxX-minX)*.13),py=Math.max(18,(maxY-minY)*.07);
+  minX-=px;maxX+=px;minY-=py;maxY+=py;
+  const W=400,H=700,padX=28,padTop=54,padBottom=50;
+  const project=p=>{
+    const q=rotate(p);
+    return {
+      x:padX+(q.x-minX)/(maxX-minX)*(W-padX*2),
+      y:H-padBottom-(q.y-minY)/(maxY-minY)*(H-padTop-padBottom),
+      inside:q.x>=minX&&q.x<=maxX&&q.y>=minY&&q.y<=maxY
+    };
+  };
+  return {project,shapes};
+}
+function svgPath(points,project){
+  if(!points?.length)return '';
+  const max=90,step=Math.max(1,Math.ceil(points.length/max));
+  const sampled=points.filter((_,i)=>i%step===0||i===points.length-1);
+  return sampled.map((p,i)=>{const q=project(p);return (i?'L':'M')+q.x.toFixed(1)+','+q.y.toFixed(1)}).join(' ')+' Z';
+}
+function renderJgiCourseView(){
+  const svg=$('jgiCourseSvg');const h=courseHoleData();
+  if(!svg||!h)return;
+  const model=courseViewProjector(h);
+  if(!model){svg.innerHTML='';return}
+  const {project,shapes}=model;
+  const styles={
+    HOLE_BOUNDARY:{fill:'#102319',stroke:'#31583e',width:2},
+    WATER:{fill:'#184f78',stroke:'#3389bd',width:1.3},
+    WATER_PATH:{fill:'none',stroke:'#3389bd',width:2},
+    FAIRWAY:{fill:'#24643c',stroke:'#3d9a5d',width:1.4},
+    BUNKER:{fill:'#cdbb85',stroke:'#ecdca9',width:1},
+    TEE:{fill:'#365f43',stroke:'#77a781',width:1},
+    GREEN:{fill:'#38e77b',stroke:'#8affb0',width:1.5}
+  };
+  const order={HOLE_BOUNDARY:0,WATER:1,WATER_PATH:2,FAIRWAY:3,BUNKER:4,TEE:5,GREEN:6};
+  let html='<defs><filter id="jgiGlow"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#31ef7a" flood-opacity=".45"/></filter></defs>';
+  shapes.slice().sort((a,b)=>(order[a.type]??9)-(order[b.type]??9)).forEach(s=>{
+    if(!s.path?.length)return;
+    const st=styles[s.type]||{fill:'rgba(255,255,255,.06)',stroke:'rgba(255,255,255,.25)',width:1};
+    if(s.line||s.type==='WATER_PATH'){
+      const pts=s.path.map((p,i)=>{const q=project(p);return (i?'L':'M')+q.x.toFixed(1)+','+q.y.toFixed(1)}).join(' ');
+      html+='<path d="'+pts+'" fill="none" stroke="'+st.stroke+'" stroke-width="'+st.width+'" opacity=".9"/>';
+    }else{
+      html+='<path d="'+svgPath(s.path,project)+'" fill="'+st.fill+'" stroke="'+st.stroke+'" stroke-width="'+st.width+'"/>';
+    }
+  });
+
+  const cur=hole();
+  (cur?.shots||[]).forEach((s,i)=>{
+    if(!s.start||!s.end)return;
+    const a=project(s.start),b=project(s.end);
+    if(!a.inside&&!b.inside)return;
+    html+='<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="#ffffff" stroke-width="2.2" opacity=".72"/>';
+    html+='<circle cx="'+b.x.toFixed(1)+'" cy="'+b.y.toFixed(1)+'" r="8" fill="#ff8a1d" stroke="#ffffff" stroke-width="1.5"/>'+
+      '<text x="'+b.x.toFixed(1)+'" y="'+(b.y+3).toFixed(1)+'" text-anchor="middle" fill="#08100b" font-size="8" font-weight="900">'+(i+1)+'</text>';
+  });
+
+  if(round?.pending?.start){
+    const p=project(round.pending.start);
+    if(p.inside)html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="#ff8a1d" stroke="#fff" stroke-width="2"/>';
+  }
+
+  const player=gpsPoint();
+  if(player){
+    const p=project(player);
+    if(p.inside){
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="13" fill="rgba(255,255,255,.18)"/>'+
+        '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="#ffffff" stroke="#31ef7a" stroke-width="3" filter="url(#jgiGlow)"/>';
+    }
+  }
+
+  if(targetMarker){
+    const t=targetMarker.getPosition();
+    const p=project({lat:t.lat(),lng:t.lng()});
+    if(p.inside){
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="9" fill="#07100b" stroke="#31ef7a" stroke-width="2"/>'+
+        '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="#31ef7a"/>';
+    }
+  }
+
+  if(h.g){
+    const g=project({lat:h.g[0],lng:h.g[1]});
+    html+='<circle cx="'+g.x.toFixed(1)+'" cy="'+g.y.toFixed(1)+'" r="4" fill="#ffffff" stroke="#31ef7a" stroke-width="2"/>'+
+      '<text x="'+(g.x+10).toFixed(1)+'" y="'+(g.y+3).toFixed(1)+'" fill="#ffffff" font-size="9" font-weight="900">GREEN</text>';
+  }
+  if(h.t){
+    const t=project({lat:h.t[0],lng:h.t[1]});
+    html+='<text x="'+t.x.toFixed(1)+'" y="'+Math.min(688,t.y+20).toFixed(1)+'" text-anchor="middle" fill="#9aaba0" font-size="8" font-weight="900">TEE</text>';
+  }
+  svg.innerHTML=html;
+}
+function setMapView(mode){
+  mapViewMode=mode==='JGI'?'JGI':'SAT';
+  const stage=document.querySelector('.roundMapStage');
+  if(stage)stage.classList.toggle('jgi-view',mapViewMode==='JGI');
+  $('jgiCourseMap')?.classList.toggle('hidden',mapViewMode!=='JGI');
+  $('mapViewToggle')?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.mapView===mapViewMode));
+  if(mapViewMode==='JGI'){
+    renderJgiCourseView();
+  }else if(googleMap&&window.google?.maps){
+    setTimeout(()=>{google.maps.event.trigger(googleMap,'resize');renderCourseHole()},30);
+  }
+}
 function renderCourseHole(){
-  if(!googleMap||!window.google?.maps)return;
-  clearCourseOverlays();
   const h=courseHoleData();
   if(!h)return;
+  renderJgiCourseView();
+  if(!googleMap||!window.google?.maps)return;
+  clearCourseOverlays();
 
-  // GI geometry stays loaded for JGI recognition/logic, but is intentionally not drawn for the Player.
+  // GI geometry stays loaded for JGI recognition/logic. It is drawn only in JGI Course View.
   refreshGreenDistance();
   fitCurrentHole(true);
   if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'GREEN '+Math.round(greenDistanceM)+'m':'GREEN GPS';
@@ -1253,8 +1431,9 @@ window.gm_authFailure=function(){
     status.classList.remove('ready');
     status.classList.add('error');
     status.querySelector('strong').textContent='Google Maps 인증 오류';
-    status.querySelector('span').textContent='API Key · 웹사이트 제한 · Maps JavaScript API 설정을 확인하세요.';
+    status.querySelector('span').textContent='JGI Course View로 전환합니다.';
   }
+  setMapView('JGI');
 };
 
 function loadGoogleMaps(){
@@ -1269,8 +1448,9 @@ function loadGoogleMaps(){
     if(status){
       status.classList.add('error');
       status.querySelector('strong').textContent='Google Satellite 로드 실패';
-      status.querySelector('span').textContent='네트워크 또는 Google Maps API 설정을 확인하세요.';
+      status.querySelector('span').textContent='JGI Course View로 전환합니다.';
     }
+    setMapView('JGI');
   };
   document.head.appendChild(s);
 }
@@ -1357,6 +1537,7 @@ function setTarget(latLng){
   $('targetInfo').classList.remove('hidden');
   $('clearTargetBtn').classList.remove('hidden');
   updateTargetDistance();
+  renderJgiCourseView();
 }
 function updateTargetDistance(){
   if(!targetMarker||!gps){
@@ -1384,6 +1565,7 @@ function clearTarget(){
   $('targetInfo')?.classList.add('hidden');
   $('clearTargetBtn')?.classList.add('hidden');
   renderClubSuggestions();
+  renderJgiCourseView();
 }
 function recenterMap(){
   if(!googleMap)return;
@@ -1547,6 +1729,7 @@ function setManualPosition(latLng){
   dropMode=false;
   $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='DROP';
   if($('gpsOverlay'))$('gpsOverlay').textContent='POSITION · MANUAL';
+  renderJgiCourseView();
 }
 function clearManualPosition(){
   manualPosition=null;
@@ -1563,6 +1746,7 @@ function startGPS(){
     $('gpsTop').innerHTML='<span class="statusDot '+(gps.accuracy>15?'warn':'')+'"></span>±'+Math.round(gps.accuracy)+'m';
     updatePlayerMarker();
     renderRound();
+    if(mapViewMode==='JGI')renderJgiCourseView();
   },e=>{$('gpsTop').textContent=e.code===1?'GPS 권한 필요':'GPS 오류'},
   {enableHighAccuracy:true,maximumAge:0,timeout:15000});
 }
@@ -1927,6 +2111,11 @@ $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e
 $('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
 $('startRoundBtn').onclick=()=>{tee=normalizeTeeName(tee);round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;hydrateRoundCourseTruth(round);save();showScreen('round')};
 $('resumeRoundBtn').onclick=()=>{round=load();tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';setSelected($('teeSegment'),tee);showScreen('round')};
+
+$('mapViewToggle').addEventListener('click',e=>{
+  const b=e.target.closest('[data-map-view]');if(!b)return;
+  setMapView(b.dataset.mapView);
+});
 
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
