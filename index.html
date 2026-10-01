@@ -1948,6 +1948,12 @@ function currentSamplingRoundIndex(){
   const completed=loadStateHistory().filter(x=>x&&x.fullRound).length;
   return completed%20+1;
 }
+function activeSamplingCycleLevel(){
+  const full=loadStateHistory().filter(x=>x&&x.fullRound);
+  const rem=full.length%20;
+  if(!rem)return null;
+  return normalizeCollectionLevel(full[full.length-rem]?.collectionLevel||100);
+}
 function roundPhaseForHole(holeNo){
   const h=Number(holeNo)||1;
   return h<=3?'FRONT_EARLY':h<=6?'FRONT_MIDDLE':h<=9?'FRONT_LATE':h<=12?'BACK_EARLY':h<=15?'BACK_MIDDLE':'BACK_LATE';
@@ -2647,11 +2653,13 @@ function sgValueClass(v){
 }
 function syncStatePlanUI(){
   const level=normalizeCollectionLevel(round?.stateCollectionLevel||stateCollectionLevel);
+  const locked=activeSamplingCycleLevel();
   const seg=$('statePlanSegment');if(seg)setSelected(seg,String(level));
   const totals=STATE_TARGETS_20[level];
   const perRound=Object.values(totals).reduce((a,b)=>a+b,0)/20;
+  const plan=buildSamplingPlan(level,currentSamplingRoundIndex());
   if($('statePlanHint')){
-    $('statePlanHint').innerHTML='<b>'+level+'% 수집</b> · 평균 '+perRound.toFixed(perRound%1?1:0)+'회/라운드 · 20라운드 기준 '+Object.values(totals).reduce((a,b)=>a+b,0)+'개 목표';
+    $('statePlanHint').innerHTML='<b>'+level+'% 수집</b> · 평균 '+perRound.toFixed(perRound%1?1:0)+'회/라운드 · 20라운드 기준 '+Object.values(totals).reduce((a,b)=>a+b,0)+'개 목표'+(locked?' · 현재 20R 계획 고정':'')+'<br><span class="dataNote">이번 라운드 계획: 티샷 '+plan.targets.TEE+' · 세컨샷 '+plan.targets.SECOND+' · 숏게임 '+plan.targets.SHORT_GAME+' · 퍼팅 '+plan.targets.PUTTING+'</span>';
   }
   if($('stateCoveragePreview')){
     const s=samplingCoverageSummary();
@@ -3103,7 +3111,8 @@ function renderStory(){
 initScales();
 loadGoogleMaps();
 sgBenchmarkMode=null;
-stateCollectionLevel=normalizeCollectionLevel(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY)||stateCollectionLevel);
+stateCollectionLevel=activeSamplingCycleLevel()||normalizeCollectionLevel(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY)||stateCollectionLevel);
+localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
 syncStatePlanUI();
 syncSgBenchmarkUI();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
@@ -3119,7 +3128,13 @@ $('enterJgiBtn').onclick=()=>{
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
-  stateCollectionLevel=normalizeCollectionLevel(e.target.dataset.v);
+  const requested=normalizeCollectionLevel(e.target.dataset.v);
+  const locked=activeSamplingCycleLevel();
+  if(locked&&requested!==locked){
+    alert('현재 20라운드 데이터 수집 계획은 '+locked+'%로 진행 중입니다.\n\n라운드마다 50%/70%/100%가 섞이지 않도록 이번 20R Cycle에서는 같은 수집 강도를 유지합니다.');
+    stateCollectionLevel=locked;syncStatePlanUI();return;
+  }
+  stateCollectionLevel=requested;
   localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
   syncStatePlanUI();
 });
