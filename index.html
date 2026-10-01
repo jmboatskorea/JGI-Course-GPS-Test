@@ -1412,6 +1412,268 @@ function courseShapes(h){
   const water=(h.w||[]).map(i=>window.JGI_OLD_COURSE_DATA?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
   return own.concat(water);
 }
+
+const COURSE_INTELLIGENCE_VERSION='JGI_COURSE_INTELLIGENCE_V1';
+const courseIntelligenceCache=new Map();
+
+function normalizeAngle180(v){
+  let x=((Number(v)||0)+180)%360;
+  if(x<0)x+=360;
+  return x-180;
+}
+function courseLocalProjector(origin){
+  const lat0=origin.lat*Math.PI/180;
+  const mLat=111320;
+  const mLng=111320*Math.cos(lat0);
+  return {
+    toXY:p=>({x:(p.lng-origin.lng)*mLng,y:(p.lat-origin.lat)*mLat}),
+    toLatLng:q=>({lat:origin.lat+q.y/mLat,lng:origin.lng+q.x/mLng})
+  };
+}
+function pointSegmentDistanceM(p,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y;
+  const den=dx*dx+dy*dy;
+  let t=den?((p.x-a.x)*dx+(p.y-a.y)*dy)/den:0;
+  t=Math.max(0,Math.min(1,t));
+  const x=a.x+t*dx,y=a.y+t*dy;
+  return {distanceM:Math.hypot(p.x-x,p.y-y),point:{x,y},t};
+}
+function pointInPolygonXY(p,poly){
+  if(!poly?.length)return false;
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const a=poly[i],b=poly[j];
+    const cross=((a.y>p.y)!==(b.y>p.y)) &&
+      (p.x < (b.x-a.x)*(p.y-a.y)/((b.y-a.y)||1e-12)+a.x);
+    if(cross)inside=!inside;
+  }
+  return inside;
+}
+function distanceToShapeXY(p,points,isLine=false){
+  if(!points?.length)return null;
+  if(!isLine&&points.length>=3&&pointInPolygonXY(p,points))return {distanceM:0,nearest:p};
+  let best=null;
+  const count=isLine?points.length-1:points.length;
+  for(let i=0;i<count;i++){
+    const a=points[i],b=points[(i+1)%points.length];
+    if(!b)continue;
+    const d=pointSegmentDistanceM(p,a,b);
+    if(!best||d.distanceM<best.distanceM)best={distanceM:d.distanceM,nearest:d.point};
+  }
+  return best;
+}
+function fairwaySectionAtStation(polySC,station){
+  const hits=[];
+  for(let i=0;i<polySC.length;i++){
+    const a=polySC[i],b=polySC[(i+1)%polySC.length];
+    const da=a.s-station,db=b.s-station;
+    if(Math.abs(da)<1e-7)hits.push(a.c);
+    if((da<0&&db>0)||(da>0&&db<0)){
+      const t=(station-a.s)/(b.s-a.s);
+      hits.push(a.c+t*(b.c-a.c));
+    }
+  }
+  hits.sort((a,b)=>a-b);
+  if(hits.length<2)return null;
+  return {
+    stationM:station,
+    leftC:hits[hits.length-1],
+    rightC:hits[0],
+    centerC:(hits[0]+hits[hits.length-1])/2,
+    widthM:hits[hits.length-1]-hits[0]
+  };
+}
+function smoothCenterlinePoints(points,radius=1){
+  return points.map((p,i)=>{
+    let x=0,y=0,n=0;
+    for(let j=Math.max(0,i-radius);j<=Math.min(points.length-1,i+radius);j++){
+      x+=points[j].x;y+=points[j].y;n++;
+    }
+    return {...p,x:x/n,y:y/n};
+  });
+}
+function buildCourseIntelligenceModel(h){
+  if(!h?.t||!h?.g)return null;
+  const key=String(h.i??h.id??h.holeId??JSON.stringify(h.t));
+  if(courseIntelligenceCache.has(key))return courseIntelligenceCache.get(key);
+
+  const tee={lat:h.t[0],lng:h.t[1]};
+  const green={lat:h.g[0],lng:h.g[1]};
+  const shapes=courseShapes(h);
+  const fairways=shapes.filter(s=>s.type==='FAIRWAY'&&s.path?.length>=3);
+  if(!fairways.length)return null;
+  const fairway=fairways.slice().sort((a,b)=>b.path.length-a.path.length)[0];
+  const projector=courseLocalProjector(tee);
+  const g=projector.toXY(green);
+  const gl=Math.hypot(g.x,g.y)||1;
+  const u={x:g.x/gl,y:g.y/gl};
+  const v={x:-u.y,y:u.x};
+  const toSC=pt=>{
+    const q=projector.toXY(pt);
+    return {s:q.x*u.x+q.y*u.y,c:q.x*v.x+q.y*v.y};
+  };
+  const fromSC=(s,c)=>projector.toLatLng({x:u.x*s+v.x*c,y:u.y*s+v.y*c});
+  const fairSC=fairway.path.map(toSC);
+  const minS=Math.min(...fairSC.map(p=>p.s));
+  const maxS=Math.max(...fairSC.map(p=>p.s));
+  const sections=[];
+  const step=5;
+  for(let s=Math.ceil(minS/step)*step;s<=Math.floor(maxS/step)*step;s+=step){
+    const sec=fairwaySectionAtStation(fairSC,s);
+    if(sec){
+      const ll=fromSC(sec.stationM,sec.centerC);
+      const xy=projector.toXY(ll);
+      sections.push({...sec,lat:ll.lat,lng:ll.lng,x:xy.x,y:xy.y});
+    }
+  }
+  if(!sections.length)return null;
+
+  const smoothed=smoothCenterlinePoints(sections,1);
+  let dogleg=null;
+  const win=4;
+  for(let i=win;i<smoothed.length-win;i++){
+    const a=smoothed[i-win],m=smoothed[i],b=smoothed[i+win];
+    const h1=(Math.atan2(m.x-a.x,m.y-a.y)*180/Math.PI+360)%360;
+    const h2=(Math.atan2(b.x-m.x,b.y-m.y)*180/Math.PI+360)%360;
+    const signed=normalizeAngle180(h2-h1);
+    const angle=Math.abs(signed);
+    if(!dogleg||angle>dogleg.angleDeg){
+      const turn=projector.toLatLng({x:m.x,y:m.y});
+      dogleg={
+        direction:signed>0?'RIGHT':signed<0?'LEFT':'STRAIGHT',
+        angleDeg,
+        signedAngleDeg:signed,
+        turnPoint:{lat:turn.lat,lng:turn.lng},
+        distanceToTurnM:hav(tee,turn),
+        source:'FAIRWAY_CENTERLINE'
+      };
+    }
+  }
+  if(!dogleg){
+    const mid=sections[Math.floor(sections.length/2)];
+    dogleg={
+      direction:'STRAIGHT',angleDeg:0,signedAngleDeg:0,
+      turnPoint:{lat:mid.lat,lng:mid.lng},
+      distanceToTurnM:hav(tee,{lat:mid.lat,lng:mid.lng}),
+      source:'FAIRWAY_CENTERLINE'
+    };
+  }
+
+  const risks=shapes
+    .filter(s=>['WATER','WATER_PATH','BUNKER'].includes(s.type)&&s.path?.length)
+    .map((s,index)=>{
+      const xy=s.path.map(projector.toXY);
+      const centroid=xy.reduce((a,p)=>({x:a.x+p.x,y:a.y+p.y}),{x:0,y:0});
+      centroid.x/=xy.length;centroid.y/=xy.length;
+      return {type:s.type==='WATER_PATH'?'WATER':s.type,isLine:!!s.line||s.type==='WATER_PATH',xy,centroid,featureIndex:index};
+    });
+
+  const model={key,tee,green,projector,u,v,sections,risks,dogleg,source:'GOLF_INTELLIGENCE_GEOMETRY',version:COURSE_INTELLIGENCE_VERSION};
+  courseIntelligenceCache.set(key,model);
+  return model;
+}
+function nearestCenterSection(model,point){
+  if(!model||!point)return null;
+  let best=null;
+  model.sections.forEach(sec=>{
+    const d=hav(point,{lat:sec.lat,lng:sec.lng});
+    if(!best||d<best.distanceM)best={...sec,distanceM:d};
+  });
+  return best;
+}
+function projectedLandingSection(model,start,clubCarryM,targetSnapshot){
+  if(!model||!start)return null;
+  if(targetSnapshot?.lat&&targetSnapshot?.lng){
+    const sec=nearestCenterSection(model,targetSnapshot);
+    return sec?{...sec,landingPoint:{lat:targetSnapshot.lat,lng:targetSnapshot.lng},landingBasis:'PLAYER_TARGET',landingDistanceM:targetSnapshot.distanceM??hav(start,targetSnapshot)}:null;
+  }
+  const carry=Number(clubCarryM);
+  if(!Number.isFinite(carry)||carry<=0)return null;
+  let best=null;
+  model.sections.forEach(sec=>{
+    const pt={lat:sec.lat,lng:sec.lng};
+    const d=hav(start,pt);
+    if(!best||Math.abs(d-carry)<best.errorM)best={...sec,landingPoint:pt,landingBasis:'CLUB_CARRY',landingDistanceM:carry,errorM:Math.abs(d-carry)};
+  });
+  return best;
+}
+function riskSide(start,landing,centroidLL){
+  if(!start||!landing||!centroidLL)return 'UNKNOWN';
+  const proj=courseLocalProjector(start);
+  const a={x:0,y:0},b=proj.toXY(landing),p=proj.toXY(centroidLL);
+  const cross=(b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
+  return cross>0?'LEFT':cross<0?'RIGHT':'CENTER';
+}
+function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null){
+  const model=buildCourseIntelligenceModel(h);
+  if(!model||!start)return {
+    fairwayWidth:null,dogleg:null,hazardDistance:null,landingZoneWidth:null,
+    courseRisk:{left:null,right:null,narrowness:null,dogleg:null,source:'UNAVAILABLE',version:COURSE_INTELLIGENCE_VERSION}
+  };
+
+  const startSec=nearestCenterSection(model,start);
+  const landingSec=projectedLandingSection(model,start,clubCarryM,targetSnapshot);
+  const landingPoint=landingSec?.landingPoint||targetSnapshot||model.green;
+  const landingXY=model.projector.toXY(landingPoint);
+
+  const riskRows=model.risks.map(r=>{
+    const d=distanceToShapeXY(landingXY,r.xy,r.isLine);
+    const centroidLL=model.projector.toLatLng(r.centroid);
+    return d?{
+      type:r.type,
+      side:riskSide(start,landingPoint,centroidLL),
+      distanceM:d.distanceM,
+      featureIndex:r.featureIndex
+    }:null;
+  }).filter(Boolean);
+
+  const waters=riskRows.filter(r=>r.type==='WATER').sort((a,b)=>a.distanceM-b.distanceM);
+  const nearestWater=waters[0]||null;
+  const left=riskRows.filter(r=>r.side==='LEFT').sort((a,b)=>a.distanceM-b.distanceM)[0]||null;
+  const right=riskRows.filter(r=>r.side==='RIGHT').sort((a,b)=>a.distanceM-b.distanceM)[0]||null;
+
+  const fairwayWidth={
+    startWidthM:Number.isFinite(startSec?.widthM)?startSec.widthM:null,
+    landingWidthM:Number.isFinite(landingSec?.widthM)?landingSec.widthM:null,
+    source:'GOLF_INTELLIGENCE_FAIRWAY_GEOMETRY',
+    version:COURSE_INTELLIGENCE_VERSION
+  };
+  const landingZoneWidth=landingSec?{
+    widthM:Number.isFinite(landingSec.widthM)?landingSec.widthM:null,
+    landingDistanceM:Number.isFinite(landingSec.landingDistanceM)?landingSec.landingDistanceM:null,
+    basis:landingSec.landingBasis||null,
+    point:{lat:landingPoint.lat,lng:landingPoint.lng},
+    source:'GOLF_INTELLIGENCE_FAIRWAY_GEOMETRY',
+    version:COURSE_INTELLIGENCE_VERSION
+  }:null;
+  const hazardDistance=nearestWater?{
+    nearestM:nearestWater.distanceM,
+    side:nearestWater.side,
+    type:'WATER',
+    featureIndex:nearestWater.featureIndex,
+    basis:'LANDING_POINT',
+    source:'GOLF_INTELLIGENCE_HAZARD_GEOMETRY',
+    version:COURSE_INTELLIGENCE_VERSION
+  }:null;
+  const courseRisk={
+    left:left?{type:left.type,distanceM:left.distanceM,featureIndex:left.featureIndex}:null,
+    right:right?{type:right.type,distanceM:right.distanceM,featureIndex:right.featureIndex}:null,
+    narrowness:{
+      startFairwayWidthM:fairwayWidth.startWidthM,
+      landingZoneWidthM:fairwayWidth.landingWidthM
+    },
+    dogleg:model.dogleg?{
+      direction:model.dogleg.direction,
+      angleDeg:model.dogleg.angleDeg,
+      distanceToTurnM:model.dogleg.distanceToTurnM
+    }:null,
+    source:'GOLF_INTELLIGENCE_GEOMETRY',
+    version:COURSE_INTELLIGENCE_VERSION
+  };
+
+  return {fairwayWidth,dogleg:model.dogleg,hazardDistance,landingZoneWidth,courseRisk};
+}
+
 function refreshGreenDistance(){
   const h=courseHoleData();
   if(!h?.g||!gps){greenDistanceM=null;return}
@@ -2240,6 +2502,8 @@ function beginPending(club,previousShot=null){
       startGreenDistanceM:startGreenDistanceM,
       endGreenDistanceM:null,
       geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1',
+      courseIntelligenceVersion:COURSE_INTELLIGENCE_VERSION,
+      ...deriveCourseIntelligence(ch,startSnapshot,master?.carry??null,targetSnapshot),
       sgBenchmarkVersion:window.JGI_SG_BENCHMARK_DATA?.version||null
     },
     result:null,playerState:null,preShotReset:round.nextShotReset||null,queuedClub:null
