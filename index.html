@@ -821,18 +821,25 @@ body.round-active .bottomnav{display:none!important}
       </div>
       <div class="card">
         <div class="title">라운드 입력</div>
-        <div class="sub">맵 공략 → 클럽 선택 → 샷 결과 → 필요한 경우 상태 체크 → 다음 샷</div>
+        <div class="sub">맵 공략 → 클럽 선택 → 샷 결과 → 필요한 경우 상태 입력 → 다음 샷</div>
         <div class="grid2" style="margin-top:12px">
           <div class="metric"><div class="k">샷 결과</div><div class="v">직접 입력</div><div class="s">정확한 기준 데이터</div></div>
-          <div class="metric"><div class="k">선수 상태</div><div class="v">스마트</div><div class="s">필요한 순간만 요청</div></div>
+          <div class="metric"><div class="k">선수 상태</div><div class="v">선택 입력</div><div class="s">입력을 막지 않음</div></div>
         </div>
+
         <div class="field">
-          <label>선수 상태 · 확인 방식</label>
-          <div class="segment" id="stateModeSegment">
-            <button class="sel" data-v="SMART">스마트</button>
-            <button data-v="EVERY_HOLE">매 홀</button>
-            <button data-v="EVERY_SHOT">매 샷</button>
+          <label>선수 상태 샘플링 · 시작 전에 선택</label>
+          <div class="segment" id="statePlanSegment">
+            <button class="sel" data-v="6">6회 기본</button>
+            <button data-v="8">8회 최대</button>
           </div>
+          <div id="statePlanHint" class="sgStatus">
+            <b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.
+          </div>
+        </div>
+
+        <div class="sgStatus" style="margin-top:10px">
+          <b>중요:</b> JGI가 제안하는 6회/8회는 자동 샘플입니다. 그 외 모든 샷에서도 필요하면 <b>상태 입력 · 선택</b> 버튼으로 직접 추가할 수 있습니다.
         </div>
       </div>
       <div class="card sgSetupCard">
@@ -920,7 +927,7 @@ body.round-active .bottomnav{display:none!important}
             <small id="pendingGPS"></small>
           </div>
           <div class="pendingActions">
-            <button id="stateCheckBtn" class="dockAction subtle hidden">상태 체크</button>
+            <button id="stateCheckBtn" class="dockAction subtle hidden">상태 입력 · 선택</button>
             <button id="shotResultBtn" class="dockAction primary">샷 완료 · 결과 입력</button>
             <button id="cancelShotBtn" class="dockAction subtle">취소</button>
           </div>
@@ -1311,14 +1318,14 @@ const DEFAULT_MASTER_CLUBS=[
 ];
 let masterClubs=[];
 let gps=null, watchId=null, tee='White', currentLie='Unknown';
-let stateMode='SMART';
+let statePlanCount=6;
 let sgBenchmarkMode=null;
 let playerHandicap=null;
 let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:3,slope:null,break:null,result:null};
 let penaltyDraft={type:null,strokes:1};
-let stateContext={type:'shot',required:false,reason:'',after:null};
+let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};
 let specialEventContext={event:null,after:null};
 let resetContext={club:null,previousShot:null,value:null};
 let round=null;
@@ -1919,20 +1926,20 @@ function openShotResult(){
   $('shotResultLabel').textContent=round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
   $('shotResultModal').classList.remove('hidden');
 }
+function stateAnchorHoles(count){
+  return Number(count)===8 ? [1,3,5,8,10,12,15,18] : [1,4,7,10,14,18];
+}
 function shouldPromptStateCheck(pending){
-  const mode=round?.stateMode||stateMode||'SMART';
-  if(mode==='EVERY_SHOT')return {yes:true,reason:'매 샷 상태 확인'};
   const h=hole();
-  const already=(h.shots||[]).some(s=>s.playerState||s.flo)||(pending?.playerState);
-  if(mode==='EVERY_HOLE'&&!already)return {yes:true,reason:'이 홀의 상태 확인'};
-  if(mode==='SMART'){
-    if(!already&&[1,6,12,18].includes(round.currentHole))return {yes:true,reason:'기준 상태 확인'};
-    const r=pending?.result;
-    if(r&&['BUNKER','RECOVERY'].includes(r.endLie))return {yes:true,reason:'트러블 상황 상태 확인'};
-    if(r&&r.direction!=='CENTER'&&!['PIN_HIGH','TARGET'].includes(r.depth))return {yes:true,reason:'반복 미스 확인'};
-    if((h.penalties||0)>0)return {yes:true,reason:'벌타 상황 상태 확인'};
-  }
-  return {yes:false,reason:''};
+  if(!round||!h||!pending)return {yes:false,reason:''};
+  if(pending.playerState)return {yes:false,reason:''};
+  if((h.shots||[]).length>0)return {yes:false,reason:''}; // 각 지정 홀의 첫 샷만
+  const count=Number(round.statePlanCount||statePlanCount||6)===8?8:6;
+  const anchors=stateAnchorHoles(count);
+  if(!anchors.includes(round.currentHole))return {yes:false,reason:''};
+  round.statePromptedHoles=round.statePromptedHoles||[];
+  if(round.statePromptedHoles.includes(round.currentHole))return {yes:false,reason:''};
+  return {yes:true,reason:'자동 샘플 · '+count+'회 계획 중 '+round.currentHole+'번 홀'};
 }
 function resetStateDraft(){
   floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
@@ -1940,9 +1947,14 @@ function resetStateDraft(){
   $('thoughtFocusSection').classList.add('hidden');
   $('floNote').value='';
 }
-function openStateCheck(type='shot',required=false,reason='',after=null){
+function openStateCheck(type='shot',required=false,reason='',after=null,promptSource='MANUAL'){
   resetStateDraft();
-  stateContext={type,required,reason,after};
+  stateContext={type,required:false,reason,after,promptSource};
+  if(promptSource==='AUTO'&&round){
+    round.statePromptedHoles=round.statePromptedHoles||[];
+    if(!round.statePromptedHoles.includes(round.currentHole))round.statePromptedHoles.push(round.currentHole);
+    save();
+  }
   if(type==='putting'){
     $('floShotLabel').textContent='방금 퍼트 직전 상태는? · '+round.currentHole+'번 홀';
   }else{
@@ -2047,7 +2059,7 @@ function finishPendingAndMaybeStart(club=null){
 }
 
 function emptyRound(course,nine){
-  return hydrateRoundCourseTruth({version:7,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:8,course,nine,tee:normalizeTeeName(tee),statePlanCount:Number(statePlanCount)===8?8:6,statePromptedHoles:[],startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
@@ -2060,11 +2072,13 @@ function emptyRound(course,nine){
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=7;
+  r.version=8;
   r.analysisSnapshot=r.analysisSnapshot||null;
   r.specialEvents=r.specialEvents||[];
   r.pendingResetEvent=r.pendingResetEvent||null;
   r.nextShotReset=r.nextShotReset||null;
+  r.statePlanCount=Number(r.statePlanCount)===8?8:6;
+  r.statePromptedHoles=Array.isArray(r.statePromptedHoles)?r.statePromptedHoles:[];
   r.playerHandicap=clampNumber(r.playerHandicap,0,25);
   r.sgBenchmarkMode=r.sgBenchmarkMode||'PLAYER';
   r.sgDataVersion=r.sgDataVersion||window.JGI_SG_BENCHMARK_DATA?.version||null;
@@ -2418,6 +2432,15 @@ function formatSg(v){
 function sgValueClass(v){
   if(!Number.isFinite(Number(v)))return '';
   return Number(v)>0.005?'positive':Number(v)<-0.005?'negative':'';
+}
+function syncStatePlanUI(){
+  const count=Number(round?.statePlanCount||statePlanCount||6)===8?8:6;
+  const seg=$('statePlanSegment');if(seg)setSelected(seg,String(count));
+  if($('statePlanHint')){
+    $('statePlanHint').innerHTML=count===8
+      ? '<b>8회 최대</b> · 라운드 전체에서 8번만 상태 입력을 제안합니다. 건너뛰어도 진행됩니다.'
+      : '<b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.';
+  }
 }
 function syncSgBenchmarkUI(){
   const mode=round?.sgBenchmarkMode||sgBenchmarkMode||null;
@@ -2864,6 +2887,7 @@ function renderStory(){
 initScales();
 loadGoogleMaps();
 sgBenchmarkMode=null;
+syncStatePlanUI();
 syncSgBenchmarkUI();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
@@ -2876,7 +2900,14 @@ $('enterJgiBtn').onclick=()=>{
 };
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
-$('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
+$('statePlanSegment').addEventListener('click',e=>{
+  if(!e.target.dataset.v)return;
+  statePlanCount=Number(e.target.dataset.v)===8?8:6;
+  setSelected($('statePlanSegment'),String(statePlanCount));
+  $('statePlanHint').innerHTML=statePlanCount===8
+    ? '<b>8회 최대</b> · 라운드 전체에서 8번만 상태 입력을 제안합니다. 더 촘촘한 샘플이 필요할 때 사용하세요. 건너뛰어도 진행됩니다.'
+    : '<b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.';
+});
 $('sgBenchmarkSegment').addEventListener('click',e=>{
   const b=e.target.closest('[data-v]');if(!b)return;
   sgBenchmarkMode=b.dataset.v;
@@ -2891,14 +2922,14 @@ $('startRoundBtn').onclick=()=>{
   }
   startPositionOverride=null;clearManualPosition();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
-  round.tee=tee;round.stateMode=stateMode;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
+  round.tee=tee;round.statePlanCount=statePlanCount;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
   hydrateRoundCourseTruth(round);save();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
-  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';
+  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');statePlanCount=Number(round.statePlanCount)===8?8:6;
   playerHandicap=clampNumber(round.playerHandicap,0,25);
   sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
-  setSelected($('teeSegment'),tee);syncSgBenchmarkUI();showScreen('round')
+  setSelected($('teeSegment'),tee);setSelected($('statePlanSegment'),String(statePlanCount));syncSgBenchmarkUI();showScreen('round')
 };
 
 $('mapViewToggle').addEventListener('click',e=>{
@@ -3021,7 +3052,7 @@ $('saveShotResultBtn').onclick=()=>{
   const proceed=()=>{
     const ask=shouldPromptStateCheck(round.pending);
     const after=()=>{if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
-    if(ask.yes)openStateCheck('shot',true,ask.reason,after);else after();
+    if(ask.yes)openStateCheck('shot',false,ask.reason,after,'AUTO');else after();
   };
   if(round.pending.result.endLie==='RECOVERY'){
     const ev=queueSpecialEvent('RECOVERY',{hole:round.currentHole,shotId:round.pending.id});
@@ -3029,7 +3060,7 @@ $('saveShotResultBtn').onclick=()=>{
   }else proceed();
 };
 
-$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'사용자 상태 확인',null);
+$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'플레이어 선택 입력',null,'MANUAL');
 $('cancelShotBtn').onclick=()=>{if(confirm('선택한 샷을 취소할까요?')){round.pending=null;save();renderRound()}};
 
 $('specialEventClose').onclick=()=>{
@@ -3055,13 +3086,12 @@ $('saveResetBtn').onclick=()=>{
 };
 
 $('floClose').onclick=()=>{
-  if(stateContext.required)return;
   $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};if(after)after();
 };
 $('stateSkipBtn').onclick=()=>{
   $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};if(after)after();
 };
 $('commitScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.commitment=Number(e.target.dataset.v);setSelected($('commitScale'),floDraft.commitment)};
 $('thinkScale').onclick=e=>{
@@ -3083,11 +3113,11 @@ $('saveFloBtn').onclick=()=>{
   }
   floDraft.note=$('floNote').value.trim();
   const reset=round?.pending?.preShotReset||null;
-  const state={...floDraft,reset:reset?.value??null,resetEvent:reset||null,source:stateContext.required?'SYSTEM':'USER',reason:stateContext.reason||null,at:Date.now()};
+  const state={...floDraft,reset:reset?.value??null,resetEvent:reset||null,source:'USER_INPUT',promptSource:stateContext.promptSource||'MANUAL',sampleReason:stateContext.reason||null,at:Date.now()};
   if(stateContext.type==='putting')hole().puttingState=state;
   else if(round.pending)round.pending.playerState=state;
   save();$('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};
   if(after)after();else renderRound();
 };
 
@@ -3170,7 +3200,7 @@ $('puttDistanceInput').onchange=()=>{
 $('puttSlope').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.slope=v;setSelected($('puttSlope'),v)};
 $('puttBreak').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.break=v;setSelected($('puttBreak'),v)};
 $('puttResult').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.result=v;setSelected($('puttResult'),v)};
-$('puttStateBtn').onclick=()=>openStateCheck('putting',false,'퍼팅 상태 확인',null);
+$('puttStateBtn').onclick=()=>openStateCheck('putting',false,'플레이어 선택 입력 · 퍼팅',null,'MANUAL');
 $('puttClose').onclick=()=>{$('puttModal').classList.add('hidden')};
 $('savePuttBtn').onclick=()=>{
   puttDraft.distanceM=Math.round(Math.max(0.5,Number($('puttDistanceInput').value)||0.5)*2)/2;
@@ -3181,12 +3211,7 @@ $('savePuttBtn').onclick=()=>{
   h.puttsDetail.push({number:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,at:Date.now()});
   h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;save();
   if(puttDraft.result==='HOLED'){
-    const smartNeed=(round.stateMode==='SMART'&&h.putts>=3);
-    const everyHole=(round.stateMode==='EVERY_HOLE'&&!h.puttingState&&!h.shots.some(s=>s.playerState));
-    if(smartNeed||everyHole){
-      $('puttModal').classList.add('hidden');
-      openStateCheck('putting',true,smartNeed?'3퍼트 상태 확인':'이 홀의 상태 확인',finalizeHoleAfterPutting);
-    }else finalizeHoleAfterPutting();
+    finalizeHoleAfterPutting();
   }else{
     resetPuttDraft();renderPuttHistory();
   }
