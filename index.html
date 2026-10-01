@@ -685,6 +685,20 @@ body.round-active .bottomnav{display:none!important}
 .positionChoice button.sel{border-color:rgba(47,239,124,.5);background:rgba(47,239,124,.08);color:#51f08d}
 .positionModeNote{margin-top:10px;padding:10px 11px;border-radius:12px;background:#080d0a;border:1px solid rgba(255,255,255,.08);color:#819087;font-size:9px;line-height:1.45}
 
+/* ===== 선수 상태 V2 · 특별 상황 / 리셋 ===== */
+.stateQuestion{margin:8px 0 12px;padding:10px 12px;border-radius:13px;background:rgba(47,239,124,.07);border:1px solid rgba(47,239,124,.18);color:#dfffe9;font-size:13px;font-weight:950;line-height:1.4}
+.stateConditional.hidden{display:none}
+.stateConditional{margin-top:12px;padding:10px;border-radius:13px;border:1px solid rgba(255,255,255,.10);background:#09100c}
+.stateConditional .choice{margin-top:7px}
+.specialEventSheet{border:1px solid rgba(255,70,70,.38);box-shadow:0 -18px 55px rgba(125,0,0,.22)}
+.specialEventFlag{display:inline-flex;align-items:center;gap:7px;margin-bottom:10px;padding:6px 9px;border-radius:999px;background:rgba(255,56,56,.12);border:1px solid rgba(255,75,75,.38);color:#ff7777;font-size:9px;font-weight:1000;letter-spacing:.09em}
+.specialEventBody{margin-top:12px;padding:14px;border-radius:15px;background:rgba(132,14,14,.10);border:1px solid rgba(255,80,80,.18)}
+.specialEventBody strong{display:block;color:#fff;font-size:18px;line-height:1.35}
+.specialEventBody p{margin:8px 0 0;color:#b9a7a7;font-size:11px;line-height:1.55}
+.resetScale{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}
+.resetScale button{min-height:47px;border-radius:12px;border:1px solid rgba(255,255,255,.13);background:#0a0f0c;color:#fff;font-weight:1000;font-size:15px}
+.resetScale button.sel{border-color:rgba(255,77,77,.58);background:rgba(255,58,58,.13);color:#ff8585}
+
 </style>
 </head>
 <body>
@@ -944,17 +958,18 @@ body.round-active .bottomnav{display:none!important}
     </section>
 
     <section id="floScreen" class="screen hidden">
-      <div class="title">JGI PLAYER STATE</div><div class="sub">Commitment · Thinking Load · Routine · Emotional State를 Shot 결과와 연결합니다.</div>
+      <div class="title">선수 상태</div><div class="sub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 샷 결과와 연결합니다.</div>
       <div class="card">
         <div class="title">오늘</div>
-        <div class="grid3" style="margin-top:10px">
-          <div class="metric"><div class="k">COMMITMENT</div><div id="floCommit" class="v">—</div></div>
-          <div class="metric"><div class="k">THINKING</div><div id="floThink" class="v">—</div></div>
-          <div class="metric"><div class="k">ROUTINE FULL</div><div id="floRoutine" class="v">—</div></div>
+        <div class="grid4" style="margin-top:10px">
+          <div class="metric"><div class="k">결정 확신</div><div id="floCommit" class="v">—</div></div>
+          <div class="metric"><div class="k">생각의 양</div><div id="floThink" class="v">—</div></div>
+          <div class="metric"><div class="k">긴장도</div><div id="floTension" class="v">—</div></div>
+          <div class="metric"><div class="k">루틴 실행</div><div id="floRoutine" class="v">—</div></div>
         </div>
       </div>
-      <div class="card"><div class="title">홀별 PLAYER STATE</div><div id="floBars" style="margin-top:10px"></div></div>
-      <div class="card"><div class="title">관찰된 패턴</div><div id="floPattern" class="pendingText" style="margin-top:8px">Player State 데이터가 쌓이면 샷 결과와 함께 패턴을 표시합니다.</div></div>
+      <div class="card"><div class="title">홀별 상태</div><div id="floBars" style="margin-top:10px"></div></div>
+      <div class="card"><div class="title">관찰된 패턴</div><div id="floPattern" class="pendingText" style="margin-top:8px">상태 데이터가 쌓이면 샷 결과와 함께 반복 패턴을 표시합니다.</div></div>
     </section>
 
     <section id="storyScreen" class="screen hidden">
@@ -1061,29 +1076,71 @@ body.round-active .bottomnav{display:none!important}
 <div id="floModal" class="modal hidden">
   <div class="sheet">
     <div class="sheetHead">
-      <div><strong>상태 체크</strong><div id="floShotLabel" class="sub">JGI PLAYER STATE</div></div>
+      <div><strong>상태 체크</strong><div id="floShotLabel" class="sub">방금 샷 직전 상태는?</div></div>
       <button id="floClose" class="x">×</button>
     </div>
+    <div class="stateQuestion">결과가 아니라 <b>방금 샷 직전의 상태</b>를 입력해 주세요.</div>
     <div id="stateReason" class="stateReason hidden"></div>
-    <div class="sectionLabel">확신도</div>
+
+    <div class="sectionLabel">결정 확신</div>
     <div id="commitScale" class="scale"></div>
-    <div class="helper">1 = 확신 낮음 · 5 = 확신 높음</div>
+    <div class="helper">1 = 결정이 흔들림 · 5 = 타깃·클럽·샷이 확실함</div>
+
     <div class="sectionLabel">생각의 양</div>
     <div id="thinkScale" class="scale"></div>
-    <div class="helper">1 = 자연스럽게 플레이 · 5 = 생각이 너무 많음</div>
-    <div class="sectionLabel">루틴</div>
-    <div id="routineChoice" class="choice">
-      <button data-v="Full">완료</button><button data-v="Partial">부분</button><button data-v="Broken">깨짐</button>
+    <div class="helper">1 = 거의 생각 없음 · 5 = 생각이 너무 많음</div>
+
+    <div id="thoughtFocusSection" class="stateConditional hidden">
+      <div class="sectionLabel" style="margin-top:0">생각이 많았던 이유</div>
+      <div id="thoughtFocusChoice" class="choice">
+        <button data-v="SWING">스윙</button>
+        <button data-v="TARGET">타깃</button>
+        <button data-v="SCORE">스코어</button>
+        <button data-v="HAZARD">위험지역</button>
+        <button data-v="PREVIOUS_SHOT">이전 샷</button>
+      </div>
     </div>
-    <div class="sectionLabel">감정 상태</div>
-    <div id="stateChoice" class="choice state">
-      <button data-v="Calm">차분함</button><button data-v="Confident">자신감</button><button data-v="Tense">긴장</button><button data-v="Frustrated">답답함</button>
-    </div>
-    <div class="field"><label>메모 · 선택사항</label><textarea id="floNote" placeholder="좋은 템포, 루틴이 빨랐음..."></textarea></div>
+
+    <div class="sectionLabel">긴장도</div>
+    <div id="tensionScale" class="scale"></div>
+    <div class="helper">1 = 매우 편안함 · 5 = 몸과 마음의 긴장이 매우 높음</div>
+
+    <div class="sectionLabel">루틴 실행</div>
+    <div id="routineExecutionScale" class="scale"></div>
+    <div class="helper">1 = 평소 루틴을 거의 못함 · 5 = 평소 루틴을 완전히 수행</div>
+
+    <div class="field"><label>메모 · 선택사항</label><textarea id="floNote" placeholder="평소보다 준비가 빨랐음, 타깃 결정이 늦었음..."></textarea></div>
     <div class="stateModalActions">
       <button id="stateSkipBtn" class="btn ghost">건너뛰기</button>
       <button id="saveFloBtn" class="btn primary">상태 저장</button>
     </div>
+  </div>
+</div>
+
+<div id="specialEventModal" class="modal hidden">
+  <div class="sheet specialEventSheet">
+    <div class="specialEventFlag">● 특별 상황 기록</div>
+    <div class="sheetHead">
+      <div><strong>JGI가 학습해야 할 상황입니다.</strong><div class="sub">잘못했다는 의미가 아니라, 다음 반응을 연결하기 위한 기록입니다.</div></div>
+      <button id="specialEventClose" class="x">×</button>
+    </div>
+    <div class="specialEventBody">
+      <strong id="specialEventTitle">특별 상황</strong>
+      <p id="specialEventText">다음 샷 전에 리셋 상태를 확인합니다.</p>
+    </div>
+    <button id="specialEventConfirm" class="btn primary full" style="margin-top:14px">확인</button>
+  </div>
+</div>
+
+<div id="resetModal" class="modal hidden">
+  <div class="sheet specialEventSheet">
+    <div class="specialEventFlag">● 리셋 체크</div>
+    <div class="sheetHead">
+      <div><strong>방금 결과에서 얼마나 벗어났나요?</strong><div id="resetEventLabel" class="sub">특별 상황 이후 · 다음 샷 직전</div></div>
+    </div>
+    <div id="resetScale" class="resetScale"></div>
+    <div class="helper" style="margin-top:8px">1 = 아직 많이 남아 있음 · 5 = 완전히 리셋</div>
+    <button id="saveResetBtn" class="btn primary full" style="margin-top:14px">저장하고 다음 샷 시작</button>
   </div>
 </div>
 
@@ -1172,11 +1229,13 @@ const DEFAULT_MASTER_CLUBS=[
 let masterClubs=[];
 let gps=null, watchId=null, tee='White', currentLie='Unknown';
 let stateMode='SMART';
-let floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
+let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:3,slope:null,break:null,result:null};
 let penaltyDraft={type:null,strokes:1};
 let stateContext={type:'shot',required:false,reason:'',after:null};
+let specialEventContext={event:null,after:null};
+let resetContext={club:null,previousShot:null,value:null};
 let round=null;
 
 // Google Maps V1: one Map instance is created and reused for the full round.
@@ -1774,36 +1833,69 @@ function openShotResult(){
 }
 function shouldPromptStateCheck(pending){
   const mode=round?.stateMode||stateMode||'SMART';
-  if(mode==='EVERY_SHOT')return {yes:true,reason:'매 샷 모드'};
+  if(mode==='EVERY_SHOT')return {yes:true,reason:'매 샷 상태 확인'};
   const h=hole();
   const already=(h.shots||[]).some(s=>s.playerState||s.flo)||(pending?.playerState);
-  if(mode==='EVERY_HOLE'&&!already)return {yes:true,reason:'매 홀 모드'};
+  if(mode==='EVERY_HOLE'&&!already)return {yes:true,reason:'이 홀의 상태 확인'};
   if(mode==='SMART'){
-    if(!already&&[1,6,12,18].includes(round.currentHole))return {yes:true,reason:'스마트 기준 상태 샘플'};
+    if(!already&&[1,6,12,18].includes(round.currentHole))return {yes:true,reason:'기준 상태 확인'};
     const r=pending?.result;
-    if(r&&['BUNKER','RECOVERY'].includes(r.endLie))return {yes:true,reason:'스마트 트러블 샷 상태 샘플'};
-    if(r&&r.direction!=='CENTER'&&!['PIN_HIGH','TARGET'].includes(r.depth))return {yes:true,reason:'스마트 미스 패턴 상태 샘플'};
-    if((h.penalties||0)>0)return {yes:true,reason:'스마트 벌타 상황 상태 샘플'};
+    if(r&&['BUNKER','RECOVERY'].includes(r.endLie))return {yes:true,reason:'트러블 상황 상태 확인'};
+    if(r&&r.direction!=='CENTER'&&!['PIN_HIGH','TARGET'].includes(r.depth))return {yes:true,reason:'반복 미스 확인'};
+    if((h.penalties||0)>0)return {yes:true,reason:'벌타 상황 상태 확인'};
   }
   return {yes:false,reason:''};
 }
 function resetStateDraft(){
-  floDraft={commitment:null,thinking:null,routine:null,state:null,note:''};
-  ['commitScale','thinkScale','routineChoice','stateChoice'].forEach(id=>setSelected($(id),'__'));
+  floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
+  ['commitScale','thinkScale','tensionScale','routineExecutionScale','thoughtFocusChoice'].forEach(id=>setSelected($(id),'__'));
+  $('thoughtFocusSection').classList.add('hidden');
   $('floNote').value='';
 }
 function openStateCheck(type='shot',required=false,reason='',after=null){
   resetStateDraft();
   stateContext={type,required,reason,after};
   if(type==='putting'){
-    $('floShotLabel').textContent='JGI PLAYER STATE · Hole '+round.currentHole+' · Putting';
+    $('floShotLabel').textContent='방금 퍼트 직전 상태는? · '+round.currentHole+'번 홀';
   }else{
-    $('floShotLabel').textContent='JGI PLAYER STATE · Hole '+round.currentHole+' · '+(round.pending?.club||'Shot');
+    $('floShotLabel').textContent='방금 샷 직전 상태는? · '+round.currentHole+'번 홀 · '+(round.pending?.club||'샷');
   }
-  $('stateReason').textContent=reason||'Optional state sample';
+  $('stateReason').textContent=reason||'선수 상태 확인';
   $('stateReason').classList.toggle('hidden',!reason);
   $('stateSkipBtn').classList.toggle('hidden',required);
   $('floModal').classList.remove('hidden');
+}
+function specialEventName(type){
+  return ({OB:'OB',HAZARD:'해저드',LOST_BALL:'로스트 볼',RECOVERY:'트러블 상황',THREE_PUTT:'3퍼트 이상',DOUBLE_BOGEY_PLUS:'더블보기 이상',THREE_PUTT_DOUBLE_PLUS:'3퍼트 이상 · 더블보기 이상'})[type]||type;
+}
+function queueSpecialEvent(type,detail={}){
+  if(!round)return null;
+  const event={id:'e'+Date.now(),type,label:specialEventName(type),hole:detail.hole||round.currentHole,shotId:detail.shotId||round.pending?.id||null,at:Date.now(),resolved:false};
+  round.specialEvents=round.specialEvents||[];
+  round.specialEvents.push(event);
+  round.pendingResetEvent=event;
+  save();
+  return event;
+}
+function showSpecialEvent(event,after=null){
+  if(!event){if(after)after();return}
+  specialEventContext={event,after};
+  $('specialEventTitle').textContent=event.label+' · '+event.hole+'번 홀';
+  $('specialEventText').textContent='이 상황을 반응 데이터로 기록합니다. 다음 샷 전에 리셋 상태를 확인합니다.';
+  $('specialEventModal').classList.remove('hidden');
+}
+function openResetCheck(club,previousShot=null){
+  const event=round?.pendingResetEvent;
+  if(!event)return beginPending(club,previousShot);
+  resetContext={club,previousShot,value:null};
+  setSelected($('resetScale'),'__');
+  $('resetEventLabel').textContent=event.label+' 이후 · 다음 샷 직전';
+  $('resetModal').classList.remove('hidden');
+  return true;
+}
+function beginNextShot(club,previousShot=null){
+  if(round?.pendingResetEvent&&!round.pendingResetEvent.resolved)return openResetCheck(club,previousShot);
+  return beginPending(club,previousShot);
 }
 function beginPending(club,previousShot=null){
   const startSnapshot=resolveShotStart(previousShot);
@@ -1834,8 +1926,9 @@ function beginPending(club,previousShot=null){
       greenId:ch?.greenId??null,greenDistanceM:greenDistanceM??null,
       geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1'
     },
-    result:null,playerState:null,queuedClub:null
+    result:null,playerState:null,preShotReset:round.nextShotReset||null,queuedClub:null
   };
+  round.nextShotReset=null;
   startPositionOverride=null;
   save();renderRound();
   clearManualPosition();
@@ -1854,23 +1947,23 @@ function finishPendingAndMaybeStart(club=null){
   }
   currentLie=round.pending.result.endLie||currentLie;
   const finished=finalizePending(endPoint,currentLie);
-  if(club)return beginPending(club,finished);
+  if(club)return beginNextShot(club,finished);
   renderRound();
   return true;
 }
 
 function emptyRound(course,nine){
-  return hydrateRoundCourseTruth({version:5,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:6,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
       penalties:0,penaltyEvents:[],completed:false,review:null
     })),
-    analysisSnapshot:null,pending:null});
+    analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=5;r.analysisSnapshot=r.analysisSnapshot||null;r.tee=normalizeTeeName(r.tee);
+  r.version=6;r.analysisSnapshot=r.analysisSnapshot||null;r.specialEvents=r.specialEvents||[];r.pendingResetEvent=r.pendingResetEvent||null;r.nextShotReset=r.nextShotReset||null;r.tee=normalizeTeeName(r.tee);
   (r.holes||[]).forEach((h,i)=>{h.hole=h.hole||i+1;h.shots=h.shots||[];h.puttsDetail=h.puttsDetail||[];h.penaltyEvents=h.penaltyEvents||[];h.penalties=h.penalties||0;if(h.review===undefined)h.review=null});
   return hydrateRoundCourseTruth(r);
 }
@@ -1934,7 +2027,7 @@ function showScreen(name){
   if(name==='story')renderStory();
 }
 function initScales(){
-  ['commitScale','thinkScale'].forEach(id=>{
+  ['commitScale','thinkScale','tensionScale','routineExecutionScale','resetScale'].forEach(id=>{
     for(let i=1;i<=5;i++){const b=document.createElement('button');b.textContent=i;b.dataset.v=i;$(id).appendChild(b)}
   });
   masterClubs=getMasterClubs();
@@ -1962,6 +2055,7 @@ function finalizePending(endPoint,endLie){
     centerWidthM:p.centerWidthM??null,target:p.target||null,
     courseContext:p.courseContext||null,
     positionSource:{start:p.start?.source||'GPS',end:endPoint?.source||'GPS'},
+    preShotReset:p.preShotReset||null,
     playerState:p.playerState||null
   };
   hole().shots.push(shot); round.pending=null; save(); return shot;
@@ -1974,7 +2068,7 @@ function startShot(club){
     finishPendingAndMaybeStart(club);
     return;
   }
-  beginPending(club);
+  beginNextShot(club);
 }
 function renderRound(){
   if(!round)return;
@@ -2016,11 +2110,22 @@ function finalizeHoleAfterPutting(){
   h.firstPutt=h.puttsDetail?.[0]?.distanceM??null;
   h.completed=true;h.completedAt=Date.now();
   h.review=buildHoleReview(h);
+
+  let special=null;
+  const score=holeScore(h);
+  const isThreePutt=(h.putts||0)>=3;
+  const isDoublePlus=Number.isFinite(score)&&Number.isFinite(h.par)&&score>=h.par+2;
+  if(isThreePutt&&isDoublePlus)special=queueSpecialEvent('THREE_PUTT_DOUBLE_PLUS',{hole:h.hole});
+  else if(isThreePutt)special=queueSpecialEvent('THREE_PUTT',{hole:h.hole});
+  else if(isDoublePlus)special=queueSpecialEvent('DOUBLE_BOGEY_PLUS',{hole:h.hole});
+
   save();$('puttModal').classList.add('hidden');clearTarget();
   if(round.currentHole<18){
     round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
+    if(special)showSpecialEvent(special);
   }else{
     round.completedAt=Date.now();save();showScreen('overview');
+    if(special)showSpecialEvent(special);
   }
 }
 function completeHole(){
@@ -2243,20 +2348,32 @@ function render퍼포먼스(){
   $('statPutts').textContent=s.putts;$('statDrive').textContent=s.drive?Math.round(s.drive)+'m':'—';
   $('statPen').textContent=s.penalties;$('statScramble').textContent=s.scrD?(s.scr+'/'+s.scrD):'—';
 }
+function legacyRoutineValue(x){
+  if(Number.isFinite(Number(x?.routineExecution)))return Number(x.routineExecution);
+  return ({Full:5,Partial:3,Broken:1})[x?.routine]||null;
+}
 function renderFlo(){
-  const f=allStates();const ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean)),at=avg(f.map(x=>Number(x.thinking)).filter(Boolean));
-  const rf=f.filter(x=>x.routine==='Full').length;
-  $('floCommit').textContent=ac?ac.toFixed(1):'—';$('floThink').textContent=at?at.toFixed(1):'—';$('floRoutine').textContent=f.length?pct(rf,f.length)+'%':'—';
+  const f=allStates();
+  const ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean));
+  const at=avg(f.map(x=>Number(x.thinking)).filter(Boolean));
+  const ax=avg(f.map(x=>Number(x.tension)).filter(Boolean));
+  const ar=avg(f.map(legacyRoutineValue).filter(Boolean));
+  $('floCommit').textContent=ac?ac.toFixed(1):'—';
+  $('floThink').textContent=at?at.toFixed(1):'—';
+  $('floTension').textContent=ax?ax.toFixed(1):'—';
+  $('floRoutine').textContent=ar?ar.toFixed(1):'—';
   const byHole={};f.forEach(x=>{(byHole[x.hole]??=[]).push(x)});
   $('floBars').innerHTML=Object.keys(byHole).length?Object.entries(byHole).map(([h,a])=>{
-    const c=avg(a.map(x=>Number(x.commitment))),t=avg(a.map(x=>Number(x.thinking)));
-    return '<div class="barRow"><span>Hole '+h+'</span><div><div class="bar"><i style="width:'+(c/5*100)+'%"></i></div><div class="bar think" style="margin-top:4px"><i style="width:'+(t/5*100)+'%"></i></div></div><b>'+c.toFixed(1)+'</b></div>';
-  }).join(''):'<div class="pendingText">아직 Player State 데이터가 없습니다.</div>';
-  let pattern='Player State 데이터가 더 쌓이면 Shot 결과와 함께 패턴을 표시합니다.';
+    const cm=avg(a.map(x=>Number(x.commitment)).filter(Boolean))||0;
+    const th=avg(a.map(x=>Number(x.thinking)).filter(Boolean))||0;
+    return '<div class="barRow"><span>'+h+'번 홀</span><div><div class="bar"><i style="width:'+(cm/5*100)+'%"></i></div><div class="bar think" style="margin-top:4px"><i style="width:'+(th/5*100)+'%"></i></div></div><b>'+cm.toFixed(1)+'</b></div>';
+  }).join(''):'<div class="pendingText">아직 선수 상태 데이터가 없습니다.</div>';
+  let pattern='상태 데이터가 더 쌓이면 샷 결과와 함께 반복 패턴을 표시합니다.';
   if(f.length>=4){
-    if(at>=3.8)pattern='현재 라운드에서 Thinking Load가 높은 편입니다. 결과와 함께 반복되는 구간을 확인하세요.';
-    else if(ac>=4&&at<=2.5)pattern='높은 Commitment와 낮은 Thinking Load 상태가 반복되고 있습니다. 이 상태에서의 Shot 결과를 기준 패턴으로 축적합니다.';
-    else pattern='Commitment와 Thinking Load의 변화가 관찰됩니다. 아직 원인으로 단정하지 않고 Shot 결과와 함께 축적합니다.';
+    if(at>=3.8)pattern='현재 라운드에서 생각의 양이 높은 구간이 관찰됩니다. 해당 구간의 샷 결과와 함께 확인합니다.';
+    else if(ax>=3.8)pattern='현재 라운드에서 긴장도가 높은 구간이 관찰됩니다. 결과와의 반복 관계를 계속 축적합니다.';
+    else if(ac>=4&&at<=2.5)pattern='높은 결정 확신과 낮은 생각의 양이 함께 나타나는 상태가 반복되고 있습니다. 이 상태의 샷 결과를 기준 패턴으로 축적합니다.';
+    else pattern='결정 확신·생각의 양·긴장도·루틴 실행의 변화가 관찰됩니다. 아직 원인으로 단정하지 않고 샷 결과와 함께 축적합니다.';
   }
   $('floPattern').textContent=pattern;
 }
@@ -2396,13 +2513,79 @@ $('saveShotResultBtn').onclick=()=>{
   const queued=round.pending.queuedClub||null;
   round.pending.queuedClub=null;
   save();$('shotResultModal').classList.add('hidden');
-  const ask=shouldPromptStateCheck(round.pending);
-  const after=()=>{if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
-  if(ask.yes)openStateCheck('shot',true,ask.reason,after);else after();
+  const proceed=()=>{
+    const ask=shouldPromptStateCheck(round.pending);
+    const after=()=>{if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
+    if(ask.yes)openStateCheck('shot',true,ask.reason,after);else after();
+  };
+  if(round.pending.result.endLie==='RECOVERY'){
+    const ev=queueSpecialEvent('RECOVERY',{hole:round.currentHole,shotId:round.pending.id});
+    showSpecialEvent(ev,proceed);
+  }else proceed();
 };
 
-$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'사용자 상태 체크',null);
-$('cancelShotBtn').onclick=()=>{if(confirm('선택한 Shot을 취소할까요?')){round.pending=null;save();renderRound()}};
+$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'사용자 상태 확인',null);
+$('cancelShotBtn').onclick=()=>{if(confirm('선택한 샷을 취소할까요?')){round.pending=null;save();renderRound()}};
+
+$('specialEventClose').onclick=()=>{
+  $('specialEventModal').classList.add('hidden');
+  const after=specialEventContext.after;specialEventContext={event:null,after:null};if(after)after();
+};
+$('specialEventConfirm').onclick=()=>{
+  $('specialEventModal').classList.add('hidden');
+  const after=specialEventContext.after;specialEventContext={event:null,after:null};if(after)after();
+};
+$('resetScale').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;resetContext.value=Number(v);setSelected($('resetScale'),resetContext.value)};
+$('saveResetBtn').onclick=()=>{
+  if(!resetContext.value){alert('리셋 상태를 1~5 중에서 선택해 주세요.');return}
+  const event=round?.pendingResetEvent;
+  if(!event){$('resetModal').classList.add('hidden');return}
+  event.resetValue=resetContext.value;event.resetAt=Date.now();event.resolved=true;
+  round.nextShotReset={value:resetContext.value,eventId:event.id,eventType:event.type,eventLabel:event.label,eventHole:event.hole,at:event.resetAt};
+  round.pendingResetEvent=null;
+  const club=resetContext.club,previousShot=resetContext.previousShot;
+  resetContext={club:null,previousShot:null,value:null};
+  $('resetModal').classList.add('hidden');save();
+  beginPending(club,previousShot);
+};
+
+$('floClose').onclick=()=>{
+  if(stateContext.required)return;
+  $('floModal').classList.add('hidden');
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
+};
+$('stateSkipBtn').onclick=()=>{
+  $('floModal').classList.add('hidden');
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};if(after)after();
+};
+$('commitScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.commitment=Number(e.target.dataset.v);setSelected($('commitScale'),floDraft.commitment)};
+$('thinkScale').onclick=e=>{
+  if(!e.target.dataset.v)return;
+  floDraft.thinking=Number(e.target.dataset.v);setSelected($('thinkScale'),floDraft.thinking);
+  const high=floDraft.thinking>=4;
+  $('thoughtFocusSection').classList.toggle('hidden',!high);
+  if(!high){floDraft.thoughtFocus=null;setSelected($('thoughtFocusChoice'),'__')}
+};
+$('thoughtFocusChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;floDraft.thoughtFocus=v;setSelected($('thoughtFocusChoice'),v)};
+$('tensionScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.tension=Number(e.target.dataset.v);setSelected($('tensionScale'),floDraft.tension)};
+$('routineExecutionScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.routineExecution=Number(e.target.dataset.v);setSelected($('routineExecutionScale'),floDraft.routineExecution)};
+$('saveFloBtn').onclick=()=>{
+  if(!floDraft.commitment||!floDraft.thinking||!floDraft.tension||!floDraft.routineExecution){
+    alert('결정 확신, 생각의 양, 긴장도, 루틴 실행을 모두 입력해 주세요.');return;
+  }
+  if(floDraft.thinking>=4&&!floDraft.thoughtFocus){
+    alert('생각이 많았던 이유를 선택해 주세요.');return;
+  }
+  floDraft.note=$('floNote').value.trim();
+  const reset=round?.pending?.preShotReset||null;
+  const state={...floDraft,reset:reset?.value??null,resetEvent:reset||null,source:stateContext.required?'SYSTEM':'USER',reason:stateContext.reason||null,at:Date.now()};
+  if(stateContext.type==='putting')hole().puttingState=state;
+  else if(round.pending)round.pending.playerState=state;
+  save();$('floModal').classList.add('hidden');
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null};
+  if(after)after();else renderRound();
+};
+
 function resetPenaltyDraft(){
   penaltyDraft={type:null,strokes:1};
   setSelected($('penaltyTypeChoice'),'__');
@@ -2433,7 +2616,9 @@ $('savePenaltyBtn').onclick=()=>{
     at:Date.now()
   });
   h.penalties=(h.penalties||0)+penaltyDraft.strokes;
+  const ev=queueSpecialEvent(penaltyDraft.type,{hole:round.currentHole});
   save();$('penaltyModal').classList.add('hidden');renderRound();
+  showSpecialEvent(ev);
 };
 $('onGreenBtn').onclick=openPutt;
 
@@ -2497,7 +2682,7 @@ $('puttDistanceInput').onchange=()=>{
 $('puttSlope').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.slope=v;setSelected($('puttSlope'),v)};
 $('puttBreak').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.break=v;setSelected($('puttBreak'),v)};
 $('puttResult').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.result=v;setSelected($('puttResult'),v)};
-$('puttStateBtn').onclick=()=>openStateCheck('putting',false,'퍼팅 상태 체크',null);
+$('puttStateBtn').onclick=()=>openStateCheck('putting',false,'퍼팅 상태 확인',null);
 $('puttClose').onclick=()=>{$('puttModal').classList.add('hidden')};
 $('savePuttBtn').onclick=()=>{
   puttDraft.distanceM=Math.round(Math.max(0.5,Number($('puttDistanceInput').value)||0.5)*2)/2;
@@ -2512,7 +2697,7 @@ $('savePuttBtn').onclick=()=>{
     const everyHole=(round.stateMode==='EVERY_HOLE'&&!h.puttingState&&!h.shots.some(s=>s.playerState));
     if(smartNeed||everyHole){
       $('puttModal').classList.add('hidden');
-      openStateCheck('putting',true,smartNeed?'스마트 3퍼트 상태 샘플':'매 홀 모드',finalizeHoleAfterPutting);
+      openStateCheck('putting',true,smartNeed?'3퍼트 상태 확인':'이 홀의 상태 확인',finalizeHoleAfterPutting);
     }else finalizeHoleAfterPutting();
   }else{
     resetPuttDraft();renderPuttHistory();
