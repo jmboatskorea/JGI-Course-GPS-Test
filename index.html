@@ -828,18 +828,20 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div class="field">
-          <label>선수 상태 샘플링 · 시작 전에 선택</label>
+          <label>JGI 데이터 수집 강도 · 20라운드 기준</label>
           <div class="segment" id="statePlanSegment">
-            <button class="sel" data-v="6">6회 기본</button>
-            <button data-v="8">8회 최대</button>
+            <button data-v="50">50%</button>
+            <button data-v="70">70%</button>
+            <button class="sel" data-v="100">100%</button>
           </div>
           <div id="statePlanHint" class="sgStatus">
-            <b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.
+            <b>100% 수집</b> · 평균 20회/라운드 · 20라운드 동안 약 400개의 State Sample을 체계적으로 수집합니다.
           </div>
+          <div id="stateCoveragePreview" class="sgStatus" style="margin-top:8px"></div>
         </div>
 
         <div class="sgStatus" style="margin-top:10px">
-          <b>중요:</b> JGI가 제안하는 6회/8회는 자동 샘플입니다. 그 외 모든 샷에서도 필요하면 <b>상태 입력 · 선택</b> 버튼으로 직접 추가할 수 있습니다.
+          <b>원칙:</b> JGI가 필요한 샷을 자동으로 지정합니다. 요청된 순간에만 입력하면 됩니다. 건너뛰어도 라운드는 계속되며, 가능한 다음 유사 기회로 다시 배정합니다.
         </div>
       </div>
       <div class="card sgSetupCard">
@@ -1318,14 +1320,23 @@ const DEFAULT_MASTER_CLUBS=[
 ];
 let masterClubs=[];
 let gps=null, watchId=null, tee='White', currentLie='Unknown';
-let statePlanCount=6;
+const STATE_SAMPLING_VERSION='JGI_STATE_V1';
+const STATE_COLLECTION_LEVEL_KEY='jgi_state_collection_level_v1';
+const STATE_HISTORY_KEY='jgi_state_sampling_history_v1';
+const STATE_TARGETS_20={
+  100:{TEE:100,SECOND:120,SHORT_GAME:60,PUTTING:120},
+  70:{TEE:70,SECOND:84,SHORT_GAME:42,PUTTING:84},
+  50:{TEE:50,SECOND:60,SHORT_GAME:30,PUTTING:60}
+};
+let stateCollectionLevel=Number(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY))||100;
+if(![50,70,100].includes(stateCollectionLevel))stateCollectionLevel=100;
 let sgBenchmarkMode=null;
 let playerHandicap=null;
 let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:3,slope:null,break:null,result:null};
 let penaltyDraft={type:null,strokes:1};
-let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};
+let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
 let specialEventContext={event:null,after:null};
 let resetContext={club:null,previousShot:null,value:null};
 let round=null;
@@ -1926,20 +1937,213 @@ function openShotResult(){
   $('shotResultLabel').textContent=round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
   $('shotResultModal').classList.remove('hidden');
 }
-function stateAnchorHoles(count){
-  return Number(count)===8 ? [1,3,5,8,10,12,15,18] : [1,4,7,10,14,18];
+function normalizeCollectionLevel(v){
+  const n=Number(v);return [50,70,100].includes(n)?n:100;
+}
+function loadStateHistory(){
+  try{const x=JSON.parse(localStorage.getItem(STATE_HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}catch{return []}
+}
+function saveStateHistory(x){localStorage.setItem(STATE_HISTORY_KEY,JSON.stringify(x||[]))}
+function currentSamplingRoundIndex(){
+  const completed=loadStateHistory().filter(x=>x&&x.fullRound).length;
+  return completed%20+1;
+}
+function roundPhaseForHole(holeNo){
+  const h=Number(holeNo)||1;
+  return h<=3?'FRONT_EARLY':h<=6?'FRONT_MIDDLE':h<=9?'FRONT_LATE':h<=12?'BACK_EARLY':h<=15?'BACK_MIDDLE':'BACK_LATE';
+}
+function roundPhaseIndex(holeNo){return Math.min(5,Math.max(0,Math.floor((Number(holeNo)-1)/3)))}
+function stateGroupLabel(v){return ({TEE:'티샷',SECOND:'세컨샷',SHORT_GAME:'숏게임',PUTTING:'퍼팅'})[v]||v||'상태'}
+function roundTargetFor(group,level,roundIndex){
+  const total=STATE_TARGETS_20[normalizeCollectionLevel(level)]?.[group]||0;
+  const base=Math.floor(total/20),rem=total%20;
+  if(!rem)return base;
+  const offsets={TEE:0,SECOND:5,SHORT_GAME:10,PUTTING:15};
+  const pos=((Number(roundIndex)-1+(offsets[group]||0))%20)+1;
+  const extraSlots=new Set(Array.from({length:rem},(_,i)=>1+Math.floor(i*20/rem)));
+  return base+(extraSlots.has(pos)?1:0);
+}
+function rotatedZones(group,roundIndex){
+  const base=[0,3,1,4,2,5];
+  const offsets={TEE:0,SECOND:1,SHORT_GAME:2,PUTTING:3};
+  const shift=(Number(roundIndex)-1+(offsets[group]||0))%6;
+  return base.slice(shift).concat(base.slice(0,shift));
+}
+function samplingHolesFor(group,count,roundIndex){
+  const zones=rotatedZones(group,roundIndex);
+  const holes=[];
+  const offsets={TEE:0,SECOND:1,SHORT_GAME:2,PUTTING:0};
+  for(let i=0;i<count;i++){
+    const z=zones[i%6];
+    const pass=Math.floor(i/6);
+    const local=(Number(roundIndex)-1+(offsets[group]||0)+z+pass)%3;
+    const h=z*3+local+1;
+    if(!holes.includes(h))holes.push(h);
+    else{
+      const alt=z*3+((local+1)%3)+1;
+      if(!holes.includes(alt))holes.push(alt);
+    }
+  }
+  return holes.sort((a,b)=>a-b);
+}
+function buildSamplingPlan(level=stateCollectionLevel,roundIndex=currentSamplingRoundIndex()){
+  const lv=normalizeCollectionLevel(level);
+  const targets={
+    TEE:roundTargetFor('TEE',lv,roundIndex),
+    SECOND:roundTargetFor('SECOND',lv,roundIndex),
+    SHORT_GAME:roundTargetFor('SHORT_GAME',lv,roundIndex),
+    PUTTING:roundTargetFor('PUTTING',lv,roundIndex)
+  };
+  return {
+    version:STATE_SAMPLING_VERSION,
+    collectionLevel:lv,
+    roundIndex,
+    targets,
+    holes:{
+      TEE:samplingHolesFor('TEE',targets.TEE,roundIndex),
+      SECOND:samplingHolesFor('SECOND',targets.SECOND,roundIndex),
+      PUTTING:samplingHolesFor('PUTTING',targets.PUTTING,roundIndex)
+    },
+    shortGameZones:rotatedZones('SHORT_GAME',roundIndex).slice(0,Math.min(6,targets.SHORT_GAME))
+  };
+}
+function isShortGameStart(pending){
+  const d=Number(pending?.courseContext?.startGreenDistanceM);
+  const lie=String(pending?.startLie||'').toUpperCase();
+  return (Number.isFinite(d)&&d<=55)||['BUNKER','SAND','FRINGE','RECOVERY'].includes(lie);
+}
+function samplingShotGroup(pending){
+  const h=hole();if(!h||!pending)return null;
+  const seq=(h.shots||[]).length+1;
+  if(seq===1)return 'TEE';
+  if(seq===2)return 'SECOND';
+  if(seq>=3&&isShortGameStart(pending))return 'SHORT_GAME';
+  return null;
+}
+function samplingEvents(group=null){
+  const arr=round?.stateSamplingEvents||[];
+  return group?arr.filter(x=>x.group===group):arr;
+}
+function completedAutoSamples(group){
+  return samplingEvents(group).filter(x=>x.completed&&x.promptSource==='AUTO').length;
+}
+function hasDeferredSample(group){
+  return samplingEvents(group).some(x=>x.promptSource==='AUTO'&&x.skipped&&!x.reallocated);
+}
+function alreadyRequestedHere(group,holeNo){
+  return samplingEvents(group).some(x=>x.hole===holeNo&&x.requested);
+}
+function createSamplingRequest(group,reason,type){
+  if(!round)return null;
+  round.stateSamplingEvents=round.stateSamplingEvents||[];
+  const deferred=[...round.stateSamplingEvents].reverse().find(x=>x.group===group&&x.promptSource==='AUTO'&&x.skipped&&!x.reallocated);
+  if(deferred)deferred.reallocated=true;
+  const ev={id:'se'+Date.now()+Math.random().toString(36).slice(2,6),samplingVersion:STATE_SAMPLING_VERSION,collectionLevel:round.stateCollectionLevel,group,hole:round.currentHole,roundPhase:roundPhaseForHole(round.currentHole),type,promptSource:'AUTO',reason,requested:true,requestedAt:Date.now(),completed:false,skipped:false,reallocated:false};
+  round.stateSamplingEvents.push(ev);save();return ev;
+}
+function markSamplingSkipped(eventId){
+  if(!round||!eventId)return;
+  const ev=(round.stateSamplingEvents||[]).find(x=>x.id===eventId);
+  if(ev){ev.skipped=true;ev.skippedAt=Date.now();save()}
+}
+function strokeKindForState(type,group){
+  const h=hole();
+  if(type==='putting'){
+    const n=(h?.puttsDetail||[]).length+1;
+    return n===1?'FIRST_PUTT':n===2?'SECOND_PUTT':'THIRD_PLUS_PUTT';
+  }
+  const p=round?.pending;
+  if(group==='TEE'){
+    const club=String(p?.club||'').toUpperCase();
+    if(club==='DR'||club.includes('DRIVER'))return 'DRIVER_TEE';
+    if(club.includes('W'))return 'WOOD_TEE';
+    return 'IRON_TEE';
+  }
+  const lie=String(p?.startLie||'UNKNOWN').toUpperCase();
+  if(group==='SECOND')return lie;
+  if(group==='SHORT_GAME'){
+    if(['BUNKER','SAND'].includes(lie))return 'GREENSIDE_BUNKER';
+    if(lie==='RECOVERY')return 'RECOVERY';
+    return 'SHORT_GAME';
+  }
+  return 'OTHER';
+}
+function buildStateSamplingMeta(type,group,promptSource,eventId){
+  const h=hole();
+  const p=round?.pending;
+  const shotSequence=type==='putting'?(h?.puttsDetail||[]).length+1:(h?.shots||[]).length+1;
+  return {
+    samplingVersion:STATE_SAMPLING_VERSION,
+    collectionLevel:round?.stateCollectionLevel||stateCollectionLevel,
+    samplingSource:promptSource==='AUTO'?'SYSTEM':'PLAYER',
+    promptSource:promptSource||'MANUAL',
+    samplingEventId:eventId||null,
+    shotGroup:group||'OTHER',
+    strokeKind:strokeKindForState(type,group),
+    shotSequence,
+    club:type==='putting'?'Putter':p?.club||null,
+    startLie:type==='putting'?'GREEN':p?.startLie||null,
+    endLie:type==='putting'?'GREEN':p?.result?.endLie||null,
+    distanceToTargetM:type==='putting'?(Number(puttDraft.distanceM)||null):(Number(p?.courseContext?.startGreenDistanceM)||null),
+    shotPurpose:type==='putting'?'PUTTING':p?.shotIntent||null,
+    roundPhase:roundPhaseForHole(round?.currentHole),
+    holeNumber:round?.currentHole||null
+  };
 }
 function shouldPromptStateCheck(pending){
   const h=hole();
-  if(!round||!h||!pending)return {yes:false,reason:''};
-  if(pending.playerState)return {yes:false,reason:''};
-  if((h.shots||[]).length>0)return {yes:false,reason:''}; // 각 지정 홀의 첫 샷만
-  const count=Number(round.statePlanCount||statePlanCount||6)===8?8:6;
-  const anchors=stateAnchorHoles(count);
-  if(!anchors.includes(round.currentHole))return {yes:false,reason:''};
-  round.statePromptedHoles=round.statePromptedHoles||[];
-  if(round.statePromptedHoles.includes(round.currentHole))return {yes:false,reason:''};
-  return {yes:true,reason:'자동 샘플 · '+count+'회 계획 중 '+round.currentHole+'번 홀'};
+  if(!round||!h||!pending)return {yes:false,reason:'',group:null};
+  if(pending.playerState)return {yes:false,reason:'',group:null};
+  const group=samplingShotGroup(pending);
+  if(!group)return {yes:false,reason:'',group:null};
+  const plan=round.samplingPlan||buildSamplingPlan(round.stateCollectionLevel,round.samplingRoundIndex);
+  const target=Number(plan.targets?.[group]||0);
+  if(completedAutoSamples(group)>=target)return {yes:false,reason:'',group};
+  if(alreadyRequestedHere(group,round.currentHole))return {yes:false,reason:'',group};
+  let selected=false;
+  if(group==='SHORT_GAME'){
+    const zone=roundPhaseIndex(round.currentHole);
+    selected=(plan.shortGameZones||[]).includes(zone);
+    if(!selected&&hasDeferredSample(group))selected=true;
+    if(!selected&&round.currentHole>=16)selected=true;
+  }else{
+    selected=(plan.holes?.[group]||[]).includes(round.currentHole)||hasDeferredSample(group);
+  }
+  if(!selected)return {yes:false,reason:'',group};
+  return {yes:true,group,reason:'JGI 자동 샘플 · '+round.stateCollectionLevel+'% · '+stateGroupLabel(group)+' · '+round.currentHole+'번 홀'};
+}
+function shouldPromptPuttingState(){
+  if(!round)return {yes:false,reason:'',group:'PUTTING'};
+  const group='PUTTING',plan=round.samplingPlan||buildSamplingPlan(round.stateCollectionLevel,round.samplingRoundIndex);
+  const target=Number(plan.targets?.PUTTING||0);
+  if(completedAutoSamples(group)>=target)return {yes:false,reason:'',group};
+  if(alreadyRequestedHere(group,round.currentHole))return {yes:false,reason:'',group};
+  const selected=(plan.holes?.PUTTING||[]).includes(round.currentHole)||hasDeferredSample(group);
+  if(!selected)return {yes:false,reason:'',group};
+  return {yes:true,group,reason:'JGI 자동 샘플 · '+round.stateCollectionLevel+'% · 퍼팅 · '+round.currentHole+'번 홀'};
+}
+function samplingCountsFromRound(r){
+  const o={TEE:0,SECOND:0,SHORT_GAME:0,PUTTING:0};
+  (r?.stateSamplingEvents||[]).forEach(x=>{if(x.completed&&o[x.group]!==undefined)o[x.group]++});
+  return o;
+}
+function recordCompletedSamplingRound(r){
+  if(!r||r.samplingHistoryRecorded||(r.holes||[]).filter(h=>h.completed).length<18)return;
+  const hist=loadStateHistory(),counts=samplingCountsFromRound(r);
+  hist.push({roundId:r.id||String(r.startedAt),fullRound:true,completedAt:r.completedAt||Date.now(),collectionLevel:r.stateCollectionLevel||100,roundIndex:r.samplingRoundIndex||1,counts});
+  saveStateHistory(hist.slice(-100));
+  r.samplingHistoryRecorded=true;
+}
+function samplingCoverageSummary(){
+  const counts={TEE:0,SECOND:0,SHORT_GAME:0,PUTTING:0};
+  loadStateHistory().forEach(x=>Object.keys(counts).forEach(k=>counts[k]+=Number(x?.counts?.[k]||0)));
+  if(round&&!round.samplingHistoryRecorded){
+    const live=samplingCountsFromRound(round);Object.keys(counts).forEach(k=>counts[k]+=live[k]);
+  }
+  const pctBy={};
+  Object.keys(counts).forEach(k=>pctBy[k]=Math.min(100,Math.round(counts[k]/STATE_TARGETS_20[100][k]*100)));
+  const capped=Object.keys(counts).reduce((s,k)=>s+Math.min(counts[k],STATE_TARGETS_20[100][k]),0);
+  return {counts,pctBy,overall:Math.min(100,Math.round(capped/400*100))};
 }
 function resetStateDraft(){
   floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
@@ -1947,14 +2151,14 @@ function resetStateDraft(){
   $('thoughtFocusSection').classList.add('hidden');
   $('floNote').value='';
 }
-function openStateCheck(type='shot',required=false,reason='',after=null,promptSource='MANUAL'){
+function openStateCheck(type='shot',required=false,reason='',after=null,promptSource='MANUAL',samplingGroup=null){
   resetStateDraft();
-  stateContext={type,required:false,reason,after,promptSource};
+  let eventId=null;
   if(promptSource==='AUTO'&&round){
-    round.statePromptedHoles=round.statePromptedHoles||[];
-    if(!round.statePromptedHoles.includes(round.currentHole))round.statePromptedHoles.push(round.currentHole);
-    save();
+    const ev=createSamplingRequest(samplingGroup||(type==='putting'?'PUTTING':samplingShotGroup(round.pending)),reason,type);
+    eventId=ev?.id||null;
   }
+  stateContext={type,required:false,reason,after,promptSource,samplingGroup:samplingGroup||null,samplingEventId:eventId};
   if(type==='putting'){
     $('floShotLabel').textContent='방금 퍼트 직전 상태는? · '+round.currentHole+'번 홀';
   }else{
@@ -2059,7 +2263,8 @@ function finishPendingAndMaybeStart(club=null){
 }
 
 function emptyRound(course,nine){
-  return hydrateRoundCourseTruth({version:8,course,nine,tee:normalizeTeeName(tee),statePlanCount:Number(statePlanCount)===8?8:6,statePromptedHoles:[],startedAt:Date.now(),completedAt:null,currentHole:1,
+  const level=normalizeCollectionLevel(stateCollectionLevel),samplingRoundIndex=currentSamplingRoundIndex();
+  return hydrateRoundCourseTruth({version:9,id:'r'+Date.now(),course,nine,tee:normalizeTeeName(tee),stateCollectionLevel:level,stateSamplingVersion:STATE_SAMPLING_VERSION,samplingRoundIndex,samplingPlan:buildSamplingPlan(level,samplingRoundIndex),stateSamplingEvents:[],startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
@@ -2072,13 +2277,17 @@ function emptyRound(course,nine){
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=8;
+  r.version=9;
+  r.id=r.id||('legacy-'+(r.startedAt||Date.now()));
   r.analysisSnapshot=r.analysisSnapshot||null;
   r.specialEvents=r.specialEvents||[];
   r.pendingResetEvent=r.pendingResetEvent||null;
   r.nextShotReset=r.nextShotReset||null;
-  r.statePlanCount=Number(r.statePlanCount)===8?8:6;
-  r.statePromptedHoles=Array.isArray(r.statePromptedHoles)?r.statePromptedHoles:[];
+  r.stateCollectionLevel=normalizeCollectionLevel(r.stateCollectionLevel||100);
+  r.stateSamplingVersion=r.stateSamplingVersion||STATE_SAMPLING_VERSION;
+  r.samplingRoundIndex=Number(r.samplingRoundIndex)||currentSamplingRoundIndex();
+  r.samplingPlan=r.samplingPlan||buildSamplingPlan(r.stateCollectionLevel,r.samplingRoundIndex);
+  r.stateSamplingEvents=Array.isArray(r.stateSamplingEvents)?r.stateSamplingEvents:[];
   r.playerHandicap=clampNumber(r.playerHandicap,0,25);
   r.sgBenchmarkMode=r.sgBenchmarkMode||'PLAYER';
   r.sgDataVersion=r.sgDataVersion||window.JGI_SG_BENCHMARK_DATA?.version||null;
@@ -2255,7 +2464,7 @@ function finalizeHoleAfterPutting(){
     round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
     if(special)showSpecialEvent(special);
   }else{
-    round.completedAt=Date.now();save();showScreen('overview');
+    round.completedAt=Date.now();recordCompletedSamplingRound(round);save();showScreen('overview');
     if(special)showSpecialEvent(special);
   }
 }
@@ -2276,7 +2485,10 @@ function allShots(){return round?round.holes.flatMap(h=>h.shots):[]}
 function allStates(){
   if(!round)return [];
   const shotStates=allShots().filter(s=>s.playerState||s.flo).map(s=>({...((s.playerState||s.flo)),hole:s.hole,club:s.club,distanceM:s.distanceM,endLie:s.endLie,type:'SHOT'}));
-  const puttingStates=round.holes.filter(h=>h.puttingState).map(h=>({...h.puttingState,hole:h.hole,club:'PUTTING',distanceM:null,endLie:'GREEN',type:'PUTTING'}));
+  const puttingStates=round.holes.flatMap(h=>{
+    const detailed=(h.puttsDetail||[]).filter(p=>p.playerState).map(p=>({...p.playerState,hole:h.hole,club:'PUTTING',distanceM:p.distanceM,endLie:'GREEN',type:'PUTTING'}));
+    return detailed.length?detailed:(h.puttingState?[{...h.puttingState,hole:h.hole,club:'PUTTING',distanceM:null,endLie:'GREEN',type:'PUTTING'}]:[]);
+  });
   return [...shotStates,...puttingStates];
 }
 function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
@@ -2434,12 +2646,16 @@ function sgValueClass(v){
   return Number(v)>0.005?'positive':Number(v)<-0.005?'negative':'';
 }
 function syncStatePlanUI(){
-  const count=Number(round?.statePlanCount||statePlanCount||6)===8?8:6;
-  const seg=$('statePlanSegment');if(seg)setSelected(seg,String(count));
+  const level=normalizeCollectionLevel(round?.stateCollectionLevel||stateCollectionLevel);
+  const seg=$('statePlanSegment');if(seg)setSelected(seg,String(level));
+  const totals=STATE_TARGETS_20[level];
+  const perRound=Object.values(totals).reduce((a,b)=>a+b,0)/20;
   if($('statePlanHint')){
-    $('statePlanHint').innerHTML=count===8
-      ? '<b>8회 최대</b> · 라운드 전체에서 8번만 상태 입력을 제안합니다. 건너뛰어도 진행됩니다.'
-      : '<b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.';
+    $('statePlanHint').innerHTML='<b>'+level+'% 수집</b> · 평균 '+perRound.toFixed(perRound%1?1:0)+'회/라운드 · 20라운드 기준 '+Object.values(totals).reduce((a,b)=>a+b,0)+'개 목표';
+  }
+  if($('stateCoveragePreview')){
+    const s=samplingCoverageSummary();
+    $('stateCoveragePreview').innerHTML='<b>JGI DATA COVERAGE '+s.overall+'% / 100%</b><br>티샷 '+s.pctBy.TEE+'% · 세컨샷 '+s.pctBy.SECOND+'% · 숏게임 '+s.pctBy.SHORT_GAME+'% · 퍼팅 '+s.pctBy.PUTTING+'%<br><span class="dataNote">100% Coverage 기준: 20R · 400 State Samples · Context balance는 계속 보정</span>';
   }
 }
 function syncSgBenchmarkUI(){
@@ -2887,6 +3103,7 @@ function renderStory(){
 initScales();
 loadGoogleMaps();
 sgBenchmarkMode=null;
+stateCollectionLevel=normalizeCollectionLevel(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY)||stateCollectionLevel);
 syncStatePlanUI();
 syncSgBenchmarkUI();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
@@ -2902,11 +3119,9 @@ $('enterJgiBtn').onclick=()=>{
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
-  statePlanCount=Number(e.target.dataset.v)===8?8:6;
-  setSelected($('statePlanSegment'),String(statePlanCount));
-  $('statePlanHint').innerHTML=statePlanCount===8
-    ? '<b>8회 최대</b> · 라운드 전체에서 8번만 상태 입력을 제안합니다. 더 촘촘한 샘플이 필요할 때 사용하세요. 건너뛰어도 진행됩니다.'
-    : '<b>6회 기본</b> · 라운드 초·중·후에 고르게 상태 입력을 6번만 제안합니다. 건너뛰어도 라운드는 계속 진행됩니다.';
+  stateCollectionLevel=normalizeCollectionLevel(e.target.dataset.v);
+  localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
+  syncStatePlanUI();
 });
 $('sgBenchmarkSegment').addEventListener('click',e=>{
   const b=e.target.closest('[data-v]');if(!b)return;
@@ -2922,14 +3137,15 @@ $('startRoundBtn').onclick=()=>{
   }
   startPositionOverride=null;clearManualPosition();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
-  round.tee=tee;round.statePlanCount=statePlanCount;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
+  round.tee=tee;round.stateCollectionLevel=stateCollectionLevel;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
   hydrateRoundCourseTruth(round);save();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
-  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');statePlanCount=Number(round.statePlanCount)===8?8:6;
+  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
+  localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
   playerHandicap=clampNumber(round.playerHandicap,0,25);
   sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
-  setSelected($('teeSegment'),tee);setSelected($('statePlanSegment'),String(statePlanCount));syncSgBenchmarkUI();showScreen('round')
+  setSelected($('teeSegment'),tee);syncStatePlanUI();syncSgBenchmarkUI();showScreen('round')
 };
 
 $('mapViewToggle').addEventListener('click',e=>{
@@ -3052,7 +3268,7 @@ $('saveShotResultBtn').onclick=()=>{
   const proceed=()=>{
     const ask=shouldPromptStateCheck(round.pending);
     const after=()=>{if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
-    if(ask.yes)openStateCheck('shot',false,ask.reason,after,'AUTO');else after();
+    if(ask.yes)openStateCheck('shot',false,ask.reason,after,'AUTO',ask.group);else after();
   };
   if(round.pending.result.endLie==='RECOVERY'){
     const ev=queueSpecialEvent('RECOVERY',{hole:round.currentHole,shotId:round.pending.id});
@@ -3085,14 +3301,13 @@ $('saveResetBtn').onclick=()=>{
   beginPending(club,previousShot);
 };
 
-$('floClose').onclick=()=>{
+function dismissStateCheck(){
+  if(stateContext.promptSource==='AUTO'&&stateContext.samplingEventId)markSamplingSkipped(stateContext.samplingEventId);
   $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};if(after)after();
-};
-$('stateSkipBtn').onclick=()=>{
-  $('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};if(after)after();
-};
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};if(after)after();
+}
+$('floClose').onclick=dismissStateCheck;
+$('stateSkipBtn').onclick=dismissStateCheck;
 $('commitScale').onclick=e=>{if(!e.target.dataset.v)return;floDraft.commitment=Number(e.target.dataset.v);setSelected($('commitScale'),floDraft.commitment)};
 $('thinkScale').onclick=e=>{
   if(!e.target.dataset.v)return;
@@ -3113,11 +3328,22 @@ $('saveFloBtn').onclick=()=>{
   }
   floDraft.note=$('floNote').value.trim();
   const reset=round?.pending?.preShotReset||null;
-  const state={...floDraft,reset:reset?.value??null,resetEvent:reset||null,source:'USER_INPUT',promptSource:stateContext.promptSource||'MANUAL',sampleReason:stateContext.reason||null,at:Date.now()};
-  if(stateContext.type==='putting')hole().puttingState=state;
-  else if(round.pending)round.pending.playerState=state;
+  const group=stateContext.samplingGroup||(stateContext.type==='putting'?'PUTTING':samplingShotGroup(round?.pending));
+  const sampling=buildStateSamplingMeta(stateContext.type,group,stateContext.promptSource||'MANUAL',stateContext.samplingEventId);
+  const state={...floDraft,reset:reset?.value??null,resetEvent:reset||null,source:'USER_INPUT',promptSource:stateContext.promptSource||'MANUAL',sampleReason:stateContext.reason||null,sampling,at:Date.now()};
+  if(stateContext.type==='putting'){
+    puttDraft.playerState=state;
+    if(!hole().puttingState)hole().puttingState=state;
+  }else if(round.pending)round.pending.playerState=state;
+  round.stateSamplingEvents=round.stateSamplingEvents||[];
+  if(stateContext.samplingEventId){
+    const ev=round.stateSamplingEvents.find(x=>x.id===stateContext.samplingEventId);
+    if(ev){ev.completed=true;ev.completedAt=Date.now();ev.metadata=sampling}
+  }else{
+    round.stateSamplingEvents.push({id:'se'+Date.now()+Math.random().toString(36).slice(2,6),samplingVersion:STATE_SAMPLING_VERSION,collectionLevel:round.stateCollectionLevel,group:group||'OTHER',hole:round.currentHole,roundPhase:roundPhaseForHole(round.currentHole),type:stateContext.type,promptSource:'MANUAL',reason:stateContext.reason||'플레이어 선택 입력',requested:false,completed:true,completedAt:Date.now(),skipped:false,reallocated:false,metadata:sampling});
+  }
   save();$('floModal').classList.add('hidden');
-  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL'};
+  const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
   if(after)after();else renderRound();
 };
 
@@ -3158,7 +3384,7 @@ $('savePenaltyBtn').onclick=()=>{
 $('onGreenBtn').onclick=openPutt;
 
 function resetPuttDraft(){
-  puttDraft={distanceM:3,slope:null,break:null,result:null};
+  puttDraft={distanceM:3,slope:null,break:null,result:null,playerState:null};
   $('puttDistanceInput').value='3.0';
   ['puttSlope','puttBreak','puttResult'].forEach(id=>setSelected($(id),'__'));
 }
@@ -3185,6 +3411,8 @@ function openPutt(){
     clearManualPosition();
   }
   resetPuttDraft();renderPuttHistory();$('puttModal').classList.remove('hidden');
+  const ask=shouldPromptPuttingState();
+  if(ask.yes)openStateCheck('putting',false,ask.reason,null,'AUTO',ask.group);
 }
 function adjustPuttDistance(delta){
   let v=Number($('puttDistanceInput').value)||0.5;
@@ -3208,7 +3436,7 @@ $('savePuttBtn').onclick=()=>{
     alert('Distance, Slope, Break, Result를 입력하세요.');return;
   }
   const h=hole();h.puttsDetail=h.puttsDetail||[];
-  h.puttsDetail.push({number:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,at:Date.now()});
+  h.puttsDetail.push({number:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,playerState:puttDraft.playerState||null,at:Date.now()});
   h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;save();
   if(puttDraft.result==='HOLED'){
     finalizeHoleAfterPutting();
