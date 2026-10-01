@@ -101,6 +101,12 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .storyCategory .baselinePending{color:#ffad61;font-size:10px;font-weight:850;margin-top:8px}
 @media(max-width:520px){.reviewMap{height:300px}.liveHead h2{font-size:22px}}
 
+/* ===== REVIEW COURSE MAP ===== */
+.reviewMap{position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#07130d,#0b1a12)}
+.reviewCourseSvg{display:block;width:100%;height:100%;min-height:300px}
+.reviewMapBadge{position:absolute;left:10px;top:10px;z-index:2;padding:6px 8px;border-radius:999px;background:rgba(3,12,8,.82);border:1px solid rgba(255,255,255,.18);color:#91f4ad;font-size:9px;font-weight:950;letter-spacing:.08em}
+.reviewMapEmpty{padding:24px;text-align:center;color:#a8bbb0;font-size:12px;line-height:1.6}
+
 /* ===== AGI PLAYER · Jimmy Coaching visual language ===== */
 :root{
   --bg:#07110c;
@@ -932,47 +938,47 @@ body.round-active .bottomnav{display:none!important}
 
     <section id="overviewScreen" class="screen hidden">
       <div class="liveHead">
-        <div><div class="eyebrow">JGI · LIVE ROUND INTELLIGENCE</div><h2>LIVE ROUND REVIEW</h2><div id="overviewCourse" class="sub"></div></div>
-        <div id="liveThrough" class="liveThrough">THROUGH HOLE —</div>
+        <div><div class="eyebrow">JGI · 실시간 라운드 인텔리전스</div><h2>실시간 라운드 리뷰</h2><div id="overviewCourse" class="sub"></div></div>
+        <div id="liveThrough" class="liveThrough">—번 홀까지</div>
       </div>
 
       <div class="card"><div id="scoreBig" class="scoreBig">—<small>완료 홀</small></div></div>
       <div class="grid4">
-        <div class="metric"><div class="k">HOLES</div><div id="ovHoles" class="v">0</div></div>
-        <div class="metric"><div class="k">PUTTS</div><div id="ovPutts" class="v">0</div></div>
-        <div class="metric"><div class="k">PEN</div><div id="ovPen" class="v">0</div></div>
-        <div class="metric"><div class="k">STATE</div><div id="ovFlo" class="v">0</div></div>
+        <div class="metric"><div class="k">홀</div><div id="ovHoles" class="v">0</div></div>
+        <div class="metric"><div class="k">퍼트</div><div id="ovPutts" class="v">0</div></div>
+        <div class="metric"><div class="k">벌타</div><div id="ovPen" class="v">0</div></div>
+        <div class="metric"><div class="k">상태</div><div id="ovFlo" class="v">0</div></div>
       </div>
 
       <div class="card">
-        <div class="title">EVIDENCE · SHOT LOG</div>
-        <div class="sub">JGI가 기록한 실제 Shot GPS와 결과입니다.</div>
+        <div class="title">근거 · 샷 로그</div>
+        <div class="sub">JGI 코스 데이터 위에 실제 샷 GPS와 결과를 표시합니다.</div>
         <div id="reviewHoleTabs" class="reviewHoleTabs" style="margin-top:9px"></div>
         <div id="reviewMap" class="reviewMap"></div>
         <div id="holeReviewDetail"></div>
       </div>
 
       <div class="card">
-        <div class="title">WHAT THE DATA SAYS</div>
-        <div class="sub">현재 라운드에서 관찰된 사실만 표시합니다. SG/개인 Baseline은 데이터 연결 후 추가합니다.</div>
+        <div class="title">데이터가 말하는 것</div>
+        <div class="sub">현재 라운드에서 관찰된 사실만 표시합니다. 원인을 임의로 단정하지 않습니다.</div>
         <div id="liveCategoryCards" class="categoryGrid" style="margin-top:10px"></div>
       </div>
 
       <div class="card">
-        <div class="title">BOUNCE BACK</div>
+        <div class="title">바로 대응</div>
         <div id="bounceBack" class="bounceGrid" style="margin-top:10px"></div>
       </div>
 
       <div class="card">
-        <div class="title">ASK JGI · PREVIEW</div>
-        <div class="sub">현재는 저장된 Round Data를 읽는 규칙 기반 Preview입니다.</div>
+        <div class="title">JGI에게 묻기 · 미리보기</div>
+        <div class="sub">현재는 저장된 라운드 데이터를 읽는 규칙 기반 분석입니다.</div>
         <div id="askJgiQuick" class="askQuick">
           <button data-q="problem">지금 뭐가 문제야?</button>
           <button data-q="working">뭐가 잘되고 있어?</button>
           <button data-q="next">다음 홀에서 뭘 해야 해?</button>
         </div>
         <div id="askJgiAnswer" class="askAnswer">질문을 선택하면 현재까지 기록된 데이터만 기준으로 답합니다.</div>
-        <div class="dataNote">10라운드 이후 Personal Baseline, 이후 Situation Pattern / Prediction 모델과 연결합니다.</div>
+        <div class="dataNote">약 10라운드부터 개인 기준선과 비교하고, 데이터가 더 쌓이면 상황 패턴과 예측 모델을 연결합니다.</div>
       </div>
 
       <div class="card"><div class="title">스코어카드</div><div id="scorecard" class="scorecard" style="margin-top:10px"></div></div>
@@ -2394,9 +2400,12 @@ function syncSgBenchmarkUI(){
 
 function safeText(v){return v===null||v===undefined||v===''?'—':String(v)}
 function distanceLabel(m){return Number.isFinite(m)?Math.round(m)+'m':'—'}
-function shapeLabel(v){return ({HOOK:'Hook',DRAW:'Draw',STRAIGHT:'Straight',FADE:'Fade',SLICE:'Slice'})[v]||v||'—'}
-function dirLabel(v){return ({LEFT:'Left',CENTER:'Center',RIGHT:'Right'})[v]||v||'—'}
-function depthLabel(v){return ({SHORT:'Short',PIN_HIGH:'Pin high',TARGET:'Target',LONG:'Long'})[v]||v||'—'}
+function shapeLabel(v){return ({HOOK:'훅',DRAW:'드로우',STRAIGHT:'스트레이트',FADE:'페이드',SLICE:'슬라이스'})[v]||v||'—'}
+function dirLabel(v){return ({LEFT:'왼쪽',CENTER:'센터',RIGHT:'오른쪽'})[v]||v||'—'}
+function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목표 거리',LONG:'김'})[v]||v||'—'}
+function lieDisplayLabel(v){return ({TEE:'티',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
+function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정'})[v]||v||'—'}
+function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'김'})[v]||v||'—'}
 function isAroundGreenShot(s){return Number(s?.courseContext?.greenDistanceM)<=55||['BUNKER','FRINGE'].includes(String(s?.startLie||'').toUpperCase())}
 function countBy(arr,keyFn){const o={};arr.forEach(x=>{const k=keyFn(x);if(k)o[k]=(o[k]||0)+1});return o}
 function dominantCount(o){return Object.entries(o).sort((a,b)=>b[1]-a[1])[0]||[null,0]}
@@ -2412,7 +2421,7 @@ function buildHoleReview(h){
   const missParts=[];
   if(dDir&&dDirN>=1)missParts.push(dDirN+'× '+dirLabel(dDir));
   if(dDepth&&dDepthN>=1)missParts.push(dDepthN+'× '+depthLabel(dDepth));
-  if((h.penalties||0)>0)missParts.push('Penalty '+h.penalties);
+  if((h.penalties||0)>0)missParts.push('벌타 '+h.penalties);
   return {
     generatedAt:Date.now(),hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexMen:h.strokeIndexMen??null,strokeIndexLadies:h.strokeIndexLadies??null,score:holeScore(h),
     shotCount:shots.length,putts:putts.length,penalties:h.penalties||0,
@@ -2442,22 +2451,22 @@ function liveCategories(){
   const teeDir=dominantCount(countBy(teeNonCenter,s=>s.direction));
   const appDepth=dominantCount(countBy(approaches.filter(s=>s.depth!=='PIN_HIGH'),s=>s.depth));
   return {
-    tee:{key:'tee',name:'OFF THE TEE',samples:teeShots.length,issue:teeTrouble.length+teeNonCenter.length*.4,
-      main:teeShots.length?teeTrouble.length+' of '+teeShots.length+' tee shots finished outside Fairway/Green lie.':'Tee shot data pending.',
-      sub:teeDir[0]?dirLabel(teeDir[0])+' tendency '+teeDir[1]+'× observed.':'No repeated left/right tendency yet.',
-      why:teeDir[1]>=2?'Repeated '+dirLabel(teeDir[0])+' result is visible in the Shot Log.':'More shots are needed before calling a pattern.'},
-    approach:{key:'approach',name:'APPROACH',samples:approaches.length,issue:approachMiss.length+Math.max(short.length,long.length)*.5,
-      main:approaches.length?(approaches.length-approachMiss.length)+' of '+approaches.length+' measured approaches finished on Green.':'Approach data pending.',
-      sub:approaches.length?'Short '+short.length+' · Long '+long.length+' · Green '+(approaches.length-approachMiss.length)+'.':'No measured approaches yet.',
-      why:appDepth[1]>=2?appDepth[1]+' approaches repeated '+depthLabel(appDepth[0])+' result.':'No repeated distance miss yet.'},
-    around:{key:'around',name:'AROUND THE GREEN',samples:around.length,issue:aroundMiss.length,
-      main:around.length?(around.length-aroundMiss.length)+' of '+around.length+' short-game shots finished on Green.':'Around-green data pending.',
-      sub:around.length?'Based on shots starting within about 55m or from Bunker/Fringe.':'Waiting for around-green samples.',
-      why:aroundMiss.length>=2?aroundMiss.length+' around-green shots did not finish on Green.':'No repeated around-green problem yet.'},
-    putting:{key:'putting',name:'PUTTING',samples:putts.length,issue:threePutts*2+Math.max(0,putts.length-puttHoles.length*2)*.4,
-      main:puttHoles.length?putts.length+' putts across '+puttHoles.length+' recorded holes · '+threePutts+' three-putts.':'Putting data pending.',
-      sub:firstPutts.length?'Average first putt '+avg(firstPutts).toFixed(1)+'m.':'First-putt distance pending.',
-      why:threePutts?'Three-putt pattern is costing extra strokes today.':'No three-putt pattern recorded.'}
+    tee:{key:'tee',name:'티샷',samples:teeShots.length,issue:teeTrouble.length+teeNonCenter.length*.4,
+      main:teeShots.length?teeShots.length+'개 티샷 중 '+teeTrouble.length+'개가 페어웨이/그린 밖에서 끝났습니다.':'아직 티샷 데이터가 없습니다.',
+      sub:teeDir[0]?dirLabel(teeDir[0])+' 경향 '+teeDir[1]+'회 관찰.':'아직 반복되는 좌우 방향은 없습니다.',
+      why:teeDir[1]>=2?dirLabel(teeDir[0])+' 결과가 샷 로그에서 '+teeDir[1]+'회 반복되었습니다.':'패턴으로 판단하려면 샷이 더 필요합니다.'},
+    approach:{key:'approach',name:'어프로치',samples:approaches.length,issue:approachMiss.length+Math.max(short.length,long.length)*.5,
+      main:approaches.length?approaches.length+'개 어프로치 중 '+(approaches.length-approachMiss.length)+'개가 그린에 끝났습니다.':'아직 어프로치 데이터가 없습니다.',
+      sub:approaches.length?'짧음 '+short.length+' · 김 '+long.length+' · 그린 '+(approaches.length-approachMiss.length):'측정된 어프로치가 없습니다.',
+      why:appDepth[1]>=2?depthLabel(appDepth[0])+' 결과가 '+appDepth[1]+'회 반복되었습니다.':'아직 반복되는 거리 미스는 없습니다.'},
+    around:{key:'around',name:'그린 주변',samples:around.length,issue:aroundMiss.length,
+      main:around.length?around.length+'개 그린 주변 샷 중 '+(around.length-aroundMiss.length)+'개가 그린에 끝났습니다.':'아직 그린 주변 데이터가 없습니다.',
+      sub:around.length?'그린까지 약 55m 이내 또는 벙커/프린지에서 시작한 샷 기준입니다.':'그린 주변 샷 데이터가 필요합니다.',
+      why:aroundMiss.length>=2?aroundMiss.length+'개의 그린 주변 샷이 그린에 끝나지 않았습니다.':'아직 반복되는 그린 주변 문제는 없습니다.'},
+    putting:{key:'putting',name:'퍼팅',samples:putts.length,issue:threePutts*2+Math.max(0,putts.length-puttHoles.length*2)*.4,
+      main:puttHoles.length?puttHoles.length+'개 홀에서 '+putts.length+'퍼트 · 3퍼트 이상 '+threePutts+'회.':'아직 퍼팅 데이터가 없습니다.',
+      sub:firstPutts.length?'첫 퍼트 평균 거리 '+avg(firstPutts).toFixed(1)+'m.':'첫 퍼트 거리 데이터가 없습니다.',
+      why:threePutts?'3퍼트 이상이 오늘 추가 타수와 연결되어 있습니다.':'3퍼트 이상 패턴은 기록되지 않았습니다.'}
   };
 }
 function buildLiveAnalysis(){
@@ -2469,13 +2478,13 @@ function buildLiveAnalysis(){
   const dirs=countBy(all.filter(s=>s.direction&&s.direction!=='CENTER'),s=>s.direction);
   const depths=countBy(all.filter(s=>['SHORT','LONG'].includes(s.depth)),s=>s.depth);
   const [dd,ddn]=dominantCount(dirs),[dp,dpn]=dominantCount(depths);
-  let action='다음 샷은 Target을 먼저 확정하고 정상 루틴을 유지하세요.';
-  if(problem.key==='approach'&&dp==='SHORT'&&dpn>=2)action='Approach: 스윙 변경보다 목표 Carry를 먼저 확정하고 거리 선택을 보수적으로 하세요.';
-  else if(problem.key==='approach')action='Approach: Target과 Carry를 먼저 확정한 뒤 한 가지 구질만 실행하세요.';
-  else if(problem.key==='putting')action='Putting: 첫 퍼트의 거리 컨트롤 하나에만 집중하세요.';
-  else if(problem.key==='around')action='Around Green: 샷 종류보다 Landing Spot을 먼저 결정하세요.';
-  else if(problem.key==='tee'&&ddn>=2)action='Tee Shot: '+dirLabel(dd)+' 미스가 반복됩니다. Target line을 먼저 확정하고 스윙은 바꾸지 마세요.';
-  else if(problem.key==='tee')action='Tee Shot: Target을 먼저 확정하고 정상 스윙을 유지하세요.';
+  let action='다음 샷은 타깃을 먼저 확정하고 정상 루틴을 유지하세요.';
+  if(problem.key==='approach'&&dp==='SHORT'&&dpn>=2)action='어프로치: 스윙 변경보다 목표 캐리를 먼저 확정하고 거리 선택을 보수적으로 하세요.';
+  else if(problem.key==='approach')action='어프로치: 타깃과 캐리를 먼저 확정한 뒤 한 가지 구질만 실행하세요.';
+  else if(problem.key==='putting')action='퍼팅: 첫 퍼트의 거리 컨트롤 하나에만 집중하세요.';
+  else if(problem.key==='around')action='그린 주변: 샷 종류보다 랜딩 지점을 먼저 결정하세요.';
+  else if(problem.key==='tee'&&ddn>=2)action='티샷: '+dirLabel(dd)+' 미스가 반복됩니다. 타깃 라인을 먼저 확정하고 스윙은 바꾸지 마세요.';
+  else if(problem.key==='tee')action='티샷: 타깃을 먼저 확정하고 정상 스윙을 유지하세요.';
   const completed=round.holes.filter(h=>h.completed);
   return {
     generatedAt:Date.now(),throughHole:completed.length?Math.max(...completed.map(h=>h.hole)):round.currentHole,
@@ -2487,26 +2496,26 @@ function buildLiveAnalysis(){
 }
 function categoryCard(cat,story=false){
   const cls=cat.key==='approach'?'approach':cat.key==='around'?'around':cat.key==='putting'?'putting':'';
-  return '<div class="analysisCard '+cls+(story?' storyCategory':'')+'"><div class="catTop"><span class="catName">'+cat.name+'</span><span class="catValue">'+cat.samples+' samples</span></div><div class="catMain">'+cat.main+'</div><div class="catSub">'+cat.sub+'</div><div class="whyBox"><b>WHY TODAY · OBSERVED</b><br>'+cat.why+'</div>'+(story?'<div class="baselinePending">MY NORMAL · 10 rounds 이후 Personal Baseline과 비교</div>':'')+'</div>';
+  return '<div class="analysisCard '+cls+(story?' storyCategory':'')+'"><div class="catTop"><span class="catName">'+cat.name+'</span><span class="catValue">'+cat.samples+'개</span></div><div class="catMain">'+cat.main+'</div><div class="catSub">'+cat.sub+'</div><div class="whyBox"><b>오늘 관찰</b><br>'+cat.why+'</div>'+(story?'<div class="baselinePending">나의 평소 · 약 10라운드 이후 개인 기준선과 비교</div>':'')+'</div>';
 }
 function renderHoleReview(holeNo){
   const h=round.holes[holeNo-1];if(!h)return;
   const r=ensureHoleReview(h)||buildHoleReview(h);
-  const shots=h.shots||[];
+  const shots=h.shots||[],putts=h.puttsDetail||[];
   $('holeReviewDetail').innerHTML=
     '<div class="grid4" style="margin-top:10px">'+
-      '<div class="metric"><div class="k">HOLE</div><div class="v">'+h.hole+'</div></div>'+
-      '<div class="metric"><div class="k">SCORE</div><div class="v">'+(r.score??'—')+'</div><div class="s">'+(h.par?'Par '+h.par+(h.teeDistanceM?' · '+h.teeDistanceM+'m':''):'Par pending')+'</div></div>'+
-      '<div class="metric"><div class="k">PUTTS</div><div class="v">'+(h.putts||0)+'</div></div>'+
-      '<div class="metric"><div class="k">PEN</div><div class="v">'+(h.penalties||0)+'</div></div>'+
+      '<div class="metric"><div class="k">홀</div><div class="v">'+h.hole+'</div></div>'+
+      '<div class="metric"><div class="k">스코어</div><div class="v">'+(r.score??'—')+'</div><div class="s">'+(h.par?'파 '+h.par+(h.teeDistanceM?' · '+h.teeDistanceM+'m':''):'파 데이터 대기')+'</div></div>'+
+      '<div class="metric"><div class="k">퍼트</div><div class="v">'+(h.putts||0)+'</div></div>'+
+      '<div class="metric"><div class="k">벌타</div><div class="v">'+(h.penalties||0)+'</div></div>'+
     '</div>'+
     '<div class="grid2" style="margin-top:9px">'+
-      '<div class="metric"><div class="k">OFF THE TEE</div><div class="s">'+(r.tee.club?safeText(r.tee.club)+' · '+safeText(r.tee.endLie)+' · '+dirLabel(r.tee.direction):'No tee shot')+'</div></div>'+
-      '<div class="metric"><div class="k">APPROACH</div><div class="s">'+r.approach.greenHits+'/'+r.approach.attempts+' Green · Short '+r.approach.short+' · Long '+r.approach.long+'</div></div>'+
-      '<div class="metric"><div class="k">AROUND GREEN</div><div class="s">'+r.around.greenHits+'/'+r.around.attempts+' finished on Green</div></div>'+
-      '<div class="metric"><div class="k">PUTTING</div><div class="s">'+r.putting.putts+' putts'+(r.putting.firstPutt!==null?' · 1st '+Number(r.putting.firstPutt).toFixed(1)+'m':'')+(r.putting.threePutt?' · 3-putt':'')+'</div></div>'+
+      '<div class="metric"><div class="k">티샷</div><div class="s">'+(r.tee.club?safeText(r.tee.club)+' · '+lieDisplayLabel(r.tee.endLie)+' · '+dirLabel(r.tee.direction):'티샷 없음')+'</div></div>'+
+      '<div class="metric"><div class="k">어프로치</div><div class="s">그린 '+r.approach.greenHits+'/'+r.approach.attempts+' · 짧음 '+r.approach.short+' · 김 '+r.approach.long+'</div></div>'+
+      '<div class="metric"><div class="k">그린 주변</div><div class="s">'+r.around.attempts+'개 중 '+r.around.greenHits+'개 그린 도착</div></div>'+
+      '<div class="metric"><div class="k">퍼팅</div><div class="s">'+r.putting.putts+'퍼트'+(r.putting.firstPutt!==null?' · 첫 퍼트 '+Number(r.putting.firstPutt).toFixed(1)+'m':'')+(r.putting.threePutt?' · 3퍼트 이상':'')+'</div></div>'+
     '</div>'+
-    '<div class="dataNote"><b>KEY MISS</b> · '+r.keyMiss+'</div>'+
+    '<div class="dataNote"><b>핵심 미스</b> · '+r.keyMiss+'</div>'+
     '<div class="dataNote"><b>SG 기준</b> · '+sgBenchmarkInfo().label+' · '+(sgBenchmarkInfo().type==='MEASURED'?'공개 실측':'JGI 모델링')+'</div>'+
     '<div class="shotLog">'+
       ((shots.length||putts.length)?[
@@ -2514,52 +2523,89 @@ function renderHoleReview(holeNo){
           const sg=computeShotSG(h,s,i,sgBenchmarkInfo());
           const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
           return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+safeText(s.club)+'</strong><p>'+
-            safeText(s.startLie)+' → '+safeText(s.endLie)+' · '+shapeLabel(s.intendedShape)+' intended / '+shapeLabel(s.ballFlight)+' actual<br>'+
-            dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+safeText(s.positionSource?.start)+'→'+safeText(s.positionSource?.end)+
+            lieDisplayLabel(s.startLie)+' → '+lieDisplayLabel(s.endLie)+' · 의도 '+shapeLabel(s.intendedShape)+' / 실제 '+shapeLabel(s.ballFlight)+'<br>'+
+            dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+positionSourceLabel(s.positionSource?.start)+'→'+positionSourceLabel(s.positionSource?.end)+
             '</p></div><div class="dist">'+distanceLabel(s.distanceM)+badge+'</div></div>';
         }),
         ...putts.map((p,i)=>{
           const sg=computePuttSG(h,p,i,sgBenchmarkInfo());
           const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
-          return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼터</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+safeText(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
+          return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼터</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+puttResultLabel(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
         })
       ].join(''):'<div class="pendingText">아직 저장된 샷이 없습니다.</div>')+
     '</div>';
   renderReviewMap(holeNo);
 }
-function clearReviewMapObjects(){reviewMapObjects.forEach(x=>x.setMap&&x.setMap(null));reviewMapObjects=[]}
+function clearReviewMapObjects(){reviewMapObjects=[]}
 function renderReviewMap(holeNo){
-  if(!window.google?.maps||!$('reviewMap'))return;
-  const h=round.holes[holeNo-1];if(!h)return;
-  if(!reviewMap)reviewMap=new google.maps.Map($('reviewMap'),{center:JAGORAWI_OLD_CENTER,zoom:16,mapTypeId:'satellite',mapTypeControl:false,streetViewControl:false,fullscreenControl:false,rotateControl:false,scaleControl:true});
-  clearReviewMapObjects();
-  const bounds=new google.maps.LatLngBounds();let has=false;
-  (h.shots||[]).forEach((s,i)=>{
-    if(s.start){bounds.extend(s.start);has=true}
-    if(s.end){bounds.extend(s.end);has=true}
-    if(s.start&&s.end){
-      const line=new google.maps.Polyline({map:reviewMap,path:[s.start,s.end],strokeColor:'#ffffff',strokeOpacity:.95,strokeWeight:3,zIndex:4});reviewMapObjects.push(line);
-      const marker=new google.maps.Marker({map:reviewMap,position:s.end,label:{text:String(i+1),color:'#111',fontWeight:'900'},zIndex:8});reviewMapObjects.push(marker);
-    }
-    if(s.start&&s.target){
-      const intended=new google.maps.Polyline({map:reviewMap,path:[s.start,{lat:s.target.lat,lng:s.target.lng}],strokeColor:'#3f78ff',strokeOpacity:.8,strokeWeight:2,zIndex:3});reviewMapObjects.push(intended);
+  const el=$('reviewMap');if(!el)return;
+  const h=round?.holes?.[holeNo-1];
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
+  if(!h||!ch){
+    el.innerHTML='<div class="reviewMapEmpty">이 홀의 코스 데이터를 찾을 수 없습니다.</div>';
+    return;
+  }
+  const model=courseViewProjector(ch);
+  if(!model){
+    el.innerHTML='<div class="reviewMapEmpty">코스 도형 데이터를 불러오지 못했습니다.</div>';
+    return;
+  }
+  const {project,shapes}=model;
+  const styles={
+    HOLE_BOUNDARY:{fill:'#102319',stroke:'#31583e',width:2},
+    WATER:{fill:'#184f78',stroke:'#3389bd',width:1.3},
+    WATER_PATH:{fill:'none',stroke:'#3389bd',width:2},
+    FAIRWAY:{fill:'#24643c',stroke:'#3d9a5d',width:1.4},
+    BUNKER:{fill:'#cdbb85',stroke:'#ecdca9',width:1},
+    TEE:{fill:'#365f43',stroke:'#77a781',width:1},
+    GREEN:{fill:'#38e77b',stroke:'#8affb0',width:1.5}
+  };
+  const order={HOLE_BOUNDARY:0,WATER:1,WATER_PATH:2,FAIRWAY:3,BUNKER:4,TEE:5,GREEN:6};
+  let svg='<svg class="reviewCourseSvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="'+holeNo+'번 홀 코스와 샷 경로">';
+  svg+='<defs><filter id="reviewGlow"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#31ef7a" flood-opacity=".45"/></filter></defs>';
+  shapes.slice().sort((a,b)=>(order[a.type]??9)-(order[b.type]??9)).forEach(s=>{
+    if(!s.path?.length)return;
+    const st=styles[s.type]||{fill:'rgba(255,255,255,.06)',stroke:'rgba(255,255,255,.25)',width:1};
+    if(s.line||s.type==='WATER_PATH'){
+      const pts=s.path.map((p,i)=>{const q=project(p);return (i?'L':'M')+q.x.toFixed(1)+','+q.y.toFixed(1)}).join(' ');
+      svg+='<path d="'+pts+'" fill="none" stroke="'+st.stroke+'" stroke-width="'+st.width+'" opacity=".9"/>';
+    }else{
+      svg+='<path d="'+svgPath(s.path,project)+'" fill="'+st.fill+'" stroke="'+st.stroke+'" stroke-width="'+st.width+'"/>';
     }
   });
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
-  if(ch?.g){const g={lat:ch.g[0],lng:ch.g[1]};bounds.extend(g);has=true}
-  if(has)reviewMap.fitBounds(bounds,{top:34,right:24,bottom:34,left:24});
+  (h.shots||[]).forEach((s,i)=>{
+    if(s.start&&s.target){
+      const a=project(s.start),t=project({lat:s.target.lat,lng:s.target.lng});
+      svg+='<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+t.x.toFixed(1)+'" y2="'+t.y.toFixed(1)+'" stroke="#3f78ff" stroke-width="2" opacity=".82"/>';
+    }
+    if(!s.start||!s.end)return;
+    const a=project(s.start),b=project(s.end);
+    svg+='<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="#ffffff" stroke-width="3" opacity=".92"/>';
+    svg+='<circle cx="'+b.x.toFixed(1)+'" cy="'+b.y.toFixed(1)+'" r="10" fill="#ff8a1d" stroke="#ffffff" stroke-width="2"/>';
+    svg+='<text x="'+b.x.toFixed(1)+'" y="'+(b.y+3.5).toFixed(1)+'" text-anchor="middle" fill="#08100b" font-size="9" font-weight="1000">'+(i+1)+'</text>';
+  });
+  if(ch.t){
+    const t=project({lat:ch.t[0],lng:ch.t[1]});
+    svg+='<circle cx="'+t.x.toFixed(1)+'" cy="'+t.y.toFixed(1)+'" r="7" fill="#ffffff" stroke="#31ef7a" stroke-width="2"/>';
+  }
+  if(ch.g){
+    const g=project({lat:ch.g[0],lng:ch.g[1]});
+    svg+='<circle cx="'+g.x.toFixed(1)+'" cy="'+g.y.toFixed(1)+'" r="8" fill="#31ef7a" stroke="#ffffff" stroke-width="2" filter="url(#reviewGlow)"/>';
+  }
+  svg+='</svg>';
+  el.innerHTML='<div class="reviewMapBadge">JGI 코스뷰 · '+holeNo+'번 홀</div>'+svg;
 }
 function renderLiveReview(){
   const a=buildLiveAnalysis();round.analysisSnapshot=a;save();
   const completed=round.holes.filter(h=>h.completed);
   const through=completed.length?Math.max(...completed.map(h=>h.hole)):round.currentHole;
-  $('liveThrough').textContent='THROUGH HOLE '+through;
+  $('liveThrough').textContent=through+'번 홀까지';
   $('liveCategoryCards').innerHTML=Object.values(a.categories).map(x=>categoryCard(x,false)).join('');
   $('bounceBack').innerHTML=
-    '<div class="bounceItem"><b>WHAT HAPPENED</b><strong>'+a.whatHappened+'</strong></div>'+
-    '<div class="bounceItem"><b>WHAT IS WORKING</b><strong>'+a.working.name+' · '+a.working.main+'</strong></div>'+
-    '<div class="bounceItem"><b>CURRENT PROBLEM</b><strong>'+a.problem.name+' · '+a.problem.sub+'</strong></div>'+
-    '<div class="bounceItem action"><b>NEXT HOLE · ONE ACTION</b><strong>'+a.nextAction+'</strong></div>';
+    '<div class="bounceItem"><b>무슨 일이 있었나</b><strong>'+a.whatHappened+'</strong></div>'+
+    '<div class="bounceItem"><b>잘되고 있는 것</b><strong>'+a.working.name+' · '+a.working.main+'</strong></div>'+
+    '<div class="bounceItem"><b>현재 문제</b><strong>'+a.problem.name+' · '+a.problem.sub+'</strong></div>'+
+    '<div class="bounceItem action"><b>다음 홀 · 행동 1개</b><strong>'+a.nextAction+'</strong></div>';
   const available=round.holes.filter(h=>h.completed||(h.hole===round.currentHole&&(h.shots.length||h.puttsDetail?.length)));
   if(!selectedReviewHole||!available.some(h=>h.hole===selectedReviewHole))selectedReviewHole=(available.at(-1)?.hole||round.currentHole);
   $('reviewHoleTabs').innerHTML=available.length?available.map(h=>'<button class="reviewHoleBtn '+(h.hole===selectedReviewHole?'sel':'')+'" data-review-hole="'+h.hole+'">'+h.hole+'</button>').join(''):'<button class="reviewHoleBtn sel" data-review-hole="'+round.currentHole+'">'+round.currentHole+'</button>';
@@ -2567,8 +2613,9 @@ function renderLiveReview(){
 }
 function renderOverview(){
   if(!round)return;const cH=round.holes.filter(h=>h.completed),tp=toPar();
-  $('overviewCourse').textContent=round.course+' · '+round.nine+' · '+round.tee;
-  $('scoreBig').innerHTML=(cH.length?tp.s:'—')+'<small>'+(cH.length?(tp.d===null?'Total strokes · Par data pending':(tp.d>0?'+':'')+tp.d+' to par'):'완료 홀')+'</small>';
+  $('overviewCourse').textContent=round.course+' · '+round.nine+' · '+({Blue:'블루',White:'화이트',Red:'레드'}[round.tee]||round.tee);
+  const parText=tp.d===null?'파 데이터 대기':(tp.d===0?'이븐':((tp.d>0?'+':'')+tp.d+' · 파 기준'));
+  $('scoreBig').innerHTML=(cH.length?tp.s:'—')+'<small>'+(cH.length?parText:'완료 홀')+'</small>';
   $('ovHoles').textContent=cH.length;$('ovPutts').textContent=cH.reduce((a,h)=>a+(h.putts||0),0);
   $('ovPen').textContent=round.holes.reduce((a,h)=>a+(h.penalties||0),0);$('ovFlo').textContent=allStates().length;
   $('scorecard').innerHTML=round.holes.map(h=>'<div class="scoreCell">'+h.hole+'<b>'+(holeScore(h)??'—')+'</b></div>').join('');
