@@ -815,17 +815,11 @@ body.round-active .bottomnav{display:none!important}
         </div>
       </div>
       <div class="card sgSetupCard">
-        <div class="title">Strokes Gained 기준</div>
-        <div class="sub">Tour 공개 기준 + JGI 핸디캡 모델링 기준을 선택합니다.</div>
+        <div class="title">Strokes Gained 기준 선택</div>
+        <div class="sub">테스트 라운드에서 비교할 기준을 시작 전에 직접 선택하세요.</div>
         <div class="field">
-          <label>플레이어 핸디캡</label>
-          <input id="playerHandicapInput" type="number" min="0" max="25" step="0.1" inputmode="decimal" placeholder="예: 7.3">
-          <div class="helper">내 기준은 입력한 핸디캡을 사용합니다. 0~25 범위에서 연속 계산합니다.</div>
-        </div>
-        <div class="field">
-          <label>비교 기준</label>
+          <label>비교 기준 · 필수</label>
           <div class="segment sgBenchmarkSegment" id="sgBenchmarkSegment">
-            <button class="sel" data-v="PLAYER">내 기준</button>
             <button data-v="TOUR">Tour</button>
             <button data-v="SCRATCH">Scratch</button>
             <button data-v="HCP_5">HCP 5</button>
@@ -834,7 +828,7 @@ body.round-active .bottomnav{display:none!important}
             <button data-v="HCP_20">HCP 20</button>
             <button data-v="HCP_25">HCP 25</button>
           </div>
-          <div id="sgSetupHint" class="sgStatus"></div>
+          <div id="sgSetupHint" class="sgStatus">라운드를 시작하려면 SG 비교 기준을 하나 선택하세요.</div>
         </div>
       </div>
       <button id="startRoundBtn" class="btn primary full">라운드 시작</button>
@@ -1002,17 +996,7 @@ body.round-active .bottomnav{display:none!important}
           <div class="metric sgMetric"><div class="k">퍼팅</div><div id="sgPutt" class="v">—</div></div>
         </div>
         <div id="sgPenaltyNote" class="sgPenaltyNote"></div>
-        <div class="segment sgBenchmarkSegment compact" id="sgPerformanceSegment">
-          <button data-v="PLAYER">내 기준</button>
-          <button data-v="TOUR">Tour</button>
-          <button data-v="SCRATCH">Scratch</button>
-          <button data-v="HCP_5">HCP 5</button>
-          <button data-v="HCP_10">HCP 10</button>
-          <button data-v="HCP_15">HCP 15</button>
-          <button data-v="HCP_20">HCP 20</button>
-          <button data-v="HCP_25">HCP 25</button>
-        </div>
-        <div class="sgStatus"><b>Tour</b>는 공개된 PGA TOUR 기대타수 기준입니다. <b>Scratch / HCP 5·10·15·20·25 / 내 기준</b>은 JGI V1 모델링 기준으로 구분 표시합니다.</div>
+        <div class="sgStatus"><b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. Tour는 공개된 PGA TOUR 기대타수 기준이며, Scratch / HCP 5·10·15·20·25는 JGI V1 모델링 기준입니다.</div>
       </div>
       <div class="card">
         <div class="title">주요 기록</div>
@@ -1300,7 +1284,7 @@ const DEFAULT_MASTER_CLUBS=[
 let masterClubs=[];
 let gps=null, watchId=null, tee='White', currentLie='Unknown';
 let stateMode='SMART';
-let sgBenchmarkMode='PLAYER';
+let sgBenchmarkMode=null;
 let playerHandicap=null;
 let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
@@ -2038,8 +2022,8 @@ function emptyRound(course,nine){
       shots:[],putts:0,puttsDetail:[],puttingState:null,
       penalties:0,penaltyEvents:[],completed:false,review:null
     })),
-    playerHandicap:Number.isFinite(playerHandicap)?playerHandicap:null,
-    sgBenchmarkMode:sgBenchmarkMode||'PLAYER',
+    playerHandicap:null,
+    sgBenchmarkMode:sgBenchmarkMode||null,
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
@@ -2165,7 +2149,7 @@ function startShot(club){
 function renderRound(){
   if(!round)return;
   $('roundCourse').textContent=round.course;
-  $('roundNine').textContent=round.nine+' · '+round.tee;
+  $('roundNine').textContent=round.nine+' · '+round.tee+' · SG '+sgBenchmarkInfo(round).label;
   $('holeTitle').textContent='Hole '+round.currentHole;
   $('holeParText').textContent=hole().par?' · Par '+hole().par+(hole().teeDistanceM?' · '+hole().teeDistanceM+'m':''):(courseHoleData()?' · GI MAP':' · 코스 데이터 대기');
   document.querySelectorAll('.holebtn').forEach(b=>b.classList.toggle('sel',Number(b.dataset.hole)===round.currentHole));
@@ -2395,12 +2379,16 @@ function sgValueClass(v){
   return Number(v)>0.005?'positive':Number(v)<-0.005?'negative':'';
 }
 function syncSgBenchmarkUI(){
-  const mode=round?.sgBenchmarkMode||sgBenchmarkMode||'PLAYER';
-  ['sgBenchmarkSegment','sgPerformanceSegment'].forEach(id=>{const el=$(id);if(el)setSelected(el,mode)});
-  const info=sgBenchmarkInfo();
+  const mode=round?.sgBenchmarkMode||sgBenchmarkMode||null;
+  const el=$('sgBenchmarkSegment');
+  if(el)setSelected(el,mode||'__');
   if($('sgSetupHint')){
-    const fallback=info.fallback?' · 플레이어 핸디캡 미입력으로 Tour 기준 사용':'';
-    $('sgSetupHint').innerHTML='<b>'+info.label+'</b> · '+(info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링 기준')+fallback;
+    if(!mode){
+      $('sgSetupHint').innerHTML='라운드를 시작하려면 <b>SG 비교 기준을 하나 선택</b>하세요.';
+      return;
+    }
+    const info=sgBenchmarkInfo(round||{sgBenchmarkMode:mode});
+    $('sgSetupHint').innerHTML='<b>'+info.label+'</b> · '+(info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링 기준')+' · 라운드 시작 후 고정';
   }
 }
 
@@ -2614,7 +2602,7 @@ function render퍼포먼스(){
   $('statPen').textContent=s.penalties;$('statScramble').textContent=s.scrD?(s.scr+'/'+s.scrD):'—';
 
   const sg=sgRoundSummary();
-  $('sgBenchmarkLabel').textContent='vs '+sg.info.label+(sg.info.fallback?' · 핸디캡 미입력 → Tour':'');
+  $('sgBenchmarkLabel').textContent='vs '+sg.info.label+' · 라운드 고정 기준';
   $('sgSourcePill').textContent=sg.info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링';
   $('sgSourcePill').className='sgSourcePill '+(sg.info.type==='MEASURED'?'measured':'modeled');
   const values={sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
@@ -2660,11 +2648,7 @@ function renderStory(){
 
 initScales();
 loadGoogleMaps();
-const savedHcp=localStorage.getItem('jgi_player_handicap');
-if(savedHcp!==null&&savedHcp!==''){
-  playerHandicap=clampNumber(savedHcp,0,25);
-  if(playerHandicap!==null)$('playerHandicapInput').value=String(playerHandicap);
-}
+sgBenchmarkMode=null;
 syncSgBenchmarkUI();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
@@ -2678,37 +2662,27 @@ $('enterJgiBtn').onclick=()=>{
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
-$('playerHandicapInput').addEventListener('change',()=>{
-  const raw=$('playerHandicapInput').value.trim();
-  playerHandicap=raw===''?null:clampNumber(raw,0,25);
-  if(playerHandicap===null){$('playerHandicapInput').value='';localStorage.removeItem('jgi_player_handicap')}
-  else{$('playerHandicapInput').value=String(playerHandicap);localStorage.setItem('jgi_player_handicap',String(playerHandicap))}
-  if(round){round.playerHandicap=playerHandicap;save()}
+$('sgBenchmarkSegment').addEventListener('click',e=>{
+  const b=e.target.closest('[data-v]');if(!b)return;
+  sgBenchmarkMode=b.dataset.v;
   syncSgBenchmarkUI();
-  if(round){render퍼포먼스();if(selectedReviewHole)renderHoleReview(selectedReviewHole)}
 });
-function setSgBenchmarkMode(mode){
-  sgBenchmarkMode=mode||'PLAYER';
-  if(round){round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;save()}
-  syncSgBenchmarkUI();
-  if(round){render퍼포먼스();if(selectedReviewHole)renderHoleReview(selectedReviewHole)}
-}
-$('sgBenchmarkSegment').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setSgBenchmarkMode(b.dataset.v)});
-$('sgPerformanceSegment').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setSgBenchmarkMode(b.dataset.v)});
 $('startRoundBtn').onclick=()=>{
   tee=normalizeTeeName(tee);
-  const raw=$('playerHandicapInput').value.trim();
-  playerHandicap=raw===''?null:clampNumber(raw,0,25);
-  if(playerHandicap!==null)localStorage.setItem('jgi_player_handicap',String(playerHandicap));
+  if(!sgBenchmarkMode){
+    alert('Strokes Gained 비교 기준을 먼저 선택해 주세요.\n\nTour / Scratch / HCP 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
+    $('sgBenchmarkSegment').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   startPositionOverride=null;clearManualPosition();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
-  round.tee=tee;round.stateMode=stateMode;round.playerHandicap=playerHandicap;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
+  round.tee=tee;round.stateMode=stateMode;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
   hydrateRoundCourseTruth(round);save();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
   round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';
-  playerHandicap=clampNumber(round.playerHandicap,0,25);sgBenchmarkMode=round.sgBenchmarkMode||'PLAYER';
-  if(playerHandicap!==null)$('playerHandicapInput').value=String(playerHandicap);
+  playerHandicap=clampNumber(round.playerHandicap,0,25);
+  sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
   setSelected($('teeSegment'),tee);syncSgBenchmarkUI();showScreen('round')
 };
 
