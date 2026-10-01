@@ -662,6 +662,29 @@ body.round-active .bottomnav{display:none!important}
   .mapMiniBtn{padding-left:7px;padding-right:7px}
 }
 
+.startPositionStrip{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;background:#0a100d;color:#fff;text-align:left
+}
+.startPositionStrip .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.startPositionStrip .eyebrow{font-size:8px;font-weight:1000;letter-spacing:.12em;color:#6f7e75}
+.startPositionStrip strong{font-size:13px;font-weight:1000;color:#fff}
+.startPositionStrip small{font-size:9px;font-weight:750;color:#829087;line-height:1.35}
+.startPositionStrip .value{
+  flex:0 0 auto;border:1px solid rgba(47,239,124,.28);background:rgba(47,239,124,.08);
+  color:#48ef87;border-radius:999px;padding:7px 9px;font-size:9px;font-weight:1000;letter-spacing:.04em
+}
+.startPositionStrip.warn .value{border-color:rgba(255,151,63,.4);background:rgba(255,151,63,.08);color:#ff9c4a}
+.positionChoice{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+.positionChoice button{
+  min-height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.13);
+  background:#0b110e;color:#fff;text-align:left;padding:10px 12px;font-weight:950
+}
+.positionChoice button span{display:block;margin-top:3px;color:#7f8d84;font-size:9px;font-weight:750;line-height:1.35}
+.positionChoice button.sel{border-color:rgba(47,239,124,.5);background:rgba(47,239,124,.08);color:#51f08d}
+.positionModeNote{margin-top:10px;padding:10px 11px;border-radius:12px;background:#080d0a;border:1px solid rgba(255,255,255,.08);color:#819087;font-size:9px;line-height:1.45}
+
 </style>
 </head>
 <body>
@@ -828,6 +851,14 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div id="clubReadyPanel">
+          <button id="startPositionBtn" class="startPositionStrip" type="button">
+            <span class="left">
+              <span class="eyebrow">START POSITION</span>
+              <strong id="startPositionTitle">첫 샷 위치</strong>
+              <small id="startPositionHint">GPS 기본 · 필요 시 Tee Box 또는 Drop</small>
+            </span>
+            <span id="startPositionValue" class="value">GPS</span>
+          </button>
           <div class="clubDockHead">
             <div>
               <span class="dockLabel">CLUB</span>
@@ -951,6 +982,17 @@ body.round-active .bottomnav{display:none!important}
     </div>
     <div id="allClubList" class="allClubList"></div>
     <div class="helper" style="margin-top:12px">클럽별 기준 거리와 CENTER 폭은 플레이어 마스터 데이터와 연결됩니다.</div>
+  </div>
+</div>
+
+<div id="startPositionModal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheetHead">
+      <div><strong>START POSITION</strong><div id="startPositionModalSub" class="sub">샷 시작 위치를 확인합니다.</div></div>
+      <button id="startPositionClose" class="x">×</button>
+    </div>
+    <div id="startPositionChoice" class="positionChoice"></div>
+    <div id="startPositionModeNote" class="positionModeNote"></div>
   </div>
 </div>
 
@@ -1156,6 +1198,7 @@ let reviewMap=null;
 let reviewMapObjects=[];
 let selectedReviewHole=null;
 let mapViewMode='SAT';
+let startPositionOverride=null;
 
 function courseHoleData(){
   return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
@@ -1573,6 +1616,112 @@ function recenterMap(){
   else{googleMap.panTo(JAGORAWI_OLD_CENTER);googleMap.setZoom(16)}
 }
 
+function currentHoleHasPreviousShot(){
+  const h=hole();
+  return !!((h?.shots?.length||0)>0 || round?.pending?.result);
+}
+function latestSavedShot(){
+  const arr=hole()?.shots||[];
+  return arr.length?arr[arr.length-1]:null;
+}
+function teeBoxPoint(){
+  const h=courseHoleData();
+  return h?.t?{lat:h.t[0],lng:h.t[1],accuracy:null,time:Date.now(),source:'TEE_BOX'}:null;
+}
+function rawGpsPoint(){
+  return gps?{lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy,time:gps.time||Date.now(),source:'GPS'}:null;
+}
+function gpsNearCurrentHole(){
+  if(!gps)return false;
+  const h=courseHoleData();
+  if(!h)return true;
+  const refs=[];
+  if(h.t)refs.push({lat:h.t[0],lng:h.t[1]});
+  if(h.g)refs.push({lat:h.g[0],lng:h.g[1]});
+  if(!refs.length)return true;
+  return Math.min(...refs.map(p=>hav({lat:gps.lat,lng:gps.lng},p)))<1800;
+}
+function defaultStartPositionMode(){
+  return currentHoleHasPreviousShot()?'AUTO':'GPS';
+}
+function effectiveStartPositionMode(){
+  if(startPositionOverride)return startPositionOverride;
+  if(!currentHoleHasPreviousShot()&&manualPosition)return 'DROP';
+  return defaultStartPositionMode();
+}
+function resolveShotStart(previousShot=null){
+  const mode=effectiveStartPositionMode();
+  if(mode==='TEE_BOX')return teeBoxPoint();
+  if(mode==='DROP'){
+    return manualPosition?{...manualPosition,source:'MANUAL_DROP',time:Date.now()}:null;
+  }
+  if(mode==='GPS')return rawGpsPoint();
+
+  const prev=previousShot||latestSavedShot();
+  if(prev?.end){
+    return {
+      lat:prev.end.lat,lng:prev.end.lng,
+      accuracy:prev.end.accuracy??null,time:Date.now(),
+      source:'PREVIOUS_END',
+      originSource:prev.end.source||prev.positionSource?.end||null,
+      previousShotId:prev.id||null
+    };
+  }
+  return rawGpsPoint()||teeBoxPoint();
+}
+function startPositionLabel(mode){
+  return ({AUTO:'AUTO',GPS:'GPS',TEE_BOX:'TEE BOX',DROP:'DROP'})[mode]||mode;
+}
+function renderStartPositionControl(){
+  const btn=$('startPositionBtn');if(!btn||!round)return;
+  const first=!currentHoleHasPreviousShot();
+  const mode=effectiveStartPositionMode();
+  $('startPositionTitle').textContent=first?'첫 샷 위치':'다음 샷 위치';
+  $('startPositionValue').textContent=startPositionLabel(mode);
+  let hint=first?'GPS 기본 · 필요 시 Tee Box 또는 Drop':'직전 Shot End 자동 연결 · 필요 시 위치 수정';
+  let warn=false;
+  if(mode==='GPS'&&gps&&!gpsNearCurrentHole()){
+    hint='현재 GPS가 코스 밖입니다 · Tee Box 또는 Drop 권장';
+    warn=true;
+  }else if(mode==='TEE_BOX'){
+    hint='Golf Intelligence Tee reference 위치 사용';
+  }else if(mode==='DROP'){
+    hint=manualPosition?'지도에서 지정한 위치 사용':'지도에서 실제 공 위치를 탭하세요';
+  }else if(mode==='AUTO'){
+    hint='직전 Shot End = 다음 Shot Start';
+  }
+  $('startPositionHint').textContent=hint;
+  btn.classList.toggle('warn',warn);
+}
+function openStartPositionModal(){
+  if(!round)return;
+  const first=!currentHoleHasPreviousShot();
+  const mode=effectiveStartPositionMode();
+  $('startPositionModalSub').textContent=first?'첫 샷 시작 위치':'기본은 직전 Shot End가 자동으로 연결됩니다.';
+  if(first){
+    $('startPositionChoice').innerHTML=
+      '<button data-start-mode="GPS">GPS<span>현재 기기의 GPS 좌표를 사용합니다.</span></button>'+
+      '<button data-start-mode="TEE_BOX">TEE BOX<span>Golf Intelligence의 Tee reference 위치를 사용합니다.</span></button>'+
+      '<button data-start-mode="DROP">DROP ON MAP<span>Satellite Map에서 실제 시작 위치를 직접 지정합니다.</span></button>';
+    $('startPositionModeNote').textContent='집에서 테스트할 때는 TEE BOX를 선택하면 실제 코스 좌표에서 시작할 수 있습니다.';
+  }else{
+    $('startPositionChoice').innerHTML=
+      '<button data-start-mode="AUTO">AUTO<span>직전 Shot End를 다음 Shot Start로 자동 연결합니다.</span></button>'+
+      '<button data-start-mode="GPS">CURRENT GPS<span>현재 GPS 위치로 다음 Shot Start를 수정합니다.</span></button>'+
+      '<button data-start-mode="DROP">DROP ON MAP<span>실제 공 위치를 지도에서 직접 지정합니다.</span></button>';
+    $('startPositionModeNote').textContent='PREVIOUS SHOT은 별도 입력하지 않습니다. AUTO가 내부적으로 PREVIOUS_END로 기록합니다.';
+  }
+  $('startPositionChoice').querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.startMode===mode));
+  $('startPositionModal').classList.remove('hidden');
+}
+function activateDropForStart(){
+  startPositionOverride='DROP';
+  dropMode=true;
+  $('dropBallBtn')?.classList.add('active');
+  if($('dropBallBtn'))$('dropBallBtn').textContent='TAP';
+  $('startPositionModal').classList.add('hidden');
+  renderStartPositionControl();
+}
 function inferShotIntent(){
   const h=hole();
   const shotNo=(h?.shots?.length||0)+1;
@@ -1656,8 +1805,17 @@ function openStateCheck(type='shot',required=false,reason='',after=null){
   $('stateSkipBtn').classList.toggle('hidden',required);
   $('floModal').classList.remove('hidden');
 }
-function beginPending(club){
-  if(!gps&&!manualPosition){alert('GPS 위치를 먼저 확인해 주세요.');startGPS();return false}
+function beginPending(club,previousShot=null){
+  const startSnapshot=resolveShotStart(previousShot);
+  if(!startSnapshot){
+    alert('Shot Start 위치를 확인할 수 없습니다. GPS, TEE BOX 또는 DROP ON MAP을 선택해 주세요.');
+    startGPS();
+    return false;
+  }
+  if(startSnapshot.source==='GPS'&&!gpsNearCurrentHole()){
+    const ok=confirm('현재 GPS가 선택한 코스에서 멀리 떨어져 있습니다. 그래도 GPS 위치로 Shot Start를 저장할까요?\n\n집에서 테스트 중이라면 취소 후 TEE BOX를 선택하세요.');
+    if(!ok){openStartPositionModal();return false}
+  }
   const master=masterClubs.find(c=>c.name===club);
   let targetSnapshot=null;
   if(targetMarker){
@@ -1665,7 +1823,6 @@ function beginPending(club){
     targetSnapshot={lat:p.lat(),lng:p.lng(),distanceM:targetDistanceM};
   }
   const ch=courseHoleData();
-  const startSnapshot=gpsPoint();
   round.pending={
     id:'s'+Date.now(),club,start:startSnapshot,
     startLie:hole().shots.length===0?'TEE':currentLie,
@@ -1673,26 +1830,37 @@ function beginPending(club){
     centerWidthM:master?.centerWidth??null,target:targetSnapshot,
     courseContext:{
       course:'Jagorawi Golf & Country Club',courseId:22987,
-      hole:round.currentHole,holeId:ch?.id??ch?.holeId??null,
+      hole:round.currentHole,holeId:ch?.i??ch?.id??ch?.holeId??null,
       greenId:ch?.greenId??null,greenDistanceM:greenDistanceM??null,
       geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1'
     },
     result:null,playerState:null,queuedClub:null
   };
+  startPositionOverride=null;
   save();renderRound();
   clearManualPosition();
   return true;
 }
 function finishPendingAndMaybeStart(club=null){
-  if(!round?.pending||!round.pending.result)return;
+  if(!round?.pending||!round.pending.result)return false;
+  const endPoint=gpsPoint();
+  if(!endPoint){
+    alert('현재 공 위치를 확인할 수 없습니다. DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    return false;
+  }
+  if(endPoint.source==='GPS'&&!gpsNearCurrentHole()){
+    alert('현재 GPS가 코스 밖입니다. 집에서 테스트 중이라면 DROP ON MAP으로 Shot End 위치를 지정해 주세요.');
+    return false;
+  }
   currentLie=round.pending.result.endLie||currentLie;
-  finalizePending(gpsPoint(),currentLie);
-  if(club)beginPending(club);
-  else renderRound();
+  const finished=finalizePending(endPoint,currentLie);
+  if(club)return beginPending(club,finished);
+  renderRound();
+  return true;
 }
 
 function emptyRound(course,nine){
-  return hydrateRoundCourseTruth({version:4,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:5,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
@@ -1702,7 +1870,7 @@ function emptyRound(course,nine){
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=4;r.analysisSnapshot=r.analysisSnapshot||null;r.tee=normalizeTeeName(r.tee);
+  r.version=5;r.analysisSnapshot=r.analysisSnapshot||null;r.tee=normalizeTeeName(r.tee);
   (r.holes||[]).forEach((h,i)=>{h.hole=h.hole||i+1;h.shots=h.shots||[];h.puttsDetail=h.puttsDetail||[];h.penaltyEvents=h.penaltyEvents||[];h.penalties=h.penalties||0;if(h.review===undefined)h.review=null});
   return hydrateRoundCourseTruth(r);
 }
@@ -1720,6 +1888,7 @@ function gpsPoint(){
 function setManualPosition(latLng){
   if(!window.google?.maps)return;
   manualPosition={lat:latLng.lat(),lng:latLng.lng(),accuracy:0,source:'MANUAL_DROP',time:Date.now()};
+  if(!round?.pending)startPositionOverride='DROP';
   if(!manualPositionMarker){
     manualPositionMarker=new google.maps.Marker({
       map:googleMap,position:manualPosition,title:'Manual ball position',zIndex:70,
@@ -1729,6 +1898,7 @@ function setManualPosition(latLng){
   dropMode=false;
   $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='DROP';
   if($('gpsOverlay'))$('gpsOverlay').textContent='POSITION · MANUAL';
+  renderStartPositionControl();
   renderJgiCourseView();
 }
 function clearManualPosition(){
@@ -1736,6 +1906,7 @@ function clearManualPosition(){
   if(manualPositionMarker)manualPositionMarker.setMap(null);
   dropMode=false;
   if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='DROP'}
+  renderStartPositionControl();
 }
 function startGPS(){
   if(!navigator.geolocation){$('gpsTop').textContent='GPS 불가';return}
@@ -1836,6 +2007,7 @@ function renderRound(){
       $('stateCheckBtn').classList.add('hidden');
     }
   }
+  renderStartPositionControl();
   renderClubSuggestions();
 }
 function finalizeHoleAfterPutting(){
@@ -2109,18 +2281,31 @@ $('enterJgiBtn').onclick=()=>{
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
-$('startRoundBtn').onclick=()=>{tee=normalizeTeeName(tee);round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;hydrateRoundCourseTruth(round);save();showScreen('round')};
-$('resumeRoundBtn').onclick=()=>{round=load();tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';setSelected($('teeSegment'),tee);showScreen('round')};
+$('startRoundBtn').onclick=()=>{tee=normalizeTeeName(tee);startPositionOverride=null;clearManualPosition();round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;hydrateRoundCourseTruth(round);save();showScreen('round')};
+$('resumeRoundBtn').onclick=()=>{round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';setSelected($('teeSegment'),tee);showScreen('round')};
 
 $('mapViewToggle').addEventListener('click',e=>{
   const b=e.target.closest('[data-map-view]');if(!b)return;
   setMapView(b.dataset.mapView);
 });
 
+$('startPositionBtn').onclick=openStartPositionModal;
+$('startPositionClose').onclick=()=>{$('startPositionModal').classList.add('hidden')};
+$('startPositionChoice').onclick=e=>{
+  const b=e.target.closest('[data-start-mode]');if(!b)return;
+  const mode=b.dataset.startMode;
+  if(mode==='DROP'){activateDropForStart();return}
+  if(mode==='TEE_BOX'&&!teeBoxPoint()){alert('이 홀의 Tee reference 데이터가 없습니다. GPS 또는 DROP ON MAP을 사용해 주세요.');return}
+  if(mode==='GPS'&&!gps){alert('GPS 신호가 아직 없습니다. TEE BOX 또는 DROP ON MAP을 사용할 수 있습니다.');startGPS();return}
+  startPositionOverride=mode;
+  $('startPositionModal').classList.add('hidden');
+  renderStartPositionControl();
+};
+
 $('holebar').addEventListener('click',e=>{
   if(!e.target.dataset.hole||!round)return;
   if(round.pending){alert('현재 Shot을 먼저 완료하세요.');return}
-  round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';clearTarget();save();renderRound();renderCourseHole();
+  round.currentHole=Number(e.target.dataset.hole);currentLie='Unknown';startPositionOverride=null;clearManualPosition();clearTarget();save();renderRound();renderCourseHole();
 });
 
 $('clubSuggestions').addEventListener('click',e=>{
@@ -2140,8 +2325,11 @@ $('allClubList').addEventListener('click',e=>{
 $('recenterBtn').onclick=recenterMap;
 $('dropBallBtn').onclick=()=>{
   dropMode=!dropMode;
+  if(dropMode&&!round?.pending)startPositionOverride='DROP';
+  if(!dropMode&&startPositionOverride==='DROP'&&!manualPosition)startPositionOverride=null;
   $('dropBallBtn').classList.toggle('active',dropMode);
   $('dropBallBtn').textContent=dropMode?'TAP':'DROP';
+  renderStartPositionControl();
 };
 $('undoLastBtn').onclick=()=>{
   if(!round)return;
