@@ -460,6 +460,14 @@ select,input,textarea{
   width:100%;margin-top:7px;border:0;background:transparent;color:#b7c7bd;
   font-size:9px;font-weight:950;letter-spacing:.09em;padding:3px
 }
+.targetZoneBlock{margin:9px 0 10px;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:15px;background:rgba(4,20,15,.62)}
+.targetZoneHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.targetZoneHead b{font-size:10px;letter-spacing:.12em}
+.targetZoneHead span{font-size:9px;color:#9fb2a7}
+.targetZoneSegment{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.targetZoneSegment button{min-height:42px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(8,31,23,.82);color:#dce9e1;font-weight:950}
+.targetZoneSegment button.sel{background:linear-gradient(180deg,#ff9b32,#f16d00);border-color:#ffb263;color:#fff}
+
 .pendingStrip{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pendingStrip strong{display:block;font-size:19px}
 .pendingLabel{display:block;font-size:8px;letter-spacing:.15em;color:#7ff39f;font-weight:950}
@@ -906,7 +914,7 @@ body.round-active .bottomnav{display:none!important}
           <button id="dropBallBtn" class="mapControlBtn mapControlText" title="GPS가 틀릴 때 실제 공 위치를 지도에 지정">DROP</button>
           <button id="undoLastBtn" class="mapControlBtn mapControlText" title="마지막 입력 취소">UNDO</button>
           <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">AUTO</button>
-          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target 삭제">×</button>
+          <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="Target을 중간 기본값으로 재설정">C</button>
         </div>
 
         <div id="targetInfo" class="targetInfo hidden">
@@ -944,6 +952,17 @@ body.round-active .bottomnav{display:none!important}
             </span>
             <span id="startPositionValue" class="value">GPS</span>
           </button>
+          <div class="targetZoneBlock">
+            <div class="targetZoneHead">
+              <b>TARGET</b>
+              <span>기본 중간 · 샷마다 선택</span>
+            </div>
+            <div id="targetZoneSegment" class="targetZoneSegment">
+              <button type="button" data-target-zone="LEFT">왼쪽</button>
+              <button type="button" data-target-zone="CENTER" class="sel">중간</button>
+              <button type="button" data-target-zone="RIGHT">오른쪽</button>
+            </div>
+          </div>
           <div class="clubDockHead">
             <div>
               <span class="dockLabel">CLUB</span>
@@ -1363,6 +1382,11 @@ let reviewMapMode='SAT';
 let reviewSatelliteActive=false;
 let mapViewMode='SAT';
 let startPositionOverride=null;
+let targetZone='CENTER';
+let targetZoneSource='SYSTEM_DEFAULT';
+let targetManualOverride=false;
+let targetDistanceReference=null;
+
 
 function courseHoleData(){
   return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
@@ -1917,6 +1941,7 @@ window.initGoogleMap=function(){
   googleMap.addListener('click',e=>{
     if(reviewSatelliteActive)return;
     if(dropMode){setManualPosition(e.latLng);return}
+    if(round?.pending)return;
     setTarget(e.latLng);
   });
   updatePlayerMarker();
@@ -2012,9 +2037,101 @@ function renderAllClubs(){
     (club.name==='Putter'?'Putting':club.carry+'m carry · CENTER ±'+(club.centerWidth??'—')+'m')+'</span></button>'
   ).join('');
 }
+
+function targetZoneLabel(v){return ({LEFT:'왼쪽',CENTER:'중간',RIGHT:'오른쪽'})[v]||v||'중간'}
+function renderTargetZoneControl(){
+  const el=$('targetZoneSegment');if(!el)return;
+  el.querySelectorAll('[data-target-zone]').forEach(b=>b.classList.toggle('sel',b.dataset.targetZone===targetZone));
+}
+function resetTargetZoneSelection(){
+  targetZone='CENTER';
+  targetZoneSource='SYSTEM_DEFAULT';
+  targetManualOverride=false;
+  renderTargetZoneControl();
+}
+function clearTargetMarkerOnly(){
+  if(targetMarker){targetMarker.setMap(null);targetMarker=null}
+  if(targetLine){targetLine.setMap(null);targetLine=null}
+  targetDistanceM=null;
+  targetDistanceReference=null;
+  $('targetInfo')?.classList.add('hidden');
+  $('clearTargetBtn')?.classList.add('hidden');
+}
+function targetZonePointForShot(h,start,clubCarryM,zone='CENTER',holePar=null){
+  const model=buildCourseIntelligenceModel(h,holePar);
+  if(!model||!start)return null;
+  const sec=projectedLandingSection(model,start,clubCarryM,null);
+  if(!sec||!Number.isFinite(sec.widthM))return null;
+  const width=sec.widthM;
+  let c=sec.centerC;
+  if(zone==='LEFT')c=sec.rightC+width*(5/6);
+  if(zone==='RIGHT')c=sec.rightC+width*(1/6);
+  const point=model.projector.toLatLng({
+    x:model.u.x*sec.stationM+model.v.x*c,
+    y:model.u.y*sec.stationM+model.v.y*c
+  });
+  return {
+    zone,
+    source:targetZoneSource,
+    lat:point.lat,
+    lng:point.lng,
+    distanceM:hav(start,point),
+    fairwayWidthM:width,
+    basis:'FAIRWAY_ZONE',
+    stationM:sec.stationM,
+    sectionCenterOffsetM:sec.centerC,
+    targetOffsetM:c-sec.centerC
+  };
+}
+function inferZoneForPoint(h,point,holePar=null){
+  const model=buildCourseIntelligenceModel(h,holePar);
+  if(!model||!point)return 'CENTER';
+  const sec=nearestCenterSection(model,point);
+  if(!sec||!Number.isFinite(sec.widthM))return 'CENTER';
+  const q=model.projector.toXY(point);
+  const c=q.x*model.v.x+q.y*model.v.y;
+  const t=(c-sec.rightC)/Math.max(sec.widthM,0.0001);
+  if(t>=2/3)return 'LEFT';
+  if(t<=1/3)return 'RIGHT';
+  return 'CENTER';
+}
+function showTargetSnapshot(target,startRef=null){
+  if(!target?.lat||!target?.lng||!window.google?.maps)return;
+  targetDistanceReference=startRef||targetDistanceReference;
+  const pos={lat:target.lat,lng:target.lng};
+  if(!targetMarker){
+    targetMarker=new google.maps.Marker({
+      map:googleMap,position:pos,draggable:false,title:'Target',zIndex:60,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:9,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3}
+    });
+  }else{
+    targetMarker.setPosition(pos);
+    targetMarker.setDraggable(false);
+    targetMarker.setMap(googleMap);
+  }
+  if(!targetLine){
+    targetLine=new google.maps.Polyline({
+      map:googleMap,strokeColor:'#ffffff',strokeOpacity:.9,strokeWeight:2,
+      icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:2},offset:'0',repeat:'12px'}]
+    });
+  }
+  $('targetInfo')?.classList.remove('hidden');
+  $('clearTargetBtn')?.classList.remove('hidden');
+  targetDistanceM=Number.isFinite(Number(target.distanceM))?Number(target.distanceM):null;
+  const ref=startRef||targetDistanceReference;
+  if(ref&&targetLine)targetLine.setPath([ref,pos]);
+  if($('targetDistance'))$('targetDistance').textContent=targetDistanceM!==null?Math.round(targetDistanceM)+'m':'—';
+  if($('targetMeta'))$('targetMeta').textContent=targetZoneLabel(target.zone)+' · 페어웨이 폭 '+(Number.isFinite(Number(target.fairwayWidthM))?Number(target.fairwayWidthM).toFixed(1)+'m':'—');
+  renderJgiCourseView();
+}
 function setTarget(latLng){
-  if(!window.google?.maps)return;
+  if(!window.google?.maps||round?.pending)return;
   const pos={lat:latLng.lat(),lng:latLng.lng()};
+  targetManualOverride=true;
+  targetZoneSource='PLAYER_SELECTED';
+  targetZone=inferZoneForPoint(courseHoleData(),pos,hole()?.par);
+  renderTargetZoneControl();
+  targetDistanceReference=gps?{lat:gps.lat,lng:gps.lng}:null;
   if(!targetMarker){
     targetMarker=new google.maps.Marker({
       map:googleMap,position:pos,draggable:true,title:'Target',zIndex:60,
@@ -2024,8 +2141,20 @@ function setTarget(latLng){
       }
     });
     targetMarker.addListener('drag',updateTargetDistance);
-    targetMarker.addListener('dragend',updateTargetDistance);
-  }else targetMarker.setPosition(pos);
+    targetMarker.addListener('dragend',()=>{
+      const t=targetMarker.getPosition();
+      const p={lat:t.lat(),lng:t.lng()};
+      targetZone=inferZoneForPoint(courseHoleData(),p,hole()?.par);
+      targetZoneSource='PLAYER_SELECTED';
+      targetManualOverride=true;
+      renderTargetZoneControl();
+      updateTargetDistance();
+    });
+  }else{
+    targetMarker.setDraggable(true);
+    targetMarker.setPosition(pos);
+    targetMarker.setMap(googleMap);
+  }
   if(!targetLine){
     targetLine=new google.maps.Polyline({
       map:googleMap,strokeColor:'#ffffff',strokeOpacity:.9,strokeWeight:2,
@@ -2038,30 +2167,30 @@ function setTarget(latLng){
   renderJgiCourseView();
 }
 function updateTargetDistance(){
-  if(!targetMarker||!gps){
+  if(!targetMarker){
     targetDistanceM=null;
-    if(targetMarker){
-      $('targetDistance').textContent='GPS 대기';
-      $('targetMeta').textContent='현재 GPS가 잡히면 Target 거리를 계산합니다.';
-    }
     renderClubSuggestions();
     return;
   }
-  const p={lat:gps.lat,lng:gps.lng};
+  const ref=round?.pending?.start||targetDistanceReference||(gps?{lat:gps.lat,lng:gps.lng}:null);
+  if(!ref){
+    targetDistanceM=null;
+    $('targetDistance').textContent='위치 대기';
+    $('targetMeta').textContent=targetZoneLabel(targetZone);
+    renderClubSuggestions();
+    return;
+  }
   const t=targetMarker.getPosition();
   const target={lat:t.lat(),lng:t.lng()};
-  targetDistanceM=hav(p,target);
+  targetDistanceM=hav(ref,target);
   $('targetDistance').textContent=Math.round(targetDistanceM)+'m';
-  $('targetMeta').textContent='Lie · Slope는 Golf Intelligence 연결 후';
-  if(targetLine)targetLine.setPath([p,target]);
+  $('targetMeta').textContent=targetZoneLabel(targetZone)+' · '+(targetManualOverride?'직접 지정':'자동 좌표');
+  if(targetLine)targetLine.setPath([ref,target]);
   renderClubSuggestions();
 }
 function clearTarget(){
-  if(targetMarker){targetMarker.setMap(null);targetMarker=null}
-  if(targetLine){targetLine.setMap(null);targetLine=null}
-  targetDistanceM=null;
-  $('targetInfo')?.classList.add('hidden');
-  $('clearTargetBtn')?.classList.add('hidden');
+  clearTargetMarkerOnly();
+  resetTargetZoneSelection();
   renderClubSuggestions();
   renderJgiCourseView();
 }
@@ -2509,12 +2638,26 @@ function beginPending(club,previousShot=null){
     if(!ok){openStartPositionModal();return false}
   }
   const master=masterClubs.find(c=>c.name===club);
-  let targetSnapshot=null;
-  if(targetMarker){
-    const p=targetMarker.getPosition();
-    targetSnapshot={lat:p.lat(),lng:p.lng(),distanceM:targetDistanceM};
-  }
   const ch=courseHoleData();
+  let targetSnapshot=null;
+  if(targetManualOverride&&targetMarker){
+    const p=targetMarker.getPosition();
+    const manualPoint={lat:p.lat(),lng:p.lng()};
+    const model=buildCourseIntelligenceModel(ch,hole().par);
+    const sec=model?nearestCenterSection(model,manualPoint):null;
+    targetSnapshot={
+      zone:targetZone,
+      source:'PLAYER_SELECTED',
+      lat:manualPoint.lat,
+      lng:manualPoint.lng,
+      distanceM:hav(startSnapshot,manualPoint),
+      fairwayWidthM:Number.isFinite(sec?.widthM)?sec.widthM:null,
+      basis:'MAP_OVERRIDE'
+    };
+  }else{
+    targetSnapshot=targetZonePointForShot(ch,startSnapshot,master?.carry??null,targetZone,hole().par);
+    if(targetSnapshot)targetSnapshot.source=targetZoneSource;
+  }
   const greenPt=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
   const startGreenDistanceM=greenPt?hav(startSnapshot,greenPt):null;
   round.pending={
@@ -2522,6 +2665,11 @@ function beginPending(club,previousShot=null){
     startLie:hole().shots.length===0?'TEE':currentLie,
     startedAt:Date.now(),shotIntent:inferShotIntent(),
     centerWidthM:master?.centerWidth??null,target:targetSnapshot,
+    targetZone:targetSnapshot?.zone||targetZone,
+    targetSource:targetSnapshot?.source||targetZoneSource,
+    targetLat:targetSnapshot?.lat??null,
+    targetLng:targetSnapshot?.lng??null,
+    targetFairwayWidthM:targetSnapshot?.fairwayWidthM??null,
     courseContext:{
       course:'Jagorawi Golf & Country Club',courseId:22987,
       hole:round.currentHole,holeId:ch?.i??ch?.id??ch?.holeId??null,
@@ -2538,7 +2686,9 @@ function beginPending(club,previousShot=null){
   };
   round.nextShotReset=null;
   startPositionOverride=null;
-  save();renderRound();
+  save();
+  if(targetSnapshot)showTargetSnapshot(targetSnapshot,startSnapshot);
+  renderRound();
   clearManualPosition();
   return true;
 }
@@ -2691,12 +2841,17 @@ function finalizePending(endPoint,endLie){
     resultSource:r.resultSource||'MANUAL',
     ballFlight:r.ballFlight||null,trajectory:r.trajectory||null,direction:r.direction||null,depth:r.depth||null,
     centerWidthM:p.centerWidthM??null,target:p.target||null,
+    targetZone:p.targetZone||p.target?.zone||null,
+    targetSource:p.targetSource||p.target?.source||null,
+    targetLat:p.targetLat??p.target?.lat??null,
+    targetLng:p.targetLng??p.target?.lng??null,
+    targetFairwayWidthM:p.targetFairwayWidthM??p.target?.fairwayWidthM??null,
     courseContext:{...(p.courseContext||{}),endGreenDistanceM},
     positionSource:{start:p.start?.source||'GPS',end:endPoint?.source||'GPS'},
     preShotReset:p.preShotReset||null,
     playerState:p.playerState||null
   };
-  hole().shots.push(shot); round.pending=null; save(); return shot;
+  hole().shots.push(shot); round.pending=null; clearTarget(); save(); return shot;
 }
 function startShot(club){
   if(round.pending){
@@ -2734,12 +2889,13 @@ function renderRound(){
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
     }else{
       $('pendingStatusLabel').textContent='샷 준비';
-      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · Shot Start 저장됨';
+      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타겟 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · Shot Start 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.add('hidden');
     }
   }
   renderStartPositionControl();
+  renderTargetZoneControl();
   renderClubSuggestions();
 }
 function finalizeHoleAfterPutting(){
@@ -3409,6 +3565,7 @@ function precomputeAllCourseIntelligence(){
 }
 
 initScales();
+renderTargetZoneControl();
 precomputeAllCourseIntelligence();
 loadGoogleMaps();
 sgBenchmarkMode=null;
@@ -3451,13 +3608,13 @@ $('startRoundBtn').onclick=()=>{
     $('sgBenchmarkSegment').scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
-  startPositionOverride=null;clearManualPosition();
+  startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
   round.tee=tee;round.stateCollectionLevel=stateCollectionLevel;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
   hydrateRoundCourseTruth(round);save();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
-  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
+  round=load();startPositionOverride=null;resetTargetZoneSelection();tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
   localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
   playerHandicap=clampNumber(round.playerHandicap,0,25);
   sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
@@ -3502,6 +3659,15 @@ $('allClubList').addEventListener('click',e=>{
   startShot(b.dataset.club);
 });
 
+$('targetZoneSegment').onclick=e=>{
+  const b=e.target.closest('[data-target-zone]');if(!b||round?.pending)return;
+  targetZone=b.dataset.targetZone;
+  targetZoneSource='PLAYER_SELECTED';
+  targetManualOverride=false;
+  clearTargetMarkerOnly();
+  renderTargetZoneControl();
+  renderClubSuggestions();
+};
 $('recenterBtn').onclick=recenterMap;
 $('dropBallBtn').onclick=()=>{
   dropMode=!dropMode;
@@ -3593,7 +3759,7 @@ $('saveShotResultBtn').onclick=()=>{
 };
 
 $('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'플레이어 선택 입력',null,'MANUAL');
-$('cancelShotBtn').onclick=()=>{if(confirm('선택한 샷을 취소할까요?')){round.pending=null;save();renderRound()}};
+$('cancelShotBtn').onclick=()=>{if(confirm('선택한 샷을 취소할까요?')){round.pending=null;clearTarget();save();renderRound()}};
 
 $('specialEventClose').onclick=()=>{
   $('specialEventModal').classList.add('hidden');
