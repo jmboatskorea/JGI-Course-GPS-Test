@@ -871,6 +871,7 @@ body.round-active .bottomnav{display:none!important}
       </div>
       <button id="startRoundBtn" class="btn primary full">라운드 시작</button>
       <button id="resumeRoundBtn" class="btn ghost full hidden" style="margin-top:8px">저장된 라운드 이어하기</button>
+      <div id="roundHistoryStatus" class="sgStatus" style="margin-top:8px">저장된 완료 라운드 0개</div>
     </section>
 
     <section id="roundScreen" class="screen hidden round-map-screen">
@@ -1330,6 +1331,8 @@ body.round-active .bottomnav{display:none!important}
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
+const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
+const COMPLETED_ROUNDS_LIMIT=20;
 const DEFAULT_MASTER_CLUBS=[
   {name:'DR',carry:235,centerWidth:14},{name:'3W',carry:215,centerWidth:12},{name:'5W',carry:200,centerWidth:11},
   {name:'3I',carry:190,centerWidth:10},{name:'4I',carry:180,centerWidth:9},{name:'5I',carry:170,centerWidth:9},
@@ -2723,7 +2726,63 @@ function emptyRound(course,nine){
     sgBenchmarkMode:sgBenchmarkMode||null,
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
-}function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
+}
+function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
+function loadCompletedRounds(){
+  try{
+    const x=JSON.parse(localStorage.getItem(COMPLETED_ROUNDS_KEY)||'[]');
+    return Array.isArray(x)?x:[];
+  }catch{return []}
+}
+function saveCompletedRounds(items){
+  const arr=Array.isArray(items)?items:[];
+  try{
+    localStorage.setItem(COMPLETED_ROUNDS_KEY,JSON.stringify(arr.slice(-COMPLETED_ROUNDS_LIMIT)));
+    return true;
+  }catch(e){
+    console.warn('Completed round history save failed',e);
+    return false;
+  }
+}
+function roundIsFull(r){
+  return !!r&&(r.holes||[]).filter(h=>h.completed).length>=18;
+}
+function archiveRound(r,status=null){
+  if(!r?.id)return false;
+  const now=Date.now();
+  const full=roundIsFull(r);
+  const archiveStatus=status||(full?'FULL':'PARTIAL');
+  const snapshot=JSON.parse(JSON.stringify(r));
+  snapshot.archiveStatus=archiveStatus;
+  snapshot.fullRound=full;
+  snapshot.archivedAt=now;
+  snapshot.completedAt=snapshot.completedAt||now;
+  const history=loadCompletedRounds();
+  const idx=history.findIndex(x=>x?.id===snapshot.id);
+  if(idx>=0)history[idx]=snapshot;else history.push(snapshot);
+  history.sort((a,b)=>Number(a?.completedAt||a?.archivedAt||a?.startedAt||0)-Number(b?.completedAt||b?.archivedAt||b?.startedAt||0));
+  const ok=saveCompletedRounds(history);
+  if(ok){
+    r.archivedAt=now;
+    r.archiveStatus=archiveStatus;
+    r.fullRound=full;
+    renderRoundHistoryStatus();
+  }
+  return ok;
+}
+function completedRoundSummary(){
+  const rounds=loadCompletedRounds();
+  const full=rounds.filter(r=>r?.fullRound||roundIsFull(r));
+  const partial=rounds.length-full.length;
+  const shots=rounds.reduce((sum,r)=>sum+(r?.holes||[]).reduce((s,h)=>s+(h?.shots||[]).length,0),0);
+  const putts=rounds.reduce((sum,r)=>sum+(r?.holes||[]).reduce((s,h)=>s+(h?.puttsDetail||[]).length,0),0);
+  return {rounds:rounds.length,full:full.length,partial,shots,putts};
+}
+function renderRoundHistoryStatus(){
+  const el=$('roundHistoryStatus');if(!el)return;
+  const s=completedRoundSummary();
+  el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · Shot '+s.shots+' · Putt '+s.putts;
+}
 function normalizeRound(r){
   if(!r)return null;
   r.version=9;
@@ -2919,7 +2978,11 @@ function finalizeHoleAfterPutting(){
     round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
     if(special)showSpecialEvent(special);
   }else{
-    round.completedAt=Date.now();recordCompletedSamplingRound(round);save();showScreen('overview');
+    round.completedAt=Date.now();
+    recordCompletedSamplingRound(round);
+    archiveRound(round,'FULL');
+    save();
+    showScreen('overview');
     if(special)showSpecialEvent(special);
   }
 }
@@ -3574,7 +3637,12 @@ stateCollectionLevel=activeSamplingCycleLevel()||normalizeCollectionLevel(localS
 localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
 syncStatePlanUI();
 syncSgBenchmarkUI();
-const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
+const stored=load();
+if(stored){
+  $('resumeRoundBtn').classList.remove('hidden');
+  if(stored.completedAt)archiveRound(stored,roundIsFull(stored)?'FULL':'PARTIAL');
+}
+renderRoundHistoryStatus();
 
 $('enterJgiBtn').onclick=()=>{
   $('introScreen').classList.add('hidden');
@@ -3612,7 +3680,7 @@ $('startRoundBtn').onclick=()=>{
   startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
   round.tee=tee;round.stateCollectionLevel=stateCollectionLevel;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
-  hydrateRoundCourseTruth(round);save();showScreen('round')
+  hydrateRoundCourseTruth(round);save();renderRoundHistoryStatus();showScreen('round')
 };
 $('resumeRoundBtn').onclick=()=>{
   round=load();startPositionOverride=null;
@@ -3939,7 +4007,14 @@ $('savePuttBtn').onclick=()=>{
 };
 
 $('bottomnav').addEventListener('click',e=>{const b=e.target.closest('button');if(b?.dataset.screen)showScreen(b.dataset.screen)});
-$('endRoundBtn').onclick=()=>{if(confirm('현재 라운드를 종료하고 Overview를 볼까요?')){round.completedAt=Date.now();save();showScreen('overview')}};
+$('endRoundBtn').onclick=()=>{
+  if(!confirm('현재 라운드를 종료하고 Overview를 볼까요?'))return;
+  round.completedAt=Date.now();
+  if(roundIsFull(round))recordCompletedSamplingRound(round);
+  archiveRound(round,roundIsFull(round)?'FULL':'PARTIAL');
+  save();
+  showScreen('overview');
+};
 $('gpsTop').onclick=startGPS;
 </script>
 </body>
