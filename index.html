@@ -699,6 +699,30 @@ body.round-active .bottomnav{display:none!important}
 .resetScale button{min-height:47px;border-radius:12px;border:1px solid rgba(255,255,255,.13);background:#0a0f0c;color:#fff;font-weight:1000;font-size:15px}
 .resetScale button.sel{border-color:rgba(255,77,77,.58);background:rgba(255,58,58,.13);color:#ff8585}
 
+/* ===== JGI STROKES GAINED V1 ===== */
+.sgSetupCard .field{margin-top:12px}
+.sgBenchmarkSegment{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sgBenchmarkSegment button{min-width:0;padding:9px 4px;font-size:10px}
+.sgBenchmarkSegment.compact{margin-top:10px}
+.sgBenchmarkSegment.compact button{padding:7px 3px;font-size:9px}
+.sgStatus{margin-top:9px;padding:9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#08100b;color:#9cab9f;font-size:10px;line-height:1.5}
+.sgStatus b{color:#e8fff0}
+.sgHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sgHead .big{font-size:30px;font-weight:1000;line-height:1;color:#fff}
+.sgMetric .v.positive,.sgBadge.positive{color:#67f29a}
+.sgMetric .v.negative,.sgBadge.negative{color:#ff7b7b}
+.sgBadge{display:block;margin-top:5px;font-size:12px;font-weight:1000;white-space:nowrap}
+.sgBadge.pending{color:#758079;font-size:9px}
+.sgSourcePill{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:4px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:9px;font-weight:900;color:#9db4a4}
+.sgSourcePill.measured{border-color:rgba(54,239,124,.25);color:#77ef9f}
+.sgSourcePill.modeled{border-color:rgba(255,193,68,.25);color:#ffd071}
+.shotLogRow .dist{min-width:58px;text-align:right}
+.sgPenaltyNote{margin-top:9px;font-size:10px;color:#c7b8a2}
+@media(max-width:520px){
+  .sgBenchmarkSegment{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .sgHead .big{font-size:27px}
+}
+
 </style>
 </head>
 <body>
@@ -788,6 +812,29 @@ body.round-active .bottomnav{display:none!important}
             <button data-v="EVERY_HOLE">매 홀</button>
             <button data-v="EVERY_SHOT">매 샷</button>
           </div>
+        </div>
+      </div>
+      <div class="card sgSetupCard">
+        <div class="title">Strokes Gained 기준</div>
+        <div class="sub">Tour 공개 기준 + JGI 핸디캡 모델링 기준을 선택합니다.</div>
+        <div class="field">
+          <label>플레이어 핸디캡</label>
+          <input id="playerHandicapInput" type="number" min="0" max="25" step="0.1" inputmode="decimal" placeholder="예: 7.3">
+          <div class="helper">내 기준은 입력한 핸디캡을 사용합니다. 0~25 범위에서 연속 계산합니다.</div>
+        </div>
+        <div class="field">
+          <label>비교 기준</label>
+          <div class="segment sgBenchmarkSegment" id="sgBenchmarkSegment">
+            <button class="sel" data-v="PLAYER">내 기준</button>
+            <button data-v="TOUR">Tour</button>
+            <button data-v="SCRATCH">Scratch</button>
+            <button data-v="HCP_5">HCP 5</button>
+            <button data-v="HCP_10">HCP 10</button>
+            <button data-v="HCP_15">HCP 15</button>
+            <button data-v="HCP_20">HCP 20</button>
+            <button data-v="HCP_25">HCP 25</button>
+          </div>
+          <div id="sgSetupHint" class="sgStatus"></div>
         </div>
       </div>
       <button id="startRoundBtn" class="btn primary full">라운드 시작</button>
@@ -940,9 +987,32 @@ body.round-active .bottomnav{display:none!important}
     <section id="performanceScreen" class="screen hidden">
       <div class="title">퍼포먼스</div><div class="sub">현실적으로 계산 가능한 항목부터 표시합니다.</div>
       <div class="card sgBox">
-        <div class="title">Strokes Gained</div>
-        <div class="big">연결 대기</div>
-        <div class="pendingText">정확한 SG는 Course distance/lie + Benchmark DB가 연결된 뒤 계산합니다.<br>현재는 임의 수치를 만들지 않습니다.</div>
+        <div class="sgHead">
+          <div>
+            <div class="title">Strokes Gained</div>
+            <div id="sgBenchmarkLabel" class="sub">기준 확인 중</div>
+            <div id="sgSourcePill" class="sgSourcePill">기준 데이터</div>
+          </div>
+          <div id="sgTotal" class="big">—</div>
+        </div>
+        <div class="grid4" style="margin-top:12px">
+          <div class="metric sgMetric"><div class="k">티샷</div><div id="sgOtt" class="v">—</div></div>
+          <div class="metric sgMetric"><div class="k">어프로치</div><div id="sgApp" class="v">—</div></div>
+          <div class="metric sgMetric"><div class="k">그린 주변</div><div id="sgArg" class="v">—</div></div>
+          <div class="metric sgMetric"><div class="k">퍼팅</div><div id="sgPutt" class="v">—</div></div>
+        </div>
+        <div id="sgPenaltyNote" class="sgPenaltyNote"></div>
+        <div class="segment sgBenchmarkSegment compact" id="sgPerformanceSegment">
+          <button data-v="PLAYER">내 기준</button>
+          <button data-v="TOUR">Tour</button>
+          <button data-v="SCRATCH">Scratch</button>
+          <button data-v="HCP_5">HCP 5</button>
+          <button data-v="HCP_10">HCP 10</button>
+          <button data-v="HCP_15">HCP 15</button>
+          <button data-v="HCP_20">HCP 20</button>
+          <button data-v="HCP_25">HCP 25</button>
+        </div>
+        <div class="sgStatus"><b>Tour</b>는 공개된 PGA TOUR 기대타수 기준입니다. <b>Scratch / HCP 5·10·15·20·25 / 내 기준</b>은 JGI V1 모델링 기준으로 구분 표시합니다.</div>
       </div>
       <div class="card">
         <div class="title">주요 기록</div>
@@ -1216,6 +1286,7 @@ body.round-active .bottomnav{display:none!important}
 
 <script src="jagorawi-old-course-data.js"></script>
 <script src="jagorawi-old-scorecard-data.js"></script>
+<script src="jgi-strokes-gained-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
@@ -1229,6 +1300,8 @@ const DEFAULT_MASTER_CLUBS=[
 let masterClubs=[];
 let gps=null, watchId=null, tee='White', currentLie='Unknown';
 let stateMode='SMART';
+let sgBenchmarkMode='PLAYER';
+let playerHandicap=null;
 let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:3,slope:null,break:null,result:null};
@@ -1915,6 +1988,8 @@ function beginPending(club,previousShot=null){
     targetSnapshot={lat:p.lat(),lng:p.lng(),distanceM:targetDistanceM};
   }
   const ch=courseHoleData();
+  const greenPt=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
+  const startGreenDistanceM=greenPt?hav(startSnapshot,greenPt):null;
   round.pending={
     id:'s'+Date.now(),club,start:startSnapshot,
     startLie:hole().shots.length===0?'TEE':currentLie,
@@ -1923,8 +1998,12 @@ function beginPending(club,previousShot=null){
     courseContext:{
       course:'Jagorawi Golf & Country Club',courseId:22987,
       hole:round.currentHole,holeId:ch?.i??ch?.id??ch?.holeId??null,
-      greenId:ch?.greenId??null,greenDistanceM:greenDistanceM??null,
-      geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1'
+      greenId:ch?.greenId??null,
+      greenDistanceM:startGreenDistanceM,
+      startGreenDistanceM:startGreenDistanceM,
+      endGreenDistanceM:null,
+      geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1',
+      sgBenchmarkVersion:window.JGI_SG_BENCHMARK_DATA?.version||null
     },
     result:null,playerState:null,preShotReset:round.nextShotReset||null,queuedClub:null
   };
@@ -1953,17 +2032,28 @@ function finishPendingAndMaybeStart(club=null){
 }
 
 function emptyRound(course,nine){
-  return hydrateRoundCourseTruth({version:6,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:7,course,nine,tee:normalizeTeeName(tee),stateMode,startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
       penalties:0,penaltyEvents:[],completed:false,review:null
     })),
+    playerHandicap:Number.isFinite(playerHandicap)?playerHandicap:null,
+    sgBenchmarkMode:sgBenchmarkMode||'PLAYER',
+    sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }function save(){if(round)localStorage.setItem(STORAGE,JSON.stringify(round))}
 function normalizeRound(r){
   if(!r)return null;
-  r.version=6;r.analysisSnapshot=r.analysisSnapshot||null;r.specialEvents=r.specialEvents||[];r.pendingResetEvent=r.pendingResetEvent||null;r.nextShotReset=r.nextShotReset||null;r.tee=normalizeTeeName(r.tee);
+  r.version=7;
+  r.analysisSnapshot=r.analysisSnapshot||null;
+  r.specialEvents=r.specialEvents||[];
+  r.pendingResetEvent=r.pendingResetEvent||null;
+  r.nextShotReset=r.nextShotReset||null;
+  r.playerHandicap=clampNumber(r.playerHandicap,0,25);
+  r.sgBenchmarkMode=r.sgBenchmarkMode||'PLAYER';
+  r.sgDataVersion=r.sgDataVersion||window.JGI_SG_BENCHMARK_DATA?.version||null;
+  r.tee=normalizeTeeName(r.tee);
   (r.holes||[]).forEach((h,i)=>{h.hole=h.hole||i+1;h.shots=h.shots||[];h.puttsDetail=h.puttsDetail||[];h.penaltyEvents=h.penaltyEvents||[];h.penalties=h.penalties||0;if(h.review===undefined)h.review=null});
   return hydrateRoundCourseTruth(r);
 }
@@ -2044,6 +2134,8 @@ function finalizePending(endPoint,endLie){
   if(!round.pending)return null;
   const p=round.pending;
   const r=p.result||{};
+  const g=greenPointForHole(round.currentHole);
+  const endGreenDistanceM=g&&endPoint?hav(endPoint,g):null;
   const shot={
     id:p.id,hole:round.currentHole,club:p.club,start:p.start,end:endPoint||null,
     startLie:p.startLie||'UNKNOWN',endLie:r.endLie||endLie||'UNKNOWN',
@@ -2053,7 +2145,7 @@ function finalizePending(endPoint,endLie){
     resultSource:r.resultSource||'MANUAL',
     ballFlight:r.ballFlight||null,trajectory:r.trajectory||null,direction:r.direction||null,depth:r.depth||null,
     centerWidthM:p.centerWidthM??null,target:p.target||null,
-    courseContext:p.courseContext||null,
+    courseContext:{...(p.courseContext||{}),endGreenDistanceM},
     positionSource:{start:p.start?.source||'GPS',end:endPoint?.source||'GPS'},
     preShotReset:p.preShotReset||null,
     playerState:p.playerState||null
@@ -2150,6 +2242,167 @@ function allStates(){
 }
 function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
 function pct(n,d){return d?Math.round(n/d*100):null}
+
+function greenPointForHole(holeNo){
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  return ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
+}
+function clampNumber(v,min,max){
+  const n=Number(v);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):null;
+}
+function sgBenchmarkInfo(r=round){
+  const data=window.JGI_SG_BENCHMARK_DATA;
+  let mode=r?.sgBenchmarkMode||sgBenchmarkMode||'PLAYER';
+  if(mode==='PLAYER'){
+    const h=clampNumber(r?.playerHandicap??playerHandicap,0,25);
+    if(h===null)return {mode:'TOUR',requestedMode:'PLAYER',label:'Tour',handicap:null,type:'MEASURED',fallback:true};
+    return {mode:'PLAYER',requestedMode:'PLAYER',label:'HCP '+h.toFixed(1),handicap:h,type:'MODELED',fallback:false};
+  }
+  const level=data?.levels?.[mode];
+  if(!level)return {mode:'TOUR',requestedMode:mode,label:'Tour',handicap:null,type:'MEASURED',fallback:true};
+  return {mode,requestedMode:mode,label:data.labels?.[mode]||mode,handicap:level.handicap,type:level.type||'MODELED',fallback:false};
+}
+function sgOffset(handicap,bucket){
+  if(!Number.isFinite(handicap))return 0;
+  const m=window.JGI_SG_BENCHMARK_DATA?.model;
+  if(!m)return 0;
+  const gap=handicap+1;
+  return gap*(m.shares?.[bucket]||0)/(m.shotsPerRound?.[bucket]||1);
+}
+function interpolateRows(rows,x,xKey,yKey){
+  const pts=(rows||[]).filter(r=>Number.isFinite(Number(r[xKey]))&&Number.isFinite(Number(r[yKey]))).sort((a,b)=>Number(a[xKey])-Number(b[xKey]));
+  if(!pts.length||!Number.isFinite(Number(x)))return null;
+  const n=Number(x);
+  if(n<=Number(pts[0][xKey]))return Number(pts[0][yKey]);
+  if(n>=Number(pts.at(-1)[xKey]))return Number(pts.at(-1)[yKey]);
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i],b=pts[i+1],ax=Number(a[xKey]),bx=Number(b[xKey]);
+    if(n>=ax&&n<=bx){
+      const t=(n-ax)/(bx-ax);
+      return Number(a[yKey])+(Number(b[yKey])-Number(a[yKey]))*t;
+    }
+  }
+  return null;
+}
+function sgLieKey(v){
+  const x=String(v||'').toUpperCase();
+  if(x==='TEE')return 'tee';
+  if(x==='FAIRWAY'||x==='FRINGE')return 'fairway';
+  if(x==='A CUT'||x==='B CUT'||x==='ROUGH')return 'rough';
+  if(x==='BUNKER'||x==='SAND')return 'sand';
+  if(x==='RECOVERY')return 'recovery';
+  if(x==='GREEN')return 'green';
+  return null;
+}
+function tourExpectedOffGreen(distanceM,lie){
+  const data=window.JGI_SG_BENCHMARK_DATA;
+  if(!data||!Number.isFinite(Number(distanceM)))return null;
+  const yards=Number(distanceM)*1.0936133;
+  let key=sgLieKey(lie);
+  if(key==='green'||!key)return null;
+  if(key==='tee'&&yards<100)key='fairway';
+  return interpolateRows(data.offGreen,yards,'yards',key);
+}
+function tourExpectedPutt(distanceM){
+  const data=window.JGI_SG_BENCHMARK_DATA;
+  if(!data||!Number.isFinite(Number(distanceM)))return null;
+  const feet=Math.max(0,Number(distanceM)*3.2808399);
+  if(feet<=0)return 0;
+  return interpolateRows(data.putting,feet,'feet','expected');
+}
+function sgExpected(distanceM,lie,info=sgBenchmarkInfo()){
+  const key=sgLieKey(lie);
+  if(key==='green'){
+    const base=tourExpectedPutt(distanceM);
+    if(base===null)return null;
+    return base+sgOffset(info.handicap,'putting');
+  }
+  const base=tourExpectedOffGreen(distanceM,lie);
+  if(base===null)return null;
+  const yards=Number(distanceM)*1.0936133;
+  const bucket=(key==='tee'||yards>100)?'long':'short';
+  return base+sgOffset(info.handicap,bucket);
+}
+function shotStartDistanceToHoleM(h,s,index){
+  if(index===0&&sgLieKey(s.startLie)==='tee'&&Number.isFinite(Number(h.teeDistanceM)))return Number(h.teeDistanceM);
+  if(Number.isFinite(Number(s?.courseContext?.startGreenDistanceM)))return Number(s.courseContext.startGreenDistanceM);
+  if(Number.isFinite(Number(s?.courseContext?.greenDistanceM)))return Number(s.courseContext.greenDistanceM);
+  const g=greenPointForHole(h.hole);
+  return g&&s.start?hav(s.start,g):null;
+}
+function shotEndDistanceToHoleM(h,s,index){
+  if(sgLieKey(s.endLie)==='green'){
+    const firstPutt=h.puttsDetail?.[0]?.distanceM;
+    if(index===h.shots.length-1&&Number.isFinite(Number(firstPutt)))return Number(firstPutt);
+    return null;
+  }
+  if(Number.isFinite(Number(s?.courseContext?.endGreenDistanceM)))return Number(s.courseContext.endGreenDistanceM);
+  const g=greenPointForHole(h.hole);
+  return g&&s.end?hav(s.end,g):null;
+}
+function computeShotSG(h,s,index,info=sgBenchmarkInfo()){
+  const startD=shotStartDistanceToHoleM(h,s,index);
+  const endD=shotEndDistanceToHoleM(h,s,index);
+  if(!Number.isFinite(startD)||!Number.isFinite(endD))return null;
+  const a=sgExpected(startD,s.startLie,info);
+  const b=sgExpected(endD,s.endLie,info);
+  if(!Number.isFinite(a)||!Number.isFinite(b))return null;
+  return {value:a-b-1,startExpected:a,endExpected:b,startDistanceM:startD,endDistanceM:endD};
+}
+function computePuttSG(h,p,index,info=sgBenchmarkInfo()){
+  const a=sgExpected(Number(p.distanceM),'GREEN',info);
+  if(!Number.isFinite(a))return null;
+  if(p.result==='HOLED')return {value:a-1,startExpected:a,endExpected:0};
+  const next=h.puttsDetail?.[index+1];
+  if(!next||!Number.isFinite(Number(next.distanceM)))return null;
+  const b=sgExpected(Number(next.distanceM),'GREEN',info);
+  if(!Number.isFinite(b))return null;
+  return {value:a-b-1,startExpected:a,endExpected:b};
+}
+function sgShotCategory(h,s,index){
+  if(index===0&&Number(h.par)>=4)return 'ott';
+  const d=shotStartDistanceToHoleM(h,s,index);
+  const yards=Number.isFinite(d)?d*1.0936133:null;
+  if(Number.isFinite(yards)&&yards<=30&&sgLieKey(s.startLie)!=='green')return 'arg';
+  return 'app';
+}
+function sgRoundSummary(){
+  const info=sgBenchmarkInfo();
+  const totals={ott:0,app:0,arg:0,putt:0,penalty:0};
+  const counts={ott:0,app:0,arg:0,putt:0,missing:0};
+  (round?.holes||[]).forEach(h=>{
+    (h.shots||[]).forEach((s,i)=>{
+      const r=computeShotSG(h,s,i,info);
+      if(!r){counts.missing++;return}
+      const cat=sgShotCategory(h,s,i);totals[cat]+=r.value;counts[cat]++;
+    });
+    (h.puttsDetail||[]).forEach((p,i)=>{
+      const r=computePuttSG(h,p,i,info);
+      if(!r){counts.missing++;return}
+      totals.putt+=r.value;counts.putt++;
+    });
+    totals.penalty-=Number(h.penalties||0);
+  });
+  const total=totals.ott+totals.app+totals.arg+totals.putt+totals.penalty;
+  return {info,totals,counts,total};
+}
+function formatSg(v){
+  if(!Number.isFinite(Number(v)))return '—';
+  const n=Number(v);return (n>0?'+':'')+n.toFixed(2);
+}
+function sgValueClass(v){
+  if(!Number.isFinite(Number(v)))return '';
+  return Number(v)>0.005?'positive':Number(v)<-0.005?'negative':'';
+}
+function syncSgBenchmarkUI(){
+  const mode=round?.sgBenchmarkMode||sgBenchmarkMode||'PLAYER';
+  ['sgBenchmarkSegment','sgPerformanceSegment'].forEach(id=>{const el=$(id);if(el)setSelected(el,mode)});
+  const info=sgBenchmarkInfo();
+  if($('sgSetupHint')){
+    const fallback=info.fallback?' · 플레이어 핸디캡 미입력으로 Tour 기준 사용':'';
+    $('sgSetupHint').innerHTML='<b>'+info.label+'</b> · '+(info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링 기준')+fallback;
+  }
+}
 
 function safeText(v){return v===null||v===undefined||v===''?'—':String(v)}
 function distanceLabel(m){return Number.isFinite(m)?Math.round(m)+'m':'—'}
@@ -2266,12 +2519,24 @@ function renderHoleReview(holeNo){
       '<div class="metric"><div class="k">PUTTING</div><div class="s">'+r.putting.putts+' putts'+(r.putting.firstPutt!==null?' · 1st '+Number(r.putting.firstPutt).toFixed(1)+'m':'')+(r.putting.threePutt?' · 3-putt':'')+'</div></div>'+
     '</div>'+
     '<div class="dataNote"><b>KEY MISS</b> · '+r.keyMiss+'</div>'+
-    '<div class="shotLog">'+(shots.length?shots.map((s,i)=>
-      '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+safeText(s.club)+'</strong><p>'+
-      safeText(s.startLie)+' → '+safeText(s.endLie)+' · '+shapeLabel(s.intendedShape)+' intended / '+shapeLabel(s.ballFlight)+' actual<br>'+
-      dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+safeText(s.positionSource?.start)+'→'+safeText(s.positionSource?.end)+
-      '</p></div><div class="dist">'+distanceLabel(s.distanceM)+'</div></div>'
-    ).join(''):'<div class="pendingText">아직 저장된 Shot이 없습니다.</div>')+'</div>';
+    '<div class="dataNote"><b>SG 기준</b> · '+sgBenchmarkInfo().label+' · '+(sgBenchmarkInfo().type==='MEASURED'?'공개 실측':'JGI 모델링')+'</div>'+
+    '<div class="shotLog">'+
+      ((shots.length||putts.length)?[
+        ...shots.map((s,i)=>{
+          const sg=computeShotSG(h,s,i,sgBenchmarkInfo());
+          const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
+          return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+safeText(s.club)+'</strong><p>'+
+            safeText(s.startLie)+' → '+safeText(s.endLie)+' · '+shapeLabel(s.intendedShape)+' intended / '+shapeLabel(s.ballFlight)+' actual<br>'+
+            dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+safeText(s.positionSource?.start)+'→'+safeText(s.positionSource?.end)+
+            '</p></div><div class="dist">'+distanceLabel(s.distanceM)+badge+'</div></div>';
+        }),
+        ...putts.map((p,i)=>{
+          const sg=computePuttSG(h,p,i,sgBenchmarkInfo());
+          const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
+          return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼터</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+safeText(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
+        })
+      ].join(''):'<div class="pendingText">아직 저장된 샷이 없습니다.</div>')+
+    '</div>';
   renderReviewMap(holeNo);
 }
 function clearReviewMapObjects(){reviewMapObjects.forEach(x=>x.setMap&&x.setMap(null));reviewMapObjects=[]}
@@ -2347,6 +2612,15 @@ function render퍼포먼스(){
   $('statGir').textContent=s.completed.length?(s.girN+'/'+s.completed.length):'—';
   $('statPutts').textContent=s.putts;$('statDrive').textContent=s.drive?Math.round(s.drive)+'m':'—';
   $('statPen').textContent=s.penalties;$('statScramble').textContent=s.scrD?(s.scr+'/'+s.scrD):'—';
+
+  const sg=sgRoundSummary();
+  $('sgBenchmarkLabel').textContent='vs '+sg.info.label+(sg.info.fallback?' · 핸디캡 미입력 → Tour':'');
+  $('sgSourcePill').textContent=sg.info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링';
+  $('sgSourcePill').className='sgSourcePill '+(sg.info.type==='MEASURED'?'measured':'modeled');
+  const values={sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
+  Object.entries(values).forEach(([id,v])=>{const el=$(id);el.textContent=formatSg(v);el.classList.remove('positive','negative');const cls=sgValueClass(v);if(cls)el.classList.add(cls)});
+  $('sgPenaltyNote').textContent=(sg.totals.penalty?('페널티 영향 '+formatSg(sg.totals.penalty)+' · '):'')+(sg.counts.missing?('아직 계산할 수 없는 샷/퍼트 '+sg.counts.missing+'개'):'기록된 위치 데이터 기준으로 계산됨');
+  syncSgBenchmarkUI();
 }
 function legacyRoutineValue(x){
   if(Number.isFinite(Number(x?.routineExecution)))return Number(x.routineExecution);
@@ -2386,6 +2660,12 @@ function renderStory(){
 
 initScales();
 loadGoogleMaps();
+const savedHcp=localStorage.getItem('jgi_player_handicap');
+if(savedHcp!==null&&savedHcp!==''){
+  playerHandicap=clampNumber(savedHcp,0,25);
+  if(playerHandicap!==null)$('playerHandicapInput').value=String(playerHandicap);
+}
+syncSgBenchmarkUI();
 const stored=load();if(stored)$('resumeRoundBtn').classList.remove('hidden');
 
 $('enterJgiBtn').onclick=()=>{
@@ -2398,8 +2678,39 @@ $('enterJgiBtn').onclick=()=>{
 
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('stateModeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;stateMode=e.target.dataset.v;setSelected($('stateModeSegment'),stateMode)});
-$('startRoundBtn').onclick=()=>{tee=normalizeTeeName(tee);startPositionOverride=null;clearManualPosition();round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');round.tee=tee;round.stateMode=stateMode;hydrateRoundCourseTruth(round);save();showScreen('round')};
-$('resumeRoundBtn').onclick=()=>{round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';setSelected($('teeSegment'),tee);showScreen('round')};
+$('playerHandicapInput').addEventListener('change',()=>{
+  const raw=$('playerHandicapInput').value.trim();
+  playerHandicap=raw===''?null:clampNumber(raw,0,25);
+  if(playerHandicap===null){$('playerHandicapInput').value='';localStorage.removeItem('jgi_player_handicap')}
+  else{$('playerHandicapInput').value=String(playerHandicap);localStorage.setItem('jgi_player_handicap',String(playerHandicap))}
+  if(round){round.playerHandicap=playerHandicap;save()}
+  syncSgBenchmarkUI();
+  if(round){render퍼포먼스();if(selectedReviewHole)renderHoleReview(selectedReviewHole)}
+});
+function setSgBenchmarkMode(mode){
+  sgBenchmarkMode=mode||'PLAYER';
+  if(round){round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;save()}
+  syncSgBenchmarkUI();
+  if(round){render퍼포먼스();if(selectedReviewHole)renderHoleReview(selectedReviewHole)}
+}
+$('sgBenchmarkSegment').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setSgBenchmarkMode(b.dataset.v)});
+$('sgPerformanceSegment').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setSgBenchmarkMode(b.dataset.v)});
+$('startRoundBtn').onclick=()=>{
+  tee=normalizeTeeName(tee);
+  const raw=$('playerHandicapInput').value.trim();
+  playerHandicap=raw===''?null:clampNumber(raw,0,25);
+  if(playerHandicap!==null)localStorage.setItem('jgi_player_handicap',String(playerHandicap));
+  startPositionOverride=null;clearManualPosition();
+  round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
+  round.tee=tee;round.stateMode=stateMode;round.playerHandicap=playerHandicap;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
+  hydrateRoundCourseTruth(round);save();showScreen('round')
+};
+$('resumeRoundBtn').onclick=()=>{
+  round=load();startPositionOverride=null;tee=normalizeTeeName(round.tee||'White');stateMode=round.stateMode||'SMART';
+  playerHandicap=clampNumber(round.playerHandicap,0,25);sgBenchmarkMode=round.sgBenchmarkMode||'PLAYER';
+  if(playerHandicap!==null)$('playerHandicapInput').value=String(playerHandicap);
+  setSelected($('teeSegment'),tee);syncSgBenchmarkUI();showScreen('round')
+};
 
 $('mapViewToggle').addEventListener('click',e=>{
   const b=e.target.closest('[data-map-view]');if(!b)return;
