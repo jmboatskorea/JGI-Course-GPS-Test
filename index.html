@@ -95,6 +95,13 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .bounceItem.action{border-color:rgba(126,255,164,.36);background:rgba(25,121,61,.16)}.bounceItem.action b{color:#82f3a3}
 .askQuick{display:flex;gap:7px;overflow:auto;margin-top:9px;scrollbar-width:none}.askQuick button{white-space:nowrap;border:1px solid rgba(255,255,255,.18);background:rgba(4,20,15,.68);color:#fff;border-radius:999px;padding:9px 11px;font-size:11px;font-weight:850}
 .askAnswer{margin-top:10px;padding:12px;border-radius:14px;background:rgba(17,47,37,.72);border:1px solid rgba(126,255,164,.24);font-size:13px;line-height:1.55}
+.askComposer{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;margin-top:10px}
+.askComposer input{min-width:0;border:1px solid rgba(255,255,255,.18);background:rgba(4,20,15,.78);color:#fff;border-radius:12px;padding:11px 12px;font:inherit;outline:none}
+.askComposer input:focus{border-color:rgba(126,255,164,.62)}
+.askComposer button{border:1px solid rgba(255,255,255,.18);background:rgba(12,45,33,.9);color:#fff;border-radius:12px;padding:0 12px;font-weight:900}
+.askComposer .voiceBtn.listening{border-color:#82f3a3;color:#82f3a3;background:rgba(25,121,61,.22)}
+.askModalSheet{max-width:520px}
+.askLiveContext{margin-top:8px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.035);color:#aebfb5;font-size:10px;line-height:1.45}
 .dataNote{font-size:10px;line-height:1.45;color:#9fb1a6;margin-top:8px}
 .mapControlBtn.active{background:#ff8619;border-color:#ffb066;color:#fff}
 .storyCategory{margin-bottom:10px}
@@ -998,6 +1005,7 @@ body.round-active .bottomnav{display:none!important}
               <button class="sel" data-map-view="SAT">위성</button>
               <button data-map-view="JGI">JGI</button>
             </div>
+            <button id="askJgiRoundBtn" class="mapMiniBtn">ASK JGI</button>
             <button id="reportBtn" class="mapMiniBtn">리포트</button>
             <button id="endRoundBtn" class="mapMiniBtn">종료</button>
           </div>
@@ -1310,15 +1318,20 @@ body.round-active .bottomnav{display:none!important}
       </div>
 
       <div class="card">
-        <div class="title">JGI에게 묻기 · 미리보기</div>
-        <div class="sub">현재는 저장된 라운드 데이터를 읽는 규칙 기반 분석입니다.</div>
+        <div class="title">JGI에게 묻기</div>
+        <div class="sub">말하거나 직접 입력하세요. 현재 라운드의 저장 데이터만 기준으로 빠르게 답합니다.</div>
+        <div class="askComposer">
+          <input id="askJgiOverviewInput" type="text" placeholder="예: 왜 드라이버가 오른쪽으로 가?">
+          <button id="askJgiOverviewVoice" class="voiceBtn" type="button">🎙</button>
+          <button id="askJgiOverviewSend" type="button">질문</button>
+        </div>
         <div id="askJgiQuick" class="askQuick">
           <button data-q="problem">지금 뭐가 문제야?</button>
           <button data-q="working">뭐가 잘되고 있어?</button>
           <button data-q="next">다음 홀에서 뭘 해야 해?</button>
         </div>
-        <div id="askJgiAnswer" class="askAnswer">질문을 선택하면 현재까지 기록된 데이터만 기준으로 답합니다.</div>
-        <div class="dataNote">약 10라운드부터 개인 기준선과 비교하고, 데이터가 더 쌓이면 상황 패턴과 예측 모델을 연결합니다.</div>
+        <div id="askJgiAnswer" class="askAnswer">질문을 선택하거나 말해보세요.</div>
+        <div class="dataNote">빠른 모드는 현재 라운드 데이터만 사용합니다. DB/Agent 연결 후 개인 누적 데이터와 자유 질문 범위를 확장합니다.</div>
       </div>
 
       <div class="card"><div class="title">스코어카드</div><div id="scorecard" class="scorecard" style="margin-top:10px"></div></div>
@@ -1388,6 +1401,28 @@ body.round-active .bottomnav{display:none!important}
     <button data-screen="flo"><b>◉</b>상태</button>
     <button data-screen="story"><b>✦</b>스토리</button>
   </nav>
+</div>
+
+<div id="askJgiRoundModal" class="modal hidden">
+  <div class="sheet askModalSheet">
+    <div class="sheetHead">
+      <div><strong>JGI에게 묻기</strong><div class="sub">보이스 또는 문자 · 빠른 라운드 답변</div></div>
+      <button id="askJgiRoundClose" class="x">×</button>
+    </div>
+    <div id="askJgiLiveContext" class="askLiveContext">현재 홀 정보를 준비합니다.</div>
+    <div class="askComposer">
+      <input id="askJgiRoundInput" type="text" placeholder="예: 여기서 드라이버 괜찮아?">
+      <button id="askJgiRoundVoice" class="voiceBtn" type="button">🎙</button>
+      <button id="askJgiRoundSend" type="button">질문</button>
+    </div>
+    <div id="askJgiRoundQuick" class="askQuick">
+      <button data-q="problem">지금 문제는?</button>
+      <button data-q="next">다음 행동은?</button>
+      <button data-q="state">현재 State는?</button>
+    </div>
+    <div id="askJgiRoundAnswer" class="askAnswer">질문을 말하거나 입력하세요.</div>
+    <div class="dataNote">답변은 짧게 표시합니다. 현재 V1은 저장된 라운드 데이터의 규칙 기반 빠른 분석입니다.</div>
+  </div>
 </div>
 
 <div id="clubModal" class="modal hidden">
@@ -5045,14 +5080,129 @@ $('reviewMapToggle').onclick=e=>{
   reviewMapMode=b.dataset.reviewMap==='JGI'?'JGI':'SAT';
   if(selectedReviewHole)renderReviewMap(selectedReviewHole);
 };
+function liveAskCurrentContext(){
+  if(!round)return '진행 중인 라운드가 없습니다.';
+  const h=hole(),p=round.pending;
+  const parts=[round.currentHole+'번 홀'];
+  if(h?.par)parts.push('Par '+h.par);
+  if(p?.club)parts.push('선택 '+p.club);
+  const dogleg=p?.courseContext?.dogleg||p?.courseContext?.courseRisk?.dogleg;
+  if(dogleg?.applicable)parts.push('도그렉 '+({LEFT:'왼쪽',RIGHT:'오른쪽',STRAIGHT:'직선'}[dogleg.direction]||dogleg.direction));
+  const width=p?.courseContext?.landingZoneWidth?.widthM??p?.courseContext?.fairwayWidth?.landingWidthM;
+  if(Number.isFinite(Number(width)))parts.push('착지구역 '+Math.round(Number(width))+'m');
+  const right=p?.courseContext?.courseRisk?.right;
+  if(right&&Number.isFinite(Number(right.distanceM)))parts.push('오른쪽 위험 '+Math.round(Number(right.distanceM))+'m');
+  return parts.join(' · ');
+}
+function liveAskClubSummary(club){
+  const rows=[];
+  (round?.holes||[]).forEach(h=>(h.shots||[]).forEach((s,si)=>{
+    if(String(s.club||'').toUpperCase()!==club)return;
+    const sg=multiShotSg({r:round,h,s,si});
+    rows.push({s,h,sg:Number.isFinite(sg)?sg:null});
+  }));
+  if(!rows.length)return null;
+  const right=rows.filter(x=>x.s.direction==='RIGHT').length;
+  const left=rows.filter(x=>x.s.direction==='LEFT').length;
+  const fw=rows.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const sgs=rows.map(x=>x.sg).filter(Number.isFinite);
+  return {n:rows.length,right,left,fw,sg:sgs.length?avg(sgs):null};
+}
+function liveAskAnswer(question){
+  if(!round)return '<b>진행 중인 라운드가 없습니다.</b>';
+  const q=String(question||'').trim().toLowerCase();
+  const a=buildLiveAnalysis();
+  if(!q)return '질문을 입력하거나 마이크를 눌러 말해보세요.';
+
+  if(/다음|해야|어떻게|뭘 해야|action|next/.test(q)){
+    return '<b>다음 행동 1개</b><br>'+a.nextAction;
+  }
+  if(/잘|좋|안정|working|good/.test(q)){
+    return '<b>현재 상대적으로 안정적인 영역은 '+a.working.name+'입니다.</b><br>'+a.working.main;
+  }
+  if(/state|상태|긴장|확신|루틴|생각/.test(q)){
+    const stateData=buildStateResults(round);
+    const n=stateData.shots.length+stateData.putts.length;
+    if(!n)return '<b>아직 연결된 State 샘플이 없습니다.</b><br>State가 수집되면 실제 샷·퍼트 결과와 함께 비교합니다.';
+    return '<b>State 샘플 '+n+'개</b><br>'+stateResultPatterns(stateData,'현재 라운드')[0];
+  }
+  if(/퍼팅|퍼트|putt/.test(q)){
+    const holes=round.holes||[],putts=holes.reduce((n,h)=>n+(h.puttsDetail||[]).length,0);
+    const three=holes.filter(h=>(h.puttsDetail||[]).length>=3).length;
+    return '<b>퍼팅</b><br>현재 '+putts+'퍼트 · 3퍼트 이상 '+three+'홀입니다.';
+  }
+  if(/드라이버|driver|\bdr\b/.test(q)){
+    const o=liveAskClubSummary('DR');
+    if(!o)return '<b>드라이버</b><br>현재 라운드에는 저장된 드라이버 샷이 없습니다.';
+    return '<b>드라이버 '+o.n+'회</b><br>우측 미스 '+o.right+'회 · 좌측 미스 '+o.left+'회 · 페어웨이 '+o.fw+'회'+(Number.isFinite(o.sg)?' · 평균 SG '+multiSigned(o.sg):'')+'.';
+  }
+  if(/3w|3번 우드|3우드|우드/.test(q)){
+    const o=liveAskClubSummary('3W');
+    if(!o)return '<b>3번 우드</b><br>현재 라운드에는 저장된 3번 우드 샷이 없습니다.';
+    return '<b>3번 우드 '+o.n+'회</b><br>우측 미스 '+o.right+'회 · 좌측 미스 '+o.left+'회 · 페어웨이 '+o.fw+'회'+(Number.isFinite(o.sg)?' · 평균 SG '+multiSigned(o.sg):'')+'.';
+  }
+  if(/오른쪽|해저드|hazard|water|물/.test(q)){
+    let n=0,rightMiss=0;
+    (round.holes||[]).forEach(h=>(h.shots||[]).forEach(s=>{
+      const risk=s.courseContext?.courseRisk?.right;
+      if(!risk||!Number.isFinite(Number(risk.distanceM))||Number(risk.distanceM)>30)return;
+      n++;if(s.direction==='RIGHT')rightMiss++;
+    }));
+    return n
+      ? '<b>오른쪽 위험 30m 이내 샷</b><br>'+n+'회 중 우측 미스 '+rightMiss+'회가 기록됐습니다.'
+      : '<b>오른쪽 위험지역</b><br>현재 라운드에는 비교 가능한 30m 이내 샘플이 아직 없습니다.';
+  }
+  if(/왜|문제|이슈|problem|issue/.test(q)){
+    return '<b>현재 가장 큰 이슈는 '+a.problem.name+'입니다.</b><br>'+a.problem.main+' '+a.problem.sub;
+  }
+  return '<b>현재 빠른 모드에서 바로 확인 가능한 질문</b><br>문제 · 잘되는 부분 · 다음 행동 · 드라이버/3W · 퍼팅 · State · 오른쪽 위험지역을 물어보세요.';
+}
+function submitLiveAsk(inputId,answerId){
+  const input=$(inputId),answer=$(answerId);
+  if(!input||!answer)return;
+  answer.innerHTML=liveAskAnswer(input.value);
+}
+function startLiveAskVoice(inputId,buttonId,answerId){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('이 브라우저에서는 음성 입력을 지원하지 않습니다. 문자로 질문해 주세요.');return}
+  const input=$(inputId),button=$(buttonId),recognition=new SR();
+  recognition.lang=navigator.language||'ko-KR';
+  recognition.interimResults=false;recognition.maxAlternatives=1;
+  button.classList.add('listening');button.textContent='듣는 중';
+  recognition.onresult=e=>{
+    const text=e.results?.[0]?.[0]?.transcript||'';
+    input.value=text;
+    if(text)submitLiveAsk(inputId,answerId);
+  };
+  recognition.onerror=()=>{button.classList.remove('listening');button.textContent='🎙'};
+  recognition.onend=()=>{button.classList.remove('listening');button.textContent='🎙'};
+  recognition.start();
+}
+function openRoundAskJgi(){
+  if(!round)return;
+  $('askJgiLiveContext').textContent=liveAskCurrentContext();
+  $('askJgiRoundModal').classList.remove('hidden');
+  setTimeout(()=>$('askJgiRoundInput')?.focus(),50);
+}
+$('askJgiRoundBtn').onclick=openRoundAskJgi;
+$('askJgiRoundClose').onclick=()=>{$('askJgiRoundModal').classList.add('hidden')};
+$('askJgiRoundSend').onclick=()=>submitLiveAsk('askJgiRoundInput','askJgiRoundAnswer');
+$('askJgiRoundVoice').onclick=()=>startLiveAskVoice('askJgiRoundInput','askJgiRoundVoice','askJgiRoundAnswer');
+$('askJgiRoundInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitLiveAsk('askJgiRoundInput','askJgiRoundAnswer')});
+$('askJgiRoundQuick').onclick=e=>{
+  const b=e.target.closest('[data-q]');if(!b)return;
+  const prompts={problem:'지금 뭐가 문제야?',next:'다음 홀에서 뭘 해야 해?',state:'현재 State는 어때?'};
+  $('askJgiRoundInput').value=prompts[b.dataset.q]||b.textContent;
+  submitLiveAsk('askJgiRoundInput','askJgiRoundAnswer');
+};
+$('askJgiOverviewSend').onclick=()=>submitLiveAsk('askJgiOverviewInput','askJgiAnswer');
+$('askJgiOverviewVoice').onclick=()=>startLiveAskVoice('askJgiOverviewInput','askJgiOverviewVoice','askJgiAnswer');
+$('askJgiOverviewInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitLiveAsk('askJgiOverviewInput','askJgiAnswer')});
 $('askJgiQuick').onclick=e=>{
   const b=e.target.closest('[data-q]');if(!b||!round)return;
-  const a=buildLiveAnalysis();
-  let answer='';
-  if(b.dataset.q==='problem')answer='<b>현재 가장 큰 이슈는 '+a.problem.name+'입니다.</b><br>'+a.problem.main+' '+a.problem.sub;
-  if(b.dataset.q==='working')answer='<b>현재 상대적으로 안정적인 영역은 '+a.working.name+'입니다.</b><br>'+a.working.main;
-  if(b.dataset.q==='next')answer='<b>다음 홀에서는 한 가지만 실행하세요.</b><br>'+a.nextAction;
-  $('askJgiAnswer').innerHTML=answer;
+  const prompts={problem:'지금 뭐가 문제야?',working:'뭐가 잘되고 있어?',next:'다음 홀에서 뭘 해야 해?'};
+  $('askJgiOverviewInput').value=prompts[b.dataset.q]||b.textContent;
+  submitLiveAsk('askJgiOverviewInput','askJgiAnswer');
 };
 
 $('shotResultBtn').onclick=openShotResult;
