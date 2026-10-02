@@ -733,6 +733,13 @@ body.round-active .bottomnav{display:none!important}
 .analysisBadge{display:inline-flex;margin:3px 4px 3px 0;padding:5px 7px;border-radius:999px;border:1px solid rgba(39,242,122,.18);background:rgba(39,242,122,.06);color:#82f3a5;font-size:8px;font-weight:900}
 .analysisSgValue{font-weight:1000}.analysisSgValue.positive{color:#67f29a}.analysisSgValue.negative{color:#ff7b7b}.analysisSgValue.neutral{color:#d9e5dd}
 .sampleStatus{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:950;white-space:nowrap}.sampleStatus.low{color:#a8b4ad;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)}.sampleStatus.early{color:#ffd071;border:1px solid rgba(255,193,68,.24);background:rgba(255,193,68,.06)}.sampleStatus.ready{color:#75f29d;border:1px solid rgba(54,239,124,.24);background:rgba(54,239,124,.06)}
+.perfHighlights{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.perfHighlight{padding:11px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(8,24,19,.7)}.perfHighlight .k{font-size:8px;color:#95a79c;font-weight:900}.perfHighlight .v{font-size:17px;font-weight:1000;margin-top:4px}.perfHighlight .s{font-size:8px;color:#93a69a;margin-top:3px;line-height:1.35}
+.perfTabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid rgba(255,255,255,.12);border-radius:15px;overflow:hidden;margin:10px 0}.perfTabs button{border:0;background:#07150f;color:#9bad9f;padding:11px 8px;font-size:11px;font-weight:950}.perfTabs button.sel{background:rgba(39,233,120,.13);color:#78f5a0;box-shadow:inset 0 0 0 1px rgba(39,233,120,.6)}
+.perfSectionTitle{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin:12px 0 7px}.perfSectionTitle b{font-size:14px}.perfSectionTitle span{font-size:8px;color:#90a298}
+.perfDetail{margin-top:9px;padding:10px;border-radius:14px;border:1px solid rgba(39,233,120,.25);background:rgba(5,35,23,.68)}
+.perfRowBtn{cursor:pointer}.perfRowBtn:hover{background:rgba(255,255,255,.02)}
+.perfHeatWrap{overflow-x:auto;margin-top:10px}.perfHeat{border-collapse:separate;border-spacing:3px;min-width:520px;font-size:8px}.perfHeat th{color:#93a399;font-weight:900;padding:4px 5px;white-space:nowrap}.perfHeat td{min-width:42px;height:32px;text-align:center;border-radius:7px;font-weight:950;border:1px solid rgba(255,255,255,.05)}.perfHeat td.empty{color:#607069;background:#07110c}.perfHeat td.pos{color:#dfffea}.perfHeat td.neg{color:#ffe1e1}.perfHeat td.zero{color:#dce8e0;background:rgba(255,255,255,.04)}
+@media(max-width:430px){.perfHighlights{grid-template-columns:1fr}.perfHighlight{padding:10px}}
 @media(max-width:430px){.analysisKpis{grid-template-columns:repeat(3,1fr)}.analysisSplit{grid-template-columns:1fr}}
 @media(max-width:430px){
   .introHomeChoices{grid-template-columns:1fr}
@@ -1361,7 +1368,7 @@ body.round-active .bottomnav{display:none!important}
       </div>
       <div class="card">
         <div class="title">클럽 · 거리별 획득타수</div>
-        <div class="sub">같은 클럽도 시작 거리별 성과를 분리합니다. 5~80m 어프로치는 5m 구간, 그 외 거리는 10m 구간으로 표시합니다.</div>
+        <div class="sub">같은 데이터를 클럽 기준과 거리 기준 두 방향으로 확인합니다.</div>
         <div id="clubDistanceSg" style="margin-top:10px"></div>
       </div>
     </section>
@@ -4790,29 +4797,144 @@ function performanceDistanceBucket(h,s,index){
   const lower=Math.floor(Number(d)/10)*10,upper=lower+10;
   return {label:lower+'–'+upper+'m',order:lower,approach:false};
 }
+let performanceSgView='CLUB';
+let performanceSgSelectedClub=null;
+let performanceSgSelectedDistance=null;
+
+function performanceSgColor(v){
+  const n=Number(v);
+  if(!Number.isFinite(n))return 'rgba(255,255,255,.03)';
+  const a=Math.min(.42,.10+Math.abs(n)*.35);
+  return n>0.005?'rgba(46,225,112,'+a+')':n<-0.005?'rgba(240,91,91,'+a+')':'rgba(255,255,255,.05)';
+}
+function performanceRows(){
+  const info=sgBenchmarkInfo(),rows=[];let missing=0;
+  (round?.holes||[]).forEach(h=>(h.shots||[]).forEach((s,i)=>{
+    const sg=computeShotSG(h,s,i,info);
+    if(!sg){missing++;return}
+    const bucket=performanceDistanceBucket(h,s,i);
+    const remaining=bucket.approach?shotEndDistanceToHoleM(h,s,i):null;
+    rows.push({
+      h,s,i,club:safeText(s.club),label:bucket.label,order:bucket.order,approach:bucket.approach,
+      sg:Number(sg.value),remaining:Number.isFinite(Number(remaining))?Number(remaining):null
+    });
+  }));
+  return {rows,missing};
+}
+function performanceGroupByClub(rows){
+  const map=new Map();
+  rows.forEach(x=>{
+    if(!map.has(x.club))map.set(x.club,{club:x.club,n:0,sg:[],remaining:[],details:new Map()});
+    const g=map.get(x.club);g.n++;g.sg.push(x.sg);if(Number.isFinite(x.remaining))g.remaining.push(x.remaining);
+    if(!g.details.has(x.label))g.details.set(x.label,{label:x.label,order:x.order,approach:x.approach,n:0,sg:[],remaining:[],right:0,left:0,short:0,long:0});
+    const d=g.details.get(x.label);d.n++;d.sg.push(x.sg);if(Number.isFinite(x.remaining))d.remaining.push(x.remaining);
+    if(x.s.direction==='RIGHT')d.right++;if(x.s.direction==='LEFT')d.left++;if(x.s.depth==='SHORT')d.short++;if(x.s.depth==='LONG')d.long++;
+  });
+  return [...map.values()].map(g=>({...g,avg:g.sg.reduce((a,b)=>a+b,0)/g.sg.length,total:g.sg.reduce((a,b)=>a+b,0)}))
+    .sort((a,b)=>b.n-a.n||a.club.localeCompare(b.club,'en',{numeric:true}));
+}
+function performanceGroupByDistance(rows){
+  const map=new Map();
+  rows.forEach(x=>{
+    if(x.label==='티샷')return;
+    if(!map.has(x.label))map.set(x.label,{label:x.label,order:x.order,n:0,sg:[],clubs:new Map()});
+    const g=map.get(x.label);g.n++;g.sg.push(x.sg);
+    if(!g.clubs.has(x.club))g.clubs.set(x.club,{club:x.club,n:0,sg:[]});
+    const c=g.clubs.get(x.club);c.n++;c.sg.push(x.sg);
+  });
+  return [...map.values()].map(g=>({...g,avg:g.sg.reduce((a,b)=>a+b,0)/g.sg.length,total:g.sg.reduce((a,b)=>a+b,0)}))
+    .sort((a,b)=>a.order-b.order);
+}
+function performanceClubTable(clubs){
+  return '<div class="analysisTableWrap"><table class="analysisTable"><thead><tr><th>클럽</th><th>샷 수</th><th>Avg SG/샷</th><th>Total SG</th><th>상태</th></tr></thead><tbody>'+
+    clubs.map(g=>'<tr class="perfRowBtn" onclick="selectPerformanceClub(\''+String(g.club).replace(/'/g,"\\'")+'\')"><td>'+safeText(g.club)+'</td><td>'+g.n+'</td><td>'+multiSgHtml(g.avg)+'</td><td>'+multiSgHtml(g.total)+'</td><td>'+performanceSampleStatus(g.n)+'</td></tr>').join('')+
+    '</tbody></table></div>';
+}
+function performanceClubDetail(g){
+  if(!g)return '';
+  const details=[...g.details.values()].sort((a,b)=>a.order-b.order);
+  return '<div class="perfDetail"><div class="perfSectionTitle"><b>'+safeText(g.club)+' 거리별 성과</b><span>'+g.n+'샷 · Avg SG '+formatSg(g.avg)+' · Total SG '+formatSg(g.total)+'</span></div>'+
+    multiTable(['거리 구간','샷 수','평균 핀 잔여','Avg SG/샷','Total SG','주요 결과'],details.map(d=>{
+      const avgSg=d.sg.reduce((a,b)=>a+b,0)/d.sg.length,total=d.sg.reduce((a,b)=>a+b,0);
+      const pin=d.approach&&d.remaining.length?(d.remaining.reduce((a,b)=>a+b,0)/d.remaining.length).toFixed(1)+'m':'—';
+      const result=d.right?'오른쪽 '+d.right:d.left?'왼쪽 '+d.left:d.short?'짧음 '+d.short:d.long?'김 '+d.long:'—';
+      return [safeText(d.label),d.n,pin,multiSgHtml(avgSg),multiSgHtml(total),result];
+    }))+'</div>';
+}
+function performanceDistanceTable(distances){
+  return '<div class="analysisTableWrap"><table class="analysisTable"><thead><tr><th>거리</th><th>주요 클럽</th><th>샷 수</th><th>Avg SG/샷</th><th>Total SG</th></tr></thead><tbody>'+
+    distances.map(g=>{
+      const best=[...g.clubs.values()].sort((a,b)=>(b.sg.reduce((x,y)=>x+y,0)/b.sg.length)-(a.sg.reduce((x,y)=>x+y,0)/a.sg.length))[0];
+      return '<tr class="perfRowBtn" onclick="selectPerformanceDistance(\''+String(g.label).replace(/'/g,"\\'")+'\')"><td>'+safeText(g.label)+'</td><td>'+safeText(best?.club||'—')+'</td><td>'+g.n+'</td><td>'+multiSgHtml(g.avg)+'</td><td>'+multiSgHtml(g.total)+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function performanceDistanceDetail(g){
+  if(!g)return '';
+  const clubs=[...g.clubs.values()].map(x=>({...x,avg:x.sg.reduce((a,b)=>a+b,0)/x.sg.length,total:x.sg.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.avg-a.avg);
+  return '<div class="perfDetail"><div class="perfSectionTitle"><b>'+safeText(g.label)+' 상세</b><span>'+clubs.length+'개 클럽 · '+g.n+'샷</span></div>'+
+    multiTable(['클럽','샷 수','Avg SG/샷','Total SG','상태'],clubs.map(x=>[safeText(x.club),x.n,multiSgHtml(x.avg),multiSgHtml(x.total),performanceSampleStatus(x.n)]))+'</div>';
+}
+function performanceHeatmap(rows){
+  const distances=performanceGroupByDistance(rows).filter(x=>x.label!=='거리 미확인');
+  const clubs=[...new Set(rows.filter(x=>x.label!=='티샷').map(x=>x.club))].sort((a,b)=>a.localeCompare(b,'en',{numeric:true}));
+  if(!distances.length||!clubs.length)return '';
+  const lookup=new Map();
+  rows.filter(x=>x.label!=='티샷').forEach(x=>{
+    const k=x.label+'|'+x.club;if(!lookup.has(k))lookup.set(k,[]);lookup.get(k).push(x.sg);
+  });
+  return '<div class="perfSectionTitle"><b>거리 × 클럽 히트맵</b><span>Avg SG/샷</span></div><div class="perfHeatWrap"><table class="perfHeat"><thead><tr><th>거리</th>'+
+    clubs.map(c=>'<th>'+safeText(c)+'</th>').join('')+'</tr></thead><tbody>'+
+    distances.map(d=>'<tr><th>'+safeText(d.label)+'</th>'+clubs.map(club=>{
+      const vals=lookup.get(d.label+'|'+club);
+      if(!vals?.length)return '<td class="empty">—</td>';
+      const v=vals.reduce((a,b)=>a+b,0)/vals.length,cls=v>0.005?'pos':v<-0.005?'neg':'zero';
+      return '<td class="'+cls+'" style="background:'+performanceSgColor(v)+'">'+formatSg(v)+'</td>';
+    }).join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+function setPerformanceSgView(view){
+  performanceSgView=view==='DISTANCE'?'DISTANCE':'CLUB';
+  renderClubDistanceSg();
+}
+function selectPerformanceClub(club){
+  performanceSgSelectedClub=club;
+  performanceSgView='CLUB';
+  renderClubDistanceSg();
+}
+function selectPerformanceDistance(label){
+  performanceSgSelectedDistance=label;
+  performanceSgView='DISTANCE';
+  renderClubDistanceSg();
+}
 function renderClubDistanceSg(){
   const host=$('clubDistanceSg');if(!host)return;
-  const info=sgBenchmarkInfo(),groups=new Map();let missing=0;
-  (round?.holes||[]).forEach(h=>(h.shots||[]).forEach((s,i)=>{
-    const sg=computeShotSG(h,s,i,info);if(!sg){missing++;return}
-    const bucket=performanceDistanceBucket(h,s,i);
-    const club=safeText(s.club),key=club+'|'+bucket.label;
-    if(!groups.has(key))groups.set(key,{club,label:bucket.label,order:bucket.order,approach:bucket.approach,n:0,sg:[],remaining:[]});
-    const g=groups.get(key);g.n++;g.sg.push(Number(sg.value));
-    if(bucket.approach){
-      const rem=shotEndDistanceToHoleM(h,s,i);
-      if(Number.isFinite(Number(rem)))g.remaining.push(Number(rem));
-    }
-  }));
-  const rows=[...groups.values()].sort((a,b)=>a.club.localeCompare(b.club,'en',{numeric:true})||a.order-b.order).map(g=>{
-    const avgSg=g.sg.length?g.sg.reduce((a,b)=>a+b,0)/g.sg.length:null;
-    const totalSg=g.sg.reduce((a,b)=>a+b,0);
-    const pin=g.approach&&g.remaining.length?(g.remaining.reduce((a,b)=>a+b,0)/g.remaining.length).toFixed(1)+'m':'—';
-    return [safeText(g.club),safeText(g.label),g.n,pin,multiSgHtml(avgSg),multiSgHtml(totalSg),performanceSampleStatus(g.n)];
-  });
-  host.innerHTML=
-    '<div class="analysisNote">SG 계산이 가능한 샷만 표시합니다. Avg SG/샷은 같은 클럽·거리 조건의 평균, Total SG는 해당 조건의 누적 획득타수입니다. 5~80m 어프로치만 평균 핀 잔여거리를 함께 표시합니다.'+(missing?' · SG 계산 불가 '+missing+'샷 제외':'')+'</div>'+
-    multiTable(['클럽','거리 조건','샷 수','평균 핀 잔여','Avg SG/샷','Total SG','표본'],rows);
+  const data=performanceRows(),rows=data.rows;
+  if(!rows.length){host.innerHTML='<div class="analysisEmpty">SG 계산이 가능한 샷이 없습니다.</div>';return}
+  const clubs=performanceGroupByClub(rows),distances=performanceGroupByDistance(rows);
+  if(!performanceSgSelectedClub&&clubs.length)performanceSgSelectedClub=clubs.find(x=>x.n>=5)?.club||clubs[0].club;
+  if(!performanceSgSelectedDistance&&distances.length)performanceSgSelectedDistance=distances.find(x=>x.n>=2)?.label||distances[0].label;
+
+  const bestClub=[...clubs].sort((a,b)=>b.avg-a.avg)[0];
+  const worstClub=[...clubs].sort((a,b)=>a.avg-b.avg)[0];
+  const bestDistance=[...distances].sort((a,b)=>b.avg-a.avg)[0];
+
+  let html='<div class="perfHighlights">'+
+    '<div class="perfHighlight"><div class="k">가장 좋은 클럽</div><div class="v">'+safeText(bestClub?.club||'—')+' '+multiSgHtml(bestClub?.avg)+'</div><div class="s">'+(bestClub?bestClub.n+'샷 · Total SG '+formatSg(bestClub.total):'—')+'</div></div>'+
+    '<div class="perfHighlight"><div class="k">가장 큰 손실 클럽</div><div class="v">'+safeText(worstClub?.club||'—')+' '+multiSgHtml(worstClub?.avg)+'</div><div class="s">'+(worstClub?worstClub.n+'샷 · Total SG '+formatSg(worstClub.total):'—')+'</div></div>'+
+    '<div class="perfHighlight"><div class="k">가장 좋은 거리</div><div class="v">'+safeText(bestDistance?.label||'—')+' '+multiSgHtml(bestDistance?.avg)+'</div><div class="s">'+(bestDistance?bestDistance.n+'샷 · Total SG '+formatSg(bestDistance.total):'—')+'</div></div>'+
+  '</div>';
+
+  html+='<div class="perfTabs"><button class="'+(performanceSgView==='CLUB'?'sel':'')+'" onclick="setPerformanceSgView(\'CLUB\')">클럽 기준<br><span style="font-size:8px;font-weight:700">이 클럽은 어디서 잘했나?</span></button><button class="'+(performanceSgView==='DISTANCE'?'sel':'')+'" onclick="setPerformanceSgView(\'DISTANCE\')">거리 기준<br><span style="font-size:8px;font-weight:700">이 거리에서는 어떤 클럽이 좋았나?</span></button></div>';
+
+  if(performanceSgView==='CLUB'){
+    html+='<div class="perfSectionTitle"><b>클럽별 획득타수</b><span>클럽을 누르면 거리별 상세</span></div>'+performanceClubTable(clubs);
+    html+=performanceClubDetail(clubs.find(x=>x.club===performanceSgSelectedClub));
+  }else{
+    html+='<div class="perfSectionTitle"><b>거리별 획득타수</b><span>샷 시작 시 핀까지 남은 거리</span></div>'+performanceDistanceTable(distances);
+    html+=performanceDistanceDetail(distances.find(x=>x.label===performanceSgSelectedDistance));
+    html+=performanceHeatmap(rows);
+  }
+  html+='<div class="analysisNote" style="margin-top:10px">5~80m 어프로치는 5m 구간, 그 외 거리는 10m 구간입니다. '+(data.missing?'SG 계산 불가 '+data.missing+'샷 제외. ':'')+'표본 상태는 1~4샷 표본 부족 · 5~9샷 초기 관찰 · 10샷 이상 비교 가능입니다.</div>';
+  host.innerHTML=html;
 }
 function render퍼포먼스(){
   if(!round)return;const s=stats();
