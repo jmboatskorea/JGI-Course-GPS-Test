@@ -4722,7 +4722,7 @@ function renderOverview(){
   const scoreSegment=(a,b)=>{
     const hs=round.holes.filter(h=>h.hole>=a&&h.hole<=b&&h.completed);
     const score=hs.length?hs.reduce((sum,h)=>sum+(holeScore(h)||0),0):null;
-    const putts=hs.length?hs.reduce((sum,h)=>sum+Number(h.putts??(h.puttsDetail||[]).length||0),0):null;
+    const putts=hs.length?hs.reduce((sum,h)=>sum+Number(h.putts??(h.puttsDetail||[]).length),0):null;
     return {score,putts};
   };
   const front=scoreSegment(1,9),back=scoreSegment(10,18),total=scoreSegment(1,18);
