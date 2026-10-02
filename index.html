@@ -4377,11 +4377,15 @@ function liveCategories(){
   const tee=makeShotCategory('tee','티샷',teeRows);
   // Tee-specific wording is clearer than generic green-finish wording.
   const teeShots=teeRows.map(x=>x.s);
+  const teeHits=teeShots.filter(s=>['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
   const teeTrouble=teeShots.filter(s=>!['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
-  const teeDir=dominantCount(countBy(teeShots.filter(s=>s.direction&&s.direction!=='CENTER'),s=>s.direction));
-  tee.main=teeShots.length?teeShots.length+'개 티샷 중 '+teeTrouble.length+'개가 페어웨이/그린 밖에서 끝났습니다.':'아직 티샷 데이터가 없습니다.';
-  tee.sub=teeDir[0]?dirLabel(teeDir[0])+' 경향 '+teeDir[1]+'회 관찰.':'아직 반복되는 좌우 방향은 없습니다.';
-  tee.why=teeDir[1]>=2?dirLabel(teeDir[0])+' 결과가 샷 로그에서 '+teeDir[1]+'회 반복되었습니다.':'패턴으로 판단하려면 샷이 더 필요합니다.';
+  const teeLieCounts=countBy(teeTrouble,s=>lieDisplayLabel(s.endLie));
+  const teeLieBreakdown=Object.entries(teeLieCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+v).join(' · ');
+  const teeDirCounts=countBy(teeShots.filter(s=>s.direction&&s.direction!=='CENTER'),s=>s.direction);
+  const teeDir=dominantCount(teeDirCounts);
+  tee.main=teeShots.length?'페어웨이/그린 적중 '+teeHits.length+'개 · 전체 티샷 '+teeShots.length+'개':'아직 티샷 데이터가 없습니다.';
+  tee.sub=teeTrouble.length?(teeLieBreakdown||'페어웨이/그린 밖 '+teeTrouble.length+'개'):'모든 티샷이 페어웨이/그린에 끝났습니다.';
+  tee.why=teeDir[1]>=2?dirLabel(teeDir[0])+' 미스가 '+teeDir[1]+'회 관찰되었습니다.':'아직 반복되는 좌우 미스는 없습니다.';
 
   const second=makeShotCategory('second','세컨샷',secondRows);
   const third=makeShotCategory('third','서드샷',thirdRows);
