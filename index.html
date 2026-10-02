@@ -4392,9 +4392,21 @@ function liveCategories(){
   const approach=makeShotCategory('approach','어프로치',approachRows);
   if(approachRows.length){
     const remaining=approachRows.map(x=>shotEndDistanceToHoleM(x.h,x.s,x.i)).filter(Number.isFinite);
+    const avgRemaining=remaining.length?avg(remaining):null;
     const greenHits=approachRows.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    const leftCount=approachRows.filter(x=>x.s.direction==='LEFT').length;
+    const rightCount=approachRows.filter(x=>x.s.direction==='RIGHT').length;
+    const shortCount=approachRows.filter(x=>x.s.depth==='SHORT').length;
+    const longCount=approachRows.filter(x=>x.s.depth==='LONG').length;
     approach.main='5~80m 어프로치 '+approachRows.length+'개 · 그린 적중 '+greenHits+'개';
-    approach.sub=(remaining.length?'평균 남은 핀 거리 '+avg(remaining).toFixed(1)+'m · ':'')+'왼쪽 '+approachRows.filter(x=>x.s.direction==='LEFT').length+' · 오른쪽 '+approachRows.filter(x=>x.s.direction==='RIGHT').length+' · 짧음 '+approachRows.filter(x=>x.s.depth==='SHORT').length+' · 김 '+approachRows.filter(x=>x.s.depth==='LONG').length;
+    approach.sub=(Number.isFinite(avgRemaining)?'어프로치 후 평균 핀 거리 '+avgRemaining.toFixed(1)+'m · ':'')+'왼쪽 '+leftCount+' · 오른쪽 '+rightCount+' · 짧음 '+shortCount+' · 김 '+longCount;
+    if(rightCount>=2)approach.why='오른쪽 미스가 '+rightCount+'회 관찰되었습니다.';
+    else if(leftCount>=2)approach.why='왼쪽 미스가 '+leftCount+'회 관찰되었습니다.';
+    else if(shortCount>=2)approach.why='짧은 결과가 '+shortCount+'회 관찰되었습니다.';
+    else if(longCount>=2)approach.why='긴 결과가 '+longCount+'회 관찰되었습니다.';
+    else if(greenHits===approachRows.length&&Number.isFinite(avgRemaining))approach.why=approachRows.length+'개 모두 그린에 적중했고, 어프로치 후 평균 핀 거리는 '+avgRemaining.toFixed(1)+'m입니다.';
+    else if(Number.isFinite(avgRemaining))approach.why='그린 적중 '+greenHits+'/'+approachRows.length+' · 어프로치 후 평균 핀 거리 '+avgRemaining.toFixed(1)+'m입니다.';
+    else approach.why='아직 반복되는 어프로치 결과는 없습니다.';
   }else{
     approach.sub='핀까지 5~80m에서 시작한 모든 샷을 어프로치로 분류합니다.';
   }
