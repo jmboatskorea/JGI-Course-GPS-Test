@@ -3522,10 +3522,13 @@ function multiClubRiskStats(rounds,club){
 function multiPatternSummary(rounds){
   let teeRight=0,teeTotal=0,threePutts=0,penalties=0,approach=0,approachMiss=0;
   rounds.forEach(r=>(r.holes||[]).forEach(h=>{
-    const teeShot=h.shots?.[0];if(teeShot){teeTotal++;if(teeShot.direction==='RIGHT')teeRight++}
+    (h.shots||[]).forEach((s,i)=>{
+      const cat=playerShotCategory(h,s,i);
+      if(cat==='TEE'){teeTotal++;if(s.direction==='RIGHT')teeRight++}
+      if(cat==='APPROACH'){approach++;if(String(s.endLie||'').toUpperCase()!=='GREEN')approachMiss++}
+    });
     if((h.puttsDetail||[]).length>=3)threePutts++;
     penalties+=Number(h.penalties||0);
-    (h.shots||[]).filter(s=>s.shotIntent==='GREEN_ATTACK').forEach(s=>{approach++;if(s.endLie!=='GREEN')approachMiss++});
   }));
   return {teeRight,teeTotal,threePutts,penalties,approach,approachMiss};
 }
@@ -3690,16 +3693,10 @@ function renderFullMultiAnalysis(rounds){
       k,o.n,multiPct(o.fairway,o.n),o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
     ]}));
 
-  const approachRows=shots.filter(x=>x.s.shotIntent==='GREEN_ATTACK');
-  const appGroups={},app5Groups={},lieGroups={};
+  const approachRows=shots.filter(x=>playerShotCategory(x.h,x.s,x.si)==='APPROACH');
+  const app5Groups={},lieGroups={};
   approachRows.forEach(x=>{
     const d=x.s.courseContext?.startGreenDistanceM??x.s.courseContext?.greenDistanceM;
-    const k=multiApproachBucket(d);
-    if(k){
-      const o=appGroups[k]||(appGroups[k]={n:0,green:0,left:0,right:0,short:0,long:0,sg:[]});
-      o.n++;if(x.s.endLie==='GREEN')o.green++;if(x.s.direction==='LEFT')o.left++;if(x.s.direction==='RIGHT')o.right++;if(x.s.depth==='SHORT')o.short++;if(x.s.depth==='LONG')o.long++;
-      const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
-    }
     const k5=multiApproach5mBucket(d);
     if(k5){
       const o5=app5Groups[k5]||(app5Groups[k5]={n:0,green:0,remaining:[],sg:[]});
@@ -3711,14 +3708,11 @@ function renderFullMultiAnalysis(rounds){
     const l=lieGroups[lie]||(lieGroups[lie]={n:0,green:0,sg:[]});l.n++;if(x.s.endLie==='GREEN')l.green++;
     const sg=multiShotSg(x);if(Number.isFinite(sg))l.sg.push(sg);
   });
-  const appOrder=['100m 미만','100~120m','120~140m','140~160m','160~180m','180m 이상'];
   const app5Order=Array.from({length:15},(_,i)=>{const lower=75-i*5;return lower+'–'+(lower+5)+'m'});
   $('analysisApproach').innerHTML=
-    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 공 위치 기준으로 분리합니다. 실제 시작·종료 거리는 그대로 유지하고, 아래 5m 구간은 분석 화면에서만 묶습니다.</div>'+
+    '<div class="analysisNote">핀까지 5~80m에서 시작한 모든 샷을 어프로치로 분류합니다. 실제 시작·종료 거리는 그대로 유지하고, 화면에서만 5m 구간으로 묶습니다.</div>'+
     '<div class="sectionLabel">거리별 어프로치 성과 · 5m 구간</div>'+
     multiTable(['거리 구간','샷 수','평균 남은 핀 거리','그린 적중률','Avg SG'],app5Order.filter(k=>app5Groups[k]).map(k=>{const o=app5Groups[k],sg=o.sg.length?o.sg.reduce((a,b)=>a+b,0)/o.sg.length:null;return[k,o.n,o.remaining.length?(o.remaining.reduce((a,b)=>a+b,0)/o.remaining.length).toFixed(1)+'m':'—',multiPct(o.green,o.n),multiSgHtml(sg)]}))+
-    '<div class="sectionLabel" style="margin-top:12px">전체 거리대</div>'+
-    multiTable(['거리','샷','그린 도달','왼쪽','오른쪽','짧음','김','평균 획득타수'],appOrder.filter(k=>appGroups[k]).map(k=>{const o=appGroups[k];return[k,o.n,multiPct(o.green,o.n),o.left,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']}))+
     '<div class="sectionLabel" style="margin-top:12px">공 위치별</div>'+
     multiTable(['공 위치','샷','그린 도달','평균 획득타수'],Object.entries(lieGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,multiPct(o.green,o.n),o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']));
 
@@ -3875,7 +3869,7 @@ function renderMultiRoundReview(rounds){
   const p=multiPatternSummary(rounds);
   const patterns=[
     '<div class="resultsInsight"><b>티샷</b><br>전체 '+p.teeTotal+'개 티샷 중 우측 미스가 '+p.teeRight+'회 기록되었습니다.</div>',
-    '<div class="resultsInsight"><b>어프로치</b><br>그린 공략 '+p.approach+'회 중 그린에 도달하지 못한 결과가 '+p.approachMiss+'회 기록되었습니다.</div>',
+    '<div class="resultsInsight"><b>어프로치</b><br>핀 5~80m 어프로치 '+p.approach+'회 중 그린에 도달하지 못한 결과가 '+p.approachMiss+'회 기록되었습니다.</div>',
     '<div class="resultsInsight"><b>퍼팅과 벌타</b><br>3퍼트 '+p.threePutts+'회 · 벌타 '+p.penalties+'타가 기록되었습니다.</div>'
   ];
   $('multiPatternInsight').innerHTML=patterns.join('');
@@ -4304,7 +4298,16 @@ function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_
 function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'김'})[v]||v||'—'}
 function puttSlopeLabel(v){return ({UPHILL:'오르막',FLAT:'평지',DOWNHILL:'내리막'})[String(v||'').toUpperCase()]||v||'—'}
 function puttBreakLabel(v){return ({LEFT:'왼쪽',STRAIGHT:'직선',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||v||'—'}
-function playerShotLabel(index){return index===0?'티샷':index===1?'세컨샷':index===2?'서드샷':'어프로치'}
+function playerShotCategory(h,s,index){
+  const d=shotStartDistanceToHoleM(h,s,index);
+  if(Number.isFinite(Number(d))&&Number(d)>=5&&Number(d)<=80)return 'APPROACH';
+  if(index===0)return 'TEE';
+  if(index===1)return 'SECOND';
+  return 'THIRD';
+}
+function playerShotLabel(h,s,index){
+  return ({TEE:'티샷',SECOND:'세컨샷',THIRD:'서드샷',APPROACH:'어프로치'})[playerShotCategory(h,s,index)]||'샷';
+}
 function scoreMarkClass(h){
   const score=holeScore(h),par=Number(h?.par);
   if(!Number.isFinite(Number(score))||!Number.isFinite(par))return '';
@@ -4319,10 +4322,13 @@ function buildHoleReview(h){
   const dirs=countBy(shots,s=>s.direction&&s.direction!=='CENTER'?s.direction:null);
   const depths=countBy(shots,s=>['SHORT','LONG'].includes(s.depth)?s.depth:null);
   const [dDir,dDirN]=dominantCount(dirs),[dDepth,dDepthN]=dominantCount(depths);
-  const approach=shots.filter(s=>s.shotIntent==='GREEN_ATTACK');
-  const greenHits=approach.filter(s=>s.endLie==='GREEN').length;
-  const around=shots.filter(isAroundGreenShot);
-  const tee=shots[0]||null;
+  const classified=shots.map((s,i)=>({s,i,cat:playerShotCategory(h,s,i)}));
+  const second=classified.filter(x=>x.cat==='SECOND').map(x=>x.s);
+  const third=classified.filter(x=>x.cat==='THIRD').map(x=>x.s);
+  const approach=classified.filter(x=>x.cat==='APPROACH').map(x=>x.s);
+  const greenHits=second.filter(s=>s.endLie==='GREEN').length;
+  const approachGreenHits=approach.filter(s=>s.endLie==='GREEN').length;
+  const tee=classified.find(x=>x.cat==='TEE')?.s||null;
   const missParts=[];
   if(dDir&&dDirN>=1)missParts.push(dDirN+'× '+dirLabel(dDir));
   if(dDepth&&dDepthN>=1)missParts.push(dDepthN+'× '+depthLabel(dDepth));
@@ -4331,8 +4337,9 @@ function buildHoleReview(h){
     generatedAt:Date.now(),hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexMen:h.strokeIndexMen??null,strokeIndexLadies:h.strokeIndexLadies??null,score:holeScore(h),
     shotCount:shots.length,putts:putts.length,penalties:h.penalties||0,
     tee:{club:tee?.club||null,endLie:tee?.endLie||null,direction:tee?.direction||null,distanceM:tee?.distanceM??null},
-    approach:{attempts:approach.length,greenHits,short:approach.filter(s=>s.depth==='SHORT').length,long:approach.filter(s=>s.depth==='LONG').length},
-    around:{attempts:around.length,greenHits:around.filter(s=>s.endLie==='GREEN').length},
+    approach:{attempts:second.length,greenHits,short:second.filter(s=>s.depth==='SHORT').length,long:second.filter(s=>s.depth==='LONG').length},
+    third:{attempts:third.length,greenHits:third.filter(s=>s.endLie==='GREEN').length,short:third.filter(s=>s.depth==='SHORT').length,long:third.filter(s=>s.depth==='LONG').length},
+    around:{attempts:approach.length,greenHits:approachGreenHits},
     putting:{putts:putts.length,firstPutt:putts[0]?.distanceM??null,threePutt:putts.length>=3},
     keyMiss:missParts.length?missParts.join(' · '):'큰 반복 미스 없음'
   };
@@ -4340,39 +4347,60 @@ function buildHoleReview(h){
 function ensureHoleReview(h){if(!h.review&&h.completed)h.review=buildHoleReview(h);return h.review}
 function liveCategories(){
   const holes=round.holes.filter(h=>h.completed||h.hole===round.currentHole);
-  const teeShots=holes.map(h=>h.shots?.[0]).filter(Boolean);
-  const approaches=holes.flatMap(h=>h.shots||[]).filter(s=>s.shotIntent==='GREEN_ATTACK');
-  const around=holes.flatMap(h=>h.shots||[]).filter(isAroundGreenShot);
+  const rows=holes.flatMap(h=>(h.shots||[]).map((s,i)=>({h,s,i,cat:playerShotCategory(h,s,i)})));
+  const teeRows=rows.filter(x=>x.cat==='TEE');
+  const secondRows=rows.filter(x=>x.cat==='SECOND');
+  const thirdRows=rows.filter(x=>x.cat==='THIRD');
+  const approachRows=rows.filter(x=>x.cat==='APPROACH');
   const puttHoles=holes.filter(h=>(h.puttsDetail||[]).length);
   const putts=puttHoles.flatMap(h=>h.puttsDetail||[]);
-  const teeNonCenter=teeShots.filter(s=>s.direction&&s.direction!=='CENTER');
+
+  const makeShotCategory=(key,name,items)=>{
+    const shots=items.map(x=>x.s);
+    const nonCenter=shots.filter(s=>s.direction&&s.direction!=='CENTER');
+    const trouble=shots.filter(s=>!['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
+    const short=shots.filter(s=>s.depth==='SHORT');
+    const long=shots.filter(s=>s.depth==='LONG');
+    const green=shots.filter(s=>String(s.endLie||'').toUpperCase()==='GREEN').length;
+    const dir=dominantCount(countBy(nonCenter,s=>s.direction));
+    const depth=dominantCount(countBy(shots.filter(s=>s.depth&&s.depth!=='PIN_HIGH'&&s.depth!=='TARGET'),s=>s.depth));
+    const issue=trouble.length+nonCenter.length*.35+Math.max(short.length,long.length)*.35;
+    return {
+      key,name,samples:shots.length,issue,
+      main:shots.length?shots.length+'개 '+name+' 중 '+green+'개가 그린에 끝났습니다.':'아직 '+name+' 데이터가 없습니다.',
+      sub:shots.length?'왼쪽 '+shots.filter(s=>s.direction==='LEFT').length+' · 오른쪽 '+shots.filter(s=>s.direction==='RIGHT').length+' · 짧음 '+short.length+' · 김 '+long.length:'측정된 '+name+'이 없습니다.',
+      why:dir[1]>=2?dirLabel(dir[0])+' 결과가 '+dir[1]+'회 반복되었습니다.':depth[1]>=2?depthLabel(depth[0])+' 결과가 '+depth[1]+'회 반복되었습니다.':'아직 반복되는 결과는 없습니다.'
+    };
+  };
+
+  const tee=makeShotCategory('tee','티샷',teeRows);
+  // Tee-specific wording is clearer than generic green-finish wording.
+  const teeShots=teeRows.map(x=>x.s);
   const teeTrouble=teeShots.filter(s=>!['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
-  const approachMiss=approaches.filter(s=>s.endLie!=='GREEN');
-  const short=approaches.filter(s=>s.depth==='SHORT');
-  const long=approaches.filter(s=>s.depth==='LONG');
-  const aroundMiss=around.filter(s=>s.endLie!=='GREEN');
+  const teeDir=dominantCount(countBy(teeShots.filter(s=>s.direction&&s.direction!=='CENTER'),s=>s.direction));
+  tee.main=teeShots.length?teeShots.length+'개 티샷 중 '+teeTrouble.length+'개가 페어웨이/그린 밖에서 끝났습니다.':'아직 티샷 데이터가 없습니다.';
+  tee.sub=teeDir[0]?dirLabel(teeDir[0])+' 경향 '+teeDir[1]+'회 관찰.':'아직 반복되는 좌우 방향은 없습니다.';
+  tee.why=teeDir[1]>=2?dirLabel(teeDir[0])+' 결과가 샷 로그에서 '+teeDir[1]+'회 반복되었습니다.':'패턴으로 판단하려면 샷이 더 필요합니다.';
+
+  const second=makeShotCategory('second','세컨샷',secondRows);
+  const third=makeShotCategory('third','서드샷',thirdRows);
+  const approach=makeShotCategory('approach','어프로치',approachRows);
+  if(approachRows.length){
+    const starts=approachRows.map(x=>shotStartDistanceToHoleM(x.h,x.s,x.i)).filter(Number.isFinite);
+    approach.sub='핀까지 5~80m에서 시작한 샷 · '+approach.sub;
+    approach.main=approachRows.length+'개 어프로치 중 '+approachRows.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length+'개가 그린에 끝났습니다.';
+  }else{
+    approach.sub='핀까지 5~80m에서 시작한 모든 샷을 어프로치로 분류합니다.';
+  }
+
   const threePutts=puttHoles.filter(h=>(h.puttsDetail||[]).length>=3).length;
   const firstPutts=puttHoles.map(h=>h.puttsDetail?.[0]?.distanceM).filter(Number.isFinite);
-  const teeDir=dominantCount(countBy(teeNonCenter,s=>s.direction));
-  const appDepth=dominantCount(countBy(approaches.filter(s=>s.depth!=='PIN_HIGH'),s=>s.depth));
-  return {
-    tee:{key:'tee',name:'티샷',samples:teeShots.length,issue:teeTrouble.length+teeNonCenter.length*.4,
-      main:teeShots.length?teeShots.length+'개 티샷 중 '+teeTrouble.length+'개가 페어웨이/그린 밖에서 끝났습니다.':'아직 티샷 데이터가 없습니다.',
-      sub:teeDir[0]?dirLabel(teeDir[0])+' 경향 '+teeDir[1]+'회 관찰.':'아직 반복되는 좌우 방향은 없습니다.',
-      why:teeDir[1]>=2?dirLabel(teeDir[0])+' 결과가 샷 로그에서 '+teeDir[1]+'회 반복되었습니다.':'패턴으로 판단하려면 샷이 더 필요합니다.'},
-    approach:{key:'approach',name:'세컨샷',samples:approaches.length,issue:approachMiss.length+Math.max(short.length,long.length)*.5,
-      main:approaches.length?approaches.length+'개 세컨샷 분석 대상 중 '+(approaches.length-approachMiss.length)+'개가 그린에 끝났습니다.':'아직 세컨샷 데이터가 없습니다.',
-      sub:approaches.length?'짧음 '+short.length+' · 김 '+long.length+' · 그린 '+(approaches.length-approachMiss.length):'측정된 세컨샷이 없습니다.',
-      why:appDepth[1]>=2?depthLabel(appDepth[0])+' 결과가 '+appDepth[1]+'회 반복되었습니다.':'아직 반복되는 거리 미스는 없습니다.'},
-    around:{key:'around',name:'어프로치',samples:around.length,issue:aroundMiss.length,
-      main:around.length?around.length+'개 어프로치 중 '+(around.length-aroundMiss.length)+'개가 그린에 끝났습니다.':'아직 어프로치 데이터가 없습니다.',
-      sub:around.length?'그린까지 약 55m 이내 또는 벙커/프린지에서 시작한 샷 기준입니다.':'어프로치 데이터가 필요합니다.',
-      why:aroundMiss.length>=2?aroundMiss.length+'개의 어프로치가 그린에 끝나지 않았습니다.':'아직 반복되는 어프로치 문제는 없습니다.'},
-    putting:{key:'putting',name:'퍼팅',samples:putts.length,issue:threePutts*2+Math.max(0,putts.length-puttHoles.length*2)*.4,
-      main:puttHoles.length?puttHoles.length+'개 홀에서 '+putts.length+'퍼트 · 3퍼트 이상 '+threePutts+'회.':'아직 퍼팅 데이터가 없습니다.',
-      sub:firstPutts.length?'첫 퍼트 평균 거리 '+avg(firstPutts).toFixed(1)+'m.':'첫 퍼트 거리 데이터가 없습니다.',
-      why:threePutts?'3퍼트 이상이 오늘 추가 타수와 연결되어 있습니다.':'3퍼트 이상 패턴은 기록되지 않았습니다.'}
-  };
+  const putting={key:'putting',name:'퍼팅',samples:putts.length,issue:threePutts*2+Math.max(0,putts.length-puttHoles.length*2)*.4,
+    main:puttHoles.length?puttHoles.length+'개 홀에서 '+putts.length+'퍼트 · 3퍼트 이상 '+threePutts+'회.':'아직 퍼팅 데이터가 없습니다.',
+    sub:firstPutts.length?'첫 퍼트 평균 거리 '+avg(firstPutts).toFixed(1)+'m.':'첫 퍼트 거리 데이터가 없습니다.',
+    why:threePutts?'3퍼트 이상이 오늘 추가 타수와 연결되어 있습니다.':'3퍼트 이상 패턴은 기록되지 않았습니다.'};
+
+  return {tee,second,third,approach,putting};
 }
 function buildLiveAnalysis(){
   const cats=liveCategories();
@@ -4384,10 +4412,11 @@ function buildLiveAnalysis(){
   const depths=countBy(all.filter(s=>['SHORT','LONG'].includes(s.depth)),s=>s.depth);
   const [dd,ddn]=dominantCount(dirs),[dp,dpn]=dominantCount(depths);
   let action='다음 샷은 타깃을 먼저 확정하고 정상 루틴을 유지하세요.';
-  if(problem.key==='approach'&&dp==='SHORT'&&dpn>=2)action='세컨샷: 스윙 변경보다 목표 캐리를 먼저 확정하고 거리 선택을 보수적으로 하세요.';
-  else if(problem.key==='approach')action='세컨샷: 타깃과 캐리를 먼저 확정한 뒤 한 가지 구질만 실행하세요.';
+  if(problem.key==='approach'&&dp==='SHORT'&&dpn>=2)action='어프로치: 스윙 변경보다 목표 캐리를 먼저 확정하고 거리 선택을 보수적으로 하세요.';
+  else if(problem.key==='approach')action='어프로치: 랜딩 지점과 캐리를 먼저 확정하세요.';
+  else if(problem.key==='second')action='세컨샷: 타깃과 다음 샷 위치를 먼저 확정하세요.';
+  else if(problem.key==='third')action='서드샷: 핀 위치보다 안전한 그린 진입 지점을 먼저 확정하세요.';
   else if(problem.key==='putting')action='퍼팅: 첫 퍼트의 거리 컨트롤 하나에만 집중하세요.';
-  else if(problem.key==='around')action='어프로치: 샷 종류보다 랜딩 지점을 먼저 결정하세요.';
   else if(problem.key==='tee'&&ddn>=2)action='티샷: '+dirLabel(dd)+' 미스가 반복됩니다. 타깃 라인을 먼저 확정하고 스윙은 바꾸지 마세요.';
   else if(problem.key==='tee')action='티샷: 타깃을 먼저 확정하고 정상 스윙을 유지하세요.';
   const completed=round.holes.filter(h=>h.completed);
@@ -4400,7 +4429,7 @@ function buildLiveAnalysis(){
   };
 }
 function categoryCard(cat,story=false){
-  const cls=cat.key==='approach'?'approach':cat.key==='around'?'around':cat.key==='putting'?'putting':'';
+  const cls=cat.key==='approach'?'around':cat.key==='second'||cat.key==='third'?'approach':cat.key==='putting'?'putting':'';
   return '<div class="analysisCard '+cls+(story?' storyCategory':'')+'"><div class="catTop"><span class="catName">'+cat.name+'</span><span class="catValue">'+cat.samples+'개</span></div><div class="catMain">'+cat.main+'</div><div class="catSub">'+cat.sub+'</div><div class="whyBox"><b>오늘 관찰</b><br>'+cat.why+'</div>'+(story?'<div class="baselinePending">나의 평소 · 약 10라운드 이후 개인 기준선과 비교</div>':'')+'</div>';
 }
 function liveMentalStateCard(){
@@ -4450,7 +4479,8 @@ function renderHoleReview(holeNo){
     '<div class="grid2" style="margin-top:9px">'+
       '<div class="metric"><div class="k">티샷</div><div class="s">'+(r.tee.club?safeText(r.tee.club)+' · '+lieDisplayLabel(r.tee.endLie)+' · '+dirLabel(r.tee.direction):'티샷 없음')+'</div></div>'+
       '<div class="metric"><div class="k">세컨샷</div><div class="s">그린 '+r.approach.greenHits+'/'+r.approach.attempts+' · 짧음 '+r.approach.short+' · 김 '+r.approach.long+'</div></div>'+
-      '<div class="metric"><div class="k">어프로치</div><div class="s">'+r.around.attempts+'개 중 '+r.around.greenHits+'개 그린 도착</div></div>'+
+      '<div class="metric"><div class="k">서드샷</div><div class="s">그린 '+(r.third?.greenHits||0)+'/'+(r.third?.attempts||0)+' · 짧음 '+(r.third?.short||0)+' · 김 '+(r.third?.long||0)+'</div></div>'+
+      '<div class="metric"><div class="k">어프로치</div><div class="s">'+r.around.attempts+'개 중 '+r.around.greenHits+'개 그린 도착 · 핀 5~80m</div></div>'+
       '<div class="metric"><div class="k">퍼팅</div><div class="s">'+r.putting.putts+'퍼트'+(r.putting.firstPutt!==null?' · 첫 퍼트 '+Number(r.putting.firstPutt).toFixed(1)+'m':'')+(r.putting.threePutt?' · 3퍼트 이상':'')+'</div></div>'+
     '</div>'+
     '<div class="dataNote"><b>핵심 미스</b> · '+r.keyMiss+'</div>'+
@@ -4460,7 +4490,7 @@ function renderHoleReview(holeNo){
         ...shots.map((s,i)=>{
           const sg=computeShotSG(h,s,i,sgBenchmarkInfo());
           const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
-          return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+playerShotLabel(i)+' · '+safeText(s.club)+'</strong><p>'+
+          return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+playerShotLabel(h,s,i)+' · '+safeText(s.club)+'</strong><p>'+
             lieDisplayLabel(s.startLie)+' → '+lieDisplayLabel(s.endLie)+' · 의도 '+shapeLabel(s.intendedShape)+' / 실제 '+shapeLabel(s.ballFlight)+'<br>'+
             dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+positionSourceLabel(s.positionSource?.start)+'→'+positionSourceLabel(s.positionSource?.end)+
             '</p></div><div class="dist">'+distanceLabel(s.distanceM)+badge+'</div></div>';
