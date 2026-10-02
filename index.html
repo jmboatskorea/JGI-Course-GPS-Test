@@ -732,6 +732,7 @@ body.round-active .bottomnav{display:none!important}
 .analysisMini b{display:block;font-size:12px}.analysisMini span{display:block;margin-top:4px;color:#88988f;font-size:9px;line-height:1.4}
 .analysisBadge{display:inline-flex;margin:3px 4px 3px 0;padding:5px 7px;border-radius:999px;border:1px solid rgba(39,242,122,.18);background:rgba(39,242,122,.06);color:#82f3a5;font-size:8px;font-weight:900}
 .analysisSgValue{font-weight:1000}.analysisSgValue.positive{color:#67f29a}.analysisSgValue.negative{color:#ff7b7b}.analysisSgValue.neutral{color:#d9e5dd}
+.sampleStatus{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:950;white-space:nowrap}.sampleStatus.low{color:#a8b4ad;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)}.sampleStatus.early{color:#ffd071;border:1px solid rgba(255,193,68,.24);background:rgba(255,193,68,.06)}.sampleStatus.ready{color:#75f29d;border:1px solid rgba(54,239,124,.24);background:rgba(54,239,124,.06)}
 @media(max-width:430px){.analysisKpis{grid-template-columns:repeat(3,1fr)}.analysisSplit{grid-template-columns:1fr}}
 @media(max-width:430px){
   .introHomeChoices{grid-template-columns:1fr}
@@ -1357,6 +1358,11 @@ body.round-active .bottomnav{display:none!important}
           <div class="metric"><div class="k">벌타</div><div id="statPen" class="v">0</div></div>
           <div class="metric"><div class="k">스크램블</div><div id="statScramble" class="v">—</div></div>
         </div>
+      </div>
+      <div class="card">
+        <div class="title">클럽 · 거리별 획득타수</div>
+        <div class="sub">같은 클럽도 시작 거리별 성과를 분리합니다. 5~80m 어프로치는 5m 구간, 그 외 거리는 10m 구간으로 표시합니다.</div>
+        <div id="clubDistanceSg" style="margin-top:10px"></div>
       </div>
     </section>
 
@@ -3605,8 +3611,8 @@ function multiApproachBucket(v){
 }
 function multiApproach5mBucket(v){
   const n=Number(v);if(!Number.isFinite(n)||n<5||n>80)return null;
-  const upper=Math.min(80,Math.ceil(n/5)*5);
-  const lower=Math.max(5,upper-5);
+  const lower=Math.max(5,Math.floor((n-0.000001)/5)*5);
+  const upper=Math.min(80,lower+5);
   return lower+'–'+upper+'m';
 }
 function multiPuttBucket(v){
@@ -4768,6 +4774,46 @@ function stats(){
     penalties:completedAll.reduce((a,h)=>a+(h.penalties||0),0),
     drive:avg(drives),scr,scrD:misses.length};
 }
+function performanceSampleStatus(n){
+  if(n>=10)return '<span class="sampleStatus ready">비교 가능</span>';
+  if(n>=5)return '<span class="sampleStatus early">초기 관찰</span>';
+  return '<span class="sampleStatus low">표본 부족</span>';
+}
+function performanceDistanceBucket(h,s,index){
+  const club=String(s?.club||'미확인').trim();
+  const clubKey=club.toUpperCase();
+  const role=playerShotCategory(h,s,index);
+  if(role==='TEE'&&['DR','DRIVER','3W'].includes(clubKey))return {label:'티샷',order:-100,approach:false};
+  const d=shotStartDistanceToHoleM(h,s,index);
+  if(!Number.isFinite(Number(d)))return {label:'거리 미확인',order:9999,approach:false};
+  if(Number(d)>=5&&Number(d)<=80)return {label:multiApproach5mBucket(d),order:Number(d),approach:true};
+  const lower=Math.floor(Number(d)/10)*10,upper=lower+10;
+  return {label:lower+'–'+upper+'m',order:lower,approach:false};
+}
+function renderClubDistanceSg(){
+  const host=$('clubDistanceSg');if(!host)return;
+  const info=sgBenchmarkInfo(),groups=new Map();let missing=0;
+  (round?.holes||[]).forEach(h=>(h.shots||[]).forEach((s,i)=>{
+    const sg=computeShotSG(h,s,i,info);if(!sg){missing++;return}
+    const bucket=performanceDistanceBucket(h,s,i);
+    const club=safeText(s.club),key=club+'|'+bucket.label;
+    if(!groups.has(key))groups.set(key,{club,label:bucket.label,order:bucket.order,approach:bucket.approach,n:0,sg:[],remaining:[]});
+    const g=groups.get(key);g.n++;g.sg.push(Number(sg.value));
+    if(bucket.approach){
+      const rem=shotEndDistanceToHoleM(h,s,i);
+      if(Number.isFinite(Number(rem)))g.remaining.push(Number(rem));
+    }
+  }));
+  const rows=[...groups.values()].sort((a,b)=>a.club.localeCompare(b.club,'en',{numeric:true})||a.order-b.order).map(g=>{
+    const avgSg=g.sg.length?g.sg.reduce((a,b)=>a+b,0)/g.sg.length:null;
+    const totalSg=g.sg.reduce((a,b)=>a+b,0);
+    const pin=g.approach&&g.remaining.length?(g.remaining.reduce((a,b)=>a+b,0)/g.remaining.length).toFixed(1)+'m':'—';
+    return [safeText(g.club),safeText(g.label),g.n,pin,multiSgHtml(avgSg),multiSgHtml(totalSg),performanceSampleStatus(g.n)];
+  });
+  host.innerHTML=
+    '<div class="analysisNote">SG 계산이 가능한 샷만 표시합니다. Avg SG/샷은 같은 클럽·거리 조건의 평균, Total SG는 해당 조건의 누적 획득타수입니다. 5~80m 어프로치만 평균 핀 잔여거리를 함께 표시합니다.'+(missing?' · SG 계산 불가 '+missing+'샷 제외':'')+'</div>'+
+    multiTable(['클럽','거리 조건','샷 수','평균 핀 잔여','Avg SG/샷','Total SG','표본'],rows);
+}
 function render퍼포먼스(){
   if(!round)return;const s=stats();
   $('statFir').textContent=s.firD?(s.firN+'/'+s.firD):'—';
@@ -4782,6 +4828,7 @@ function render퍼포먼스(){
   const values={sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
   Object.entries(values).forEach(([id,v])=>{const el=$(id);el.textContent=formatSg(v);el.classList.remove('positive','negative');const cls=sgValueClass(v);if(cls)el.classList.add(cls)});
   $('sgPenaltyNote').textContent=(sg.totals.penalty?('페널티 영향 '+formatSg(sg.totals.penalty)+' · '):'')+(sg.counts.missing?('아직 계산할 수 없는 샷/퍼트 '+sg.counts.missing+'개'):'기록된 위치 데이터 기준으로 계산됨');
+  renderClubDistanceSg();
   syncSgBenchmarkUI();
 }
 function legacyRoutineValue(x){
