@@ -732,15 +732,27 @@ body.round-active .bottomnav{display:none!important}
 .analysisMini b{display:block;font-size:12px}.analysisMini span{display:block;margin-top:4px;color:#88988f;font-size:9px;line-height:1.4}
 .analysisBadge{display:inline-flex;margin:3px 4px 3px 0;padding:5px 7px;border-radius:999px;border:1px solid rgba(39,242,122,.18);background:rgba(39,242,122,.06);color:#82f3a5;font-size:8px;font-weight:900}
 .analysisSgValue{font-weight:1000}.analysisSgValue.positive{color:#67f29a}.analysisSgValue.negative{color:#ff7b7b}.analysisSgValue.neutral{color:#d9e5dd}
+.multiHero{position:relative;overflow:hidden;margin-top:10px;padding:13px;border-radius:20px;border:1px solid rgba(39,233,120,.28);background:
+  radial-gradient(circle at 78% 18%,rgba(54,161,86,.34),transparent 24%),
+  radial-gradient(ellipse at 78% 88%,rgba(17,83,48,.58),transparent 40%),
+  linear-gradient(135deg,#0a281d 0%,#0a1a13 56%,#07110c 100%)}
+.multiHero:after{content:"";position:absolute;right:-4%;top:0;width:54%;height:100%;opacity:.30;pointer-events:none;background:
+  radial-gradient(ellipse at 52% 76%,rgba(117,178,94,.8) 0 12%,transparent 13%),
+  radial-gradient(ellipse at 25% 58%,rgba(78,137,75,.75) 0 10%,transparent 11%),
+  radial-gradient(ellipse at 73% 42%,rgba(63,115,68,.72) 0 13%,transparent 14%),
+  linear-gradient(165deg,transparent 0 45%,rgba(84,142,81,.35) 46% 55%,transparent 56%)}
+.multiHero>.resultsTop,.multiHero>.resultsSummary{position:relative;z-index:1}
+.multiHero .resultsBack{border-color:rgba(126,255,164,.32);background:rgba(4,20,15,.72)}
+.multiHero .resultsMetric{background:rgba(4,20,15,.72);border-color:rgba(126,255,164,.22)}
+.multiHero .resultsMetric b{font-size:27px}
 .multiCockpitSummary{grid-template-columns:repeat(4,1fr)!important}
-.multiPlayerSgCards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-.multiPlayerSgCard{padding:12px 10px;border:1px solid rgba(255,255,255,.11);border-radius:16px;background:rgba(7,24,18,.74)}
+.multiSgOverview{margin-top:10px}.multiPlayerSgCards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.multiPlayerSgCard{padding:13px 11px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:linear-gradient(180deg,rgba(10,33,25,.9),rgba(5,20,15,.86))}.multiPlayerSgCard:nth-child(1){border-color:rgba(62,145,255,.45)}.multiPlayerSgCard:nth-child(2){border-color:rgba(39,233,120,.36)}.multiPlayerSgCard:nth-child(3){border-color:rgba(255,193,68,.35)}.multiPlayerSgCard:nth-child(4){border-color:rgba(255,103,116,.4)}
 .multiPlayerSgCard span{display:block;color:#9fb2a7;font-size:9px;font-weight:900}.multiPlayerSgCard b{display:block;font-size:22px;margin-top:4px}.multiPlayerSgCard small{display:block;color:#8ea197;font-size:8px;margin-top:3px}
-.multiSgTrend{display:grid;gap:7px;margin-top:12px}.multiSgTrendRow{display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center}.multiSgTrendRow>span{font-size:8px;color:#9fb2a7;font-weight:900}
-.multiSgTrendTrack{display:flex;align-items:center;gap:4px;height:30px}.multiSgTrendPoint{flex:1;min-width:20px;border-radius:7px;display:grid;place-items:center;font-size:7px;font-weight:950;border:1px solid rgba(255,255,255,.06)}
+.multiChartsGrid{display:grid;grid-template-columns:1.08fr 1.12fr .8fr;gap:8px;margin-top:10px}.multiChartCard{margin:0!important;padding:12px!important;min-width:0}.multiChartCard .title{font-size:13px}.multiLineSvg{width:100%;height:150px;display:block}.multiLineLegend{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;color:#8fa097;font-size:7px}.multiLineLegend span{display:flex;align-items:center;gap:4px}.multiLineLegend i{width:7px;height:7px;border-radius:50%;display:inline-block}
 .multiCoreInsights{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.multiCoreInsight{padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.11);background:rgba(7,24,18,.72)}.multiCoreInsight.loss{border-color:rgba(255,103,116,.35);background:rgba(73,21,29,.18)}.multiCoreInsight.gain{border-color:rgba(39,233,120,.32);background:rgba(19,92,47,.16)}.multiCoreInsight.mental{border-color:rgba(255,193,68,.3);background:rgba(91,66,14,.14)}
 .multiCoreInsight .ey{font-size:8px;font-weight:950;color:#9fb1a6}.multiCoreInsight strong{display:block;font-size:13px;line-height:1.4;margin-top:4px}.multiCoreInsight p{font-size:9px;line-height:1.5;color:#c0cec5;margin:5px 0 0}
-.multiRecentCompare{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}.multiRecentItem{padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#08130d;text-align:center}.multiRecentItem span{display:block;color:#9daf9f;font-size:8px;font-weight:900}.multiRecentItem b{display:block;font-size:12px;margin-top:4px}.multiRecentItem small{display:block;font-size:8px;margin-top:4px}.multiRecentItem .up{color:#67f29a}.multiRecentItem .down{color:#ff7b7b}.multiRecentItem .neutral{color:#cbd7d0}
+.multiRecentWrap{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:8px;margin-top:10px}.multiRecentCompare{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:0}.multiRecentItem{padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#08130d;text-align:center}.multiRecentItem span{display:block;color:#9daf9f;font-size:8px;font-weight:900}.multiRecentItem b{display:block;font-size:12px;margin-top:4px}.multiRecentItem small{display:block;font-size:8px;margin-top:4px}.multiRecentItem .up{color:#67f29a}.multiRecentItem .down{color:#ff7b7b}.multiRecentItem .neutral{color:#cbd7d0}.multiRecentSummary{padding:12px;border-radius:14px;border:1px solid rgba(255,193,68,.28);background:rgba(89,66,17,.15);font-size:9px;line-height:1.55;color:#cbd5cf}.multiRecentSummary b{display:block;color:#ffd36e;font-size:11px;margin-bottom:6px}.multiDetailActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .multiDashboardTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.multiDashboardTabs button{border:1px solid rgba(255,255,255,.12);background:#07130d;color:#a1b2a8;border-radius:14px;padding:10px 6px;font-size:9px;font-weight:950}.multiDashboardTabs button.sel{border-color:#27e978;color:#7af5a0;background:rgba(39,233,120,.1)}
 .multiCategoryTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.multiCategoryTabs button{border:1px solid rgba(255,255,255,.1);background:#07130d;color:#93a69b;border-radius:999px;padding:8px 5px;font-size:8px;font-weight:900}.multiCategoryTabs button.sel{border-color:#27e978;color:#74f39d;background:rgba(39,233,120,.09)}
 .multiTeeKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.multiTeeKpi{padding:10px;border-radius:14px;background:#08130d;border:1px solid rgba(255,255,255,.1)}.multiTeeKpi span{display:block;color:#9daf9f;font-size:8px}.multiTeeKpi b{display:block;font-size:16px;margin-top:3px}
@@ -749,7 +761,7 @@ body.round-active .bottomnav{display:none!important}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
-@media(max-width:620px){.multiCockpitSummary{grid-template-columns:repeat(2,1fr)!important}.multiPlayerSgCards{grid-template-columns:repeat(2,1fr)}.multiCoreInsights{grid-template-columns:1fr}.multiRecentCompare{grid-template-columns:repeat(2,1fr)}.multiDashboardTabs{grid-template-columns:repeat(2,1fr)}.multiTeeKpis{grid-template-columns:repeat(2,1fr)}.multiTeeGrid{grid-template-columns:1fr}.multiDriverScatter{height:180px}}
+@media(max-width:620px){.multiHero{padding:10px}.multiHero .resultsTop{gap:8px}.multiHero .resultsMetric b{font-size:22px}.multiCockpitSummary{grid-template-columns:repeat(2,1fr)!important}.multiPlayerSgCards{grid-template-columns:repeat(2,1fr)}.multiChartsGrid{grid-template-columns:1fr}.multiCoreInsights{grid-template-columns:1fr}.multiRecentWrap{grid-template-columns:1fr}.multiRecentCompare{grid-template-columns:repeat(2,1fr)}.multiDashboardTabs{grid-template-columns:repeat(2,1fr)}.multiTeeKpis{grid-template-columns:repeat(2,1fr)}.multiTeeGrid{grid-template-columns:1fr}.multiDriverScatter{height:180px}}
 
 .sampleStatus{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:950;white-space:nowrap}.sampleStatus.low{color:#a8b4ad;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)}.sampleStatus.early{color:#ffd071;border:1px solid rgba(255,193,68,.24);background:rgba(255,193,68,.06)}.sampleStatus.ready{color:#75f29d;border:1px solid rgba(54,239,124,.24);background:rgba(54,239,124,.06)}
 .perfHighlights{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.perfHighlight{padding:11px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(8,24,19,.7)}.perfHighlight .k{font-size:8px;color:#95a79c;font-weight:900}.perfHighlight .v{font-size:17px;font-weight:1000;margin-top:4px}.perfHighlight .s{font-size:8px;color:#93a69a;margin-top:3px;line-height:1.35}
@@ -1200,26 +1212,44 @@ body.round-active .bottomnav{display:none!important}
       </div>
 
       <div id="resultsMultiView" class="hidden">
-        <div class="resultsTop">
-          <div>
-            <div class="eyebrow">JGI · 누적 라운드 분석</div>
-            <h2 id="multiReviewTitle" style="margin:4px 0 0">종합 라운드 리뷰</h2>
-            <div id="multiReviewSub" class="sub"></div>
+        <div class="multiHero">
+          <div class="resultsTop">
+            <div>
+              <div class="eyebrow">JGI · 누적 라운드 분석</div>
+              <h2 id="multiReviewTitle" style="margin:4px 0 0">종합 라운드 리뷰</h2>
+              <div id="multiReviewSub" class="sub"></div>
+            </div>
+            <button id="multiBackBtn" class="resultsBack">＋ 라운드 선택</button>
           </div>
-          <button id="multiBackBtn" class="resultsBack">← 검색</button>
+          <div class="resultsSummary multiCockpitSummary">
+            <div class="resultsMetric"><b id="multiAvgScore">—</b><span>평균 스코어</span></div>
+            <div class="resultsMetric"><b id="multiBestScore">—</b><span>최고 스코어</span></div>
+            <div class="resultsMetric"><b id="multiRoundCount">0</b><span>라운드 수</span></div>
+            <div class="resultsMetric"><b id="multiAvgHcp">—</b><span>평균 핸디캡</span></div>
+            <span id="multiPenalty" class="hidden">0</span>
+          </div>
         </div>
 
-        <div class="resultsSummary multiCockpitSummary">
-          <div class="resultsMetric"><b id="multiAvgScore">—</b><span>평균 스코어</span></div>
-          <div class="resultsMetric"><b id="multiBestScore">—</b><span>최고 스코어</span></div>
-          <div class="resultsMetric"><b id="multiRoundCount">0</b><span>라운드 수</span></div>
-          <div class="resultsMetric"><b id="multiAvgHcp">—</b><span>평균 핸디캡</span></div>
-          <span id="multiPenalty" class="hidden">0</span>
+        <div class="card multiSgOverview">
+          <div class="title">획득 타수 · Avg SG</div>
+          <div class="sub">Player 화면은 티샷 · 세컨샷 · 어프로치 · 퍼터 네 영역으로 봅니다.</div>
+          <div id="multiPlayerSgCards" class="multiPlayerSgCards"></div>
+          <div id="multiSgTrend" class="hidden"></div>
         </div>
 
-        <div class="card">
-          <div class="title">스코어 변화</div>
-          <div id="multiScoreTrend" class="multiTrend"></div>
+        <div class="multiChartsGrid">
+          <div class="card multiChartCard">
+            <div class="title">스코어 추이</div>
+            <div id="multiScoreTrend" class="multiTrend"></div>
+          </div>
+          <div class="card multiChartCard">
+            <div class="title">획득 타수 추이 · Avg SG</div>
+            <div id="multiSgLineChart"></div>
+          </div>
+          <div class="card multiChartCard">
+            <div class="title">핸디캡 추이</div>
+            <div id="multiHcpTrend"></div>
+          </div>
         </div>
 
         <div class="card hidden" aria-hidden="true">
@@ -1237,21 +1267,16 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div class="card">
-          <div class="title">획득 타수 · Avg SG</div>
-          <div class="sub">Player 화면은 티샷 · 세컨샷 · 어프로치 · 퍼터 네 영역으로 봅니다.</div>
-          <div id="multiPlayerSgCards" class="multiPlayerSgCards"></div>
-          <div id="multiSgTrend" class="multiSgTrend"></div>
-        </div>
-
-        <div class="card">
           <div class="title">누적 핵심 인사이트 3개</div>
           <div id="multiCoreInsights" class="multiCoreInsights"></div>
         </div>
 
         <div class="card">
-          <div class="title">최근 변화</div>
-          <div class="sub">최근 라운드와 그 이전 라운드를 같은 수량으로 비교합니다.</div>
-          <div id="multiRecentCompare" class="multiRecentCompare"></div>
+          <div class="title">최근 변화 <span style="font-size:10px;color:#91a39a;font-weight:800">· 최근 3R vs 이전 3R</span></div>
+          <div class="multiRecentWrap">
+            <div id="multiRecentCompare" class="multiRecentCompare"></div>
+            <div id="multiRecentSummary" class="multiRecentSummary"></div>
+          </div>
         </div>
 
         <div id="multiDashboardTabs" class="multiDashboardTabs">
@@ -1267,7 +1292,7 @@ body.round-active .bottomnav{display:none!important}
               <div id="multiPrimaryTitle" class="title">티샷 상세 분석</div>
               <div id="multiPrimarySub" class="sub">티샷 · 세컨샷 · 어프로치 · 퍼터 상세 데이터를 확인합니다.</div>
             </div>
-            <button id="multiAllDetailJump" class="resultsBack">상세 데이터 ↓</button>
+            <div class="multiDetailActions"><span id="multiDetailRange" class="analysisBadge">선택 라운드</span><button id="multiAllDetailJump" class="resultsBack">상세 데이터 보기 →</button></div>
           </div>
           <div id="multiPrimaryDetail"></div>
         </div>
@@ -4207,6 +4232,51 @@ function renderMultiPrimaryDetail(){
   title.textContent='코스 · 상황 분석';sub.textContent='위험요소 · 페어웨이 폭 · 타깃 선택과 결과를 함께 봅니다.';
   host.innerHTML='<div class="sectionLabel">위험요소</div>'+($('analysisRisk')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">페어웨이 폭 · 착지구역</div>'+($('analysisWidth')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">타깃 선택</div>'+($('analysisDecision')?.innerHTML||'');
 }
+function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1)){
+  const all=series.flatMap(x=>x).filter(Number.isFinite);
+  if(!all.length)return '<div class="analysisEmpty">표시할 데이터가 없습니다.</div>';
+  let min=Math.min(...all),max=Math.max(...all);if(Math.abs(max-min)<.1){min-=1;max+=1}else{const pad=(max-min)*.18;min-=pad;max+=pad}
+  const n=Math.max(...series.map(x=>x.length),1),w=420,h=150,l=28,r=10,t=16,b=24,iw=w-l-r,ih=h-t-b;
+  const x=i=>l+(n<=1?iw/2:i/(n-1)*iw),y=v=>t+(max-v)/(max-min)*ih;
+  let svg='<svg class="multiLineSvg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">';
+  for(let g=0;g<4;g++){const yy=t+ih*g/3;svg+='<line x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'" stroke="rgba(255,255,255,.08)" stroke-width="1"/>'}
+  series.forEach((vals,si)=>{
+    const pts=vals.map((v,i)=>Number.isFinite(v)?x(i)+','+y(v):null).filter(Boolean).join(' ');
+    if(pts)svg+='<polyline points="'+pts+'" fill="none" stroke="'+colors[si]+'" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
+    vals.forEach((v,i)=>{if(Number.isFinite(v))svg+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+colors[si]+'" stroke="#07110c" stroke-width="1"/>'});
+  });
+  for(let i=0;i<n;i++)svg+='<text x="'+x(i)+'" y="'+(h-5)+'" text-anchor="middle" fill="#7f9086" font-size="8">'+(i+1)+'R</text>';
+  svg+='</svg><div class="multiLineLegend">'+labels.map((l,i)=>'<span><i style="background:'+colors[i]+'"></i>'+safeText(l)+'</span>').join('')+'</div>';
+  return svg;
+}
+function multiRenderSgLineChart(rounds){
+  const x=multiPlayerFacingSg(rounds);
+  return multiSvgSeries([x.TEE.byRound,x.SECOND.byRound,x.APPROACH.byRound,x.PUTTER.byRound],
+    ['#5aa7ff','#45e587','#f2b94b','#ff6f7d'],['티샷','세컨샷','어프로치','퍼터'],v=>formatSg(v));
+}
+function multiRenderHcpChart(rounds){
+  const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
+  const vals=ordered.map(r=>Number(r.playerHandicap)).map(v=>Number.isFinite(v)?v:null);
+  if(!vals.some(Number.isFinite))return '<div class="analysisEmpty">핸디캡 데이터가 없습니다.</div>';
+  return multiSvgSeries([vals],['#45e587'],['핸디캡'],v=>v.toFixed(1));
+}
+function multiRecentSummaryText(rounds){
+  const {prev,recent}=multiRecentSplit(rounds);
+  if(!prev.length||!recent.length)return '<b>최근 변화 요약</b>비교할 이전 라운드가 더 필요합니다.';
+  const scoreA=multiAvgScoreFor(prev),scoreB=multiAvgScoreFor(recent);
+  const defs=[['티샷','TEE'],['세컨샷','SECOND'],['어프로치','APPROACH'],['퍼터','PUTTER']].map(([label,key])=>({
+    label,key,a:multiCategoryAvgFor(prev,key),b:multiCategoryAvgFor(recent,key)
+  })).map(x=>({...x,d:(Number.isFinite(x.a)&&Number.isFinite(x.b))?x.b-x.a:null}));
+  const improve=[...defs].filter(x=>Number.isFinite(x.d)).sort((a,b)=>b.d-a.d)[0];
+  const decline=[...defs].filter(x=>Number.isFinite(x.d)).sort((a,b)=>a.d-b.d)[0];
+  const scoreText=Number.isFinite(scoreA)&&Number.isFinite(scoreB)
+    ?'평균 스코어는 '+scoreA.toFixed(1)+' → '+scoreB.toFixed(1)+'로 '+Math.abs(scoreB-scoreA).toFixed(1)+'타 '+(scoreB<scoreA?'낮아졌습니다.':'높아졌습니다.')
+    :'스코어 비교 데이터가 부족합니다.';
+  const perfText=(improve&&decline)
+    ? improve.label+'는 '+multiSigned(improve.d)+' 개선됐고, '+decline.label+'는 '+multiSigned(decline.d)+' 변했습니다.'
+    :'';
+  return '<b>최근 3라운드 요약</b>'+safeText(perfText+' '+scoreText);
+}
 function renderMultiDashboard(rounds){
   const sg=multiPlayerFacingSg(rounds);
   $('multiPlayerSgCards').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{
@@ -4230,6 +4300,10 @@ function renderMultiDashboard(rounds){
     '<div class="multiCoreInsight mental"><div class="ey">3 · 멘탈 패턴</div><strong>'+safeText(mental?.condition||'초기 관찰')+'</strong><p>'+safeText(mental?(mental.label+' '+mental.aM+'/'+mental.aN+' vs '+mental.bM+'/'+mental.bN+' · 초기 관찰'):'비교 가능한 상태 그룹 샘플이 더 필요합니다.')+'</p></div>';
 
   $('multiRecentCompare').innerHTML=multiRecentChangeHtml(rounds);
+  $('multiRecentSummary').innerHTML=multiRecentSummaryText(rounds);
+  $('multiSgLineChart').innerHTML=multiRenderSgLineChart(rounds);
+  $('multiHcpTrend').innerHTML=multiRenderHcpChart(rounds);
+  $('multiDetailRange').textContent='최근 '+rounds.length+'라운드';
   renderMultiPrimaryDetail();
 }
 function setMultiDashboardMode(mode){
@@ -4253,7 +4327,7 @@ function renderMultiRoundReview(rounds){
   $('multiPenalty').textContent=totalPen;
   $('multiScoreTrend').innerHTML=ordered.map((r,i)=>{
     const score=resultScore(r),height=Math.max(20,100-(score-72)*7);
-    return '<div class="multiTrendItem"><div class="multiTrendScore">'+score+'</div><div class="multiTrendBar" style="height:'+height+'px"></div><div class="multiTrendLabel">'+safeText(resultRoundLabel(r,i))+'</div></div>';
+    return '<div class="multiTrendItem"><div class="multiTrendScore">'+score+'</div><div class="multiTrendBar" style="height:'+height+'px;background:linear-gradient(180deg,#45e587,#238f56)"></div><div class="multiTrendLabel">'+(i+1)+'R</div></div>';
   }).join('');
   const dr=multiClubRiskStats(rounds,'DR'),w=multiClubRiskStats(rounds,'3W');
   $('multiDrCount').textContent=dr.count+'회';$('multiDrRight').textContent=dr.right+'회';$('multiDrPenalty').textContent=dr.penalty+'회';
