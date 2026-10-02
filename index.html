@@ -741,6 +741,15 @@ body.round-active .bottomnav{display:none!important}
 .perfHeatWrap{overflow-x:auto;margin-top:10px}.perfHeat{border-collapse:separate;border-spacing:3px;min-width:520px;font-size:8px}.perfHeat th{color:#93a399;font-weight:900;padding:4px 5px;white-space:nowrap}.perfHeat td{min-width:42px;height:32px;text-align:center;border-radius:7px;font-weight:950;border:1px solid rgba(255,255,255,.05)}.perfHeat td.empty{color:#607069;background:#07110c}.perfHeat td.pos{color:#dfffea}.perfHeat td.neg{color:#ffe1e1}.perfHeat td.zero{color:#dce8e0;background:rgba(255,255,255,.04)}
 @media(max-width:430px){.perfHighlights{grid-template-columns:1fr}.perfHighlight{padding:10px}}
 @media(max-width:430px){.analysisKpis{grid-template-columns:repeat(3,1fr)}.analysisSplit{grid-template-columns:1fr}}
+.mentalTopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}.mentalTopCard{padding:11px 8px;border-radius:15px;border:1px solid rgba(255,255,255,.11);background:rgba(8,24,19,.72);text-align:center}.mentalTopCard .k{font-size:8px;color:#a0b1a7;font-weight:900}.mentalTopCard .v{font-size:22px;font-weight:1000;margin-top:3px}.mentalTopCard .s{font-size:8px;color:#8fa198;margin-top:2px}
+.mentalInsightGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.mentalInsight{padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.11);background:rgba(7,24,18,.72)}.mentalInsight b{display:block;font-size:13px;line-height:1.35}.mentalInsight p{margin:5px 0 0;font-size:10px;line-height:1.5;color:#c6d2cb}.mentalCompare{display:grid;gap:5px;margin-top:9px}.mentalCompareRow{display:grid;grid-template-columns:82px 42px 1fr;gap:6px;align-items:center;font-size:9px}.mentalCompareBar{height:7px;background:#0c1712;border-radius:99px;overflow:hidden}.mentalCompareBar i{display:block;height:100%;border-radius:99px;background:#ff6d78}.mentalTag{display:inline-flex;margin-top:8px;padding:4px 7px;border-radius:999px;border:1px solid rgba(255,193,68,.32);color:#ffd06a;background:rgba(255,193,68,.06);font-size:8px;font-weight:950}
+.mentalAction{padding:12px;border-radius:15px;border:1px solid rgba(39,233,120,.32);background:rgba(26,112,59,.14);margin-top:8px}.mentalAction b{display:block;color:#78f5a0;font-size:10px}.mentalAction strong{display:block;margin-top:5px;font-size:14px;line-height:1.45}
+.mentalFlowLine{display:grid;grid-template-columns:repeat(18,minmax(24px,1fr));gap:4px;margin-top:10px;overflow-x:auto;padding-bottom:3px}.mentalHole{min-width:24px;height:28px;border-radius:50%;display:grid;place-items:center;background:#0b1711;border:1px solid rgba(255,255,255,.08);color:#65766c;font-size:8px;font-weight:950}.mentalHole.sampled{color:#08110c;border-color:transparent}.mentalHole.low{background:#3fe27f}.mentalHole.mid{background:#f5bd45}.mentalHole.high{background:#ff8c42}.mentalHole.veryHigh{background:#ff6874}.mentalLegend{display:flex;gap:9px;flex-wrap:wrap;margin-top:7px;color:#8fa096;font-size:8px}.mentalLegend span{display:flex;align-items:center;gap:4px}.mentalLegend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.mentalSampleRail{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px}.mentalSampleCard{min-width:205px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#08130d}.mentalSampleCard b{font-size:11px}.mentalSampleCard .vals{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:7px;font-size:8px;color:#8fa096}.mentalSampleCard .vals strong{display:block;color:#eef6f1;font-size:12px;margin-top:2px}.mentalSampleCard .result{margin-top:7px;font-size:9px;font-weight:900}
+.mentalTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.mentalTabs button{border:1px solid rgba(255,255,255,.1);background:#07130d;color:#91a398;border-radius:999px;padding:8px 5px;font-size:8px;font-weight:900}.mentalTabs button.sel{border-color:#27e978;color:#74f39d;background:rgba(39,233,120,.09)}
+.mentalDual{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mentalPanel{padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.11);background:rgba(7,24,18,.7)}.mentalPanel h3{font-size:14px;margin:0}.mentalPanel .sub{font-size:9px}.mentalDetailToggle{margin-top:10px;border:1px solid rgba(39,233,120,.24);border-radius:14px;background:#07130d}.mentalDetailToggle summary{padding:12px;cursor:pointer;text-align:center;color:#dff4e7;font-size:11px;font-weight:950}.mentalDetailBody{padding:0 8px 8px}
+.mentalDiffGood{color:#67f29a;font-weight:950}.mentalDiffBad{color:#ff7b7b;font-weight:950}.mentalDiffNeutral{color:#d7e2dc;font-weight:950}
+@media(max-width:430px){.mentalTopGrid{grid-template-columns:repeat(2,1fr)}.mentalInsightGrid,.mentalDual{grid-template-columns:1fr}.mentalCompareRow{grid-template-columns:76px 38px 1fr}}
 @media(max-width:430px){
   .introHomeChoices{grid-template-columns:1fr}
   .introHomeBtn{min-height:88px}
@@ -1374,19 +1383,60 @@ body.round-active .bottomnav{display:none!important}
     </section>
 
     <section id="floScreen" class="screen hidden">
-      <div class="title">멘탈 상태 분석</div><div class="sub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 샷 결과와 연결합니다.</div>
+      <div class="title">멘탈 상태 분석</div><div class="sub">특정 멘탈 상태에서 어떤 미스가 나타나는지, 미스가 났을 때 어떤 상태였는지를 함께 봅니다.</div>
+
       <div class="card">
-        <div class="title">오늘</div>
-        <div class="grid4" style="margin-top:10px">
-          <div class="metric"><div class="k">결정 확신</div><div id="floCommit" class="v">—</div></div>
-          <div class="metric"><div class="k">생각의 양</div><div id="floThink" class="v">—</div></div>
-          <div class="metric"><div class="k">긴장도</div><div id="floTension" class="v">—</div></div>
-          <div class="metric"><div class="k">루틴 실행</div><div id="floRoutine" class="v">—</div></div>
+        <div class="title">오늘의 멘탈 상태</div>
+        <div class="mentalTopGrid">
+          <div class="mentalTopCard"><div class="k">결정 확신</div><div id="floCommit" class="v">—</div><div id="floCommitNote" class="s">—</div></div>
+          <div class="mentalTopCard"><div class="k">생각의 양</div><div id="floThink" class="v">—</div><div id="floThinkNote" class="s">—</div></div>
+          <div class="mentalTopCard"><div class="k">긴장도</div><div id="floTension" class="v">—</div><div id="floTensionNote" class="s">—</div></div>
+          <div class="mentalTopCard"><div class="k">루틴 실행</div><div id="floRoutine" class="v">—</div><div id="floRoutineNote" class="s">—</div></div>
         </div>
       </div>
-      <div class="card"><div class="title">홀별 상태</div><div id="floBars" style="margin-top:10px"></div></div>
-      <div id="floResults"></div>
-      <div class="card"><div class="title">관찰된 패턴</div><div id="floPattern" class="pendingText" style="margin-top:8px">상태 데이터가 쌓이면 샷 결과와 함께 반복 패턴을 표시합니다.</div></div>
+
+      <div class="card">
+        <div class="title">오늘의 핵심 인사이트</div>
+        <div id="floInsightCards" class="mentalInsightGrid"></div>
+        <div id="floNextAction" class="mentalAction"></div>
+      </div>
+
+      <div class="card">
+        <div class="title">멘탈 흐름 · 오늘 라운드</div>
+        <div class="sub">체크한 홀만 표시합니다. 원의 색은 해당 홀에서 체크한 샘플의 평균 긴장도입니다.</div>
+        <div id="floFlow" class="mentalFlowLine"></div>
+        <div class="mentalLegend"><span><i style="background:#3fe27f"></i>긴장 낮음</span><span><i style="background:#f5bd45"></i>보통</span><span><i style="background:#ff8c42"></i>높음</span><span><i style="background:#ff6874"></i>매우 높음</span><span><i style="background:#0b1711;border:1px solid rgba(255,255,255,.1)"></i>미체크</span></div>
+        <div id="floFlowCards" class="mentalSampleRail"></div>
+      </div>
+
+      <div class="mentalDual">
+        <div class="mentalPanel">
+          <h3>멘탈 상태 → 샷 결과</h3>
+          <div class="sub">특정 상태에서 어떤 미스가 증가하는지 봅니다.</div>
+          <div id="floStateTabs" class="mentalTabs"></div>
+          <div id="floStateToResult"></div>
+        </div>
+        <div class="mentalPanel">
+          <h3>미스 → 당시 멘탈 상태</h3>
+          <div class="sub">특정 미스가 나왔을 때 어떤 상태였는지 봅니다.</div>
+          <div id="floMissTabs" class="mentalTabs"></div>
+          <div id="floMissToState"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">샷 유형별 멘탈 영향</div>
+        <div id="floTypeImpact" style="margin-top:8px"></div>
+      </div>
+
+      <details class="mentalDetailToggle">
+        <summary>상세 분석 보기</summary>
+        <div class="mentalDetailBody">
+          <div id="floResults"></div>
+          <div class="card"><div class="title">관찰된 패턴 · 상세</div><div id="floPattern" class="pendingText" style="margin-top:8px"></div></div>
+        </div>
+      </details>
+      <div class="dataNote" style="text-align:center;margin:10px 0 4px">멘탈 상태와 결과 사이의 관찰된 관계이며, 원인으로 단정하지 않습니다.</div>
     </section>
 
     <section id="storyScreen" class="screen hidden">
@@ -1401,7 +1451,7 @@ body.round-active .bottomnav{display:none!important}
     <button data-screen="round" class="sel"><b>⛳</b>라운드</button>
     <button data-screen="overview"><b>▦</b>요약</button>
     <button data-screen="performance"><b>◎</b>기록</button>
-    <button data-screen="flo"><b>◉</b>상태</button>
+    <button data-screen="flo"><b>◉</b>멘탈</button>
     <button data-screen="story"><b>✦</b>스토리</button>
   </nav>
 </div>
@@ -4988,13 +5038,17 @@ function buildStateResults(r){
         puttsDetail:(h.puttsDetail||[]).map(p=>({...p,distanceM:numeric(p.distanceM)?p.distanceM:undefined}))};
       const sg=computeShotSG(sgHole,{...s,courseContext:context},i,info);
       const lie=String(s.endLie||'').toUpperCase();
-      shots.push({state,direction:['LEFT','CENTER','RIGHT'].includes(s.direction)?s.direction:null,
+      shots.push({state,hole:h.hole,shotIndex:i,club:s.club||null,category:playerShotCategory(h,s,i),
+        direction:['LEFT','CENTER','RIGHT'].includes(s.direction)?s.direction:null,
+        depth:['SHORT','PIN_HIGH','TARGET','LONG'].includes(s.depth)?s.depth:null,
         fairway:i===0&&Number(h.par)>=4&&['FAIRWAY','ROUGH','A CUT','B CUT','BUNKER','SAND','GREEN','FRINGE','RECOVERY','OB','HAZARD','WATER','LOST_BALL'].includes(lie)?lie==='FAIRWAY':null,
         green:s.shotIntent==='GREEN_ATTACK'&&['FAIRWAY','ROUGH','A CUT','B CUT','BUNKER','SAND','GREEN','FRINGE','RECOVERY','OB','HAZARD','WATER','LOST_BALL'].includes(lie)?lie==='GREEN':null,
         sg:Number.isFinite(sg?.value)?sg.value:null});
     });
-    (h.puttsDetail||[]).forEach(p=>{
-      if(p.playerState)putts.push({state:p.playerState,result:['HOLED','MISS_LEFT','MISS_RIGHT','SHORT','LONG'].includes(p.result)?p.result:null});
+    (h.puttsDetail||[]).forEach((p,pi)=>{
+      if(!p.playerState)return;
+      const psg=computePuttSG(h,p,pi,info);
+      putts.push({state:p.playerState,hole:h.hole,category:'PUTTING',result:['HOLED','MISS_LEFT','MISS_RIGHT','SHORT','LONG'].includes(p.result)?p.result:null,sg:Number.isFinite(psg?.value)?psg.value:null});
     });
     if(h.puttingState&&!(h.puttsDetail||[]).some(p=>p.playerState))unlinked++;
   });
@@ -5099,6 +5153,154 @@ function stateResultPatterns(data,scopeLabel='현재 라운드'){
   const text=chosen.length?chosen.map(x=>x.text):['아직 뚜렷한 멘탈 상태 차이는 보이지 않습니다. 비교할 상태별 샘플이 더 필요합니다.'];
   return [...text,scopeLabel+'에서 관찰된 관계이며, 멘탈 상태가 결과의 원인이라고 단정하지 않습니다.'];
 }
+
+let mentalStateResultKey='thinking';
+let mentalMissType='RIGHT';
+
+function mentalMetricLabel(key){
+  return ({commitment:'결정 확신',thinking:'생각의 양',tension:'긴장도',routineExecution:'루틴 실행'})[key]||key;
+}
+function mentalValueNote(key,v){
+  if(!Number.isFinite(Number(v)))return '—';
+  const n=Number(v);
+  if(key==='thinking')return n>=4?'많음':n<=2?'적음':'보통';
+  if(key==='tension')return n>=4?'높음':n<=2?'낮음':'보통';
+  if(key==='commitment')return n>=4?'높음':n<=2?'낮음':'보통';
+  if(key==='routineExecution')return n>=4?'좋음':n<=2?'낮음':'보통';
+  return '보통';
+}
+function mentalShotMiss(row){
+  return ['LEFT','RIGHT'].includes(row.direction)||['SHORT','LONG'].includes(row.depth);
+}
+function mentalMissMatch(row,type){
+  if(type==='RIGHT')return row.direction==='RIGHT';
+  if(type==='LEFT')return row.direction==='LEFT';
+  if(type==='SHORT')return row.depth==='SHORT';
+  if(type==='LONG')return row.depth==='LONG';
+  return mentalShotMiss(row);
+}
+function mentalMissLabel(type){
+  return ({RIGHT:'우측 미스',LEFT:'좌측 미스',SHORT:'짧음',LONG:'김',ALL:'전체 미스'})[type]||type;
+}
+function mentalInsightCandidates(data){
+  const out=[];
+  const keys=STATE_RESULT_KEYS;
+  const metrics=[['RIGHT','우측 미스'],['LEFT','좌측 미스'],['SHORT','짧은 결과'],['LONG','긴 결과']];
+  keys.forEach(key=>{
+    const low=data.shots.filter(x=>stateResultBand(x.state,key)===0);
+    const high=data.shots.filter(x=>stateResultBand(x.state,key)===2);
+    if(low.length<5||high.length<5)return;
+    metrics.forEach(([type,label])=>{
+      const a=low.filter(x=>mentalMissMatch(x,type)).length/low.length;
+      const b=high.filter(x=>mentalMissMatch(x,type)).length/high.length;
+      const gap=Math.abs(a-b);
+      if(gap<.20)return;
+      const highSide=b>=a;
+      const condition=key==='thinking'?(highSide?'생각이 많았을 때':'생각이 적었을 때'):
+        key==='tension'?(highSide?'긴장도가 높았을 때':'긴장도가 낮았을 때'):
+        key==='commitment'?(highSide?'결정 확신이 높았을 때':'결정 확신이 낮았을 때'):
+        (highSide?'루틴 실행이 좋았을 때':'루틴 실행이 낮았을 때');
+      out.push({key,type,gap,label,condition,
+        aN:low.length,aM:low.filter(x=>mentalMissMatch(x,type)).length,
+        bN:high.length,bM:high.filter(x=>mentalMissMatch(x,type)).length,
+        aLabel:key==='thinking'?'생각 적음':key==='tension'?'긴장 낮음':key==='commitment'?'확신 낮음':'루틴 낮음',
+        bLabel:key==='thinking'?'생각 많음':key==='tension'?'긴장 높음':key==='commitment'?'확신 높음':'루틴 좋음'});
+    });
+  });
+  return out.sort((a,b)=>b.gap-a.gap);
+}
+function mentalInsightHtml(x){
+  const aPct=x.aN?Math.round(x.aM/x.aN*100):0,bPct=x.bN?Math.round(x.bM/x.bN*100):0;
+  return '<div class="mentalInsight"><b>'+safeText(x.condition)+'</b><p>'+safeText(x.label)+'가 더 자주 관찰됐습니다.</p>'+
+    '<div class="mentalCompare"><div class="mentalCompareRow"><span>'+x.aLabel+'</span><strong>'+x.aM+'/'+x.aN+'</strong><div class="mentalCompareBar"><i style="width:'+aPct+'%"></i></div></div>'+
+    '<div class="mentalCompareRow"><span>'+x.bLabel+'</span><strong>'+x.bM+'/'+x.bN+'</strong><div class="mentalCompareBar"><i style="width:'+bPct+'%"></i></div></div></div>'+
+    '<span class="mentalTag">초기 관찰 · '+(x.aN+x.bN)+'샷</span></div>';
+}
+function mentalFlowData(data){
+  const all=[...data.shots,...data.putts],map=new Map();
+  all.forEach(x=>{if(!map.has(x.hole))map.set(x.hole,[]);map.get(x.hole).push(x)});
+  return map;
+}
+function mentalFlowHoleClass(items){
+  const vals=items.map(x=>stateResultValue(x.state,'tension')).filter(Number.isFinite);
+  if(!vals.length)return 'sampled low';
+  const v=avg(vals);
+  return v>=4.5?'sampled veryHigh':v>=3.5?'sampled high':v>=2.5?'sampled mid':'sampled low';
+}
+function mentalResultText(x){
+  if(x.category==='PUTTING')return x.result?puttResultLabel(x.result):'퍼팅';
+  if(x.direction&&x.direction!=='CENTER')return dirLabel(x.direction)+' 미스';
+  if(x.depth&&['SHORT','LONG'].includes(x.depth))return depthLabel(x.depth);
+  if(x.green===true)return '그린 적중';
+  if(x.fairway===true)return '페어웨이 적중';
+  return '기록된 샷';
+}
+function renderMentalFlow(data){
+  const map=mentalFlowData(data);
+  $('floFlow').innerHTML=Array.from({length:18},(_,i)=>{
+    const hole=i+1,items=map.get(hole)||[];
+    return '<div class="mentalHole '+(items.length?mentalFlowHoleClass(items):'')+'" title="'+hole+'번 홀 · '+items.length+'샘플">'+hole+'</div>';
+  }).join('');
+  const cards=[...map.entries()].sort((a,b)=>a[0]-b[0]).flatMap(([hole,items])=>items.map(x=>({hole,x})));
+  $('floFlowCards').innerHTML=cards.length?cards.map(({hole,x})=>{
+    const s=x.state||{};
+    return '<div class="mentalSampleCard"><b>'+hole+'번 홀 · '+(x.category==='PUTTING'?'퍼팅':({TEE:'티샷',SECOND:'세컨샷',THIRD:'서드샷',APPROACH:'어프로치'})[x.category]||'샷')+'</b>'+
+      '<div class="vals"><span>확신<strong>'+safeText(stateResultValue(s,'commitment'))+'</strong></span><span>생각<strong>'+safeText(stateResultValue(s,'thinking'))+'</strong></span><span>긴장<strong>'+safeText(stateResultValue(s,'tension'))+'</strong></span><span>루틴<strong>'+safeText(stateResultValue(s,'routineExecution'))+'</strong></span></div>'+
+      '<div class="result">결과 · '+safeText(mentalResultText(x))+(Number.isFinite(x.sg)?' · SG '+formatSg(x.sg):'')+'</div></div>';
+  }).join(''):'<div class="analysisEmpty">아직 멘탈 상태 샘플이 없습니다.</div>';
+}
+function renderMentalStateToResult(data){
+  const keys=['commitment','thinking','tension','routineExecution'];
+  $('floStateTabs').innerHTML=keys.map(k=>'<button class="'+(k===mentalStateResultKey?'sel':'')+'" onclick="mentalStateResultKey=\''+k+'\';renderFlo()">'+mentalMetricLabel(k)+'</button>').join('');
+  const rows=[1,2,3,4,5].map(v=>{
+    const items=data.shots.filter(x=>stateResultValue(x.state,mentalStateResultKey)===v);
+    const misses=items.filter(mentalShotMiss);
+    const missCounts={RIGHT:0,LEFT:0,SHORT:0,LONG:0};
+    items.forEach(x=>{if(x.direction==='RIGHT')missCounts.RIGHT++;if(x.direction==='LEFT')missCounts.LEFT++;if(x.depth==='SHORT')missCounts.SHORT++;if(x.depth==='LONG')missCounts.LONG++});
+    const dom=Object.entries(missCounts).sort((a,b)=>b[1]-a[1])[0];
+    const sg=items.map(x=>x.sg).filter(Number.isFinite);
+    return [v,items.length,items.length?Math.round(misses.length/items.length*100)+'%':'—',dom&&dom[1]?mentalMissLabel(dom[0])+' '+dom[1]:'—',sg.length?multiSgHtml(avg(sg)):'—'];
+  });
+  $('floStateToResult').innerHTML=multiTable(['상태','샷 수','미스 비율','주요 미스','Avg SG'],rows);
+}
+function mentalDiffHtml(key,diff){
+  if(!Number.isFinite(diff))return '—';
+  const concern=(key==='thinking'||key==='tension')?diff:-diff;
+  const cls=concern>.15?'mentalDiffBad':concern<-.15?'mentalDiffGood':'mentalDiffNeutral';
+  return '<span class="'+cls+'">'+(diff>0?'+':'')+diff.toFixed(1)+'</span>';
+}
+function renderMentalMissToState(data){
+  const types=['RIGHT','LEFT','SHORT','LONG'];
+  $('floMissTabs').innerHTML=types.map(t=>'<button class="'+(t===mentalMissType?'sel':'')+'" onclick="mentalMissType=\''+t+'\';renderFlo()">'+mentalMissLabel(t)+'</button>').join('');
+  const miss=data.shots.filter(x=>mentalMissMatch(x,mentalMissType));
+  const rows=STATE_RESULT_KEYS.map(key=>{
+    const mv=miss.map(x=>stateResultValue(x.state,key)).filter(Number.isFinite);
+    const av=data.shots.map(x=>stateResultValue(x.state,key)).filter(Number.isFinite);
+    const ma=avg(mv),aa=avg(av),diff=Number.isFinite(ma)&&Number.isFinite(aa)?ma-aa:null;
+    return [mentalMetricLabel(key),Number.isFinite(ma)?ma.toFixed(1):'—',Number.isFinite(aa)?aa.toFixed(1):'—',mentalDiffHtml(key,diff)];
+  });
+  const valid=STATE_RESULT_KEYS.map(key=>{
+    const mv=miss.map(x=>stateResultValue(x.state,key)).filter(Number.isFinite),av=data.shots.map(x=>stateResultValue(x.state,key)).filter(Number.isFinite);
+    const ma=avg(mv),aa=avg(av);return {key,ma,aa,d:ma-aa};
+  }).filter(x=>Number.isFinite(x.d)).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+  const lead=valid[0];
+  const summary=lead?mentalMissLabel(mentalMissType)+'가 나온 샷에서 '+mentalMetricLabel(lead.key)+' 평균이 전체보다 '+(lead.d>0?'+':'')+lead.d.toFixed(1)+' 차이가 있었습니다.':'비교 가능한 멘탈 샘플이 부족합니다.';
+  $('floMissToState').innerHTML='<div class="analysisNote">'+miss.length+'샷 기준 · '+summary+'</div>'+multiTable(['멘탈 항목','해당 미스 평균','전체 평균','차이'],rows);
+}
+function renderMentalTypeImpact(data){
+  const defs=[['TEE','티샷'],['SECOND','세컨샷'],['THIRD','서드샷'],['APPROACH','어프로치']];
+  const rows=defs.map(([cat,label])=>{
+    const items=data.shots.filter(x=>x.category===cat);
+    const misses=items.filter(mentalShotMiss);
+    const tension=items.map(x=>stateResultValue(x.state,'tension')).filter(Number.isFinite);
+    const sg=items.map(x=>x.sg).filter(Number.isFinite);
+    return [label,items.length,items.length?Math.round(misses.length/items.length*100)+'%':'—',tension.length?avg(tension).toFixed(1):'—',sg.length?multiSgHtml(avg(sg)):'—'];
+  });
+  const puts=data.putts,puttMiss=puts.filter(x=>x.result&&x.result!=='HOLED'),pt=puts.map(x=>stateResultValue(x.state,'tension')).filter(Number.isFinite);
+  const psg=puts.map(x=>x.sg).filter(Number.isFinite);
+  rows.push(['퍼팅',puts.length,puts.length?Math.round(puttMiss.length/puts.length*100)+'%':'—',pt.length?avg(pt).toFixed(1):'—',psg.length?multiSgHtml(avg(psg)):'—']);
+  $('floTypeImpact').innerHTML=multiTable(['샷 유형','샘플','미스 비율','평균 긴장도','Avg SG'],rows);
+}
 function renderFlo(){
   const f=allStates();
   const ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean));
@@ -5109,13 +5311,29 @@ function renderFlo(){
   $('floThink').textContent=at?at.toFixed(1):'—';
   $('floTension').textContent=ax?ax.toFixed(1):'—';
   $('floRoutine').textContent=ar?ar.toFixed(1):'—';
-  const byHole={};f.forEach(x=>{(byHole[x.hole]??=[]).push(x)});
-  $('floBars').innerHTML=Object.keys(byHole).length?Object.entries(byHole).map(([h,a])=>{
-    const cm=avg(a.map(x=>Number(x.commitment)).filter(Boolean))||0;
-    const th=avg(a.map(x=>Number(x.thinking)).filter(Boolean))||0;
-    return '<div class="barRow"><span>'+h+'번 홀</span><div><div class="bar"><i style="width:'+(cm/5*100)+'%"></i></div><div class="bar think" style="margin-top:4px"><i style="width:'+(th/5*100)+'%"></i></div></div><b>'+cm.toFixed(1)+'</b></div>';
-  }).join(''):'<div class="pendingText">아직 선수 상태 데이터가 없습니다.</div>';
+  $('floCommitNote').textContent=mentalValueNote('commitment',ac);
+  $('floThinkNote').textContent=mentalValueNote('thinking',at);
+  $('floTensionNote').textContent=mentalValueNote('tension',ax);
+  $('floRoutineNote').textContent=mentalValueNote('routineExecution',ar);
+
   const analysis=buildStateResults(round);
+  const insights=mentalInsightCandidates(analysis).slice(0,2);
+  $('floInsightCards').innerHTML=insights.length?insights.map(mentalInsightHtml).join(''):'<div class="analysisEmpty" style="grid-column:1/-1">아직 두 상태 그룹을 비교할 만큼 샘플이 충분하지 않습니다. 샘플이 쌓이면 가장 큰 차이부터 보여줍니다.</div>';
+  let action='다음 샷에서는 평소 루틴을 그대로 실행하고, 한 가지 타깃에만 집중해 보세요.';
+  if(insights[0]){
+    const k=insights[0].key;
+    if(k==='thinking')action='다음 샷에서는 생각을 한 가지로 제한하고 평소 루틴을 그대로 실행해 보세요.';
+    else if(k==='tension')action='다음 샷에서는 타깃을 먼저 확정하고 평소 호흡·루틴을 그대로 유지해 보세요.';
+    else if(k==='commitment')action='다음 샷에서는 클럽과 타깃 결정을 먼저 끝낸 뒤 어드레스에 들어가 보세요.';
+    else if(k==='routineExecution')action='다음 샷에서는 결과보다 평소 프리샷 루틴을 끝까지 수행하는 데 집중해 보세요.';
+  }
+  $('floNextAction').innerHTML='<b>다음 행동 제안</b><strong>'+action+'</strong><div class="dataNote" style="margin-top:5px">현재 관찰된 관계를 바탕으로 한 1개 행동 제안입니다.</div>';
+
+  renderMentalFlow(analysis);
+  renderMentalStateToResult(analysis);
+  renderMentalMissToState(analysis);
+  renderMentalTypeImpact(analysis);
+
   $('floResults').innerHTML=renderStateResults(analysis);
   $('floPattern').textContent=stateResultPatterns(analysis).join('\n\n');
   $('floPattern').style.whiteSpace='pre-line';
