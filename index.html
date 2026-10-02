@@ -61,7 +61,7 @@ textarea{resize:vertical;min-height:72px}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#061019f2;border-top:1px solid #294153;z-index:40;backdrop-filter:blur(14px);padding-bottom:env(safe-area-inset-bottom)}
 .bottomnav button{border:0;background:transparent;color:#819aaa;padding:10px 2px 9px;font-size:9px;font-weight:800}.bottomnav button b{display:block;font-size:17px;margin-bottom:3px}.bottomnav button.sel{color:#58a5ff}
 .scoreBig{text-align:center;font-size:50px;font-weight:1000;line-height:1}.scoreBig small{display:block;font-size:15px;color:var(--muted);margin-top:7px}
-.scorecard{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}.scoreCell{background:#08131b;border:1px solid #213a4b;border-radius:9px;text-align:center;padding:7px 2px;font-size:10px}.scoreCell b{display:block;font-size:14px;margin-top:3px}
+.scorecard{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}.scoreCell{background:#08131b;border:1px solid #213a4b;border-radius:9px;text-align:center;padding:6px 2px;font-size:9px}.scoreCell b{display:flex;align-items:center;justify-content:center;font-size:13px;margin:3px auto 0;width:25px;height:25px;line-height:1}.scoreCell .putts{display:block;margin-top:3px;color:#8ea298;font-size:8px;font-weight:900}.scoreMark.birdie{border:1.5px solid #67f29a;border-radius:50%}.scoreMark.eagle{border:3px double #67f29a;border-radius:50%}.scoreMark.bogey{border:1.5px solid #ff9b61}.scoreMark.double{border:3px double #ff7b7b}.scoreMark.par{border:0}
 .sgBox{text-align:center;padding:16px}.sgBox .big{font-size:28px;font-weight:1000;color:#8ea5b4}.pendingText{color:#8ea5b4;font-size:12px;line-height:1.55}
 .barRow{display:grid;grid-template-columns:72px 1fr 34px;gap:8px;align-items:center;margin:8px 0;font-size:11px}.bar{height:8px;background:#0a151d;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue);border-radius:99px}.bar.think i{background:var(--red)}.bar.routine i{background:var(--green)}
 .storyBlock{border-left:3px solid #315168;padding:11px 12px;background:#08131b;border-radius:0 12px 12px 0;margin-top:9px}.storyBlock strong{font-size:13px}.storyBlock p{font-size:12px;color:#c3d2db;line-height:1.55;margin:6px 0 0}
@@ -73,7 +73,7 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .liveHead .eyebrow{font-size:10px;font-weight:950;letter-spacing:.16em;color:#82f3a3}
 .liveHead h2{font-size:25px;line-height:1.05;margin:4px 0 0;letter-spacing:-.035em}
 .liveThrough{font-size:11px;color:#c3d2c8;text-align:right}
-.reviewMap{height:330px;border-radius:18px;overflow:hidden;background:#0a1711;border:1px solid rgba(255,255,255,.18);margin-top:10px}
+.reviewMap{height:460px;border-radius:18px;overflow:hidden;background:#0a1711;border:1px solid rgba(255,255,255,.18);margin-top:10px}
 .reviewHoleTabs{display:flex;gap:6px;overflow:auto;padding:3px 0 8px;scrollbar-width:none}.reviewHoleTabs::-webkit-scrollbar{display:none}
 .reviewHoleBtn{min-width:42px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(5,23,17,.72);color:#eaf2ed;font-weight:950}
 .reviewHoleBtn.sel{background:linear-gradient(180deg,#ff9b32,#f16d00);border-color:#ff9b32}
@@ -99,7 +99,7 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .mapControlBtn.active{background:#ff8619;border-color:#ffb066;color:#fff}
 .storyCategory{margin-bottom:10px}
 .storyCategory .baselinePending{color:#ffad61;font-size:10px;font-weight:850;margin-top:8px}
-@media(max-width:520px){.reviewMap{height:300px}.liveHead h2{font-size:22px}}
+@media(max-width:520px){.reviewMap{height:430px}.liveHead h2{font-size:22px}}
 
 /* ===== REVIEW SATELLITE REUSE ===== */
 .reviewMap .google-map{position:absolute;inset:0;width:100%;height:100%;min-height:0;background:#0b2018}
@@ -672,7 +672,8 @@ body.round-active .bottomnav{display:none!important}
 }
 .resultsQuick button.sel{border-color:rgba(39,242,122,.52);background:rgba(39,242,122,.1);color:#70f5a0}
 .resultsFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.resultsFilters .field{margin:0}
+.resultsFilters .field{margin:0;min-width:0}
+.resultsFilters input,.resultsFilters select{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .resultsFilters label{font-size:9px}
 .resultsRoundList{display:grid;gap:8px;margin-top:10px}
 .resultsRoundRow{
@@ -729,6 +730,7 @@ body.round-active .bottomnav{display:none!important}
 .analysisMini{padding:10px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:#08130d}
 .analysisMini b{display:block;font-size:12px}.analysisMini span{display:block;margin-top:4px;color:#88988f;font-size:9px;line-height:1.4}
 .analysisBadge{display:inline-flex;margin:3px 4px 3px 0;padding:5px 7px;border-radius:999px;border:1px solid rgba(39,242,122,.18);background:rgba(39,242,122,.06);color:#82f3a5;font-size:8px;font-weight:900}
+.analysisSgValue{font-weight:1000}.analysisSgValue.positive{color:#67f29a}.analysisSgValue.negative{color:#ff7b7b}.analysisSgValue.neutral{color:#d9e5dd}
 @media(max-width:430px){.analysisKpis{grid-template-columns:repeat(3,1fr)}.analysisSplit{grid-template-columns:1fr}}
 @media(max-width:430px){
   .introHomeChoices{grid-template-columns:1fr}
@@ -1232,7 +1234,7 @@ body.round-active .bottomnav{display:none!important}
           <div id="analysisPenalty" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>11. 플레이어 상태 분석</summary>
+          <summary>11. 멘탈 상태 분석</summary>
           <div id="analysisState" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
@@ -1280,7 +1282,7 @@ body.round-active .bottomnav{display:none!important}
         <div class="metric"><div class="k">홀</div><div id="ovHoles" class="v">0</div></div>
         <div class="metric"><div class="k">퍼트</div><div id="ovPutts" class="v">0</div></div>
         <div class="metric"><div class="k">벌타</div><div id="ovPen" class="v">0</div></div>
-        <div class="metric"><div class="k">상태</div><div id="ovFlo" class="v">0</div></div>
+        <div class="metric"><div class="k">멘탈 상태 분석</div><div id="ovFlo" class="v">0</div></div>
       </div>
 
       <div class="card">
@@ -1358,7 +1360,7 @@ body.round-active .bottomnav{display:none!important}
     </section>
 
     <section id="floScreen" class="screen hidden">
-      <div class="title">선수 상태</div><div class="sub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 샷 결과와 연결합니다.</div>
+      <div class="title">멘탈 상태 분석</div><div class="sub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 샷 결과와 연결합니다.</div>
       <div class="card">
         <div class="title">오늘</div>
         <div class="grid4" style="margin-top:10px">
@@ -3549,6 +3551,11 @@ function multiRows(rounds){
 function multiPct(n,d){return d?Math.round(n/d*100)+'%':'—'}
 function multiNum(v,digits=1){return Number.isFinite(Number(v))?Number(v).toFixed(digits):'—'}
 function multiSigned(v,digits=2){if(!Number.isFinite(Number(v)))return '—';const n=Number(v);return (n>0?'+':'')+n.toFixed(digits)}
+function multiSgHtml(v,digits=2){
+  if(!Number.isFinite(Number(v)))return '—';
+  const n=Number(v),cls=n>0.005?'positive':n<-0.005?'negative':'neutral';
+  return '<span class="analysisSgValue '+cls+'">'+(n>0?'+':'')+n.toFixed(digits)+'</span>';
+}
 function multiDirLabel(v){return ({LEFT:'왼쪽',CENTER:'중앙',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||'미확인'}
 function multiTargetLabel(v){return ({LEFT:'왼쪽',CENTER:'중간',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||'미확인'}
 function multiRiskTypeLabel(v){return ({WATER:'물',BUNKER:'벙커',WATER_PATH:'물길'})[String(v||'').toUpperCase()]||v||'기타'}
@@ -3591,6 +3598,12 @@ function multiWidthBucket(v){
 function multiApproachBucket(v){
   const n=Number(v);if(!Number.isFinite(n))return null;
   if(n<100)return '100m 미만';if(n<120)return '100~120m';if(n<140)return '120~140m';if(n<160)return '140~160m';if(n<180)return '160~180m';return '180m 이상';
+}
+function multiApproach5mBucket(v){
+  const n=Number(v);if(!Number.isFinite(n)||n<5||n>80)return null;
+  const upper=Math.min(80,Math.ceil(n/5)*5);
+  const lower=Math.max(5,upper-5);
+  return lower+'–'+upper+'m';
 }
 function multiPuttBucket(v){
   const n=Number(v);if(!Number.isFinite(n))return null;
@@ -3678,7 +3691,7 @@ function renderFullMultiAnalysis(rounds){
     ]}));
 
   const approachRows=shots.filter(x=>x.s.shotIntent==='GREEN_ATTACK');
-  const appGroups={},lieGroups={};
+  const appGroups={},app5Groups={},lieGroups={};
   approachRows.forEach(x=>{
     const d=x.s.courseContext?.startGreenDistanceM??x.s.courseContext?.greenDistanceM;
     const k=multiApproachBucket(d);
@@ -3687,14 +3700,24 @@ function renderFullMultiAnalysis(rounds){
       o.n++;if(x.s.endLie==='GREEN')o.green++;if(x.s.direction==='LEFT')o.left++;if(x.s.direction==='RIGHT')o.right++;if(x.s.depth==='SHORT')o.short++;if(x.s.depth==='LONG')o.long++;
       const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
     }
+    const k5=multiApproach5mBucket(d);
+    if(k5){
+      const o5=app5Groups[k5]||(app5Groups[k5]={n:0,green:0,remaining:[],sg:[]});
+      o5.n++;if(String(x.s.endLie||'').toUpperCase()==='GREEN')o5.green++;
+      const remaining=shotEndDistanceToHoleM(x.h,x.s,x.si);if(Number.isFinite(Number(remaining)))o5.remaining.push(Number(remaining));
+      const sg5=multiShotSg(x);if(Number.isFinite(sg5))o5.sg.push(sg5);
+    }
     const lie=lieDisplayLabel(x.s.startLie);
     const l=lieGroups[lie]||(lieGroups[lie]={n:0,green:0,sg:[]});l.n++;if(x.s.endLie==='GREEN')l.green++;
     const sg=multiShotSg(x);if(Number.isFinite(sg))l.sg.push(sg);
   });
   const appOrder=['100m 미만','100~120m','120~140m','140~160m','160~180m','180m 이상'];
+  const app5Order=Array.from({length:15},(_,i)=>{const lower=75-i*5;return lower+'–'+(lower+5)+'m'});
   $('analysisApproach').innerHTML=
-    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 공 위치 기준으로 분리합니다.</div>'+
-    '<div class="sectionLabel">거리별</div>'+
+    '<div class="analysisNote">그린 공략으로 기록된 샷을 시작 시 그린 거리와 공 위치 기준으로 분리합니다. 실제 시작·종료 거리는 그대로 유지하고, 아래 5m 구간은 분석 화면에서만 묶습니다.</div>'+
+    '<div class="sectionLabel">거리별 어프로치 성과 · 5m 구간</div>'+
+    multiTable(['거리 구간','샷 수','평균 남은 핀 거리','그린 적중률','Avg SG'],app5Order.filter(k=>app5Groups[k]).map(k=>{const o=app5Groups[k],sg=o.sg.length?o.sg.reduce((a,b)=>a+b,0)/o.sg.length:null;return[k,o.n,o.remaining.length?(o.remaining.reduce((a,b)=>a+b,0)/o.remaining.length).toFixed(1)+'m':'—',multiPct(o.green,o.n),multiSgHtml(sg)]}))+
+    '<div class="sectionLabel" style="margin-top:12px">전체 거리대</div>'+
     multiTable(['거리','샷','그린 도달','왼쪽','오른쪽','짧음','김','평균 획득타수'],appOrder.filter(k=>appGroups[k]).map(k=>{const o=appGroups[k];return[k,o.n,multiPct(o.green,o.n),o.left,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']}))+
     '<div class="sectionLabel" style="margin-top:12px">공 위치별</div>'+
     multiTable(['공 위치','샷','그린 도달','평균 획득타수'],Object.entries(lieGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,multiPct(o.green,o.n),o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—']));
@@ -3755,19 +3778,10 @@ function renderFullMultiAnalysis(rounds){
     multiKpis(Object.entries(penaltyGroups).map(([k,o])=>[k,o.strokes+'타']))+
     multiTable(['날짜','코스','홀','유형','벌타','홀 첫 클럽'],penaltyHoleRows);
 
-  const stateKeys=['commitment','thinking','tension','routineExecution'];
-  let stateHtml='<div class="analysisNote">플레이어 상태는 표본으로 수집됩니다. 상태와 결과의 관계를 보여주며 원인으로 단정하지 않습니다.</div>';
-  stateKeys.forEach(key=>{
-    const groups={};
-    states.filter(x=>x.type==='SHOT'&&Number.isFinite(Number(x.state?.[key]))).forEach(x=>{
-      const v=Number(x.state[key]),o=groups[v]||(groups[v]={n:0,right:0,left:0,green:0});
-      o.n++;if(x.s?.direction==='RIGHT')o.right++;if(x.s?.direction==='LEFT')o.left++;if(x.s?.endLie==='GREEN')o.green++;
-    });
-    stateHtml+='<div class="sectionLabel" style="margin-top:10px">'+multiStateValueLabel(key)+'</div>'+
-      multiTable(['점수','샘플','왼쪽 미스','오른쪽 미스','그린 도달'],Object.entries(groups).sort((a,b)=>Number(a[0])-Number(b[0])).map(([v,o])=>[v,o.n,o.left,o.right,o.green]));
-  });
-  if(!states.length)stateHtml='<div class="analysisEmpty">저장된 플레이어 상태 샘플이 없습니다.</div>';
-  $('analysisState').innerHTML=stateHtml;
+  const multiStateData=buildStateResultsForRounds(rounds);
+  $('analysisState').innerHTML=(multiStateData.shots.length||multiStateData.putts.length)
+    ? '<div class="analysisNote">선택한 '+rounds.length+'라운드의 State 샘플을 실제 샷·퍼트 결과와 연결한 누적 분석입니다. 같은 샷이 여러 State 항목에 반복 표시되며 원인으로 단정하지 않습니다.</div>'+renderStateResults(multiStateData,'선택한 '+rounds.length+'라운드')
+    : '<div class="analysisEmpty">저장된 플레이어 상태 샘플이 없습니다.</div>';
 
   const phases=[
     {name:'1~3홀',a:1,b:3},{name:'4~6홀',a:4,b:6},{name:'7~9홀',a:7,b:9},
@@ -3829,8 +3843,10 @@ function renderFullMultiAnalysis(rounds){
     {label:'벌타',sample:p.penalties,text:'총 벌타 '+p.penalties+'타'},
     {label:'3퍼트',sample:p.threePutts,text:'3퍼트 '+p.threePutts+'회'}
   ].sort((a,b)=>b.sample-a.sample);
+  const statePattern=stateResultPatterns(multiStateData,'선택한 '+rounds.length+'라운드')[0];
   $('analysisJgiSummary').innerHTML=
     '<div class="resultsInsight"><b>현재 데이터에서 먼저 확인할 패턴</b><br>'+safeText(candidates[0].label)+' · '+safeText(candidates[0].text)+' · 샘플 '+candidates[0].sample+'</div>'+
+    '<div class="resultsInsight"><b>State 관찰</b><br>'+safeText(statePattern)+'</div>'+
     '<div class="resultsInsight"><b>관찰 원칙</b><br>현재 화면은 저장된 관계와 반복 횟수를 보여줍니다. 원인을 자동으로 단정하지 않으며, 데이터가 더 쌓일수록 동일 상황 비교가 더 세밀해집니다.</div>';
 }
 
@@ -4286,6 +4302,15 @@ function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목
 function lieDisplayLabel(v){return ({TEE:'티',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
 function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정',GREEN_REFERENCE:'그린 기준점'})[v]||v||'—'}
 function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'김'})[v]||v||'—'}
+function puttSlopeLabel(v){return ({UPHILL:'오르막',FLAT:'평지',DOWNHILL:'내리막'})[String(v||'').toUpperCase()]||v||'—'}
+function puttBreakLabel(v){return ({LEFT:'왼쪽',STRAIGHT:'직선',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||v||'—'}
+function playerShotLabel(index){return index===0?'티샷':index===1?'세컨샷':index===2?'서드샷':'어프로치'}
+function scoreMarkClass(h){
+  const score=holeScore(h),par=Number(h?.par);
+  if(!Number.isFinite(Number(score))||!Number.isFinite(par))return '';
+  const d=Number(score)-par;
+  return d<=-2?'eagle':d===-1?'birdie':d===0?'par':d===1?'bogey':'double';
+}
 function isAroundGreenShot(s){return Number(s?.courseContext?.greenDistanceM)<=55||['BUNKER','FRINGE'].includes(String(s?.startLie||'').toUpperCase())}
 function countBy(arr,keyFn){const o={};arr.forEach(x=>{const k=keyFn(x);if(k)o[k]=(o[k]||0)+1});return o}
 function dominantCount(o){return Object.entries(o).sort((a,b)=>b[1]-a[1])[0]||[null,0]}
@@ -4378,6 +4403,14 @@ function categoryCard(cat,story=false){
   const cls=cat.key==='approach'?'approach':cat.key==='around'?'around':cat.key==='putting'?'putting':'';
   return '<div class="analysisCard '+cls+(story?' storyCategory':'')+'"><div class="catTop"><span class="catName">'+cat.name+'</span><span class="catValue">'+cat.samples+'개</span></div><div class="catMain">'+cat.main+'</div><div class="catSub">'+cat.sub+'</div><div class="whyBox"><b>오늘 관찰</b><br>'+cat.why+'</div>'+(story?'<div class="baselinePending">나의 평소 · 약 10라운드 이후 개인 기준선과 비교</div>':'')+'</div>';
 }
+function liveMentalStateCard(){
+  const data=buildStateResults(round);
+  const n=data.shots.length+data.putts.length;
+  if(!n)return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">0개</span></div><div class="catMain">아직 결과와 연결된 멘탈 상태 샘플이 없습니다.</div><div class="catSub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 실제 결과와 연결합니다.</div><div class="whyBox"><b>오늘 관찰</b><br>샘플이 쌓이면 결과 차이를 표시합니다.</div></div>';
+  const patterns=stateResultPatterns(data,'현재 라운드');
+  const first=patterns[0]||'아직 뚜렷한 비교 패턴이 없습니다.';
+  return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">'+n+'개</span></div><div class="catMain">멘탈 상태와 실제 샷·퍼트 결과를 함께 봅니다.</div><div class="catSub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행</div><div class="whyBox"><b>오늘 관찰</b><br>'+first+'</div></div>';
+}
 function coordText(p){
   return p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))
     ? Number(p.lat).toFixed(6)+', '+Number(p.lng).toFixed(6)
@@ -4427,7 +4460,7 @@ function renderHoleReview(holeNo){
         ...shots.map((s,i)=>{
           const sg=computeShotSG(h,s,i,sgBenchmarkInfo());
           const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
-          return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+safeText(s.club)+'</strong><p>'+
+          return '<div class="shotLogRow"><div class="shotNo">'+(i+1)+'</div><div><strong>'+playerShotLabel(i)+' · '+safeText(s.club)+'</strong><p>'+
             lieDisplayLabel(s.startLie)+' → '+lieDisplayLabel(s.endLie)+' · 의도 '+shapeLabel(s.intendedShape)+' / 실제 '+shapeLabel(s.ballFlight)+'<br>'+
             dirLabel(s.direction)+' · '+depthLabel(s.depth)+' · '+positionSourceLabel(s.positionSource?.start)+'→'+positionSourceLabel(s.positionSource?.end)+
             '</p></div><div class="dist">'+distanceLabel(s.distanceM)+badge+'</div></div>';
@@ -4435,7 +4468,7 @@ function renderHoleReview(holeNo){
         ...putts.map((p,i)=>{
           const sg=computePuttSG(h,p,i,sgBenchmarkInfo());
           const badge=sg?'<span class="sgBadge '+sgValueClass(sg.value)+'">SG '+formatSg(sg.value)+'</span>':'<span class="sgBadge pending">SG 계산 대기</span>';
-          return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼터</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+puttResultLabel(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
+          return '<div class="shotLogRow"><div class="shotNo">'+(shots.length+i+1)+'</div><div><strong>퍼팅</strong><p>그린 · '+Number(p.distanceM).toFixed(1)+'m · '+puttSlopeLabel(p.slope)+' · '+puttBreakLabel(p.break)+' · '+puttResultLabel(p.result)+'</p></div><div class="dist">'+Number(p.distanceM).toFixed(1)+'m'+badge+'</div></div>';
         })
       ].join(''):'<div class="pendingText">아직 저장된 샷이 없습니다.</div>')+
     '</div>'+
@@ -4512,7 +4545,14 @@ function renderReviewSatelliteMap(holeNo){
           fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2
         }
       });
-      reviewMapObjects.push(line,marker);
+      const mid={lat:(Number(s.start.lat)+Number(s.end.lat))/2,lng:(Number(s.start.lng)+Number(s.end.lng))/2};
+      const distText=Number.isFinite(Number(s.distanceM))?Math.round(Number(s.distanceM))+'m':null;
+      const distMarker=distText?new google.maps.Marker({
+        map:googleMap,position:mid,zIndex:10,clickable:false,
+        label:{text:distText,color:'#ffffff',fontWeight:'900',fontSize:'10px'},
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:17,fillColor:'#07110c',fillOpacity:.84,strokeColor:'#ffffff',strokeOpacity:.55,strokeWeight:1}
+      }):null;
+      reviewMapObjects.push(line,marker,...(distMarker?[distMarker]:[]));
     }
   });
   if(ch.t){
@@ -4534,7 +4574,16 @@ function renderReviewSatelliteMap(holeNo){
 
   setTimeout(()=>{
     google.maps.event.trigger(googleMap,'resize');
-    if(has)googleMap.fitBounds(bounds,{top:38,right:28,bottom:38,left:28});
+    if(has)googleMap.fitBounds(bounds,{top:48,right:36,bottom:48,left:36});
+    if(ch.t&&ch.g){
+      const heading=bearingDeg({lat:ch.t[0],lng:ch.t[1]},{lat:ch.g[0],lng:ch.g[1]});
+      setTimeout(()=>{
+        try{
+          if(typeof googleMap.moveCamera==='function')googleMap.moveCamera({heading,tilt:0});
+          else{googleMap.setHeading(heading);googleMap.setTilt(0)}
+        }catch{}
+      },80);
+    }
   },40);
   return true;
 }
@@ -4583,6 +4632,11 @@ function renderReviewJgiMap(holeNo){
     if(!s.start||!s.end)return;
     const a=project(s.start),b=project(s.end);
     svg+='<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="#ffffff" stroke-width="3" opacity=".92"/>';
+    if(Number.isFinite(Number(s.distanceM))){
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,label=Math.round(Number(s.distanceM))+'m';
+      svg+='<rect x="'+(mx-20).toFixed(1)+'" y="'+(my-10).toFixed(1)+'" width="40" height="18" rx="9" fill="#07110c" fill-opacity=".86" stroke="#ffffff" stroke-opacity=".45"/>';
+      svg+='<text x="'+mx.toFixed(1)+'" y="'+(my+3).toFixed(1)+'" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="1000">'+label+'</text>';
+    }
     svg+='<circle cx="'+b.x.toFixed(1)+'" cy="'+b.y.toFixed(1)+'" r="10" fill="#ff8a1d" stroke="#ffffff" stroke-width="2"/>';
     svg+='<text x="'+b.x.toFixed(1)+'" y="'+(b.y+3.5).toFixed(1)+'" text-anchor="middle" fill="#08100b" font-size="9" font-weight="1000">'+(i+1)+'</text>';
   });
@@ -4613,7 +4667,7 @@ function renderLiveReview(){
   const completed=round.holes.filter(h=>h.completed);
   const through=completed.length?Math.max(...completed.map(h=>h.hole)):round.currentHole;
   $('liveThrough').textContent=through+'번 홀까지';
-  $('liveCategoryCards').innerHTML=Object.values(a.categories).map(x=>categoryCard(x,false)).join('');
+  $('liveCategoryCards').innerHTML=Object.values(a.categories).map(x=>categoryCard(x,false)).join('')+liveMentalStateCard();
   $('bounceBack').innerHTML=
     '<div class="bounceItem"><b>무슨 일이 있었나</b><strong>'+a.whatHappened+'</strong></div>'+
     '<div class="bounceItem"><b>잘되고 있는 것</b><strong>'+a.working.name+' · '+a.working.main+'</strong></div>'+
@@ -4633,7 +4687,7 @@ function renderOverview(){
   $('scoreBig').innerHTML=(cH.length?tp.s:'—')+'<small>'+(cH.length?parText:'완료 홀')+'</small>';
   $('ovHoles').textContent=cH.length;$('ovPutts').textContent=cH.reduce((a,h)=>a+(h.putts||0),0);
   $('ovPen').textContent=round.holes.reduce((a,h)=>a+(h.penalties||0),0);$('ovFlo').textContent=allStates().length;
-  $('scorecard').innerHTML=round.holes.map(h=>'<div class="scoreCell">'+h.hole+'<b>'+(holeScore(h)??'—')+'</b></div>').join('');
+  $('scorecard').innerHTML=round.holes.map(h=>'<div class="scoreCell">'+h.hole+'<b class="scoreMark '+scoreMarkClass(h)+'">'+(holeScore(h)??'—')+'</b><span class="putts">'+((h.puttsDetail||[]).length?((h.puttsDetail||[]).length+'P'):'—')+'</span></div>').join('');
   renderLiveReview();
 }
 function stats(){
@@ -4719,6 +4773,16 @@ function buildStateResults(r){
   });
   return {shots,putts,unlinked};
 }
+function buildStateResultsForRounds(rounds){
+  const merged={shots:[],putts:[],unlinked:0};
+  (rounds||[]).forEach(r=>{
+    const data=buildStateResults(r);
+    merged.shots.push(...data.shots);
+    merged.putts.push(...data.putts);
+    merged.unlinked+=Number(data.unlinked||0);
+  });
+  return merged;
+}
 function stateResultSummary(rows,type){
   const o={n:rows.length,left:0,right:0,known:0,fairway:0,fairwayN:0,green:0,greenN:0,sg:[],holed:0,miss:0,short:0,long:0};
   rows.forEach(x=>{
@@ -4749,8 +4813,8 @@ function stateResultTable(groups,type){
   });
   return multiTable(headers,rows);
 }
-function renderStateResults(data){
-  let html='<div class="card"><div class="title">State × 실제 결과</div><div class="analysisNote">이 라운드에 저장된 상태와 해당 샷·퍼트만 연결합니다. 각 결과는 횟수/확인 가능한 표본 수입니다. —는 확인 불가입니다. 그룹 5개 미만은 샘플 부족이며, 5개 이상도 통계적 신뢰도를 보장하지 않습니다. 같은 샷이 여러 상태 항목에 반복 표시되므로 표를 합산하지 마세요.<br>페어웨이: Par 4 이상 첫 샷 · 그린: 그린 공략 샷의 도달 여부(GIR 아님). SG는 기존 라운드 기준이며 홀 단위 벌타는 개별 샷에 배분하지 않습니다.</div>';
+function renderStateResults(data,scopeLabel='이 라운드'){
+  let html='<div class="card"><div class="title">State × 실제 결과</div><div class="analysisNote">'+scopeLabel+'에 저장된 상태와 해당 샷·퍼트만 연결합니다. 각 결과는 횟수/확인 가능한 표본 수입니다. —는 확인 불가입니다. 그룹 5개 미만은 샘플 부족이며, 5개 이상도 통계적 신뢰도를 보장하지 않습니다. 같은 샷이 여러 상태 항목에 반복 표시되므로 표를 합산하지 마세요.<br>페어웨이: Par 4 이상 첫 샷 · 그린: 그린 공략 샷의 도달 여부(GIR 아님). SG는 각 라운드의 기존 비교 기준을 사용하며 홀 단위 벌타는 개별 샷에 배분하지 않습니다.</div>';
   [['SHOT','샷',data.shots],['PUTTING','퍼팅',data.putts]].forEach(([type,label,rows])=>{
     html+='<div class="sectionLabel">'+label+' 상태별 결과 · '+rows.length+'개</div>';
     STATE_RESULT_KEYS.forEach(key=>{
@@ -4768,7 +4832,7 @@ function renderStateResults(data){
   });
   return html+'</div>';
 }
-function stateResultPatterns(data){
+function stateResultPatterns(data,scopeLabel='오늘의 제한된 표본'){
   const candidates=[];
   [['SHOT','샷',data.shots],['PUTTING','퍼트',data.putts]].forEach(([type,label,rows])=>{
     STATE_RESULT_KEYS.forEach(key=>{
@@ -4787,7 +4851,7 @@ function stateResultPatterns(data){
   const chosen=[];
   candidates.forEach(x=>{if(chosen.length<2&&!chosen.some(y=>y.key===x.key&&y.type===x.type))chosen.push(x)});
   const text=chosen.length?chosen.map(x=>x.text):['아직 뚜렷한 비교 패턴이 없습니다. 비교할 두 그룹에 결과가 확인되는 샘플이 각각 5개 이상 필요하며, 비율 차이가 20%p 미만이면 관찰 문장을 만들지 않습니다. 샘플 부족 그룹은 표에서 확인하세요.'];
-  return [...text,'오늘의 제한된 표본에서 관찰된 관계입니다. 거리·클럽·코스 상황이 다를 수 있으며 상태가 결과의 원인이라고 단정하지 않습니다.'];
+  return [...text,scopeLabel+'에서 관찰된 관계입니다. 거리·클럽·코스 상황이 다를 수 있으며 상태가 결과의 원인이라고 단정하지 않습니다.'];
 }
 function renderFlo(){
   const f=allStates();
