@@ -1,0 +1,5 @@
+# Deployment output and local environment files must never enter Git.
+dist/
+.vercel/
+.env
+.env.*

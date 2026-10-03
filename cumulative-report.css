@@ -1,0 +1,94 @@
+/* Final reference corrections, scoped to the existing cumulative report. */
+.multi-review-open .app{background:#001a13;max-width:1120px}
+#resultsMultiView{color:#f5f8f6;--muted:#c7d1cc;--line:#17634e;font-size:15px}
+#resultsMultiView .card,#resultsMultiView .multiVizCard{background:#00251b;border-color:#17634e;border-radius:14px}
+#resultsMultiView .card{padding:14px;margin-bottom:10px}
+#resultsMultiView .title,#resultsMultiView .sectionLabel{font-size:20px;line-height:1.35}
+#resultsMultiView .sub,#resultsMultiView p{font-size:15px;line-height:1.5;color:#c7d1cc}
+#resultsMultiView small,#resultsMultiView .ey,#resultsMultiView .analysisBadge,#resultsMultiView .analysisNote,#resultsMultiView .analysisEmpty{font-size:13px;color:#c7d1cc}
+#resultsMultiView .multiPageHead{align-items:center}
+#resultsMultiView .multiPageHead h1{font-size:30px;line-height:1.2}
+#resultsMultiView .multiPageHead p{font-size:15px}
+#resultsMultiView button{font-size:14px;color:#f5f8f6}
+#resultsMultiView button:focus-visible{outline:3px solid #ffd16b;outline-offset:3px}
+#resultsMultiView .multiRangeTabs button{font-size:14px;min-width:78px}
+#resultsMultiView .multiRangeTabs{flex-wrap:wrap;justify-content:flex-end}
+#resultsMultiView .multiHero{background:var(--jgi-existing-course-photo) right center/cover no-repeat,#002219;border-color:#17634e;border-radius:15px}
+#resultsMultiView .multiHero:after{background:linear-gradient(90deg,#001b14e8,transparent),linear-gradient(0deg,#001b14ee,transparent);z-index:0}
+.multiReferencePhoto{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#resultsMultiView .multiHero h2{font-size:28px;line-height:1.25}
+#resultsMultiView .resultsMetric{background:#001e17d9;border-color:#17634e;border-radius:10px}
+#resultsMultiView .resultsMetric b{font-size:34px;line-height:1.2;font-weight:850}
+#resultsMultiView .resultsMetric span{font-size:15px;color:#f5f8f6}
+#resultsMultiView .multiPlayerSgCard{border-radius:10px;padding:14px 12px;min-width:0}
+#resultsMultiView .multiPlayerSgCard span{font-size:16px;color:#f5f8f6}
+#resultsMultiView .multiPlayerSgCard b,#resultsMultiView .multiPlayerSgCard .analysisSgValue{font-size:30px;line-height:1.2;margin-top:6px}
+#resultsMultiView .multiPlayerSgCard small{font-size:13px;line-height:1.45}
+#resultsMultiView .multiPlayerSgCard:nth-child(1) .analysisSgValue{color:#43b7f3}
+#resultsMultiView .multiPlayerSgCard:nth-child(2) .analysisSgValue{color:#00e5a7}
+#resultsMultiView .multiPlayerSgCard:nth-child(3) .analysisSgValue{color:#ffc65c}
+#resultsMultiView .multiPlayerSgCard:nth-child(4) .analysisSgValue{color:#ff6875}
+#resultsMultiView .multiChartsGrid{gap:10px}
+#resultsMultiView .multiChartCard{min-height:220px}
+#resultsMultiView .multiChartCard .title{font-size:19px}
+#resultsMultiView .multiLineSvg{height:155px;margin-top:8px}
+#resultsMultiView .multiLineSvg text{font-size:21px;fill:#f5f8f6}
+#resultsMultiView .multiLineLegend{font-size:13px;color:#c7d1cc;gap:10px}
+#resultsMultiView .multiCoreInsights{gap:10px}
+#resultsMultiView .multiCoreInsight{border-radius:11px;padding:14px;min-height:160px}
+#resultsMultiView .multiCoreInsight .ey{font-size:16px}
+#resultsMultiView .multiCoreInsight strong{font-size:17px;line-height:1.4}
+#resultsMultiView .multiCoreInsight p{font-size:15px;color:#c7d1cc}
+#resultsMultiView .multiCoreInsight.loss .ey{color:#ff6875}
+#resultsMultiView .multiCoreInsight.gain .ey{color:#00e5a7}
+#resultsMultiView .multiCoreInsight.mental .ey{color:#ffc65c}
+#resultsMultiView .multiRecentWrap{grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:12px}
+#resultsMultiView .multiRecentCompare{min-width:0;gap:0;border:1px solid #17634e;border-radius:10px;overflow:hidden}
+#resultsMultiView .multiRecentItem{min-width:0;padding:10px 7px;border-radius:0;border:0;border-right:1px solid #174837;background:#001e17}
+#resultsMultiView .multiRecentItem:last-child{border-right:0}
+#resultsMultiView .multiRecentItem span,#resultsMultiView .multiRecentItem small{font-size:13px;color:#c7d1cc}
+#resultsMultiView .multiRecentItem b{font-size:14px;overflow-wrap:anywhere}
+#resultsMultiView .multiRecentItem .up{color:#00e5a7}
+#resultsMultiView .multiRecentItem .down{color:#ff737b}
+#resultsMultiView .multiRecentSummary{font-size:15px;min-width:0;overflow-wrap:anywhere;line-height:1.5;color:#c7d1cc}
+#resultsMultiView .multiRecentSummary b{font-size:17px}
+#resultsMultiView .multiDashboardTabs button{font-size:16px;padding:11px 6px;border-radius:10px}
+#resultsMultiView .multiCategoryTabs button{font-size:14px}
+#resultsMultiView .multiTeeKpi{border-radius:10px}
+#resultsMultiView .multiTeeKpi span{font-size:13px;color:#c7d1cc}
+#resultsMultiView .multiTeeKpi b,#resultsMultiView .multiTeeKpi .analysisSgValue{font-size:30px;line-height:1.2}
+#resultsMultiView .multiTeeGrid{grid-template-columns:1fr 1.08fr 1fr;gap:10px}
+#resultsMultiView .multiVizCard{min-width:0}
+#resultsMultiView .multiVizCard h4{font-size:16px}
+#resultsMultiView .multiDonutWrap{grid-template-columns:112px minmax(0,1fr);gap:10px;min-height:150px}
+#resultsMultiView .multiDonut strong{font-size:24px}
+#resultsMultiView .multiDonut span{font-size:13px;transform:translateY(18px);color:#c7d1cc}
+#resultsMultiView .multiDonutLegend div{font-size:13px;grid-template-columns:8px minmax(0,1fr);row-gap:0}
+#resultsMultiView .multiDonutLegend b{grid-column:2;font-size:13px}
+#resultsMultiView .multiDriverScatter{height:155px;background:linear-gradient(#00362955,#00362955),var(--jgi-existing-course-photo) center/cover no-repeat,#003629}
+#resultsMultiView .multiDriverScatter:before{z-index:1}
+#resultsMultiView .multiDriverScatter:after{font-size:13px;letter-spacing:.05em;background:#001b14bd;z-index:2;padding:4px 0}
+#resultsMultiView .multiDriverDot{z-index:1}
+#resultsMultiView .multiCourseImageNote{font-size:13px;color:#c7d1cc;line-height:1.4;margin-top:5px}
+#resultsMultiView .multiDistanceBars{height:155px;gap:8px}
+#resultsMultiView .multiDistanceBar,#resultsMultiView .multiDistanceBar b{font-size:13px;color:#f5f8f6}
+#resultsMultiView .multiDistanceBar span{display:block;white-space:nowrap;font-size:13px}
+#resultsMultiView .multiTeeLower{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+#resultsMultiView .multiTeeLower>div{min-width:0}
+#resultsMultiView .analysisTable{font-size:14px;min-width:0}
+#resultsMultiView .analysisTable th,#resultsMultiView .analysisTable td{font-size:13px;padding:9px 6px;color:#f5f8f6}
+#resultsMultiView .analysisTable th{color:#c7d1cc}
+#resultsMultiView .analysisTable .sgBadge{font-size:13px}
+#resultsMultiView .multiPatternLine{font-size:15px;line-height:1.5;padding:11px 12px;color:#f5f8f6}
+#resultsMultiView .multiAllDetails>summary{font-size:15px}
+#resultsMultiView .analysisKpi span{font-size:13px;color:#c7d1cc}
+#resultsMultiView .multiInsightButton{font-size:13px}
+@media(min-width:761px) and (max-width:1000px){#resultsMultiView .multiLineSvg text{font-size:25px}#resultsMultiView .multiRecentWrap{grid-template-columns:minmax(0,2.8fr) minmax(0,1fr)}#resultsMultiView .multiTeeLower{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}#resultsMultiView .multiDistanceBar span{font-size:13px;white-space:normal}}
+@media(max-width:760px){#resultsMultiView .multiChartsGrid,#resultsMultiView .multiCoreInsights,#resultsMultiView .multiRecentWrap,#resultsMultiView .multiTeeGrid,#resultsMultiView .multiTeeLower{grid-template-columns:1fr}#resultsMultiView .multiPageHead{display:block}#resultsMultiView .multiRangeTabs{justify-content:flex-start;margin-top:10px}#resultsMultiView .multiRecentCompare{grid-template-columns:repeat(2,minmax(0,1fr))}#resultsMultiView .multiLineSvg text{font-size:17px}#resultsMultiView .multiDonutLegend div{grid-template-columns:8px 1fr auto}#resultsMultiView .multiDonutLegend b{grid-column:auto}#resultsMultiView .multiPrimaryCard>.row{flex-wrap:wrap}#resultsMultiView .multiTeeKpi b,#resultsMultiView .multiTeeKpi .analysisSgValue{font-size:30px}}
+
+#resultsMultiView .multiLineSvg text{font-size:13px}
+#resultsMultiView .multiDistanceBar span{white-space:normal;overflow-wrap:anywhere}
+#resultsMultiView .title>span{font-size:13px!important;color:#c7d1cc!important}
+#resultsMultiView .multiPlayerSgCard .analysisSgValue{font-size:30px}
+#resultsMultiView #multiScoreTrend{display:block}
+#resultsMultiView .multiLineSvg text{font-size:14px}
