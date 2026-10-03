@@ -101,9 +101,9 @@
 #resultsMultiView .multiGreenResultMap{position:relative;height:155px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,#4b8f55 0 34%,#2f6a3d 35% 52%,#18472f 53% 100%);border:1px solid #17634e}
 #resultsMultiView .multiGreenResultMap:before{content:"";position:absolute;inset:16% 20%;border:1px solid rgba(255,255,255,.34);border-radius:50%}
 #resultsMultiView .multiGreenPin{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);z-index:2;font-size:22px;text-shadow:0 2px 6px rgba(0,0,0,.45)}
-#resultsMultiView .multiGreenDot{position:absolute;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);z-index:3;border:2px solid rgba(255,255,255,.86);box-shadow:0 2px 7px rgba(0,0,0,.42)}
-#resultsMultiView .multiGreenDot.hit{background:#19e38b}
-#resultsMultiView .multiGreenDot.miss{background:#ff8a4f}
+#resultsMultiView .multiGreenDot{position:absolute;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);z-index:3;border:2px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 0 9px rgba(255,255,255,.28),0 2px 8px rgba(0,0,0,.55)}
+#resultsMultiView .multiGreenDot.hit{background:#22d8ff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 11px rgba(34,216,255,.85),0 2px 8px rgba(0,0,0,.6)}
+#resultsMultiView .multiGreenDot.miss{background:#ff9a3d;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px rgba(255,154,61,.78),0 2px 8px rgba(0,0,0,.6)}
 #resultsMultiView .multiGreenResultMap .mapLabel{position:absolute;z-index:1;font-size:10px;font-weight:900;color:#eff8f3;background:#001b14b8;padding:2px 5px;border-radius:999px}
 #resultsMultiView .multiGreenResultMap .mapLabel.top{top:6px;left:50%;transform:translateX(-50%)}
 #resultsMultiView .multiGreenResultMap .mapLabel.bottom{bottom:6px;left:50%;transform:translateX(-50%)}
