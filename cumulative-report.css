@@ -156,3 +156,17 @@
 #resultsMultiView .multiHcpProgress>span.worse{color:#ff7b7b}
 #resultsMultiView .multiHcpProgress>span.neutral{color:#cbd7d0}
 #resultsMultiView .multiHcpProgress>small{margin-top:3px;font-size:8px;line-height:1.35;color:#7f9086}
+
+
+/* 27-round chart readability */
+#resultsMultiView .multiChartsGrid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+#resultsMultiView .multiLineSvg text.multiAxisTick{font-size:10px;fill:#aab9b0;font-weight:700}
+#resultsMultiView .multiLineSvg text.multiPointValue{font-size:10px;fill:#f5f8f6;font-weight:800}
+#resultsMultiView .multiHcpProgress{grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;row-gap:2px;padding:7px 9px}
+#resultsMultiView .multiHcpProgress>b{font-size:10px}
+#resultsMultiView .multiHcpProgress>strong{font-size:14px;white-space:nowrap}
+#resultsMultiView .multiHcpProgress>span{font-size:10px;white-space:nowrap;text-align:right}
+#resultsMultiView .multiHcpProgress>small{grid-column:1/-1;margin-top:1px;font-size:7px;line-height:1.25}
+@media(max-width:760px){
+  #resultsMultiView .multiChartsGrid{grid-template-columns:1fr}
+}
