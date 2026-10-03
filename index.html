@@ -1252,8 +1252,9 @@ body.round-active .bottomnav{display:none!important}
             <div id="multiSgLineChart"></div>
           </div>
           <div class="card multiChartCard">
-            <div class="title">핸디캡 추이</div>
+            <div class="title">Player Progress · HCP</div>
             <div id="multiHcpTrend"></div>
+            <div id="multiHcpProgress" class="multiHcpProgress"></div>
           </div>
         </div>
 
@@ -4575,11 +4576,32 @@ function multiRenderSgLineChart(rounds){
   return multiSvgSeries([x.TEE.byRound,x.SECOND.byRound,x.APPROACH.byRound,x.PUTTER.byRound],
     ['#5aa7ff','#45e587','#f2b94b','#ff6f7d'],['티샷','세컨샷','어프로치','퍼터'],v=>formatSg(v),'multiSgLineChart');
 }
+function multiRoundPerformanceHcp(r){
+  const d=resultToPar(r);
+  return Number.isFinite(Number(d))?Number(d):null;
+}
 function multiRenderHcpChart(rounds){
   const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
-  const vals=ordered.map(r=>Number(r.playerHandicap)).map(v=>Number.isFinite(v)?v:null);
-  if(!vals.some(Number.isFinite))return '<div class="analysisEmpty">핸디캡 데이터가 없습니다.</div>';
-  return multiSvgSeries([vals],['#45e587'],['핸디캡'],v=>v.toFixed(1),'multiHcpTrend');
+  const player=ordered.map(r=>Number(r.playerHandicap)).map(v=>Number.isFinite(v)?v:null);
+  const performance=ordered.map(multiRoundPerformanceHcp);
+  if(!player.some(Number.isFinite)&&!performance.some(Number.isFinite))return '<div class="analysisEmpty">Progress 데이터가 없습니다.</div>';
+  return multiSvgSeries(
+    [player,performance],
+    ['#45e587','#5aa7ff'],
+    ['Player HCP','JGI Performance HCP*'],
+    v=>v.toFixed(1),
+    'multiHcpTrend'
+  );
+}
+function multiRenderHcpProgress(rounds){
+  const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
+  const latest=[...ordered].reverse().find(r=>Number.isFinite(Number(r.playerHandicap))&&Number.isFinite(multiRoundPerformanceHcp(r)));
+  if(!latest)return '<span>현재 비교 가능한 Player HCP와 라운드 결과가 없습니다.</span>';
+  const player=Number(latest.playerHandicap),perf=multiRoundPerformanceHcp(latest),delta=perf-player;
+  const cls=Math.abs(delta)<0.05?'neutral':delta<0?'better':'worse';
+  const diff=Math.abs(delta).toFixed(1);
+  const label=Math.abs(delta)<0.05?'동일 수준':delta<0?diff+' better':diff+' higher';
+  return '<b>Current Progress</b><strong>Player HCP '+player.toFixed(1)+' → Current Performance '+perf.toFixed(1)+'</strong><span class="'+cls+'">'+label+'</span><small>* 현재 JGI Performance HCP는 Round Score − Par 기반 Progress 지표입니다. Course Rating / Slope 연결 전에는 공식 WHS Handicap Differential이 아닙니다.</small>';
 }
 function multiRecentSummaryText(rounds){
   const {prev,recent}=multiRecentSplit(rounds);
@@ -4624,6 +4646,7 @@ function renderMultiDashboard(rounds){
   $('multiRecentSummary').innerHTML=multiRecentSummaryText(rounds);
   $('multiSgLineChart').innerHTML=multiRenderSgLineChart(rounds);
   $('multiHcpTrend').innerHTML=multiRenderHcpChart(rounds);
+  $('multiHcpProgress').innerHTML=multiRenderHcpProgress(rounds);
   $('multiDetailRange').textContent='최근 '+rounds.length+'라운드';
   renderMultiPrimaryDetail();
 }
