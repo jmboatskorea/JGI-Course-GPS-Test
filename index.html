@@ -4600,14 +4600,16 @@ function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1),chartId){
   let min=Math.min(...all),max=Math.max(...all);if(Math.abs(max-min)<.1){min-=1;max+=1}else{const pad=(max-min)*.18;min-=pad;max+=pad}
   const n=Math.max(...series.map(x=>x.length),1),w=Math.max(160,$(chartId)?.clientWidth||300),h=150,l=28,r=24,t=28,b=28,iw=w-l-r,ih=h-t-b;
   const x=i=>l+(n<=1?iw/2:i/(n-1)*iw),y=v=>t+(max-v)/(max-min)*ih;
+  const showRoundTick=i=>n<=10||i===0||i===n-1||((i+1)%5===0);
+  const showValueLabel=i=>n<=10||i===0||i===n-1||((i+1)%5===0);
   let svg='<svg class="multiLineSvg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">';
   for(let g=0;g<4;g++){const yy=t+ih*g/3;svg+='<line x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'" stroke="rgba(255,255,255,.08)" stroke-width="1"/>'}
   series.forEach((vals,si)=>{
     const pts=vals.map((v,i)=>Number.isFinite(v)?x(i)+','+y(v):null).filter(Boolean).join(' ');
     if(pts)svg+='<polyline points="'+pts+'" fill="none" stroke="'+colors[si]+'" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
-    vals.forEach((v,i)=>{if(Number.isFinite(v)){svg+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+colors[si]+'" stroke="#07110c" stroke-width="1"/>';if(series.length===1)svg+='<text x="'+x(i)+'" y="'+(y(v)-7)+'" text-anchor="middle" fill="#edf7f1" font-size="8" font-weight="700">'+formatter(v)+'</text>';}});
+    vals.forEach((v,i)=>{if(Number.isFinite(v)){svg+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+colors[si]+'" stroke="#07110c" stroke-width="1"/>';if(series.length===1&&showValueLabel(i))svg+='<text class="multiPointValue" x="'+x(i)+'" y="'+(y(v)-7)+'" text-anchor="middle">'+formatter(v)+'</text>';}});
   });
-  for(let i=0;i<n;i++)svg+='<text x="'+x(i)+'" y="'+(h-5)+'" text-anchor="middle" fill="#7f9086" font-size="8">'+(i+1)+'R</text>';
+  for(let i=0;i<n;i++)if(showRoundTick(i))svg+='<text class="multiAxisTick" x="'+x(i)+'" y="'+(h-5)+'" text-anchor="middle">'+(i+1)+'R</text>';
   svg+='</svg><div class="multiLineLegend">'+labels.map((l,i)=>'<span><i style="background:'+colors[i]+'"></i>'+safeText(l)+'</span>').join('')+'</div>';
   return svg;
 }
@@ -4645,7 +4647,7 @@ function multiRenderHcpProgress(rounds){
   const cls=Math.abs(delta)<0.05?'neutral':delta<0?'better':'worse';
   const diff=Math.abs(delta).toFixed(1);
   const label=Math.abs(delta)<0.05?'동일 수준':delta<0?diff+' better':diff+' higher';
-  return '<b>Current Progress</b><strong>Player HCP '+player.toFixed(1)+' → Current Performance '+perf.toFixed(1)+'</strong><span class="'+cls+'">'+label+'</span><small>* 현재 JGI Performance HCP는 Round Score − Par 기반 Progress 지표입니다. Course Rating / Slope 연결 전에는 공식 WHS Handicap Differential이 아닙니다.</small>';
+  return '<b>Current Progress</b><strong>'+player.toFixed(1)+' → '+perf.toFixed(1)+'</strong><span class="'+cls+'">'+label+'</span><small>Player HCP → JGI Performance* · *현재는 Score − Par 기반 Progress 지표이며 공식 WHS Differential은 아닙니다.</small>';
 }
 function multiRecentSummaryText(rounds){
   const {prev,recent}=multiRecentSplit(rounds);
