@@ -752,7 +752,7 @@ body.round-active .bottomnav{display:none!important}
 .multiCategoryTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.multiCategoryTabs button{border:1px solid rgba(255,255,255,.1);background:#07130d;color:#93a69b;border-radius:999px;padding:8px 5px;font-size:8px;font-weight:900}.multiCategoryTabs button.sel{border-color:#27e978;color:#74f39d;background:rgba(39,233,120,.09)}
 .multiTeeKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.multiTeeKpi{padding:10px;border-radius:14px;background:#08130d;border:1px solid rgba(255,255,255,.1)}.multiTeeKpi span{display:block;color:#9daf9f;font-size:8px}.multiTeeKpi b{display:block;font-size:16px;margin-top:3px}
 .multiTeeGrid{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px}.multiVizCard{padding:11px;border-radius:15px;background:#08130d;border:1px solid rgba(255,255,255,.1)}.multiVizCard h4{font-size:10px;margin:0 0 8px}.multiUsageRow{display:grid;grid-template-columns:44px 1fr 34px;gap:6px;align-items:center;margin:6px 0;font-size:8px}.multiUsageTrack{height:7px;border-radius:99px;background:#122019;overflow:hidden}.multiUsageTrack i{display:block;height:100%;border-radius:99px;background:#35dc7b}
-.multiDriverScatter{position:relative;height:210px;border-radius:14px;overflow:hidden;background:linear-gradient(90deg,rgba(68,39,20,.34) 0 30%,rgba(32,98,49,.3) 30% 70%,rgba(68,39,20,.34) 70% 100%);border:1px solid rgba(255,255,255,.08)}.multiDriverScatter:before{content:"";position:absolute;left:49.5%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.23)}.multiDriverScatter:after{content:"좌   페어웨이   우";position:absolute;left:0;right:0;bottom:5px;text-align:center;color:#d6e1da;font-size:7px;letter-spacing:.18em}.multiDriverDot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);background:#ff737d;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 5px rgba(0,0,0,.35)}.multiDriverDot.fw{background:#45e587}
+.multiDriverScatter{position:relative;height:210px;border-radius:14px;overflow:hidden;background:linear-gradient(90deg,rgba(68,39,20,.34) 0 30%,rgba(32,98,49,.3) 30% 70%,rgba(68,39,20,.34) 70% 100%);border:1px solid rgba(255,255,255,.08)}.multiDriverScatter:before{content:"";position:absolute;left:49.5%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.23)}.multiDriverScatter:after{content:"좌   페어웨이   우";position:absolute;left:0;right:0;bottom:5px;text-align:center;color:#d6e1da;font-size:7px;letter-spacing:.18em}.multiDriverPct{position:absolute;top:7px;z-index:4;padding:4px 7px;border-radius:999px;background:rgba(2,18,13,.80);border:1px solid rgba(255,255,255,.18);color:#f2f7f4;font-size:9px;font-weight:950;line-height:1}.multiDriverPct.left{left:7px}.multiDriverPct.center{left:50%;transform:translateX(-50%);color:#74f39d}.multiDriverPct.right{right:7px}.multiDriverDot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);background:#ff737d;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 5px rgba(0,0,0,.35)}.multiDriverDot.fw{background:#45e587}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
@@ -1238,6 +1238,7 @@ body.round-active .bottomnav{display:none!important}
           <div class="title">획득 타수 · Avg SG</div>
           <div class="sub">Player 화면은 티샷 · 세컨샷 · 어프로치 · 퍼터 네 영역으로 봅니다.</div>
           <div id="multiPlayerSgCards" class="multiPlayerSgCards"></div>
+          <div id="multiCoreRateCards" class="multiCoreRateCards"></div>
           <div id="multiSgTrend" class="hidden"></div>
         </div>
 
@@ -1251,8 +1252,9 @@ body.round-active .bottomnav{display:none!important}
             <div id="multiSgLineChart"></div>
           </div>
           <div class="card multiChartCard">
-            <div class="title">핸디캡 추이</div>
+            <div class="title">Player Progress · HCP</div>
             <div id="multiHcpTrend"></div>
+            <div id="multiHcpProgress" class="multiHcpProgress"></div>
           </div>
         </div>
 
@@ -1792,9 +1794,9 @@ body.round-active .bottomnav{display:none!important}
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
 const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
-const COMPLETED_ROUNDS_LIMIT=20;
+const COMPLETED_ROUNDS_LIMIT=40;
 const TEST_DATA_SEED_KEY='jgi_test_data_seed_v1';
-const TEST_DATA_SEED_VERSION='JGI_HCP6_6R_V1';
+const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_V1';
 const DEFAULT_MASTER_CLUBS=[
   {name:'DR',carry:235,centerWidth:14},{name:'3W',carry:215,centerWidth:12},{name:'5W',carry:200,centerWidth:11},
   {name:'3I',carry:190,centerWidth:10},{name:'4I',carry:180,centerWidth:9},{name:'5I',carry:170,centerWidth:9},
@@ -3280,6 +3282,15 @@ function testOffsetCross(h,point,meters,holePar=null){
   const q=model.projector.toXY(point);
   return model.projector.toLatLng({x:q.x+model.v.x*Number(meters),y:q.y+model.v.y*Number(meters)});
 }
+function testNearGreenPoint(start,green,depth='SHORT',direction='CENTER',distanceM=24){
+  if(!start||!green)return green||start||null;
+  const proj=courseLocalProjector(green),q=proj.toXY(start);
+  const len=Math.hypot(q.x,q.y)||1,ux=q.x/len,uy=q.y/len;
+  const d=Math.max(6,Math.min(65,Number(distanceM)||24));
+  const along=String(depth).toUpperCase()==='LONG'?-d:d;
+  const cross=String(direction).toUpperCase()==='LEFT'?-Math.min(18,d*.45):String(direction).toUpperCase()==='RIGHT'?Math.min(18,d*.45):0;
+  return proj.toLatLng({x:ux*along-uy*cross,y:uy*along+ux*cross});
+}
 function testClubForDistance(distanceM){
   const d=Number(distanceM)||0;
   if(d>205)return '3W';
@@ -3342,32 +3353,30 @@ function attachSyntheticStates(r){
   return r;
 }
 function buildSyntheticRound(roundNo,targetScore){
-  const baseTime=Date.now()-(7-roundNo)*7*24*60*60*1000;
+  const totalDemoRounds=27;
+  const baseTime=Date.now()-(totalDemoRounds-roundNo)*7*24*60*60*1000;
   const pars=Array.from({length:18},(_,i)=>scorecardHoleData(i+1,'White')?.par||4);
   const parTotal=pars.reduce((a,b)=>a+b,0);
-  const bogeySets={
-    1:[4,16],
-    2:[2,4,7,12,16,18],
-    3:[2,4,5,7,9,12,16,18],
-    4:[2,5,7,9,12,16,18],
-    5:[1,4,7,10,14,16,18],
-    6:[2,4,5,7,9,14,16,18]
-  };
-  const penaltySets={1:[4],2:[7,16],3:[4,9,18],4:[],5:[],6:[]};
-  const threePuttSets={1:[16],2:[12],3:[5],4:[9],5:[10],6:[5]};
-  const bogeys=new Set(bogeySets[roundNo]||[]);
-  const penalties=new Set(penaltySets[roundNo]||[]);
-  const threePutts=new Set(threePuttSets[roundNo]||[]);
+  const delta=Math.max(0,Math.round(Number(targetScore)-parTotal));
+  const holePool=[4,16,2,7,12,18,5,9,14,1,10,15,3,6,11,13,17,8];
+  const rotated=holePool.slice((roundNo*3)%holePool.length).concat(holePool.slice(0,(roundNo*3)%holePool.length));
+  const bogeyList=rotated.slice(0,delta);
+  const bogeys=new Set(bogeyList);
+  const penalties=new Set(bogeyList.filter((h,i)=>(i+roundNo)%5===0).slice(0,2));
+  const threePutts=new Set(bogeyList.filter((h,i)=>!penalties.has(h)&&(i+roundNo)%4===1).slice(0,2));
+  const savePool=rotated.filter(h=>!bogeys.has(h));
+  const bunkerSaveCount=roundNo%3===0?2:1;
+  const bunkerSaves=new Set(savePool.slice(0,bunkerSaveCount));
+  const approachSaves=new Set(savePool.slice(bunkerSaveCount,bunkerSaveCount+2));
   const riskHoles=new Set([4,7,9,14,16,18]);
-  const expectedDelta=targetScore-parTotal;
-  if(bogeys.size!==expectedDelta)throw new Error('Synthetic score plan mismatch R'+roundNo);
+  const selectedHcp=roundNo<=7?9:roundNo<=14?8:roundNo<=21?7:6;
 
   const r={
     version:9,id:'test-hcp6-r'+roundNo,course:'Jagorawi Golf & Country Club',nine:'Old Course',
     tee:'White',stateCollectionLevel:100,stateSamplingVersion:STATE_SAMPLING_VERSION,samplingRoundIndex:roundNo,
     samplingPlan:buildSamplingPlan(100,roundNo),stateSamplingEvents:[],
     startedAt:baseTime,completedAt:baseTime+4*60*60*1000,currentHole:18,
-    holes:[],playerHandicap:6,sgBenchmarkMode:'HCP_5',
+    holes:[],playerHandicap:selectedHcp,sgBenchmarkMode:'HCP_5',
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null,
     synthetic:true,dataSource:'TEST_GENERATED',testScenarioVersion:TEST_DATA_SEED_VERSION,
@@ -3383,9 +3392,14 @@ function buildSyntheticRound(roundNo,targetScore){
     const isBogey=bogeys.has(holeNo);
     const hasPenalty=penalties.has(holeNo);
     const isThreePutt=threePutts.has(holeNo);
+    const isBunkerSave=bunkerSaves.has(holeNo);
+    const isApproachSave=approachSaves.has(holeNo);
+    const isSave=isBunkerSave||isApproachSave;
     const baseShots=Math.max(1,par-2);
-    const fullShotCount=baseShots+(isBogey&&!hasPenalty&&!isThreePutt?1:0);
-    const puttCount=2+(isThreePutt?1:0);
+    const pureBogey=isBogey&&!hasPenalty&&!isThreePutt;
+    const extraAroundGreen=isSave||pureBogey;
+    const fullShotCount=baseShots+(extraAroundGreen?1:0);
+    const puttCount=isSave?1:(2+(isThreePutt?1:0));
     const penaltyCount=hasPenalty?1:0;
     const holeObj={
       hole:holeNo,par,teeDistanceM:sc.White??sc.distanceM??null,
@@ -3395,7 +3409,7 @@ function buildSyntheticRound(roundNo,targetScore){
       completedAt:baseTime+holeNo*600000+300000,review:null
     };
     if(hasPenalty){
-      holeObj.penaltyEvents.push({type:'HAZARD',strokes:1,hole:holeNo,at:baseTime+holeNo*600000+120000,synthetic:true,dataSource:'TEST_GENERATED'});
+      holeObj.penaltyEvents.push({type:(roundNo+holeNo)%2===0?'HAZARD':'OB',strokes:1,hole:holeNo,at:baseTime+holeNo*600000+120000,synthetic:true,dataSource:'TEST_GENERATED'});
     }
 
     let start=teePt;
@@ -3403,42 +3417,59 @@ function buildSyntheticRound(roundNo,targetScore){
       if(!start||!green)break;
       const remaining=hav(start,green);
       const first=seq===1;
+      const regulationShot=seq===baseShots;
       const last=seq===fullShotCount;
       let club;
-      if(first&&par>=4&&riskHoles.has(holeNo))club=roundNo<=3?'DR':'3W';
+      if(first&&par>=4&&riskHoles.has(holeNo))club=((roundNo+holeNo)%4===0)?'3W':'DR';
       else if(first&&par>=4)club='DR';
       else club=testClubForDistance(remaining);
       const master=(masterClubs||DEFAULT_MASTER_CLUBS).find(x=>x.name===club)||DEFAULT_MASTER_CLUBS.find(x=>x.name===club)||{carry:Math.max(60,remaining-10),centerWidth:null};
       let zone='CENTER';
-      if(first&&par>=4&&riskHoles.has(holeNo)&&club==='3W')zone='LEFT';
+      if(first&&par>=4&&club==='3W')zone='LEFT';
       const rawTarget=targetZonePointForShot(ch,start,master.carry,zone,par);
       const target=rawTarget?{...rawTarget,source:'TEST_GENERATED'}:{zone,source:'TEST_GENERATED',lat:green.lat,lng:green.lng,distanceM:remaining,fairwayWidthM:null,basis:'TEST_FALLBACK'};
 
-      let direction='CENTER';
-      let endLie=last?'GREEN':'FAIRWAY';
-      let end;
-      if(first&&par>=4&&riskHoles.has(holeNo)){
-        if(club==='DR'){
-          direction=holeNo===14?'CENTER':'RIGHT';
+      let direction='CENTER',depth='TARGET',endLie=last?'GREEN':'FAIRWAY',end;
+      const teeVariant=(roundNo*5+holeNo)%10;
+      if(first&&par>=4){
+        const forceTeeMiss=(riskHoles.has(holeNo)&&teeVariant<6)||(!riskHoles.has(holeNo)&&teeVariant<2);
+        if(forceTeeMiss){
+          direction=teeVariant%2===0?'RIGHT':'LEFT';
           const base={lat:target.lat,lng:target.lng};
-          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(10,(target.fairwayWidthM||24)*0.48):0,par);
-          endLie=direction==='RIGHT'?(hasPenalty?'RECOVERY':'A CUT'):'FAIRWAY';
+          const cross=(target.fairwayWidthM||24)*(riskHoles.has(holeNo)?.48:.28);
+          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(7,cross):Math.max(7,cross),par);
+          if(hasPenalty)endLie='RECOVERY';
+          else endLie=['A CUT','B CUT','BUNKER'][teeVariant%3];
         }else{
-          direction=((holeNo+roundNo)%4===0)?'RIGHT':'CENTER';
-          const base={lat:target.lat,lng:target.lng};
-          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(5,(target.fairwayWidthM||24)*0.22):0,par);
-          endLie=direction==='RIGHT'?'A CUT':'FAIRWAY';
+          end={lat:target.lat,lng:target.lng};
+          endLie='FAIRWAY';
         }
+      }else if(regulationShot&&extraAroundGreen){
+        const missDirections=['LEFT','CENTER','RIGHT'];
+        const missDepths=['SHORT','LONG','SHORT','PIN_HIGH'];
+        direction=missDirections[(roundNo+holeNo)%missDirections.length];
+        depth=missDepths[(roundNo*2+holeNo)%missDepths.length];
+        const missDistance=12+((roundNo+holeNo)%5)*8;
+        end=testNearGreenPoint(start,green,depth,direction,missDistance);
+        if(isBunkerSave||(pureBogey&&(roundNo+holeNo)%3===0))endLie='BUNKER';
+        else endLie=['A CUT','B CUT','FRINGE'][(roundNo+holeNo)%3];
       }else if(last){
-        const miss=((roundNo+holeNo+seq)%7===0)?4:0;
-        direction=miss?'RIGHT':'CENTER';
-        end=testOffsetCross(ch,green,miss?-miss:0,par);
+        const greenDir=['CENTER','LEFT','RIGHT'][(roundNo+holeNo+seq)%3];
+        const greenDepth=['PIN_HIGH','SHORT','LONG'][(roundNo*2+holeNo+seq)%3];
+        direction=greenDir;depth=greenDepth;
+        end=testNearGreenPoint(start,green,greenDepth,greenDir,4+((roundNo+holeNo)%4));
         endLie='GREEN';
       }else{
-        const travel=Math.min(Number(master.carry)||remaining*0.65,Math.max(35,remaining-35));
+        const travel=Math.min(Number(master.carry)||remaining*.65,Math.max(35,remaining-35));
         end=testPointToward(start,green,travel)||{lat:target.lat,lng:target.lng};
-        const miss=((roundNo+holeNo+seq)%5===0)?6:0;
-        if(miss){direction='LEFT';end=testOffsetCross(ch,end,miss,par);endLie='A CUT'}
+        const midVariant=(roundNo+holeNo+seq)%7;
+        if(midVariant===0||midVariant===1){
+          direction=midVariant===0?'LEFT':'RIGHT';
+          end=testOffsetCross(ch,end,direction==='RIGHT'?-6:6,par);
+          endLie=midVariant===0?'A CUT':'B CUT';
+        }else{
+          endLie='FAIRWAY';
+        }
       }
       end={...end,accuracy:0,time:baseTime+holeNo*600000+seq*70000,source:'TEST_GENERATED'};
       const startGreenDistanceM=hav(start,green);
@@ -3456,8 +3487,8 @@ function buildSyntheticRound(roundNo,targetScore){
         startLie:first?'TEE':(holeObj.shots.at(-1)?.endLie||'FAIRWAY'),endLie,
         distanceM:hav(start,end),startedAt:baseTime+holeNo*600000+seq*60000,
         shotIntent:first?(par===3?'GREEN_ATTACK':'TEE_POSITION'):'GREEN_ATTACK',
-        intendedShape:null,resultSource:'TEST_GENERATED',ballFlight:null,trajectory:'MID',
-        direction,depth:last?'PIN_HIGH':'TARGET',centerWidthM:master.centerWidth??null,
+        intendedShape:null,resultSource:'TEST_GENERATED',ballFlight:null,trajectory:['LOW','MID','HIGH'][(roundNo+holeNo+seq)%3],
+        direction,depth,centerWidthM:master.centerWidth??null,
         target,targetZone:zone,targetSource:'TEST_GENERATED',targetLat:target.lat,targetLng:target.lng,
         targetFairwayWidthM:target.fairwayWidthM??null,courseContext,
         positionSource:{start:'TEST_GENERATED',end:'TEST_GENERATED'},
@@ -3468,13 +3499,18 @@ function buildSyntheticRound(roundNo,targetScore){
       start=end;
     }
 
-    const puttDistances=puttCount===3?[8.5,2.2,0.6]:[5.5,0.8];
+    const firstPuttOptions=[1.4,2.6,4.2,5.8,7.5,9.5,12.0];
+    let puttDistances;
+    if(puttCount===1)puttDistances=[1.0+((roundNo+holeNo)%4)*.45];
+    else if(puttCount===3)puttDistances=[9+((roundNo+holeNo)%4)*1.3,2.0+((roundNo+holeNo)%3)*.55,.55];
+    else puttDistances=[firstPuttOptions[(roundNo+holeNo)%firstPuttOptions.length],.55+((roundNo+holeNo)%4)*.18];
+    const slopeCycle=['UPHILL','FLAT','DOWNHILL'],breakCycle=['LEFT','STRAIGHT','RIGHT'],missCycle=['MISS_LEFT','MISS_RIGHT','SHORT','LONG'];
     for(let p=0;p<puttCount;p++){
       holeObj.puttsDetail.push({
-        number:p+1,distanceM:puttDistances[p]??0.5,
-        slope:p===0?(((holeNo+roundNo)%3===0)?'UPHILL':'FLAT'):'FLAT',
-        break:p===0?(((holeNo+roundNo)%2===0)?'RIGHT':'LEFT'):'STRAIGHT',
-        result:p===puttCount-1?'HOLED':(p===0?'MISS_RIGHT':'SHORT'),
+        number:p+1,distanceM:puttDistances[p]??.5,
+        slope:p===0?slopeCycle[(roundNo+holeNo)%3]:'FLAT',
+        break:p===0?breakCycle[(roundNo*2+holeNo)%3]:'STRAIGHT',
+        result:p===puttCount-1?'HOLED':missCycle[(roundNo+holeNo+p)%missCycle.length],
         playerState:null,at:baseTime+holeNo*600000+400000+p*40000,
         synthetic:true,dataSource:'TEST_GENERATED'
       });
@@ -3503,21 +3539,23 @@ function renderTestDataPreview(){
     if(s.direction==='RIGHT')decisions[s.club].right++;
     decisions[s.club].pen+=Number(h.penalties||0);
   }));
-  const scoreText=rounds.map((r,i)=>(r.testRoundNo||i+1)+'라운드 '+storedRoundScore(r)+'타').join(' · ');
+  const recent=rounds.slice(-9).map((r,i)=>(r.testRoundNo||rounds.length-8+i)+'R '+storedRoundScore(r)).join(' · ');
+  const firstHcp=rounds[0]?.playerHandicap,lastHcp=rounds.at(-1)?.playerHandicap;
   el.innerHTML=
-    '<b>가상 플레이어 · 핸디 6 · '+rounds.length+'라운드</b><br>'+
-    scoreText+'<br>'+
-    '평균 '+avgScore.toFixed(1)+'타 · 최고 '+Math.min(...scores)+' · 최저 '+Math.max(...scores)+'<br>'+
-    '<span style="color:#b8c9bf">오른쪽 해저드 테스트: 드라이버 '+decisions.DR.n+'회 / 우측 '+decisions.DR.right+' / 벌타 '+decisions.DR.pen+
-    ' · 3번 우드 '+decisions['3W'].n+'회 / 우측 '+decisions['3W'].right+'회 / 벌타 '+decisions['3W'].pen+'타</span>';
+    '<b>Demo Player · '+rounds.length+'라운드 · HCP '+firstHcp+' → '+lastHcp+'</b><br>'+
+    '최근 9R: '+recent+'<br>'+
+    '평균 '+avgScore.toFixed(1)+'타 · Best '+Math.min(...scores)+' · High '+Math.max(...scores)+'<br>'+
+    '<span style="color:#b8c9bf">다양한 Fairway/GIR/Approach Save/Bunker Save/Putting/State 케이스 포함 · 드라이버/3W 의사결정 샘플 포함</span>';
 }
 function seedSyntheticTestData(silent=false){
   try{
     masterClubs=getMasterClubs();
-    const scores=[74,78,80,79,79,80];
+    const parTotal=Array.from({length:18},(_,i)=>Number(scorecardHoleData(i+1,'White')?.par)||4).reduce((a,b)=>a+b,0);
+    const scoreDeltas=[10,9,8,10,7,8,6,8,7,6,5,7,4,6,5,4,3,5,4,3,2,4,2,3,1,2,0];
+    const scores=scoreDeltas.map(d=>parTotal+d);
     const realRounds=loadCompletedRounds().filter(r=>!isSyntheticRound(r));
     const generated=scores.map((score,i)=>buildSyntheticRound(i+1,score));
-    saveCompletedRounds([...realRounds,...generated]);
+    saveCompletedRounds([...realRounds,...generated].sort((a,b)=>Number(a.startedAt||a.completedAt||0)-Number(b.startedAt||b.completedAt||0)));
 
     const realState=loadStateHistory().filter(x=>!x?.synthetic&&!String(x?.roundId||'').startsWith('test-hcp6-r'));
     const syntheticState=generated.map(r=>({
@@ -3525,10 +3563,10 @@ function seedSyntheticTestData(silent=false){
       roundIndex:r.testRoundNo,counts:{TEE:5,SECOND:6,SHORT_GAME:3,PUTTING:6},
       synthetic:true,dataSource:'TEST_GENERATED'
     }));
-    saveStateHistory([...realState,...syntheticState].slice(-100));
+    saveStateHistory([...realState,...syntheticState].slice(-160));
     localStorage.setItem(TEST_DATA_SEED_KEY,TEST_DATA_SEED_VERSION);
     renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
-    if(!silent)alert('테스트 데이터 6라운드를 생성했습니다.\n\n핸디 6 · 74 / 78 / 80 / 79 / 79 / 80');
+    if(!silent)alert('Demo 테스트 데이터 27라운드를 생성했습니다.\n\nHCP 9 → 6 Progress · 다양한 Fairway / GIR / Approach Save / Bunker Save / Putting 케이스가 포함됩니다.');
     return true;
   }catch(e){
     console.error(e);
@@ -4051,6 +4089,79 @@ function multiPlayerFacingSg(rounds){
   Object.values(out).forEach(x=>{x.avgRound=rounds.length?x.total/rounds.length:null;x.avgShot=x.n?x.total/x.n:null});
   return out;
 }
+
+function multiRegulationShotIndex(par){
+  const p=Number(par);
+  return p===3?0:p===4?1:p===5?2:null;
+}
+function multiPar4SecondRows(rounds){
+  const out=[];
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    if(Number(h.par)!==4)return;
+    const s=h.shots?.[1];if(!s)return;
+    out.push({r,h,s,si:1});
+  }));
+  return out;
+}
+function multiCorePerformanceRates(rounds){
+  const out={
+    FAIRWAY:{label:'Fairway %',hit:0,total:0},
+    GIR:{label:'GIR %',hit:0,total:0},
+    APPROACH_SAVE:{label:'Approach Save %',hit:0,total:0},
+    BUNKER_SAVE:{label:'Bunker Save %',hit:0,total:0}
+  };
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    const shots=h.shots||[],par=Number(h.par);
+    const tee=shots[0],club=String(tee?.club||'').toUpperCase();
+    if(tee&&par>=4&&['DR','DRIVER'].includes(club)){
+      out.FAIRWAY.total++;
+      if(String(tee.endLie||'').toUpperCase()==='FAIRWAY')out.FAIRWAY.hit++;
+    }
+
+    const regIndex=multiRegulationShotIndex(par);
+    if(regIndex===null)return;
+    const regShot=shots[regIndex];
+    if(!regShot)return; // Raw data가 없으면 분모를 만들지 않는다.
+    out.GIR.total++;
+    if(String(regShot.endLie||'').toUpperCase()==='GREEN'){
+      out.GIR.hit++;
+      return;
+    }
+
+    const saveShot=shots[regIndex+1];
+    if(!saveShot)return;
+    const d=shotStartDistanceToHoleM(h,saveShot,regIndex+1);
+    if(!Number.isFinite(Number(d))||Number(d)<5||Number(d)>80)return;
+    const lie=String(saveShot.startLie||regShot.endLie||'').toUpperCase();
+    const saved=storedHoleScore(h)<=par;
+    if(['BUNKER','SAND'].includes(lie)){
+      out.BUNKER_SAVE.total++;
+      if(saved)out.BUNKER_SAVE.hit++;
+    }else{
+      out.APPROACH_SAVE.total++;
+      if(saved)out.APPROACH_SAVE.hit++;
+    }
+  }));
+  Object.values(out).forEach(x=>{x.rate=x.total?x.hit/x.total*100:null});
+  return out;
+}
+function multiCoreRateCardsHtml(rounds,prevRounds=[],recentRounds=[]){
+  const all=multiCorePerformanceRates(rounds);
+  const prev=prevRounds.length?multiCorePerformanceRates(prevRounds):null;
+  const recent=recentRounds.length?multiCorePerformanceRates(recentRounds):null;
+  const order=['FAIRWAY','GIR','APPROACH_SAVE','BUNKER_SAVE'];
+  const icons={FAIRWAY:'↗',GIR:'◎',APPROACH_SAVE:'↙',BUNKER_SAVE:'◒'};
+  return order.map(k=>{
+    const x=all[k];
+    let deltaText='';
+    if(prev&&recent&&Number.isFinite(prev[k].rate)&&Number.isFinite(recent[k].rate)){
+      const d=recent[k].rate-prev[k].rate;
+      deltaText=' · '+(d>0?'+':'')+d.toFixed(0)+'%p 이전 구간 대비';
+    }
+    return '<div class="multiCoreRateCard '+k.toLowerCase()+'"><span>'+icons[k]+' '+x.label+'</span><b>'+(Number.isFinite(x.rate)?Math.round(x.rate)+'%':'—')+'</b><small>'+x.hit+' / '+x.total+deltaText+'</small></div>';
+  }).join('');
+}
+
 function multiRecentSplit(rounds){
   const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
   if(ordered.length<2)return {prev:[],recent:ordered};
@@ -4120,7 +4231,15 @@ function multiDriverScatterHtml(driver){
     const fw=String(x.s.endLie||'').toUpperCase()==='FAIRWAY';
     return '<span class="multiDriverDot '+(fw?'fw':'')+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+safeText((x.h.hole||'')+'번 홀 · '+(Number.isFinite(d)?Math.round(d)+'m':'거리 없음')+' · '+dirLabel(x.s.direction))+'"></span>';
   }).join('');
-  return '<div class="multiDriverScatter">'+dots+'</div><div class="multiCourseImageNote">코스 이미지는 시각 참고용 · 점은 저장된 방향·거리 분포</div>';
+  const left=driver.filter(x=>String(x.s.direction||'').toUpperCase()==='LEFT').length;
+  const right=driver.filter(x=>String(x.s.direction||'').toUpperCase()==='RIGHT').length;
+  const fw=driver.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const pct=n=>Math.round(n/driver.length*100);
+  const labels=
+    '<span class="multiDriverPct left">좌 '+pct(left)+'%</span>'+
+    '<span class="multiDriverPct center">Fairway '+pct(fw)+'%</span>'+
+    '<span class="multiDriverPct right">우 '+pct(right)+'%</span>';
+  return '<div class="multiDriverScatter">'+labels+dots+'</div><div class="multiCourseImageNote">코스 이미지는 시각 참고용 · 점은 저장된 방향·거리 분포</div>';
 }
 function multiDistanceDistributionHtml(driver){
   const defs=[['<200',x=>x<200],['200–220',x=>x>=200&&x<220],['220–240',x=>x>=220&&x<240],['240–260',x=>x>=240&&x<260],['260+',x=>x>=260]];
@@ -4147,6 +4266,203 @@ function multiDriverPatterns(driver,situations){
   if(overall)out.push('드라이버 전체 페어웨이 적중 '+overall.fw+'/'+overall.n+'회 ('+Math.round(overall.fw/overall.n*100)+'%).');
   if(Number.isFinite(m))out.push('평균 드라이버 거리 '+Math.round(m)+'m'+(Number.isFinite(sd)?' · 거리 표준편차 '+sd.toFixed(1)+'m':'')+'.');
   return out;
+}
+
+function multiSampleTag(n,min){
+  const threshold=Number.isFinite(Number(min))?Number(min):5;
+  return '<span class="multiSampleTag '+(n<threshold?'low':'ok')+'">N '+n+(n<threshold?' · 관찰 중':'')+'</span>';
+}
+function multiStartLieKey(v){
+  const k=String(v||'UNKNOWN').toUpperCase();
+  if(k==='A_CUT')return 'A CUT';
+  if(k==='B_CUT')return 'B CUT';
+  return k;
+}
+function multiStartLieLabel(v,mode){
+  const k=multiStartLieKey(v);
+  const map={
+    FAIRWAY:'Fairway',
+    'A CUT':'A Cut',
+    'B CUT':'B Cut',
+    BUNKER:mode==='SECOND'?'Fairway Bunker':'Bunker',
+    RECOVERY:'Recovery',
+    FRINGE:'Fringe',
+    GREEN:'Green',
+    TEE:'Tee',
+    OTHER:'Other',
+    UNKNOWN:'Unknown'
+  };
+  return map[k]||k;
+}
+function multiStartDistance(x){
+  const d=x?.s?.courseContext?.startGreenDistanceM??x?.s?.courseContext?.greenDistanceM;
+  return Number.isFinite(Number(d))?Number(d):null;
+}
+function multiLieGroups(rows,mode){
+  const g={};
+  rows.forEach(x=>{
+    const key=multiStartLieKey(x.s.startLie);
+    const label=multiStartLieLabel(key,mode);
+    const o=g[key]||(g[key]={key,label,n:0,left:0,center:0,right:0,short:0,long:0,green:0,dist:[],remain:[],sg:[]});
+    o.n++;
+    const dir=String(x.s.direction||'').toUpperCase();
+    const dep=String(x.s.depth||'').toUpperCase();
+    if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    if(dep==='SHORT')o.short++;if(dep==='LONG')o.long++;
+    if(String(x.s.endLie||'').toUpperCase()==='GREEN')o.green++;
+    const d=multiStartDistance(x);if(Number.isFinite(d))o.dist.push(d);
+    const rem=shotEndDistanceToHoleM(x.h,x.s,x.si);if(Number.isFinite(Number(rem)))o.remain.push(Number(rem));
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  return Object.values(g).sort((a,b)=>b.n-a.n);
+}
+function multiSituationDonutHtml(groups,total,label){
+  if(!total)return '<div class="analysisEmpty">표시할 데이터가 없습니다.</div>';
+  const entries=groups.slice(0,6);
+  const colors=['#43e78a','#65aef7','#f2b94b','#ff8b68','#b18cff','#8da49a'];
+  let cursor=0,stops=[];
+  entries.forEach((o,i)=>{const p=o.n/total*100;stops.push(colors[i]+' '+cursor+'% '+(cursor+p)+'%');cursor+=p});
+  return '<div class="multiDonutWrap"><div class="multiDonut" style="background:conic-gradient('+stops.join(',')+')"><strong>'+total+'</strong><span>'+safeText(label)+'</span></div><div class="multiDonutLegend">'+entries.map((o,i)=>'<div><i style="background:'+colors[i]+'"></i><span>'+safeText(o.label)+'</span><b>'+o.n+' ('+Math.round(o.n/total*100)+'%)</b></div>').join('')+'</div></div>';
+}
+function multiShotDirectionScatterHtml(rows,note){
+  if(!rows.length)return '<div class="analysisEmpty">방향 데이터가 없습니다.</div>';
+  const dots=rows.map((x,i)=>{
+    const dir=String(x.s.direction||'CENTER').toUpperCase();
+    const base=dir==='LEFT'?24:dir==='RIGHT'?76:50;
+    const jitter=((i%5)-2)*2.2;
+    const d=multiStartDistance(x);
+    const y=Number.isFinite(d)?Math.max(10,Math.min(82,82-(d-80)/220*65)):55;
+    const center=dir==='CENTER';
+    return '<span class="multiDriverDot '+(center?'fw':'')+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+safeText((x.h.hole||'')+'번 홀 · '+multiStartLieLabel(x.s.startLie,'SECOND')+' · '+dirLabel(x.s.direction))+'"></span>';
+  }).join('');
+  return '<div class="multiDriverScatter multiSecondScatter">'+dots+'</div><div class="multiCourseImageNote">'+safeText(note||'점은 저장된 방향 분포')+'</div>';
+}
+function multiSecondDistanceDistributionHtml(rows){
+  const defs=[['<120',x=>x<120],['120–150',x=>x>=120&&x<150],['150–180',x=>x>=150&&x<180],['180–210',x=>x>=180&&x<210],['210+',x=>x>=210]];
+  const values=rows.map(multiStartDistance).filter(Number.isFinite);
+  const counts=defs.map(([l,fn])=>[l,values.filter(fn).length]);
+  const max=Math.max(1,...counts.map(x=>x[1]));
+  return '<div class="multiDistanceBars">'+counts.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*110)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
+}
+function multiSecondPatterns(rows,groups){
+  if(!rows.length)return ['Par 4 세컨샷 GIR 데이터가 없습니다.'];
+  const valid=groups.filter(o=>o.n>=3);
+  const weak=valid.slice().sort((a,b)=>(a.green/a.n)-(b.green/b.n))[0];
+  const miss=valid.slice().sort((a,b)=>{
+    const am=Math.max(a.short,a.long,a.left,a.right)/a.n;
+    const bm=Math.max(b.short,b.long,b.left,b.right)/b.n;
+    return bm-am;
+  })[0];
+  const dist=rows.map(multiStartDistance).filter(Number.isFinite);
+  const out=[];
+  if(weak)out.push(weak.label+'에서 GIR '+weak.green+'/'+weak.n+'회 ('+Math.round(weak.green/weak.n*100)+'%)가 관찰되었습니다.');
+  if(miss){
+    const parts=[['Short',miss.short],['Long',miss.long],['Left',miss.left],['Right',miss.right]].sort((a,b)=>b[1]-a[1]);
+    if(parts[0][1])out.push(miss.label+'의 가장 많은 미스는 '+parts[0][0]+' '+parts[0][1]+'/'+miss.n+'회입니다.');
+  }
+  if(dist.length)out.push('Par 4 세컨샷 평균 시작 거리 '+Math.round(avg(dist))+'m · GIR 기준 샘플 '+rows.length+'개.');
+  return out.slice(0,3);
+}
+function multiSecondGirDistanceBarsHtml(rows){
+  const defs=[['<120',x=>x<120],['120–150',x=>x>=120&&x<150],['150–180',x=>x>=150&&x<180],['180–210',x=>x>=180&&x<210],['210+',x=>x>=210]];
+  const stats=defs.map(([label,fn])=>{
+    const a=rows.filter(x=>{const d=multiStartDistance(x);return Number.isFinite(d)&&fn(d)});
+    const green=a.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    return {label,n:a.length,pct:a.length?green/a.length*100:0};
+  });
+  return '<div class="multiResultBars">'+stats.map(o=>'<div class="multiResultBar"><div><b>'+safeText(o.label)+'m</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(o.pct)+'%"></i></span><strong>'+(o.n?Math.round(o.pct)+'% GIR':'—')+'</strong></div>').join('')+'</div>';
+}
+function multiApproachDistanceGroups(rows){
+  const g={};
+  rows.forEach(x=>{
+    const d=multiStartDistance(x),k=multiApproach5mBucket(d);if(!k)return;
+    const o=g[k]||(g[k]={label:k,n:0,green:0,remain:[],sg:[]});
+    o.n++;if(String(x.s.endLie||'').toUpperCase()==='GREEN')o.green++;
+    const rem=shotEndDistanceToHoleM(x.h,x.s,x.si);if(Number.isFinite(Number(rem)))o.remain.push(Number(rem));
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  return g;
+}
+function multiApproachDistanceBarsHtml(rows){
+  const defs=[['5–20',x=>x>=5&&x<20],['20–35',x=>x>=20&&x<35],['35–50',x=>x>=35&&x<50],['50–65',x=>x>=50&&x<65],['65–80',x=>x>=65&&x<=80]];
+  const stats=defs.map(([label,fn])=>{
+    const a=rows.filter(x=>{const d=multiStartDistance(x);return Number.isFinite(d)&&fn(d)});
+    const green=a.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    return {label,n:a.length,pct:a.length?green/a.length*100:0};
+  });
+  return '<div class="multiResultBars">'+stats.map(o=>'<div class="multiResultBar"><div><b>'+safeText(o.label)+'m</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(o.pct)+'%"></i></span><strong>'+(o.n?Math.round(o.pct)+'% GIR':'—')+'</strong></div>').join('')+'</div>';
+}
+function multiApproachGreenMapHtml(rows){
+  if(!rows.length)return '<div class="analysisEmpty">어프로치 데이터가 없습니다.</div>';
+  const dots=rows.map((x,i)=>{
+    const dir=String(x.s.direction||'CENTER').toUpperCase(),dep=String(x.s.depth||'PIN_HIGH').toUpperCase();
+    const xb=dir==='LEFT'?27:dir==='RIGHT'?73:50;
+    const yb=dep==='SHORT'?72:dep==='LONG'?28:50;
+    const j=((i%5)-2)*1.8;
+    const green=String(x.s.endLie||'').toUpperCase()==='GREEN';
+    return '<span class="multiGreenDot '+(green?'hit':'miss')+'" style="left:'+(xb+j)+'%;top:'+(yb-j/2)+'%" title="'+safeText((x.h.hole||'')+'번 홀 · '+dirLabel(x.s.direction)+' · '+(x.s.depth||'결과'))+'"></span>';
+  }).join('');
+  return '<div class="multiGreenResultMap"><span class="multiGreenPin">⚑</span>'+dots+'<span class="mapLabel top">LONG</span><span class="mapLabel bottom">SHORT</span><span class="mapLabel left">LEFT</span><span class="mapLabel right">RIGHT</span></div><div class="multiCourseImageNote">청록 점 = Green · 주황 점 = Green 이외</div>';
+}
+function multiApproachPatterns(rows,lieGroups,distGroups){
+  if(!rows.length)return ['어프로치 데이터가 없습니다.'];
+  const validLie=lieGroups.filter(o=>o.n>=3);
+  const lie=validLie.slice().sort((a,b)=>(a.green/a.n)-(b.green/b.n))[0];
+  const validDist=Object.values(distGroups).filter(o=>o.n>=3);
+  const dg=validDist.slice().sort((a,b)=>(a.green/a.n)-(b.green/b.n))[0];
+  const rem=rows.map(x=>shotEndDistanceToHoleM(x.h,x.s,x.si)).map(Number).filter(Number.isFinite);
+  const out=[];
+  if(lie)out.push(lie.label+'에서 GIR '+lie.green+'/'+lie.n+'회 ('+Math.round(lie.green/lie.n*100)+'%)가 관찰되었습니다.');
+  if(dg)out.push(dg.label+' 구간 GIR '+dg.green+'/'+dg.n+'회 ('+Math.round(dg.green/dg.n*100)+'%).');
+  if(rem.length)out.push('어프로치 후 평균 남은 거리 '+avg(rem).toFixed(1)+'m · 총 '+rows.length+'샷.');
+  return out.slice(0,3);
+}
+function multiPuttGroups(putts){
+  const dist={},matrix={};
+  putts.forEach(x=>{
+    const dk=multiPuttBucket(x.p.distanceM);
+    if(dk){
+      const o=dist[dk]||(dist[dk]={label:dk,n:0,holed:0,sg:[]});o.n++;if(x.p.result==='HOLED')o.holed++;
+      const sg=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg?.value))o.sg.push(sg.value);
+    }
+    const sl=multiPuttSlopeLabel(x.p.slope),br=multiPuttBreakLabel(x.p.break),mk=sl+'|'+br;
+    const m=matrix[mk]||(matrix[mk]={slope:sl,break:br,n:0,holed:0,sg:[]});m.n++;if(x.p.result==='HOLED')m.holed++;
+    const sg2=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg2?.value))m.sg.push(sg2.value);
+  });
+  return {dist,matrix};
+}
+function multiPuttDistanceBarsHtml(dist){
+  const order=['0~1m','1~2m','2~3m','3~5m','5~8m','8m 초과'];
+  const max=Math.max(1,...order.map(k=>dist[k]?.n||0));
+  return '<div class="multiDistanceBars">'+order.map(k=>{const n=dist[k]?.n||0;return '<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*110)+'px"></i><span>'+safeText(k)+'</span></div>'}).join('')+'</div>';
+}
+function multiPuttMatrixHtml(matrix){
+  const slopes=['오르막','평지','내리막'],breaks=['왼쪽','직선','오른쪽'];
+  let html='<div class="multiPuttMatrix"><div class="corner"></div>'+breaks.map(x=>'<b class="head">'+x+'</b>').join('');
+  slopes.forEach(sl=>{
+    html+='<b class="side">'+sl+'</b>';
+    breaks.forEach(br=>{
+      const o=matrix[sl+'|'+br];
+      if(!o){html+='<div class="cell empty">—</div>';return}
+      const pct=o.n?Math.round(o.holed/o.n*100):0,sg=avg(o.sg);
+      html+='<div class="cell '+(o.n<5?'low':'')+'"><strong>'+pct+'%</strong><span>'+multiSgHtml(sg)+'</span><small>N '+o.n+(o.n<5?' · 관찰 중':'')+'</small></div>';
+    });
+  });
+  return html+'</div>';
+}
+function multiPuttSuccessBarsHtml(dist){
+  const order=['0~1m','1~2m','2~3m','3~5m','5~8m','8m 초과'];
+  return '<div class="multiResultBars">'+order.filter(k=>dist[k]).map(k=>{const o=dist[k],p=o.n?o.holed/o.n*100:0;return '<div class="multiResultBar"><div><b>'+safeText(k)+'</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(p)+'%"></i></span><strong>'+Math.round(p)+'%</strong></div>'}).join('')+'</div>';
+}
+function multiPuttPatterns(putts,dist,matrix){
+  if(!putts.length)return ['퍼팅 데이터가 없습니다.'];
+  const ds=Object.values(dist).filter(o=>o.n>=3).sort((a,b)=>(a.holed/a.n)-(b.holed/b.n))[0];
+  const ms=Object.values(matrix).filter(o=>o.n>=3).sort((a,b)=>(a.holed/a.n)-(b.holed/b.n))[0];
+  const out=[];
+  if(ds)out.push(ds.label+' 성공 '+ds.holed+'/'+ds.n+'회 ('+Math.round(ds.holed/ds.n*100)+'%)가 관찰되었습니다.');
+  if(ms)out.push(ms.slope+' + '+ms.break+'에서 성공 '+ms.holed+'/'+ms.n+'회 ('+Math.round(ms.holed/ms.n*100)+'%).');
+  out.push('선택 라운드 총 퍼트 '+putts.length+'회 · 평균 시작 거리 '+(putts.length?avg(putts.map(x=>Number(x.p.distanceM)).filter(Number.isFinite)).toFixed(1):'—')+'m.');
+  return out.slice(0,3);
 }
 function multiPerformanceDetail(rounds,mode){
   const data=multiRows(rounds),rows=data.shots;
@@ -4178,39 +4494,87 @@ function multiPerformanceDetail(rounds,mode){
   }
 
   if(mode==='SECOND'){
-    const second=rows.filter(x=>multiDisplayCategory(x.h,x.s,x.si)==='SECOND'),g={};
-    second.forEach(x=>{
-      const k=x.s.club||'미확인',o=g[k]||(g[k]={n:0,dist:[],left:0,right:0,sg:[]});
-      o.n++;const d=x.s.courseContext?.startGreenDistanceM??x.s.courseContext?.greenDistanceM;if(Number.isFinite(Number(d)))o.dist.push(Number(d));
-      if(x.s.direction==='LEFT')o.left++;if(x.s.direction==='RIGHT')o.right++;const v=multiShotSg(x);if(Number.isFinite(v))o.sg.push(v);
-    });
-    return tab+'<div class="analysisNote">5~80m 어프로치를 제외한 비티샷 풀샷을 Player 화면의 세컨샷 영역으로 묶어 봅니다.</div>'+
-      multiTable(['클럽','샷 수','평균 시작 거리','좌측 미스','우측 미스','Avg SG'],Object.entries(g).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,o.dist.length?Math.round(avg(o.dist))+'m':'—',o.left,o.right,multiSgHtml(avg(o.sg))]));
+    const second=multiPar4SecondRows(rounds);
+    const groups=multiLieGroups(second,'SECOND');
+    const sg=second.map(multiShotSg).filter(Number.isFinite);
+    const dist=second.map(multiStartDistance).filter(Number.isFinite);
+    const green=second.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    const patterns=multiSecondPatterns(second,groups);
+    return tab+
+      '<div class="analysisNote">세컨샷 GIR은 Par 4의 모든 2nd shot을 기준으로 봅니다. LAYUP · RECOVERY도 Par 4 2nd shot이면 GIR 판정 대상이며 Par 3 · Par 5는 제외합니다.</div>'+
+      '<div class="multiTeeKpis">'+
+        '<div class="multiTeeKpi"><span>Par 4 세컨샷</span><b>'+second.length+'</b></div>'+
+        '<div class="multiTeeKpi"><span>평균 시작 거리</span><b>'+(dist.length?Math.round(avg(dist))+'m':'—')+'</b></div>'+
+        '<div class="multiTeeKpi"><span>GIR율</span><b>'+multiPct(green,second.length)+'</b></div>'+
+        '<div class="multiTeeKpi"><span>Avg SG/세컨샷</span><b>'+multiSgHtml(avg(sg))+'</b></div>'+
+      '</div>'+
+      '<div class="multiTeeGrid">'+
+        '<div class="multiVizCard"><h4>시작 Lie 비율</h4>'+multiSituationDonutHtml(groups,second.length,'Par 4')+'</div>'+
+        '<div class="multiVizCard"><h4>Green Result Map</h4>'+multiApproachGreenMapHtml(second)+'</div>'+
+        '<div class="multiVizCard"><h4>거리별 GIR</h4>'+multiSecondGirDistanceBarsHtml(second)+'</div>'+
+      '</div>'+
+      '<div class="multiTeeLower"><div><div class="sectionLabel" style="margin-top:12px">상황별 세컨샷 결과</div>'+
+      multiTable(['시작 Lie','Sample','평균 거리','GIR','Short','Long','Left','Right','Avg SG'],groups.map(o=>[o.label,multiSampleTag(o.n),o.dist.length?Math.round(avg(o.dist))+'m':'—',multiPct(o.green,o.n),multiPct(o.short,o.n),multiPct(o.long,o.n),multiPct(o.left,o.n),multiPct(o.right,o.n),multiSgHtml(avg(o.sg))]))+
+      '</div><div><div class="sectionLabel" style="margin-top:12px">세컨샷 주요 패턴</div><div class="multiPatternList">'+patterns.map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div></div>';
   }
 
   if(mode==='APPROACH'){
-    const app=rows.filter(x=>multiDisplayCategory(x.h,x.s,x.si)==='APPROACH'),g={};
-    app.forEach(x=>{
-      const d=x.s.courseContext?.startGreenDistanceM??x.s.courseContext?.greenDistanceM,k=multiApproach5mBucket(d);if(!k)return;
-      const o=g[k]||(g[k]={n:0,green:0,remain:[],sg:[]});o.n++;if(String(x.s.endLie||'').toUpperCase()==='GREEN')o.green++;
-      const rem=shotEndDistanceToHoleM(x.h,x.s,x.si);if(Number.isFinite(Number(rem)))o.remain.push(Number(rem));
-      const v=multiShotSg(x);if(Number.isFinite(v))o.sg.push(v);
-    });
-    const order=Array.from({length:15},(_,i)=>{const lo=75-i*5;return lo+'–'+(lo+5)+'m'});
-    return tab+'<div class="analysisNote">핀까지 5~80m에서 시작한 샷만 어프로치입니다.</div>'+
-      multiTable(['거리 구간','샷 수','그린 적중','어프로치 후 평균 핀 거리','Avg SG'],order.filter(k=>g[k]).map(k=>{const o=g[k];return[k,o.n,multiPct(o.green,o.n),o.remain.length?avg(o.remain).toFixed(1)+'m':'—',multiSgHtml(avg(o.sg))]}));
+    const app=rows.filter(x=>multiDisplayCategory(x.h,x.s,x.si)==='APPROACH');
+    const lieGroups=multiLieGroups(app,'APPROACH'),distGroups=multiApproachDistanceGroups(app);
+    const sg=app.map(multiShotSg).filter(Number.isFinite);
+    const green=app.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    const remain=app.map(x=>shotEndDistanceToHoleM(x.h,x.s,x.si)).map(Number).filter(Number.isFinite);
+    const patterns=multiApproachPatterns(app,lieGroups,distGroups);
+    const order=Array.from({length:15},(_,i)=>{const lo=5+i*5;return lo+'–'+(lo+5)+'m'});
+    return tab+
+      '<div class="analysisNote">어프로치는 시작 Lie × 5~80m 거리 × Green Result를 함께 봅니다. 숫자만 보지 않고 어디에서 어떤 결과가 반복되는지 확인합니다.</div>'+
+      '<div class="multiTeeKpis">'+
+        '<div class="multiTeeKpi"><span>어프로치 수</span><b>'+app.length+'</b></div>'+
+        '<div class="multiTeeKpi"><span>GIR</span><b>'+multiPct(green,app.length)+'</b></div>'+
+        '<div class="multiTeeKpi"><span>평균 남은 거리</span><b>'+(remain.length?avg(remain).toFixed(1)+'m':'—')+'</b></div>'+
+        '<div class="multiTeeKpi"><span>Avg SG/어프로치</span><b>'+multiSgHtml(avg(sg))+'</b></div>'+
+      '</div>'+
+      '<div class="multiTeeGrid">'+
+        '<div class="multiVizCard"><h4>시작 Lie 비율</h4>'+multiSituationDonutHtml(lieGroups,app.length,'어프로치')+'</div>'+
+        '<div class="multiVizCard"><h4>Green Result Map</h4>'+multiApproachGreenMapHtml(app)+'</div>'+
+        '<div class="multiVizCard"><h4>거리 구간 GIR</h4>'+multiApproachDistanceBarsHtml(app)+'</div>'+
+      '</div>'+
+      '<div class="multiTeeLower"><div><div class="sectionLabel" style="margin-top:12px">상황별 어프로치 결과</div>'+
+      multiTable(['Lie','거리','Sample','GIR','평균 남은 거리','Avg SG'],order.filter(k=>distGroups[k]).flatMap(k=>lieGroups.map(l=>{
+        const subset=app.filter(x=>multiApproach5mBucket(multiStartDistance(x))===k&&multiStartLieKey(x.s.startLie)===l.key);
+        if(!subset.length)return null;
+        const g=subset.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+        const rem=subset.map(x=>shotEndDistanceToHoleM(x.h,x.s,x.si)).map(Number).filter(Number.isFinite);
+        const sgv=subset.map(multiShotSg).filter(Number.isFinite);
+        return [l.label,k,multiSampleTag(subset.length),multiPct(g,subset.length),rem.length?avg(rem).toFixed(1)+'m':'—',multiSgHtml(avg(sgv))];
+      }).filter(Boolean)))+
+      '</div><div><div class="sectionLabel" style="margin-top:12px">어프로치 주요 패턴</div><div class="multiPatternList">'+patterns.map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div></div>';
   }
 
-  const putts=data.putts,g={};
-  putts.forEach(x=>{
-    const k=multiPuttBucket(x.p.distanceM);if(!k)return;
-    const o=g[k]||(g[k]={n:0,holed:0,sg:[]});o.n++;if(x.p.result==='HOLED')o.holed++;
-    const v=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(v?.value))o.sg.push(v.value);
-  });
-  const order=['0~1m','1~2m','2~3m','3~5m','5~8m','8m 초과'];
-  return tab+'<div class="analysisNote">퍼터는 시작 거리별 성공률과 획득타수를 함께 봅니다.</div>'+
-    multiTable(['퍼터 시작 거리','퍼트 수','성공률','Avg SG'],order.filter(k=>g[k]).map(k=>[k,g[k].n,multiPct(g[k].holed,g[k].n),multiSgHtml(avg(g[k].sg))]));
+  const putts=data.putts,pg=multiPuttGroups(putts),sg=[];
+  putts.forEach(x=>{const v=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(v?.value))sg.push(v.value)});
+  const holed=putts.filter(x=>x.p.result==='HOLED').length;
+  const pdist=putts.map(x=>Number(x.p.distanceM)).filter(Number.isFinite);
+  const patterns=multiPuttPatterns(putts,pg.dist,pg.matrix);
+  const matrixRows=Object.values(pg.matrix).sort((a,b)=>b.n-a.n);
+  return tab+
+    '<div class="analysisNote">퍼터는 Distance × Slope × Break를 함께 봅니다. 표본이 적은 조합은 관찰 중으로 표시합니다.</div>'+
+    '<div class="multiTeeKpis">'+
+      '<div class="multiTeeKpi"><span>총 퍼트</span><b>'+putts.length+'</b></div>'+
+      '<div class="multiTeeKpi"><span>평균 시작 거리</span><b>'+(pdist.length?avg(pdist).toFixed(1)+'m':'—')+'</b></div>'+
+      '<div class="multiTeeKpi"><span>성공률</span><b>'+multiPct(holed,putts.length)+'</b></div>'+
+      '<div class="multiTeeKpi"><span>Avg SG/퍼트</span><b>'+multiSgHtml(avg(sg))+'</b></div>'+
+    '</div>'+
+    '<div class="multiTeeGrid">'+
+      '<div class="multiVizCard"><h4>시작 거리 분포</h4>'+multiPuttDistanceBarsHtml(pg.dist)+'</div>'+
+      '<div class="multiVizCard"><h4>Slope × Break</h4>'+multiPuttMatrixHtml(pg.matrix)+'</div>'+
+      '<div class="multiVizCard"><h4>거리별 성공률</h4>'+multiPuttSuccessBarsHtml(pg.dist)+'</div>'+
+    '</div>'+
+    '<div class="multiTeeLower"><div><div class="sectionLabel" style="margin-top:12px">상황별 퍼팅 결과</div>'+
+    multiTable(['Slope','Break','Sample','성공률','Avg SG'],matrixRows.map(o=>[o.slope,o.break,multiSampleTag(o.n),multiPct(o.holed,o.n),multiSgHtml(avg(o.sg))]))+
+    '</div><div><div class="sectionLabel" style="margin-top:12px">퍼팅 주요 패턴</div><div class="multiPatternList">'+patterns.map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div></div>';
 }
+
 function renderMultiPrimaryDetail(){
   const rounds=multiReviewRounds||[];
   const title=$('multiPrimaryTitle'),sub=$('multiPrimarySub'),host=$('multiPrimaryDetail');if(!host)return;
@@ -4236,14 +4600,16 @@ function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1),chartId){
   let min=Math.min(...all),max=Math.max(...all);if(Math.abs(max-min)<.1){min-=1;max+=1}else{const pad=(max-min)*.18;min-=pad;max+=pad}
   const n=Math.max(...series.map(x=>x.length),1),w=Math.max(160,$(chartId)?.clientWidth||300),h=150,l=28,r=24,t=28,b=28,iw=w-l-r,ih=h-t-b;
   const x=i=>l+(n<=1?iw/2:i/(n-1)*iw),y=v=>t+(max-v)/(max-min)*ih;
+  const showRoundTick=i=>n<=10||i===0||i===n-1||((i+1)%5===0);
+  const showValueLabel=i=>n<=10||i===0||i===n-1||((i+1)%5===0);
   let svg='<svg class="multiLineSvg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">';
   for(let g=0;g<4;g++){const yy=t+ih*g/3;svg+='<line x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'" stroke="rgba(255,255,255,.08)" stroke-width="1"/>'}
   series.forEach((vals,si)=>{
     const pts=vals.map((v,i)=>Number.isFinite(v)?x(i)+','+y(v):null).filter(Boolean).join(' ');
     if(pts)svg+='<polyline points="'+pts+'" fill="none" stroke="'+colors[si]+'" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
-    vals.forEach((v,i)=>{if(Number.isFinite(v)){svg+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+colors[si]+'" stroke="#07110c" stroke-width="1"/>';if(series.length===1)svg+='<text x="'+x(i)+'" y="'+(y(v)-7)+'" text-anchor="middle" fill="#edf7f1" font-size="8" font-weight="700">'+formatter(v)+'</text>';}});
+    vals.forEach((v,i)=>{if(Number.isFinite(v)){svg+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+colors[si]+'" stroke="#07110c" stroke-width="1"/>';if(series.length===1&&showValueLabel(i))svg+='<text class="multiPointValue" x="'+x(i)+'" y="'+(y(v)-7)+'" text-anchor="middle">'+formatter(v)+'</text>';}});
   });
-  for(let i=0;i<n;i++)svg+='<text x="'+x(i)+'" y="'+(h-5)+'" text-anchor="middle" fill="#7f9086" font-size="8">'+(i+1)+'R</text>';
+  for(let i=0;i<n;i++)if(showRoundTick(i))svg+='<text class="multiAxisTick" x="'+x(i)+'" y="'+(h-5)+'" text-anchor="middle">'+(i+1)+'R</text>';
   svg+='</svg><div class="multiLineLegend">'+labels.map((l,i)=>'<span><i style="background:'+colors[i]+'"></i>'+safeText(l)+'</span>').join('')+'</div>';
   return svg;
 }
@@ -4256,11 +4622,32 @@ function multiRenderSgLineChart(rounds){
   return multiSvgSeries([x.TEE.byRound,x.SECOND.byRound,x.APPROACH.byRound,x.PUTTER.byRound],
     ['#5aa7ff','#45e587','#f2b94b','#ff6f7d'],['티샷','세컨샷','어프로치','퍼터'],v=>formatSg(v),'multiSgLineChart');
 }
+function multiRoundPerformanceHcp(r){
+  const d=resultToPar(r);
+  return Number.isFinite(Number(d))?Number(d):null;
+}
 function multiRenderHcpChart(rounds){
   const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
-  const vals=ordered.map(r=>Number(r.playerHandicap)).map(v=>Number.isFinite(v)?v:null);
-  if(!vals.some(Number.isFinite))return '<div class="analysisEmpty">핸디캡 데이터가 없습니다.</div>';
-  return multiSvgSeries([vals],['#45e587'],['핸디캡'],v=>v.toFixed(1),'multiHcpTrend');
+  const player=ordered.map(r=>Number(r.playerHandicap)).map(v=>Number.isFinite(v)?v:null);
+  const performance=ordered.map(multiRoundPerformanceHcp);
+  if(!player.some(Number.isFinite)&&!performance.some(Number.isFinite))return '<div class="analysisEmpty">Progress 데이터가 없습니다.</div>';
+  return multiSvgSeries(
+    [player,performance],
+    ['#45e587','#5aa7ff'],
+    ['Player HCP','JGI Performance HCP*'],
+    v=>v.toFixed(1),
+    'multiHcpTrend'
+  );
+}
+function multiRenderHcpProgress(rounds){
+  const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
+  const latest=[...ordered].reverse().find(r=>Number.isFinite(Number(r.playerHandicap))&&Number.isFinite(multiRoundPerformanceHcp(r)));
+  if(!latest)return '<span>현재 비교 가능한 Player HCP와 라운드 결과가 없습니다.</span>';
+  const player=Number(latest.playerHandicap),perf=multiRoundPerformanceHcp(latest),delta=perf-player;
+  const cls=Math.abs(delta)<0.05?'neutral':delta<0?'better':'worse';
+  const diff=Math.abs(delta).toFixed(1);
+  const label=Math.abs(delta)<0.05?'동일 수준':delta<0?diff+' better':diff+' higher';
+  return '<b>Current Progress</b><strong>'+player.toFixed(1)+' → '+perf.toFixed(1)+'</strong><span class="'+cls+'">'+label+'</span><small>Player HCP → JGI Performance* · *현재는 Score − Par 기반 Progress 지표이며 공식 WHS Differential은 아닙니다.</small>';
 }
 function multiRecentSummaryText(rounds){
   const {prev,recent}=multiRecentSplit(rounds);
@@ -4283,6 +4670,7 @@ function renderMultiDashboard(rounds){
   const sg=multiPlayerFacingSg(rounds);
   const split=multiRecentSplit(rounds),prevSg=split.prev.length?multiPlayerFacingSg(split.prev):null,recentSg=split.recent.length?multiPlayerFacingSg(split.recent):null,icons={TEE:'⛳',SECOND:'◔',APPROACH:'↗',PUTTER:'⌟'};
   $('multiPlayerSgCards').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{const x=sg[k],delta=prevSg&&recentSg&&Number.isFinite(prevSg[k].avgRound)&&Number.isFinite(recentSg[k].avgRound)?recentSg[k].avgRound-prevSg[k].avgRound:null;return '<div class="multiPlayerSgCard"><span>'+icons[k]+' '+x.label+'</span><b>'+multiSgHtml(x.avgRound)+'</b><small>'+(Number.isFinite(delta)?multiSigned(delta)+' · 이전 구간 대비':'라운드 평균 · '+x.n+'개')+'</small></div>'}).join('');
+  $('multiCoreRateCards').innerHTML=multiCoreRateCardsHtml(rounds,split.prev,split.recent);
   $('multiSgTrend').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{
     const x=sg[k],vals=x.byRound,max=Math.max(1,...vals.map(v=>Math.abs(v)));
     return '<div class="multiSgTrendRow"><span>'+x.label+'</span><div class="multiSgTrendTrack">'+vals.map(v=>{
@@ -4304,6 +4692,7 @@ function renderMultiDashboard(rounds){
   $('multiRecentSummary').innerHTML=multiRecentSummaryText(rounds);
   $('multiSgLineChart').innerHTML=multiRenderSgLineChart(rounds);
   $('multiHcpTrend').innerHTML=multiRenderHcpChart(rounds);
+  $('multiHcpProgress').innerHTML=multiRenderHcpProgress(rounds);
   $('multiDetailRange').textContent='최근 '+rounds.length+'라운드';
   renderMultiPrimaryDetail();
 }
@@ -5945,7 +6334,8 @@ if(stored){
   if(stored.completedAt)archiveRound(stored,roundIsFull(stored)?'FULL':'PARTIAL');
 }
 renderRoundHistoryStatus();
-if(localStorage.getItem(TEST_DATA_SEED_KEY)===null)seedSyntheticTestData(true);
+const currentTestSeedVersion=localStorage.getItem(TEST_DATA_SEED_KEY);
+if(currentTestSeedVersion!==TEST_DATA_SEED_VERSION&&currentTestSeedVersion!=='RESET')seedSyntheticTestData(true);
 renderTestDataPreview();
 
 $('enterRoundBtn').onclick=()=>{
