@@ -3555,7 +3555,7 @@ function seedSyntheticTestData(silent=false){
     const scores=scoreDeltas.map(d=>parTotal+d);
     const realRounds=loadCompletedRounds().filter(r=>!isSyntheticRound(r));
     const generated=scores.map((score,i)=>buildSyntheticRound(i+1,score));
-    saveCompletedRounds([...realRounds,...generated]);
+    saveCompletedRounds([...realRounds,...generated].sort((a,b)=>Number(a.startedAt||a.completedAt||0)-Number(b.startedAt||b.completedAt||0)));
 
     const realState=loadStateHistory().filter(x=>!x?.synthetic&&!String(x?.roundId||'').startsWith('test-hcp6-r'));
     const syntheticState=generated.map(r=>({
