@@ -4357,7 +4357,7 @@ function multiApproachGreenMapHtml(rows){
     const green=String(x.s.endLie||'').toUpperCase()==='GREEN';
     return '<span class="multiGreenDot '+(green?'hit':'miss')+'" style="left:'+(xb+j)+'%;top:'+(yb-j/2)+'%" title="'+safeText((x.h.hole||'')+'번 홀 · '+dirLabel(x.s.direction)+' · '+(x.s.depth||'결과'))+'"></span>';
   }).join('');
-  return '<div class="multiGreenResultMap"><span class="multiGreenPin">⚑</span>'+dots+'<span class="mapLabel top">LONG</span><span class="mapLabel bottom">SHORT</span><span class="mapLabel left">LEFT</span><span class="mapLabel right">RIGHT</span></div><div class="multiCourseImageNote">초록 점 = Green · 주황 점 = Green 이외</div>';
+  return '<div class="multiGreenResultMap"><span class="multiGreenPin">⚑</span>'+dots+'<span class="mapLabel top">LONG</span><span class="mapLabel bottom">SHORT</span><span class="mapLabel left">LEFT</span><span class="mapLabel right">RIGHT</span></div><div class="multiCourseImageNote">청록 점 = Green · 주황 점 = Green 이외</div>';
 }
 function multiApproachPatterns(rows,lieGroups,distGroups){
   if(!rows.length)return ['어프로치 데이터가 없습니다.'];
