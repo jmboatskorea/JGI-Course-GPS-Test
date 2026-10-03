@@ -92,3 +92,42 @@
 #resultsMultiView .multiPlayerSgCard .analysisSgValue{font-size:30px}
 #resultsMultiView #multiScoreTrend{display:block}
 #resultsMultiView .multiLineSvg text{font-size:14px}
+
+
+/* SECOND / APPROACH / PUTTING visual detail cards */
+#resultsMultiView .multiSampleTag{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;padding:3px 6px;border-radius:999px;border:1px solid #1e7258;background:#003629;color:#bfe8d7;font-size:11px;font-weight:850;white-space:nowrap}
+#resultsMultiView .multiSampleTag.low{border-color:#7a6330;background:#342812;color:#ffd788}
+#resultsMultiView .multiSecondScatter{background:linear-gradient(#00362955,#00362955),url("https://images.unsplash.com/photo-1623113900677-9fe130610326?auto=format&fit=crop&w=1600&q=85") center/cover no-repeat,#003629}
+#resultsMultiView .multiGreenResultMap{position:relative;height:155px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,#4b8f55 0 34%,#2f6a3d 35% 52%,#18472f 53% 100%);border:1px solid #17634e}
+#resultsMultiView .multiGreenResultMap:before{content:"";position:absolute;inset:16% 20%;border:1px solid rgba(255,255,255,.34);border-radius:50%}
+#resultsMultiView .multiGreenPin{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);z-index:2;font-size:22px;text-shadow:0 2px 6px rgba(0,0,0,.45)}
+#resultsMultiView .multiGreenDot{position:absolute;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);z-index:3;border:2px solid rgba(255,255,255,.86);box-shadow:0 2px 7px rgba(0,0,0,.42)}
+#resultsMultiView .multiGreenDot.hit{background:#19e38b}
+#resultsMultiView .multiGreenDot.miss{background:#ff8a4f}
+#resultsMultiView .multiGreenResultMap .mapLabel{position:absolute;z-index:1;font-size:10px;font-weight:900;color:#eff8f3;background:#001b14b8;padding:2px 5px;border-radius:999px}
+#resultsMultiView .multiGreenResultMap .mapLabel.top{top:6px;left:50%;transform:translateX(-50%)}
+#resultsMultiView .multiGreenResultMap .mapLabel.bottom{bottom:6px;left:50%;transform:translateX(-50%)}
+#resultsMultiView .multiGreenResultMap .mapLabel.left{left:6px;top:50%;transform:translateY(-50%)}
+#resultsMultiView .multiGreenResultMap .mapLabel.right{right:6px;top:50%;transform:translateY(-50%)}
+#resultsMultiView .multiResultBars{display:grid;gap:9px;min-height:155px;align-content:center}
+#resultsMultiView .multiResultBar{display:grid;grid-template-columns:minmax(86px,1fr) minmax(90px,1.4fr) 58px;gap:8px;align-items:center}
+#resultsMultiView .multiResultBar>div{display:flex;align-items:center;gap:4px;min-width:0}
+#resultsMultiView .multiResultBar>div>b{font-size:12px;white-space:nowrap}
+#resultsMultiView .multiResultBar>span{height:8px;border-radius:999px;background:#0a1712;overflow:hidden;border:1px solid #174837}
+#resultsMultiView .multiResultBar>span>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#16c979,#6af0a8)}
+#resultsMultiView .multiResultBar>strong{text-align:right;font-size:12px;color:#f5f8f6}
+#resultsMultiView .multiPuttMatrix{display:grid;grid-template-columns:60px repeat(3,minmax(62px,1fr));gap:5px;align-items:stretch}
+#resultsMultiView .multiPuttMatrix .head,#resultsMultiView .multiPuttMatrix .side{display:flex;align-items:center;justify-content:center;font-size:11px;color:#c7d1cc;text-align:center}
+#resultsMultiView .multiPuttMatrix .cell{min-height:52px;padding:6px 4px;border-radius:9px;border:1px solid #1b654f;background:#063126;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#resultsMultiView .multiPuttMatrix .cell.low{border-color:#685c31;background:#2a2514}
+#resultsMultiView .multiPuttMatrix .cell.empty{color:#63786d;background:#071a14;border-color:#123e31}
+#resultsMultiView .multiPuttMatrix .cell strong{font-size:15px}
+#resultsMultiView .multiPuttMatrix .cell span{font-size:11px;margin-top:2px}
+#resultsMultiView .multiPuttMatrix .cell small{font-size:9px!important;line-height:1.2;color:#b8c8bf!important;margin-top:2px}
+#resultsMultiView .multiPuttMatrix .cell.low small{color:#ffd788!important}
+@media(max-width:760px){
+  #resultsMultiView .multiResultBar{grid-template-columns:minmax(78px,1fr) minmax(80px,1.3fr) 52px;gap:6px}
+  #resultsMultiView .multiResultBar>div{flex-wrap:wrap}
+  #resultsMultiView .multiPuttMatrix{grid-template-columns:52px repeat(3,minmax(58px,1fr));gap:4px}
+  #resultsMultiView .multiPuttMatrix .cell{min-height:50px;padding:5px 3px}
+}
