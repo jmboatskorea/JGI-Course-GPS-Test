@@ -131,3 +131,16 @@
   #resultsMultiView .multiPuttMatrix{grid-template-columns:52px repeat(3,minmax(58px,1fr));gap:4px}
   #resultsMultiView .multiPuttMatrix .cell{min-height:50px;padding:5px 3px}
 }
+
+
+/* Core performance rate row under Avg SG */
+#resultsMultiView .multiCoreRateCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+#resultsMultiView .multiCoreRateCard{min-width:0;padding:12px 12px;border-radius:10px;background:#001e17;border:1px solid #17634e}
+#resultsMultiView .multiCoreRateCard span{display:block;font-size:14px;font-weight:900;color:#f5f8f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#resultsMultiView .multiCoreRateCard b{display:block;margin-top:5px;font-size:27px;line-height:1.15;color:#f5f8f6}
+#resultsMultiView .multiCoreRateCard small{display:block;margin-top:4px;font-size:12px;color:#c7d1cc;line-height:1.35}
+#resultsMultiView .multiCoreRateCard.fairway{border-color:#3d91ff}
+#resultsMultiView .multiCoreRateCard.gir{border-color:#00d69a}
+#resultsMultiView .multiCoreRateCard.approach_save{border-color:#ffc65c}
+#resultsMultiView .multiCoreRateCard.bunker_save{border-color:#ff8b68}
+@media(max-width:760px){#resultsMultiView .multiCoreRateCards{grid-template-columns:repeat(2,minmax(0,1fr))}}
