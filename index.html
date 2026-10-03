@@ -1794,9 +1794,9 @@ body.round-active .bottomnav{display:none!important}
 const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
 const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
-const COMPLETED_ROUNDS_LIMIT=20;
+const COMPLETED_ROUNDS_LIMIT=40;
 const TEST_DATA_SEED_KEY='jgi_test_data_seed_v1';
-const TEST_DATA_SEED_VERSION='JGI_HCP6_6R_V1';
+const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_V1';
 const DEFAULT_MASTER_CLUBS=[
   {name:'DR',carry:235,centerWidth:14},{name:'3W',carry:215,centerWidth:12},{name:'5W',carry:200,centerWidth:11},
   {name:'3I',carry:190,centerWidth:10},{name:'4I',carry:180,centerWidth:9},{name:'5I',carry:170,centerWidth:9},
@@ -3282,6 +3282,15 @@ function testOffsetCross(h,point,meters,holePar=null){
   const q=model.projector.toXY(point);
   return model.projector.toLatLng({x:q.x+model.v.x*Number(meters),y:q.y+model.v.y*Number(meters)});
 }
+function testNearGreenPoint(start,green,depth='SHORT',direction='CENTER',distanceM=24){
+  if(!start||!green)return green||start||null;
+  const proj=courseLocalProjector(green),q=proj.toXY(start);
+  const len=Math.hypot(q.x,q.y)||1,ux=q.x/len,uy=q.y/len;
+  const d=Math.max(6,Math.min(65,Number(distanceM)||24));
+  const along=String(depth).toUpperCase()==='LONG'?-d:d;
+  const cross=String(direction).toUpperCase()==='LEFT'?-Math.min(18,d*.45):String(direction).toUpperCase()==='RIGHT'?Math.min(18,d*.45):0;
+  return proj.toLatLng({x:ux*along-uy*cross,y:uy*along+ux*cross});
+}
 function testClubForDistance(distanceM){
   const d=Number(distanceM)||0;
   if(d>205)return '3W';
@@ -3344,32 +3353,30 @@ function attachSyntheticStates(r){
   return r;
 }
 function buildSyntheticRound(roundNo,targetScore){
-  const baseTime=Date.now()-(7-roundNo)*7*24*60*60*1000;
+  const totalDemoRounds=27;
+  const baseTime=Date.now()-(totalDemoRounds-roundNo)*7*24*60*60*1000;
   const pars=Array.from({length:18},(_,i)=>scorecardHoleData(i+1,'White')?.par||4);
   const parTotal=pars.reduce((a,b)=>a+b,0);
-  const bogeySets={
-    1:[4,16],
-    2:[2,4,7,12,16,18],
-    3:[2,4,5,7,9,12,16,18],
-    4:[2,5,7,9,12,16,18],
-    5:[1,4,7,10,14,16,18],
-    6:[2,4,5,7,9,14,16,18]
-  };
-  const penaltySets={1:[4],2:[7,16],3:[4,9,18],4:[],5:[],6:[]};
-  const threePuttSets={1:[16],2:[12],3:[5],4:[9],5:[10],6:[5]};
-  const bogeys=new Set(bogeySets[roundNo]||[]);
-  const penalties=new Set(penaltySets[roundNo]||[]);
-  const threePutts=new Set(threePuttSets[roundNo]||[]);
+  const delta=Math.max(0,Math.round(Number(targetScore)-parTotal));
+  const holePool=[4,16,2,7,12,18,5,9,14,1,10,15,3,6,11,13,17,8];
+  const rotated=holePool.slice((roundNo*3)%holePool.length).concat(holePool.slice(0,(roundNo*3)%holePool.length));
+  const bogeyList=rotated.slice(0,delta);
+  const bogeys=new Set(bogeyList);
+  const penalties=new Set(bogeyList.filter((h,i)=>(i+roundNo)%5===0).slice(0,2));
+  const threePutts=new Set(bogeyList.filter((h,i)=>!penalties.has(h)&&(i+roundNo)%4===1).slice(0,2));
+  const savePool=rotated.filter(h=>!bogeys.has(h));
+  const bunkerSaveCount=roundNo%3===0?2:1;
+  const bunkerSaves=new Set(savePool.slice(0,bunkerSaveCount));
+  const approachSaves=new Set(savePool.slice(bunkerSaveCount,bunkerSaveCount+2));
   const riskHoles=new Set([4,7,9,14,16,18]);
-  const expectedDelta=targetScore-parTotal;
-  if(bogeys.size!==expectedDelta)throw new Error('Synthetic score plan mismatch R'+roundNo);
+  const selectedHcp=roundNo<=7?9:roundNo<=14?8:roundNo<=21?7:6;
 
   const r={
     version:9,id:'test-hcp6-r'+roundNo,course:'Jagorawi Golf & Country Club',nine:'Old Course',
     tee:'White',stateCollectionLevel:100,stateSamplingVersion:STATE_SAMPLING_VERSION,samplingRoundIndex:roundNo,
     samplingPlan:buildSamplingPlan(100,roundNo),stateSamplingEvents:[],
     startedAt:baseTime,completedAt:baseTime+4*60*60*1000,currentHole:18,
-    holes:[],playerHandicap:6,sgBenchmarkMode:'HCP_5',
+    holes:[],playerHandicap:selectedHcp,sgBenchmarkMode:'HCP_5',
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null,
     synthetic:true,dataSource:'TEST_GENERATED',testScenarioVersion:TEST_DATA_SEED_VERSION,
@@ -3385,9 +3392,14 @@ function buildSyntheticRound(roundNo,targetScore){
     const isBogey=bogeys.has(holeNo);
     const hasPenalty=penalties.has(holeNo);
     const isThreePutt=threePutts.has(holeNo);
+    const isBunkerSave=bunkerSaves.has(holeNo);
+    const isApproachSave=approachSaves.has(holeNo);
+    const isSave=isBunkerSave||isApproachSave;
     const baseShots=Math.max(1,par-2);
-    const fullShotCount=baseShots+(isBogey&&!hasPenalty&&!isThreePutt?1:0);
-    const puttCount=2+(isThreePutt?1:0);
+    const pureBogey=isBogey&&!hasPenalty&&!isThreePutt;
+    const extraAroundGreen=isSave||pureBogey;
+    const fullShotCount=baseShots+(extraAroundGreen?1:0);
+    const puttCount=isSave?1:(2+(isThreePutt?1:0));
     const penaltyCount=hasPenalty?1:0;
     const holeObj={
       hole:holeNo,par,teeDistanceM:sc.White??sc.distanceM??null,
@@ -3397,7 +3409,7 @@ function buildSyntheticRound(roundNo,targetScore){
       completedAt:baseTime+holeNo*600000+300000,review:null
     };
     if(hasPenalty){
-      holeObj.penaltyEvents.push({type:'HAZARD',strokes:1,hole:holeNo,at:baseTime+holeNo*600000+120000,synthetic:true,dataSource:'TEST_GENERATED'});
+      holeObj.penaltyEvents.push({type:(roundNo+holeNo)%2===0?'HAZARD':'OB',strokes:1,hole:holeNo,at:baseTime+holeNo*600000+120000,synthetic:true,dataSource:'TEST_GENERATED'});
     }
 
     let start=teePt;
@@ -3405,42 +3417,59 @@ function buildSyntheticRound(roundNo,targetScore){
       if(!start||!green)break;
       const remaining=hav(start,green);
       const first=seq===1;
+      const regulationShot=seq===baseShots;
       const last=seq===fullShotCount;
       let club;
-      if(first&&par>=4&&riskHoles.has(holeNo))club=roundNo<=3?'DR':'3W';
+      if(first&&par>=4&&riskHoles.has(holeNo))club=((roundNo+holeNo)%4===0)?'3W':'DR';
       else if(first&&par>=4)club='DR';
       else club=testClubForDistance(remaining);
       const master=(masterClubs||DEFAULT_MASTER_CLUBS).find(x=>x.name===club)||DEFAULT_MASTER_CLUBS.find(x=>x.name===club)||{carry:Math.max(60,remaining-10),centerWidth:null};
       let zone='CENTER';
-      if(first&&par>=4&&riskHoles.has(holeNo)&&club==='3W')zone='LEFT';
+      if(first&&par>=4&&club==='3W')zone='LEFT';
       const rawTarget=targetZonePointForShot(ch,start,master.carry,zone,par);
       const target=rawTarget?{...rawTarget,source:'TEST_GENERATED'}:{zone,source:'TEST_GENERATED',lat:green.lat,lng:green.lng,distanceM:remaining,fairwayWidthM:null,basis:'TEST_FALLBACK'};
 
-      let direction='CENTER';
-      let endLie=last?'GREEN':'FAIRWAY';
-      let end;
-      if(first&&par>=4&&riskHoles.has(holeNo)){
-        if(club==='DR'){
-          direction=holeNo===14?'CENTER':'RIGHT';
+      let direction='CENTER',depth='TARGET',endLie=last?'GREEN':'FAIRWAY',end;
+      const teeVariant=(roundNo*5+holeNo)%10;
+      if(first&&par>=4){
+        const forceTeeMiss=(riskHoles.has(holeNo)&&teeVariant<6)||(!riskHoles.has(holeNo)&&teeVariant<2);
+        if(forceTeeMiss){
+          direction=teeVariant%2===0?'RIGHT':'LEFT';
           const base={lat:target.lat,lng:target.lng};
-          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(10,(target.fairwayWidthM||24)*0.48):0,par);
-          endLie=direction==='RIGHT'?(hasPenalty?'RECOVERY':'A CUT'):'FAIRWAY';
+          const cross=(target.fairwayWidthM||24)*(riskHoles.has(holeNo)?.48:.28);
+          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(7,cross):Math.max(7,cross),par);
+          if(hasPenalty)endLie='RECOVERY';
+          else endLie=['A CUT','B CUT','BUNKER'][teeVariant%3];
         }else{
-          direction=((holeNo+roundNo)%4===0)?'RIGHT':'CENTER';
-          const base={lat:target.lat,lng:target.lng};
-          end=testOffsetCross(ch,base,direction==='RIGHT'?-Math.max(5,(target.fairwayWidthM||24)*0.22):0,par);
-          endLie=direction==='RIGHT'?'A CUT':'FAIRWAY';
+          end={lat:target.lat,lng:target.lng};
+          endLie='FAIRWAY';
         }
+      }else if(regulationShot&&extraAroundGreen){
+        const missDirections=['LEFT','CENTER','RIGHT'];
+        const missDepths=['SHORT','LONG','SHORT','PIN_HIGH'];
+        direction=missDirections[(roundNo+holeNo)%missDirections.length];
+        depth=missDepths[(roundNo*2+holeNo)%missDepths.length];
+        const missDistance=12+((roundNo+holeNo)%5)*8;
+        end=testNearGreenPoint(start,green,depth,direction,missDistance);
+        if(isBunkerSave||(pureBogey&&(roundNo+holeNo)%3===0))endLie='BUNKER';
+        else endLie=['A CUT','B CUT','FRINGE'][(roundNo+holeNo)%3];
       }else if(last){
-        const miss=((roundNo+holeNo+seq)%7===0)?4:0;
-        direction=miss?'RIGHT':'CENTER';
-        end=testOffsetCross(ch,green,miss?-miss:0,par);
+        const greenDir=['CENTER','LEFT','RIGHT'][(roundNo+holeNo+seq)%3];
+        const greenDepth=['PIN_HIGH','SHORT','LONG'][(roundNo*2+holeNo+seq)%3];
+        direction=greenDir;depth=greenDepth;
+        end=testNearGreenPoint(start,green,greenDepth,greenDir,4+((roundNo+holeNo)%4));
         endLie='GREEN';
       }else{
-        const travel=Math.min(Number(master.carry)||remaining*0.65,Math.max(35,remaining-35));
+        const travel=Math.min(Number(master.carry)||remaining*.65,Math.max(35,remaining-35));
         end=testPointToward(start,green,travel)||{lat:target.lat,lng:target.lng};
-        const miss=((roundNo+holeNo+seq)%5===0)?6:0;
-        if(miss){direction='LEFT';end=testOffsetCross(ch,end,miss,par);endLie='A CUT'}
+        const midVariant=(roundNo+holeNo+seq)%7;
+        if(midVariant===0||midVariant===1){
+          direction=midVariant===0?'LEFT':'RIGHT';
+          end=testOffsetCross(ch,end,direction==='RIGHT'?-6:6,par);
+          endLie=midVariant===0?'A CUT':'B CUT';
+        }else{
+          endLie='FAIRWAY';
+        }
       }
       end={...end,accuracy:0,time:baseTime+holeNo*600000+seq*70000,source:'TEST_GENERATED'};
       const startGreenDistanceM=hav(start,green);
@@ -3458,8 +3487,8 @@ function buildSyntheticRound(roundNo,targetScore){
         startLie:first?'TEE':(holeObj.shots.at(-1)?.endLie||'FAIRWAY'),endLie,
         distanceM:hav(start,end),startedAt:baseTime+holeNo*600000+seq*60000,
         shotIntent:first?(par===3?'GREEN_ATTACK':'TEE_POSITION'):'GREEN_ATTACK',
-        intendedShape:null,resultSource:'TEST_GENERATED',ballFlight:null,trajectory:'MID',
-        direction,depth:last?'PIN_HIGH':'TARGET',centerWidthM:master.centerWidth??null,
+        intendedShape:null,resultSource:'TEST_GENERATED',ballFlight:null,trajectory:['LOW','MID','HIGH'][(roundNo+holeNo+seq)%3],
+        direction,depth,centerWidthM:master.centerWidth??null,
         target,targetZone:zone,targetSource:'TEST_GENERATED',targetLat:target.lat,targetLng:target.lng,
         targetFairwayWidthM:target.fairwayWidthM??null,courseContext,
         positionSource:{start:'TEST_GENERATED',end:'TEST_GENERATED'},
@@ -3470,13 +3499,18 @@ function buildSyntheticRound(roundNo,targetScore){
       start=end;
     }
 
-    const puttDistances=puttCount===3?[8.5,2.2,0.6]:[5.5,0.8];
+    const firstPuttOptions=[1.4,2.6,4.2,5.8,7.5,9.5,12.0];
+    let puttDistances;
+    if(puttCount===1)puttDistances=[1.0+((roundNo+holeNo)%4)*.45];
+    else if(puttCount===3)puttDistances=[9+((roundNo+holeNo)%4)*1.3,2.0+((roundNo+holeNo)%3)*.55,.55];
+    else puttDistances=[firstPuttOptions[(roundNo+holeNo)%firstPuttOptions.length],.55+((roundNo+holeNo)%4)*.18];
+    const slopeCycle=['UPHILL','FLAT','DOWNHILL'],breakCycle=['LEFT','STRAIGHT','RIGHT'],missCycle=['MISS_LEFT','MISS_RIGHT','SHORT','LONG'];
     for(let p=0;p<puttCount;p++){
       holeObj.puttsDetail.push({
-        number:p+1,distanceM:puttDistances[p]??0.5,
-        slope:p===0?(((holeNo+roundNo)%3===0)?'UPHILL':'FLAT'):'FLAT',
-        break:p===0?(((holeNo+roundNo)%2===0)?'RIGHT':'LEFT'):'STRAIGHT',
-        result:p===puttCount-1?'HOLED':(p===0?'MISS_RIGHT':'SHORT'),
+        number:p+1,distanceM:puttDistances[p]??.5,
+        slope:p===0?slopeCycle[(roundNo+holeNo)%3]:'FLAT',
+        break:p===0?breakCycle[(roundNo*2+holeNo)%3]:'STRAIGHT',
+        result:p===puttCount-1?'HOLED':missCycle[(roundNo+holeNo+p)%missCycle.length],
         playerState:null,at:baseTime+holeNo*600000+400000+p*40000,
         synthetic:true,dataSource:'TEST_GENERATED'
       });
@@ -3505,18 +3539,20 @@ function renderTestDataPreview(){
     if(s.direction==='RIGHT')decisions[s.club].right++;
     decisions[s.club].pen+=Number(h.penalties||0);
   }));
-  const scoreText=rounds.map((r,i)=>(r.testRoundNo||i+1)+'라운드 '+storedRoundScore(r)+'타').join(' · ');
+  const recent=rounds.slice(-9).map((r,i)=>(r.testRoundNo||rounds.length-8+i)+'R '+storedRoundScore(r)).join(' · ');
+  const firstHcp=rounds[0]?.playerHandicap,lastHcp=rounds.at(-1)?.playerHandicap;
   el.innerHTML=
-    '<b>가상 플레이어 · 핸디 6 · '+rounds.length+'라운드</b><br>'+
-    scoreText+'<br>'+
-    '평균 '+avgScore.toFixed(1)+'타 · 최고 '+Math.min(...scores)+' · 최저 '+Math.max(...scores)+'<br>'+
-    '<span style="color:#b8c9bf">오른쪽 해저드 테스트: 드라이버 '+decisions.DR.n+'회 / 우측 '+decisions.DR.right+' / 벌타 '+decisions.DR.pen+
-    ' · 3번 우드 '+decisions['3W'].n+'회 / 우측 '+decisions['3W'].right+'회 / 벌타 '+decisions['3W'].pen+'타</span>';
+    '<b>Demo Player · '+rounds.length+'라운드 · HCP '+firstHcp+' → '+lastHcp+'</b><br>'+
+    '최근 9R: '+recent+'<br>'+
+    '평균 '+avgScore.toFixed(1)+'타 · Best '+Math.min(...scores)+' · High '+Math.max(...scores)+'<br>'+
+    '<span style="color:#b8c9bf">다양한 Fairway/GIR/Approach Save/Bunker Save/Putting/State 케이스 포함 · 드라이버/3W 의사결정 샘플 포함</span>';
 }
 function seedSyntheticTestData(silent=false){
   try{
     masterClubs=getMasterClubs();
-    const scores=[74,78,80,79,79,80];
+    const parTotal=Array.from({length:18},(_,i)=>Number(scorecardHoleData(i+1,'White')?.par)||4).reduce((a,b)=>a+b,0);
+    const scoreDeltas=[10,9,8,10,7,8,6,8,7,6,5,7,4,6,5,4,3,5,4,3,2,4,2,3,1,2,0];
+    const scores=scoreDeltas.map(d=>parTotal+d);
     const realRounds=loadCompletedRounds().filter(r=>!isSyntheticRound(r));
     const generated=scores.map((score,i)=>buildSyntheticRound(i+1,score));
     saveCompletedRounds([...realRounds,...generated]);
@@ -3527,10 +3563,10 @@ function seedSyntheticTestData(silent=false){
       roundIndex:r.testRoundNo,counts:{TEE:5,SECOND:6,SHORT_GAME:3,PUTTING:6},
       synthetic:true,dataSource:'TEST_GENERATED'
     }));
-    saveStateHistory([...realState,...syntheticState].slice(-100));
+    saveStateHistory([...realState,...syntheticState].slice(-160));
     localStorage.setItem(TEST_DATA_SEED_KEY,TEST_DATA_SEED_VERSION);
     renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
-    if(!silent)alert('테스트 데이터 6라운드를 생성했습니다.\n\n핸디 6 · 74 / 78 / 80 / 79 / 79 / 80');
+    if(!silent)alert('Demo 테스트 데이터 27라운드를 생성했습니다.\n\nHCP 9 → 6 Progress · 다양한 Fairway / GIR / Approach Save / Bunker Save / Putting 케이스가 포함됩니다.');
     return true;
   }catch(e){
     console.error(e);
