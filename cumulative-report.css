@@ -13,7 +13,7 @@
 #resultsMultiView button:focus-visible{outline:3px solid #ffd16b;outline-offset:3px}
 #resultsMultiView .multiRangeTabs button{font-size:14px;min-width:78px}
 #resultsMultiView .multiRangeTabs{flex-wrap:wrap;justify-content:flex-end}
-#resultsMultiView .multiHero{background:var(--jgi-existing-course-photo) right center/cover no-repeat,#002219;border-color:#17634e;border-radius:15px}
+#resultsMultiView .multiHero{background:url("https://images.unsplash.com/photo-1623113900677-9fe130610326?auto=format&fit=crop&w=1600&q=85") right center/cover no-repeat,#002219;border-color:#17634e;border-radius:15px}
 #resultsMultiView .multiHero:after{background:linear-gradient(90deg,#001b14e8,transparent),linear-gradient(0deg,#001b14ee,transparent);z-index:0}
 .multiReferencePhoto{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #resultsMultiView .multiHero h2{font-size:28px;line-height:1.25}
@@ -65,7 +65,7 @@
 #resultsMultiView .multiDonut span{font-size:13px;transform:translateY(18px);color:#c7d1cc}
 #resultsMultiView .multiDonutLegend div{font-size:13px;grid-template-columns:8px minmax(0,1fr);row-gap:0}
 #resultsMultiView .multiDonutLegend b{grid-column:2;font-size:13px}
-#resultsMultiView .multiDriverScatter{height:155px;background:linear-gradient(#00362955,#00362955),var(--jgi-existing-course-photo) center/cover no-repeat,#003629}
+#resultsMultiView .multiDriverScatter{height:155px;background:linear-gradient(#00362955,#00362955),url("https://images.unsplash.com/photo-1623113900677-9fe130610326?auto=format&fit=crop&w=1600&q=85") center/cover no-repeat,#003629}
 #resultsMultiView .multiDriverScatter:before{z-index:1}
 #resultsMultiView .multiDriverScatter:after{font-size:13px;letter-spacing:.05em;background:#001b14bd;z-index:2;padding:4px 0}
 #resultsMultiView .multiDriverDot{z-index:1}
