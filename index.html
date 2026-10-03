@@ -1238,6 +1238,7 @@ body.round-active .bottomnav{display:none!important}
           <div class="title">획득 타수 · Avg SG</div>
           <div class="sub">Player 화면은 티샷 · 세컨샷 · 어프로치 · 퍼터 네 영역으로 봅니다.</div>
           <div id="multiPlayerSgCards" class="multiPlayerSgCards"></div>
+          <div id="multiCoreRateCards" class="multiCoreRateCards"></div>
           <div id="multiSgTrend" class="hidden"></div>
         </div>
 
@@ -4051,6 +4052,79 @@ function multiPlayerFacingSg(rounds){
   Object.values(out).forEach(x=>{x.avgRound=rounds.length?x.total/rounds.length:null;x.avgShot=x.n?x.total/x.n:null});
   return out;
 }
+
+function multiRegulationShotIndex(par){
+  const p=Number(par);
+  return p===3?0:p===4?1:p===5?2:null;
+}
+function multiPar4SecondRows(rounds){
+  const out=[];
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    if(Number(h.par)!==4)return;
+    const s=h.shots?.[1];if(!s)return;
+    out.push({r,h,s,si:1});
+  }));
+  return out;
+}
+function multiCorePerformanceRates(rounds){
+  const out={
+    FAIRWAY:{label:'Fairway %',hit:0,total:0},
+    GIR:{label:'GIR %',hit:0,total:0},
+    APPROACH_SAVE:{label:'Approach Save %',hit:0,total:0},
+    BUNKER_SAVE:{label:'Bunker Save %',hit:0,total:0}
+  };
+  rounds.forEach(r=>(r.holes||[]).forEach(h=>{
+    const shots=h.shots||[],par=Number(h.par);
+    const tee=shots[0],club=String(tee?.club||'').toUpperCase();
+    if(tee&&par>=4&&['DR','DRIVER'].includes(club)){
+      out.FAIRWAY.total++;
+      if(String(tee.endLie||'').toUpperCase()==='FAIRWAY')out.FAIRWAY.hit++;
+    }
+
+    const regIndex=multiRegulationShotIndex(par);
+    if(regIndex===null)return;
+    const regShot=shots[regIndex];
+    if(!regShot)return; // Raw data가 없으면 분모를 만들지 않는다.
+    out.GIR.total++;
+    if(String(regShot.endLie||'').toUpperCase()==='GREEN'){
+      out.GIR.hit++;
+      return;
+    }
+
+    const saveShot=shots[regIndex+1];
+    if(!saveShot)return;
+    const d=shotStartDistanceToHoleM(h,saveShot,regIndex+1);
+    if(!Number.isFinite(Number(d))||Number(d)<5||Number(d)>80)return;
+    const lie=String(saveShot.startLie||regShot.endLie||'').toUpperCase();
+    const saved=storedHoleScore(h)<=par;
+    if(['BUNKER','SAND'].includes(lie)){
+      out.BUNKER_SAVE.total++;
+      if(saved)out.BUNKER_SAVE.hit++;
+    }else{
+      out.APPROACH_SAVE.total++;
+      if(saved)out.APPROACH_SAVE.hit++;
+    }
+  }));
+  Object.values(out).forEach(x=>{x.rate=x.total?x.hit/x.total*100:null});
+  return out;
+}
+function multiCoreRateCardsHtml(rounds,prevRounds=[],recentRounds=[]){
+  const all=multiCorePerformanceRates(rounds);
+  const prev=prevRounds.length?multiCorePerformanceRates(prevRounds):null;
+  const recent=recentRounds.length?multiCorePerformanceRates(recentRounds):null;
+  const order=['FAIRWAY','GIR','APPROACH_SAVE','BUNKER_SAVE'];
+  const icons={FAIRWAY:'↗',GIR:'◎',APPROACH_SAVE:'↙',BUNKER_SAVE:'◒'};
+  return order.map(k=>{
+    const x=all[k];
+    let deltaText='';
+    if(prev&&recent&&Number.isFinite(prev[k].rate)&&Number.isFinite(recent[k].rate)){
+      const d=recent[k].rate-prev[k].rate;
+      deltaText=' · '+(d>0?'+':'')+d.toFixed(0)+'%p 이전 구간 대비';
+    }
+    return '<div class="multiCoreRateCard '+k.toLowerCase()+'"><span>'+icons[k]+' '+x.label+'</span><b>'+(Number.isFinite(x.rate)?Math.round(x.rate)+'%':'—')+'</b><small>'+x.hit+' / '+x.total+deltaText+'</small></div>';
+  }).join('');
+}
+
 function multiRecentSplit(rounds){
   const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
   if(ordered.length<2)return {prev:[],recent:ordered};
@@ -4184,10 +4258,12 @@ function multiLieGroups(rows,mode){
   rows.forEach(x=>{
     const key=multiStartLieKey(x.s.startLie);
     const label=multiStartLieLabel(key,mode);
-    const o=g[key]||(g[key]={key,label,n:0,left:0,center:0,right:0,green:0,dist:[],remain:[],sg:[]});
+    const o=g[key]||(g[key]={key,label,n:0,left:0,center:0,right:0,short:0,long:0,green:0,dist:[],remain:[],sg:[]});
     o.n++;
     const dir=String(x.s.direction||'').toUpperCase();
+    const dep=String(x.s.depth||'').toUpperCase();
     if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    if(dep==='SHORT')o.short++;if(dep==='LONG')o.long++;
     if(String(x.s.endLie||'').toUpperCase()==='GREEN')o.green++;
     const d=multiStartDistance(x);if(Number.isFinite(d))o.dist.push(d);
     const rem=shotEndDistanceToHoleM(x.h,x.s,x.si);if(Number.isFinite(Number(rem)))o.remain.push(Number(rem));
@@ -4224,16 +4300,32 @@ function multiSecondDistanceDistributionHtml(rows){
   return '<div class="multiDistanceBars">'+counts.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*110)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
 }
 function multiSecondPatterns(rows,groups){
-  if(!rows.length)return ['세컨샷 데이터가 없습니다.'];
+  if(!rows.length)return ['Par 4 세컨샷 GIR 데이터가 없습니다.'];
   const valid=groups.filter(o=>o.n>=3);
-  const weak=valid.slice().sort((a,b)=>(a.center/a.n)-(b.center/b.n))[0];
-  const right=valid.slice().sort((a,b)=>(b.right/b.n)-(a.right/a.n))[0];
+  const weak=valid.slice().sort((a,b)=>(a.green/a.n)-(b.green/b.n))[0];
+  const miss=valid.slice().sort((a,b)=>{
+    const am=Math.max(a.short,a.long,a.left,a.right)/a.n;
+    const bm=Math.max(b.short,b.long,b.left,b.right)/b.n;
+    return bm-am;
+  })[0];
   const dist=rows.map(multiStartDistance).filter(Number.isFinite);
   const out=[];
-  if(weak)out.push(weak.label+'에서 중앙 결과 '+weak.center+'/'+weak.n+'회 ('+Math.round(weak.center/weak.n*100)+'%)가 관찰되었습니다.');
-  if(right&&right.right)out.push(right.label+'에서 우측 미스 '+right.right+'/'+right.n+'회 ('+Math.round(right.right/right.n*100)+'%)가 기록되었습니다.');
-  if(dist.length)out.push('세컨샷 평균 시작 거리 '+Math.round(avg(dist))+'m · 총 '+rows.length+'샷.');
+  if(weak)out.push(weak.label+'에서 GIR '+weak.green+'/'+weak.n+'회 ('+Math.round(weak.green/weak.n*100)+'%)가 관찰되었습니다.');
+  if(miss){
+    const parts=[['Short',miss.short],['Long',miss.long],['Left',miss.left],['Right',miss.right]].sort((a,b)=>b[1]-a[1]);
+    if(parts[0][1])out.push(miss.label+'의 가장 많은 미스는 '+parts[0][0]+' '+parts[0][1]+'/'+miss.n+'회입니다.');
+  }
+  if(dist.length)out.push('Par 4 세컨샷 평균 시작 거리 '+Math.round(avg(dist))+'m · GIR 기준 샘플 '+rows.length+'개.');
   return out.slice(0,3);
+}
+function multiSecondGirDistanceBarsHtml(rows){
+  const defs=[['<120',x=>x<120],['120–150',x=>x>=120&&x<150],['150–180',x=>x>=150&&x<180],['180–210',x=>x>=180&&x<210],['210+',x=>x>=210]];
+  const stats=defs.map(([label,fn])=>{
+    const a=rows.filter(x=>{const d=multiStartDistance(x);return Number.isFinite(d)&&fn(d)});
+    const green=a.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
+    return {label,n:a.length,pct:a.length?green/a.length*100:0};
+  });
+  return '<div class="multiResultBars">'+stats.map(o=>'<div class="multiResultBar"><div><b>'+safeText(o.label)+'m</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(o.pct)+'%"></i></span><strong>'+(o.n?Math.round(o.pct)+'% GIR':'—')+'</strong></div>').join('')+'</div>';
 }
 function multiApproachDistanceGroups(rows){
   const g={};
@@ -4357,27 +4449,27 @@ function multiPerformanceDetail(rounds,mode){
   }
 
   if(mode==='SECOND'){
-    const second=rows.filter(x=>multiDisplayCategory(x.h,x.s,x.si)==='SECOND');
+    const second=multiPar4SecondRows(rounds);
     const groups=multiLieGroups(second,'SECOND');
     const sg=second.map(multiShotSg).filter(Number.isFinite);
     const dist=second.map(multiStartDistance).filter(Number.isFinite);
-    const center=second.filter(x=>String(x.s.direction||'').toUpperCase()==='CENTER').length;
+    const green=second.filter(x=>String(x.s.endLie||'').toUpperCase()==='GREEN').length;
     const patterns=multiSecondPatterns(second,groups);
     return tab+
-      '<div class="analysisNote">세컨샷은 시작 Lie × 시작 거리 × 실제 방향을 함께 봅니다. Bunker는 80m 초과 세컨샷에서 Fairway Bunker로 표시합니다.</div>'+
+      '<div class="analysisNote">세컨샷 GIR은 Par 4의 모든 2nd shot을 기준으로 봅니다. LAYUP · RECOVERY도 Par 4 2nd shot이면 GIR 판정 대상이며 Par 3 · Par 5는 제외합니다.</div>'+
       '<div class="multiTeeKpis">'+
-        '<div class="multiTeeKpi"><span>세컨샷 수</span><b>'+second.length+'</b></div>'+
+        '<div class="multiTeeKpi"><span>Par 4 세컨샷</span><b>'+second.length+'</b></div>'+
         '<div class="multiTeeKpi"><span>평균 시작 거리</span><b>'+(dist.length?Math.round(avg(dist))+'m':'—')+'</b></div>'+
-        '<div class="multiTeeKpi"><span>중앙 결과</span><b>'+multiPct(center,second.length)+'</b></div>'+
+        '<div class="multiTeeKpi"><span>GIR율</span><b>'+multiPct(green,second.length)+'</b></div>'+
         '<div class="multiTeeKpi"><span>Avg SG/세컨샷</span><b>'+multiSgHtml(avg(sg))+'</b></div>'+
       '</div>'+
       '<div class="multiTeeGrid">'+
-        '<div class="multiVizCard"><h4>시작 Lie 비율</h4>'+multiSituationDonutHtml(groups,second.length,'세컨샷')+'</div>'+
-        '<div class="multiVizCard"><h4>세컨샷 방향 분포</h4>'+multiShotDirectionScatterHtml(second,'골프장 이미지는 시각 참고용 · 점은 저장된 방향·시작거리 분포')+'</div>'+
-        '<div class="multiVizCard"><h4>시작 거리 분포</h4>'+multiSecondDistanceDistributionHtml(second)+'</div>'+
+        '<div class="multiVizCard"><h4>시작 Lie 비율</h4>'+multiSituationDonutHtml(groups,second.length,'Par 4')+'</div>'+
+        '<div class="multiVizCard"><h4>Green Result Map</h4>'+multiApproachGreenMapHtml(second)+'</div>'+
+        '<div class="multiVizCard"><h4>거리별 GIR</h4>'+multiSecondGirDistanceBarsHtml(second)+'</div>'+
       '</div>'+
       '<div class="multiTeeLower"><div><div class="sectionLabel" style="margin-top:12px">상황별 세컨샷 결과</div>'+
-      multiTable(['시작 Lie','Sample','평균 거리','좌측','중앙','우측','Avg SG'],groups.map(o=>[o.label,multiSampleTag(o.n),o.dist.length?Math.round(avg(o.dist))+'m':'—',multiPct(o.left,o.n),multiPct(o.center,o.n),multiPct(o.right,o.n),multiSgHtml(avg(o.sg))]))+
+      multiTable(['시작 Lie','Sample','평균 거리','GIR','Short','Long','Left','Right','Avg SG'],groups.map(o=>[o.label,multiSampleTag(o.n),o.dist.length?Math.round(avg(o.dist))+'m':'—',multiPct(o.green,o.n),multiPct(o.short,o.n),multiPct(o.long,o.n),multiPct(o.left,o.n),multiPct(o.right,o.n),multiSgHtml(avg(o.sg))]))+
       '</div><div><div class="sectionLabel" style="margin-top:12px">세컨샷 주요 패턴</div><div class="multiPatternList">'+patterns.map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div></div>';
   }
 
@@ -4510,6 +4602,7 @@ function renderMultiDashboard(rounds){
   const sg=multiPlayerFacingSg(rounds);
   const split=multiRecentSplit(rounds),prevSg=split.prev.length?multiPlayerFacingSg(split.prev):null,recentSg=split.recent.length?multiPlayerFacingSg(split.recent):null,icons={TEE:'⛳',SECOND:'◔',APPROACH:'↗',PUTTER:'⌟'};
   $('multiPlayerSgCards').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{const x=sg[k],delta=prevSg&&recentSg&&Number.isFinite(prevSg[k].avgRound)&&Number.isFinite(recentSg[k].avgRound)?recentSg[k].avgRound-prevSg[k].avgRound:null;return '<div class="multiPlayerSgCard"><span>'+icons[k]+' '+x.label+'</span><b>'+multiSgHtml(x.avgRound)+'</b><small>'+(Number.isFinite(delta)?multiSigned(delta)+' · 이전 구간 대비':'라운드 평균 · '+x.n+'개')+'</small></div>'}).join('');
+  $('multiCoreRateCards').innerHTML=multiCoreRateCardsHtml(rounds,split.prev,split.recent);
   $('multiSgTrend').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{
     const x=sg[k],vals=x.byRound,max=Math.max(1,...vals.map(v=>Math.abs(v)));
     return '<div class="multiSgTrendRow"><span>'+x.label+'</span><div class="multiSgTrendTrack">'+vals.map(v=>{
