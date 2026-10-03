@@ -6324,7 +6324,8 @@ if(stored){
   if(stored.completedAt)archiveRound(stored,roundIsFull(stored)?'FULL':'PARTIAL');
 }
 renderRoundHistoryStatus();
-if(localStorage.getItem(TEST_DATA_SEED_KEY)===null)seedSyntheticTestData(true);
+const currentTestSeedVersion=localStorage.getItem(TEST_DATA_SEED_KEY);
+if(currentTestSeedVersion!==TEST_DATA_SEED_VERSION&&currentTestSeedVersion!=='RESET')seedSyntheticTestData(true);
 renderTestDataPreview();
 
 $('enterRoundBtn').onclick=()=>{
