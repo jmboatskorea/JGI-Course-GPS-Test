@@ -2253,6 +2253,116 @@ function fitCurrentHole(useHeading=true){
     }catch{}
   });
 }
+
+const TEE_COORDINATE_VERSION='JGI_TEE_COORD_V1';
+
+function courseHoleGeometryByNumber(holeNo){
+  const holes=window.JGI_OLD_COURSE_DATA?.holes;
+  if(!holes)return null;
+  return holes?.[String(holeNo)]||holes?.[Number(holeNo)]||null;
+}
+
+/*
+ * Reusable Tee-coordinate frame for analysis.
+ * Origin: official course Tee GPS.
+ * +Y: normalized hole-forward axis (same course heading logic used by JGI course view).
+ * +X: player's right side; -X: player's left side.
+ * Units: meters. Raw WGS84 GPS remains unchanged.
+ */
+function teeCoordinateFrame(h){
+  if(!h?.t)return null;
+  const origin={lat:Number(h.t[0]),lng:Number(h.t[1])};
+  if(!Number.isFinite(origin.lat)||!Number.isFinite(origin.lng))return null;
+  const bearing=Number(holeViewBearing(h));
+  if(!Number.isFinite(bearing))return null;
+
+  const rad=bearing*Math.PI/180;
+  const sinB=Math.sin(rad),cosB=Math.cos(rad);
+  const mLat=111320;
+  const mLng=111320*Math.cos(origin.lat*Math.PI/180);
+
+  const toXY=point=>{
+    const lat=Number(point?.lat),lng=Number(point?.lng);
+    if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+    const east=(lng-origin.lng)*mLng;
+    const north=(lat-origin.lat)*mLat;
+    return {
+      xM:east*cosB-north*sinB,
+      yM:east*sinB+north*cosB
+    };
+  };
+
+  return {
+    version:TEE_COORDINATE_VERSION,
+    origin,
+    bearingDeg:bearing,
+    axisSource:'JGI_HOLE_VIEW_BEARING',
+    toXY
+  };
+}
+
+function teeGpsToLocalXY(h,point){
+  const frame=teeCoordinateFrame(h);
+  if(!frame)return null;
+  const xy=frame.toXY(point);
+  if(!xy)return null;
+  return {
+    version:frame.version,
+    xM:xy.xM,
+    yM:xy.yM,
+    bearingDeg:frame.bearingDeg,
+    axisSource:frame.axisSource
+  };
+}
+
+/*
+ * Derived-only analysis point. Does not mutate Raw Shot Data.
+ * Supports the current runtime shape: shot.start/end = {lat,lng,...}.
+ */
+function teeShotCoordinatePoint(shot,holeGeometry){
+  if(!shot||!holeGeometry||!shot.end)return null;
+  const frame=teeCoordinateFrame(holeGeometry);
+  if(!frame)return null;
+  const end=frame.toXY(shot.end);
+  if(!end)return null;
+  const start=shot.start?frame.toXY(shot.start):null;
+  const tee=frame.origin;
+  const radialDistanceM=hav(tee,{lat:Number(shot.end.lat),lng:Number(shot.end.lng)});
+  const shotDistanceM=Number.isFinite(Number(shot.distanceM))
+    ?Number(shot.distanceM)
+    :(shot.start?hav(shot.start,shot.end):null);
+
+  return {
+    version:frame.version,
+    xM:end.xM,
+    yM:end.yM,
+    startXM:start?.xM??null,
+    startYM:start?.yM??null,
+    radialDistanceM:Number.isFinite(radialDistanceM)?radialDistanceM:null,
+    shotDistanceM:Number.isFinite(shotDistanceM)?shotDistanceM:null,
+    bearingDeg:frame.bearingDeg,
+    axisSource:frame.axisSource,
+    endLat:Number(shot.end.lat),
+    endLng:Number(shot.end.lng),
+    positionSource:shot.end.source||shot.positionSource?.end||null,
+    gpsAccuracyM:Number.isFinite(Number(shot.end.accuracy))?Number(shot.end.accuracy):null
+  };
+}
+
+function teeShotCoordinateForRow(row){
+  const holeNo=Number(row?.h?.hole??row?.s?.hole);
+  if(!Number.isFinite(holeNo))return null;
+  const geometry=courseHoleGeometryByNumber(holeNo);
+  return teeShotCoordinatePoint(row?.s,geometry);
+}
+
+function teeShotCoordinateRows(rows){
+  return (rows||[]).map(row=>{
+    const coordinate=teeShotCoordinateForRow(row);
+    return coordinate?{...row,teeCoordinate:coordinate}:null;
+  }).filter(Boolean);
+}
+
 function courseViewProjector(h){
   const shapes=courseShapes(h);
   const points=shapes.flatMap(s=>s.path||[]);
