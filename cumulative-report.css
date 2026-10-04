@@ -159,7 +159,13 @@
 
 
 /* 27-round chart readability */
-#resultsMultiView .multiChartsGrid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+#resultsMultiView .multiChartsGrid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+#resultsMultiView .multiChartsGrid .multiChartCard{min-height:270px}
+#resultsMultiView .sgTrendCard{display:flex;flex-direction:column}
+#resultsMultiView .sgTrendCard .sub{margin-top:3px;font-size:9px;color:#8fa097}
+#resultsMultiView .sgTrendCard #multiSgLineChart{flex:1;display:flex;flex-direction:column;justify-content:flex-end;margin-top:4px}
+#resultsMultiView .sgTrendCard .multiLineSvg{height:205px}
+#resultsMultiView .sgTrendCard .multiLineLegend{margin-top:6px;font-size:8px;gap:10px}
 #resultsMultiView .multiLineSvg text.multiAxisTick{font-size:10px;fill:#aab9b0;font-weight:700}
 #resultsMultiView .multiLineSvg text.multiPointValue{font-size:10px;fill:#f5f8f6;font-weight:800}
 #resultsMultiView .multiHcpProgress{grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;row-gap:2px;padding:7px 9px}
