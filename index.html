@@ -4244,20 +4244,19 @@ function multiDriverScatterHtml(driver){
   return '<div class="multiDriverScatter">'+labels+dots+'</div><div class="multiCourseImageNote">코스 이미지는 시각 참고용 · 점은 저장된 방향·거리 분포</div>';
 }
 function multiDistanceDistributionHtml(driver){
-  const defs=[
-    ['<200',x=>x<200],
-    ['200–210',x=>x>=200&&x<210],
-    ['210–220',x=>x>=210&&x<220],
-    ['220–230',x=>x>=220&&x<230],
-    ['230–240',x=>x>=230&&x<240],
-    ['240–250',x=>x>=240&&x<250],
-    ['250–260',x=>x>=250&&x<260],
-    ['260+',x=>x>=260]
-  ];
   const values=driver.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
-  const counts=defs.map(([l,fn])=>[l,values.filter(fn).length]);
-  const max=Math.max(1,...counts.map(x=>x[1]));
-  return '<div class="multiDistanceBars">'+counts.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*110)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
+  if(!values.length)return '<div class="analysisEmpty">드라이버 거리 데이터가 없습니다.</div>';
+  const minV=Math.min(...values),maxV=Math.max(...values);
+  const start=Math.floor(minV/5)*5;
+  const end=Math.ceil(maxV/5)*5 || start+5;
+  const bins=[];
+  for(let a=start;a<end;a+=5){
+    const b=a+5;
+    bins.push([a+'–'+b,values.filter(v=>v>=a&&(b===end?v<=b:v<b)).length]);
+  }
+  const max=Math.max(1,...bins.map(x=>x[1]));
+  return '<div class="multiDistanceRangeNote">Player Range '+Math.round(minV)+'–'+Math.round(maxV)+'m · 5m 단위</div>'+
+    '<div class="multiDistanceBars">'+bins.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*110)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
 }
 function multiTeeUsageHtml(rows){
   const g={};rows.forEach(x=>{const k=x.s.club||'미확인';g[k]=(g[k]||0)+1});
