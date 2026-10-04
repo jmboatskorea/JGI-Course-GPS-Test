@@ -170,3 +170,50 @@
 @media(max-width:760px){
   #resultsMultiView .multiChartsGrid{grid-template-columns:1fr}
 }
+
+
+/* Equal-height trend KPI cards */
+#resultsMultiView .multiChartsGrid{align-items:stretch}
+#resultsMultiView .multiChartCard{display:flex;flex-direction:column;height:100%;min-height:330px}
+#resultsMultiView .multiChartCard .multiLineLegend{min-height:22px}
+#resultsMultiView .multiChartNote{margin-top:auto;padding:8px 9px;border-radius:10px;border:1px solid #174837;background:#071a14;display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;row-gap:2px;min-height:54px}
+#resultsMultiView .multiChartNote>b{font-size:10px;color:#9fb2a7}
+#resultsMultiView .multiChartNote>strong{font-size:14px;color:#f5f8f6;line-height:1.2;white-space:nowrap}
+#resultsMultiView .multiChartNote>span{font-size:10px;font-weight:900;white-space:nowrap;text-align:right}
+#resultsMultiView .multiChartNote>span.better{color:#67f29a}
+#resultsMultiView .multiChartNote>span.worse{color:#ff7b7b}
+#resultsMultiView .multiChartNote>span.neutral{color:#cbd7d0}
+#resultsMultiView .multiChartNote>small{grid-column:1/-1;margin-top:1px;font-size:7px;line-height:1.25;color:#7f9086}
+#resultsMultiView .multiHcpProgress{margin-top:auto}
+@media(max-width:760px){
+  #resultsMultiView .multiChartCard{min-height:310px}
+}
+
+
+/* Tee detail layout refinements */
+#resultsMultiView .multiTeeGrid{grid-template-columns:.72fr 1.55fr 1.05fr}
+#resultsMultiView .multiTeeUsageCompact{grid-template-columns:92px minmax(0,1fr);gap:8px}
+#resultsMultiView .multiTeeUsageCompact .multiDonut{width:88px;height:88px}
+#resultsMultiView .multiTeeUsageCompact .multiDonut:after{width:52px;height:52px}
+#resultsMultiView .multiTeeUsageCompact .multiDonut strong{font-size:16px}
+#resultsMultiView .multiTeeUsageCompact .multiDonut span{font-size:7px}
+#resultsMultiView .multiTeeUsageCompact .multiDonutLegend{gap:5px}
+#resultsMultiView .multiDriverScatter{height:225px}
+#resultsMultiView .multiDriverPct{top:auto;bottom:29px}
+#resultsMultiView .multiDriverPct.left{left:24%;transform:translateX(-50%)}
+#resultsMultiView .multiDriverPct.center{left:50%;transform:translateX(-50%)}
+#resultsMultiView .multiDriverPct.right{right:auto;left:76%;transform:translateX(-50%)}
+#resultsMultiView .multiDistanceBars{gap:4px}
+#resultsMultiView .multiDistanceBar{min-width:0;font-size:6px}
+#resultsMultiView .multiDistanceBar b{font-size:7px}
+#resultsMultiView .multiDistanceBar span{display:block;line-height:1.15}
+@media(max-width:760px){
+  #resultsMultiView .multiTeeGrid{grid-template-columns:1fr}
+  #resultsMultiView .multiTeeUsageCompact{grid-template-columns:92px minmax(0,1fr)}
+  #resultsMultiView .multiDriverScatter{height:210px}
+}
+
+
+/* Dynamic driver distance range */
+#resultsMultiView .multiDistanceRangeNote{margin:-2px 0 6px;font-size:8px;color:#9fb2a7;font-weight:800}
+#resultsMultiView .multiDistanceBars{height:138px}
