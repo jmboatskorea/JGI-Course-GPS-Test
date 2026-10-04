@@ -21,6 +21,9 @@ if (/const GOOGLE_MAPS_API_KEY\s*=\s*['"][^'"]+['"]/.test(html)) {
 fs.rmSync(output, {recursive: true, force: true});
 fs.mkdirSync(output, {recursive: true});
 for (const file of files) fs.copyFileSync(path.join(root, file), path.join(output, file));
+fs.mkdirSync(path.join(output, 'assets'), {recursive: true});
+fs.copyFileSync(path.join(root, 'assets/driver-dispersion-bg-v1.png'),
+  path.join(output, 'assets/driver-dispersion-bg-v1.png'));
 // Browser Maps keys are client-visible. Referrer/API restrictions must be configured in Google Cloud.
 // JSON encoding prevents values from breaking the generated JavaScript. Never log the value.
 const config = JSON.stringify({googleMapsBrowserKey: key}).replace(/</g, '\\u003c');
