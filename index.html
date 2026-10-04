@@ -1032,10 +1032,10 @@ body.round-active .bottomnav{display:none!important}
       <div id="roundHistoryStatus" class="sgStatus" style="margin-top:8px">저장된 완료 라운드 0개</div>
 
       <div class="card" style="margin-top:10px">
-        <div class="title">테스트 데이터 · 핸디 6</div>
-        <div class="sub">JGI 누적 분석 테스트용 가상 6라운드입니다. 실제 라운드와 구분되어 저장됩니다.</div>
+        <div class="title">테스트 데이터 · 핸디 5</div>
+        <div class="sub">JGI 누적 분석 테스트용 가상 27라운드 · HCP 5 기준입니다. 실제 라운드와 구분되어 저장됩니다.</div>
         <div class="grid2" style="margin-top:10px">
-          <button id="seedTestDataBtn" class="btn ghost">6라운드 테스트 데이터 생성</button>
+          <button id="seedTestDataBtn" class="btn ghost">27라운드 테스트 데이터 생성</button>
           <button id="resetTestDataBtn" class="btn ghost" style="border-color:#7a3940;color:#ffc1c8">테스트 데이터 초기화</button>
         </div>
         <div id="testDataPreview" class="sgStatus" style="margin-top:10px"></div>
@@ -1793,7 +1793,7 @@ const STORAGE='agi_player_v1_round';
 const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
 const COMPLETED_ROUNDS_LIMIT=40;
 const TEST_DATA_SEED_KEY='jgi_test_data_seed_v1';
-const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_V1';
+const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_HCP5_V2';
 const DEFAULT_MASTER_CLUBS=[
   {name:'DR',carry:235,centerWidth:14},{name:'3W',carry:215,centerWidth:12},{name:'5W',carry:200,centerWidth:11},
   {name:'3I',carry:190,centerWidth:10},{name:'4I',carry:180,centerWidth:9},{name:'5I',carry:170,centerWidth:9},
@@ -3476,7 +3476,7 @@ function buildSyntheticRound(roundNo,targetScore){
   const bunkerSaves=new Set(savePool.slice(0,bunkerSaveCount));
   const approachSaves=new Set(savePool.slice(bunkerSaveCount,bunkerSaveCount+2));
   const riskHoles=new Set([4,7,9,14,16,18]);
-  const selectedHcp=roundNo<=7?9:roundNo<=14?8:roundNo<=21?7:6;
+  const selectedHcp=5;
 
   const r={
     version:9,id:'test-hcp6-r'+roundNo,course:'Jagorawi Golf & Country Club',nine:'Old Course',
@@ -3649,7 +3649,7 @@ function renderTestDataPreview(){
   const recent=rounds.slice(-9).map((r,i)=>(r.testRoundNo||rounds.length-8+i)+'R '+storedRoundScore(r)).join(' · ');
   const firstHcp=rounds[0]?.playerHandicap,lastHcp=rounds.at(-1)?.playerHandicap;
   el.innerHTML=
-    '<b>Demo Player · '+rounds.length+'라운드 · HCP '+firstHcp+' → '+lastHcp+'</b><br>'+
+    '<b>Demo Player · '+rounds.length+'라운드 · HCP '+(firstHcp===lastHcp?firstHcp:(firstHcp+' → '+lastHcp))+'</b><br>'+
     '최근 9R: '+recent+'<br>'+
     '평균 '+avgScore.toFixed(1)+'타 · Best '+Math.min(...scores)+' · High '+Math.max(...scores)+'<br>'+
     '<span style="color:#b8c9bf">다양한 Fairway/GIR/Approach Save/Bunker Save/Putting/State 케이스 포함 · 드라이버/3W 의사결정 샘플 포함</span>';
@@ -3673,7 +3673,7 @@ function seedSyntheticTestData(silent=false){
     saveStateHistory([...realState,...syntheticState].slice(-160));
     localStorage.setItem(TEST_DATA_SEED_KEY,TEST_DATA_SEED_VERSION);
     renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
-    if(!silent)alert('Demo 테스트 데이터 27라운드를 생성했습니다.\n\nHCP 9 → 6 Progress · 다양한 Fairway / GIR / Approach Save / Bunker Save / Putting 케이스가 포함됩니다.');
+    if(!silent)alert('Demo 테스트 데이터 27라운드를 생성했습니다.\n\nHCP 5 기준 · 다양한 Fairway / GIR / Approach Save / Bunker Save / Putting 케이스가 포함됩니다.');
     return true;
   }catch(e){
     console.error(e);
