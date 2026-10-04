@@ -567,3 +567,55 @@
 #resultsMultiView .driverDispSummary b{display:block;margin-top:4px;color:#fff;font-size:13px}
 @media(max-width:1000px){#resultsMultiView .multiTeeIntelGrid{grid-template-columns:1fr 1.35fr}#resultsMultiView .driverDispV1{max-width:340px}}
 @media(max-width:620px){#resultsMultiView .multiTeeIntelGrid{grid-template-columns:1fr}#resultsMultiView .driverDispV1{max-width:330px}}
+
+/* Driver Dispersion compact KPI-height V4 */
+#resultsMultiView .multiTeeIntelCard.map{
+  height:405px;
+  min-height:405px;
+  overflow:hidden;
+}
+#resultsMultiView .driverDispV1{
+  max-width:310px;
+  margin:0 auto;
+}
+#resultsMultiView .driverDispCardHead{
+  min-height:44px;
+  padding:7px 10px;
+}
+#resultsMultiView .driverDispSvg{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:320/240;
+  max-height:240px;
+  margin:0 auto;
+  background:#020706;
+}
+#resultsMultiView .driverDispGuide path{
+  fill:none;
+  stroke:rgba(255,255,255,.18);
+  stroke-width:.8;
+  stroke-dasharray:4 5;
+  vector-effect:non-scaling-stroke;
+}
+#resultsMultiView .driverDispGuide rect{
+  fill:rgba(247,249,248,.22);
+  stroke:rgba(210,224,217,.18);
+  stroke-width:.4;
+}
+#resultsMultiView .driverDispGuide text{
+  fill:rgba(255,255,255,.55);
+  font-size:7px;
+  font-weight:850;
+}
+#resultsMultiView .driverDispSummaryTitle{padding:6px 9px 4px}
+#resultsMultiView .driverDispSummary{padding:0 6px 6px}
+#resultsMultiView .driverDispSummary>div{padding:5px 3px}
+@media(max-width:1000px){
+  #resultsMultiView .multiTeeIntelCard.map{height:auto;min-height:0}
+  #resultsMultiView .driverDispV1{max-width:310px}
+}
+@media(max-width:620px){
+  #resultsMultiView .multiTeeIntelCard.map{height:auto;min-height:0}
+  #resultsMultiView .driverDispV1{max-width:310px}
+}

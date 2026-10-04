@@ -4442,12 +4442,13 @@ function multiDriverDispersionV1Html(rows){
 
   if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
 
-  const W=320,H=470,cx=160,teeY=400,xScale=3.1;
+  const W=320,H=240,cx=160,teeY=196,xScale=3.1;
   const guides=[100,150,180,200,220,240,260];
-  // Display-only vertical compression: shorten Tee→100m while preserving actual shot data.
+
+  // Display-only compression. Raw GPS / JGI derived shot coordinates are unchanged.
   const yToPx=yM=>{
     const y=Math.max(0,Number(yM)||0);
-    return .70*Math.min(y,100)+1.48*Math.max(0,y-100);
+    return .22*Math.min(y,100)+.72*Math.max(0,y-100);
   };
   const toScreen=(xM,yM)=>({x:cx+xM*xScale,y:teeY-yToPx(yM)});
   const guideY=d=>teeY-yToPx(d);
@@ -4461,31 +4462,12 @@ function multiDriverDispersionV1Html(rows){
       '<title>'+title+'</title></g>';
   }).join('');
 
-  const xs=plotted.map(x=>x._disp.xM);
-  const ys=plotted.map(x=>x._disp.yM);
-  const meanX=avg(xs),meanY=avg(ys);
-  const lateralSpread=Math.max(...xs)-Math.min(...xs);
-  const distanceSpread=Math.max(...ys)-Math.min(...ys);
-  const center=toScreen(meanX,meanY);
-  const ellipseRx=Math.max(34,Math.min(82,lateralSpread*xScale/2));
-  const screenYs=plotted.map(x=>toScreen(x._disp.xM,x._disp.yM).y);
-  const ellipseRy=Math.max(22,Math.min(58,(Math.max(...screenYs)-Math.min(...screenYs))/2));
-  const dispersion=plotted.length>1
-    ?'<g class="driverDispAverage">'+
-       '<ellipse cx="'+center.x.toFixed(1)+'" cy="'+center.y.toFixed(1)+'" rx="'+ellipseRx.toFixed(1)+'" ry="'+ellipseRy.toFixed(1)+'"></ellipse>'+
-       '<line x1="'+(center.x-ellipseRx).toFixed(1)+'" y1="'+(center.y+ellipseRy+13).toFixed(1)+'" x2="'+(center.x+ellipseRx).toFixed(1)+'" y2="'+(center.y+ellipseRy+13).toFixed(1)+'"></line>'+
-       '<text x="'+center.x.toFixed(1)+'" y="'+(center.y+ellipseRy+28).toFixed(1)+'" text-anchor="middle">좌우 분산폭 약 '+Math.round(lateralSpread)+'m</text>'+
-       '<line x1="'+(center.x+ellipseRx+12).toFixed(1)+'" y1="'+(center.y-ellipseRy).toFixed(1)+'" x2="'+(center.x+ellipseRx+12).toFixed(1)+'" y2="'+(center.y+ellipseRy).toFixed(1)+'"></line>'+
-       '<text class="verticalLabel" x="'+(center.x+ellipseRx+27).toFixed(1)+'" y="'+center.y.toFixed(1)+'">거리 '+Math.round(distanceSpread)+'m</text>'+
-     '</g>'
-    :'';
-
   const guideHtml=guides.map(d=>{
     const y=guideY(d),label=d===260?'260m+':d+'m';
     return '<g class="driverDispGuide">'+
-      '<path d="M 80 '+y.toFixed(1)+' Q 160 '+(y-17).toFixed(1)+' 240 '+y.toFixed(1)+'"></path>'+
-      '<rect x="139" y="'+(y-9).toFixed(1)+'" width="42" height="17" rx="5"></rect>'+
-      '<text x="160" y="'+(y+2.5).toFixed(1)+'" text-anchor="middle">'+label+'</text>'+
+      '<path d="M 92 '+y.toFixed(1)+' Q 160 '+(y-10).toFixed(1)+' 228 '+y.toFixed(1)+'"></path>'+
+      '<rect x="141" y="'+(y-7).toFixed(1)+'" width="38" height="14" rx="5"></rect>'+
+      '<text x="160" y="'+(y+2).toFixed(1)+'" text-anchor="middle">'+label+'</text>'+
     '</g>';
   }).join('');
 
@@ -4503,26 +4485,22 @@ function multiDriverDispersionV1Html(rows){
         '<linearGradient id="driverDispFairwayV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7a42"></stop><stop offset="50%" stop-color="#24683a"></stop><stop offset="100%" stop-color="#1a5632"></stop></linearGradient>'+
       '</defs>'+
       '<rect width="'+W+'" height="'+H+'" fill="url(#driverDispBgV3)"></rect>'+
-      '<path class="driverDispTreeBand left" d="M0 0 H74 Q57 85 68 165 Q42 265 66 470 H0 Z"></path>'+
-      '<path class="driverDispTreeBand right" d="M320 0 H246 Q263 85 252 165 Q278 265 254 470 H320 Z"></path>'+
-      '<path class="driverDispFairwayShape" d="M124 38 Q160 18 196 38 Q216 92 220 164 Q214 258 200 342 Q191 388 181 414 L139 414 Q129 388 120 342 Q106 258 100 164 Q104 92 124 38 Z" fill="url(#driverDispFairwayV3)"></path>'+
-      '<path class="driverDispHazard left" d="M0 122 Q34 110 54 132 Q42 190 63 245 Q47 305 0 330 Z"></path>'+
-      '<path class="driverDispHazard right" d="M320 118 Q286 110 266 132 Q278 190 257 245 Q273 305 320 328 Z"></path>'+
-      '<path class="driverDispBoundary left" d="M18 62 Q62 105 48 174 Q34 254 65 356"></path>'+
-      '<path class="driverDispBoundary right" d="M302 62 Q258 105 272 174 Q286 254 255 356"></path>'+
-      '<path class="driverDispBunker left" d="M62 158 Q83 143 103 154 Q111 171 92 184 Q68 190 56 176 Q53 167 62 158 Z"></path>'+
-      '<path class="driverDispBunker right" d="M258 158 Q237 143 217 154 Q209 171 228 184 Q252 190 264 176 Q267 167 258 158 Z"></path>'+
-      '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="38"></line>'+
+      '<path class="driverDispTreeBand left" d="M0 0 H74 Q56 52 67 104 Q43 165 64 240 H0 Z"></path>'+
+      '<path class="driverDispTreeBand right" d="M320 0 H246 Q264 52 253 104 Q277 165 256 240 H320 Z"></path>'+
+      '<path class="driverDispFairwayShape" d="M126 22 Q160 10 194 22 Q214 58 219 102 Q214 145 200 178 Q190 198 180 207 L140 207 Q130 198 120 178 Q106 145 101 102 Q106 58 126 22 Z" fill="url(#driverDispFairwayV3)"></path>'+
+      '<path class="driverDispHazard left" d="M0 76 Q34 67 54 82 Q42 119 62 154 Q47 184 0 196 Z"></path>'+
+      '<path class="driverDispHazard right" d="M320 74 Q286 67 266 82 Q278 119 258 154 Q273 184 320 194 Z"></path>'+
+      '<path class="driverDispBoundary left" d="M18 38 Q61 68 49 111 Q36 154 64 188"></path>'+
+      '<path class="driverDispBoundary right" d="M302 38 Q259 68 271 111 Q284 154 256 188"></path>'+
+      '<path class="driverDispBunker left" d="M62 94 Q83 84 103 92 Q111 104 92 113 Q68 117 56 108 Q53 101 62 94 Z"></path>'+
+      '<path class="driverDispBunker right" d="M258 94 Q237 84 217 92 Q209 104 228 113 Q252 117 264 108 Q267 101 258 94 Z"></path>'+
+      '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="20"></line>'+
       guideHtml+
-      '<g class="driverDispGreenTag"><rect x="127" y="18" width="66" height="26" rx="8"></rect><text x="160" y="35" text-anchor="middle">그린</text></g>'+
-      '<g class="driverDispBunkerLabel left"><rect x="42" y="128" width="70" height="22" rx="7"></rect><text x="77" y="143" text-anchor="middle">좌측 벙커</text></g>'+
-      '<g class="driverDispBunkerLabel right"><rect x="208" y="128" width="70" height="22" rx="7"></rect><text x="243" y="143" text-anchor="middle">우측 벙커</text></g>'+
-      '<g class="driverDispHazardLabel left"><rect x="8" y="224" width="72" height="33" rx="7"></rect><text x="44" y="238" text-anchor="middle">해저드</text><text x="44" y="251" text-anchor="middle">(이후 OB)</text></g>'+
-      '<g class="driverDispHazardLabel right"><rect x="240" y="224" width="72" height="33" rx="7"></rect><text x="276" y="238" text-anchor="middle">해저드</text><text x="276" y="251" text-anchor="middle">(이후 OB)</text></g>'+
-      dispersion+
+      '<g class="driverDispGreenTag"><rect x="131" y="5" width="58" height="20" rx="7"></rect><text x="160" y="18" text-anchor="middle">그린</text></g>'+
+      '<g class="driverDispHazardLabel left"><rect x="8" y="130" width="68" height="30" rx="7"></rect><text x="42" y="143" text-anchor="middle">해저드</text><text x="42" y="155" text-anchor="middle">(이후 OB)</text></g>'+
+      '<g class="driverDispHazardLabel right"><rect x="244" y="130" width="68" height="30" rx="7"></rect><text x="278" y="143" text-anchor="middle">해저드</text><text x="278" y="155" text-anchor="middle">(이후 OB)</text></g>'+
       points+
-      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="125" y="414" width="70" height="26" rx="8"></rect><text x="160" y="431" text-anchor="middle">티잉 구역</text></g>'+
-      '<text class="driverDispSchematicNote" x="160" y="456" text-anchor="middle">SCHEMATIC · Fairway center = x 0m</text>'+
+      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="5"></circle><rect x="129" y="201" width="62" height="22" rx="7"></rect><text x="160" y="216" text-anchor="middle">티잉 구역</text></g>'+
     '</svg>'+
     '</div>'+
     '<div class="driverDispSummaryTitle">드라이버 분포 요약</div>'+
