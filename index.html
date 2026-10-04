@@ -1235,8 +1235,9 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div class="card multiSgOverview">
-          <div class="title">획득 타수 · Avg SG</div>
-          <div class="sub">Player 화면은 티샷 · 세컨샷 · 어프로치 · 퍼터 네 영역으로 봅니다.</div>
+          <div class="title">획득 타수 · 라운드 평균 SG</div>
+          <div class="sub">SG OTT · SG APP · SG ARG · SG PUTT · 선택한 라운드의 평균</div>
+          <div id="multiSgBenchmark" class="sub"></div>
           <div id="multiPlayerSgCards" class="multiPlayerSgCards"></div>
           <div id="multiCoreRateCards" class="multiCoreRateCards"></div>
           <div id="multiSgTrend" class="hidden"></div>
@@ -3869,9 +3870,9 @@ function multiRows(rounds){
 }
 function multiPct(n,d){return d?Math.round(n/d*100)+'%':'—'}
 function multiNum(v,digits=1){return Number.isFinite(Number(v))?Number(v).toFixed(digits):'—'}
-function multiSigned(v,digits=2){if(!Number.isFinite(Number(v)))return '—';const n=Number(v);return (n>0?'+':'')+n.toFixed(digits)}
+function multiSigned(v,digits=2){if(v==null||v===''||!Number.isFinite(Number(v)))return '—';const n=Number(v);return (n>0?'+':'')+n.toFixed(digits)}
 function multiSgHtml(v,digits=2){
-  if(!Number.isFinite(Number(v)))return '—';
+  if(v==null||v===''||!Number.isFinite(Number(v)))return '—';
   const n=Number(v),cls=n>0.005?'positive':n<-0.005?'negative':'neutral';
   return '<span class="analysisSgValue '+cls+'">'+(n>0?'+':'')+n.toFixed(digits)+'</span>';
 }
@@ -3891,20 +3892,59 @@ function multiTable(headers,rows){
 function multiKpis(items){
   return '<div class="analysisKpis">'+items.map(x=>'<div class="analysisKpi"><b>'+safeText(String(x[1]))+'</b><span>'+safeText(x[0])+'</span></div>').join('')+'</div>';
 }
+// Cumulative display only: preserve the benchmark engine and raw round data.
+const MULTI_SG_CATEGORIES=['ott','app','arg','putt'];
+function multiSgBenchmarkInfo(r){
+  const data=window.JGI_SG_BENCHMARK_DATA,mode=r?.sgBenchmarkMode;
+  const version=r?.sgBenchmarkVersion||r?.sgDataVersion;
+  const source=r?.sgBenchmarkSource||r?.benchmarkSource;
+  const quality=r?.sgQuality||r?.sg_quality;
+  const test=isSyntheticRound(r);
+  const available=!!mode&&!!version&&version===data?.version&&
+    (mode==='PLAYER'?Number.isFinite(r?.playerHandicap):!!data?.levels?.[mode])&&
+    (test||(!!source&&['HIGH','MEDIUM','LOW'].includes(quality)));
+  const info=available?sgBenchmarkInfo(r):null;
+  const label=available
+    ?info.label+' · '+(test?'TEST MODEL':info.type==='MODELED'?'MODELED · ':'')+(test?'':source+' · '+quality)+' · '+version
+    :'unavailable · Benchmark / 품질 확인 필요 · JGI Benchmark PENDING';
+  return {available,info,label,key:available?[mode,info.handicap,version,test?'TEST MODEL':source,quality||'TEST'].join('|'):null};
+}
+function multiSgBenchmarkLabel(rounds){
+  const labels=[...new Set(rounds.map(r=>multiSgBenchmarkInfo(r).label))];
+  return 'Benchmark · '+(labels.length===1?labels[0]:labels.length?'혼합 기준 · 평균/비교 unavailable · '+labels.join(' / '):'unavailable · JGI Benchmark PENDING');
+}
+function multiSgSameBenchmark(rounds){
+  const infos=rounds.map(multiSgBenchmarkInfo);
+  return infos.length>0&&infos.every(x=>x.available&&x.key===infos[0].key);
+}
 function multiSgForRound(r){
-  const info=sgBenchmarkInfo(r),totals={ott:0,app:0,arg:0,putt:0,penalty:0},counts={ott:0,app:0,arg:0,putt:0,missing:0};
+  const benchmark=multiSgBenchmarkInfo(r),info=benchmark.info;
+  const totals={ott:0,app:0,arg:0,putt:0,penalty:0};
+  const counts={ott:0,app:0,arg:0,putt:0,missing:0};
+  const missing={ott:0,app:0,arg:0,putt:0};
   (r.holes||[]).forEach(h=>{
     (h.shots||[]).forEach((s,i)=>{
-      const x=computeShotSG(h,s,i,info);if(!x){counts.missing++;return}
-      const cat=sgShotCategory(h,s,i);totals[cat]+=x.value;counts[cat]++;
+      const cat=sgShotCategory(h,s,i);
+      if(!MULTI_SG_CATEGORIES.includes(cat)){counts.missing++;return;}
+      const x=benchmark.available?computeShotSG(h,s,i,info):null;
+      if(!x||!Number.isFinite(x.value)){missing[cat]++;counts.missing++;return;}
+      totals[cat]+=x.value;counts[cat]++;
     });
     (h.puttsDetail||[]).forEach((p,i)=>{
-      const x=computePuttSG(h,p,i,info);if(!x){counts.missing++;return}
+      const distance=p.distanceM,next=h.puttsDetail?.[i+1];
+      const distancesValid=distance!=null&&distance!==''&&Number.isFinite(Number(distance))&&
+        (p.result==='HOLED'||(next?.distanceM!=null&&next.distanceM!==''&&Number.isFinite(Number(next.distanceM))));
+      const x=benchmark.available&&distancesValid?computePuttSG(h,p,i,info):null;
+      if(!x||!Number.isFinite(x.value)){missing.putt++;counts.missing++;return;}
       totals.putt+=x.value;counts.putt++;
     });
     totals.penalty-=Number(h.penalties||0);
   });
-  return {info,totals,counts,total:totals.ott+totals.app+totals.arg+totals.putt+totals.penalty};
+  MULTI_SG_CATEGORIES.forEach(k=>{if(!benchmark.available||missing[k]||!counts[k])totals[k]=null;});
+  const complete=MULTI_SG_CATEGORIES.every(k=>Number.isFinite(totals[k]));
+  if(!benchmark.available)totals.penalty=null;
+  return {info:{...info,label:benchmark.label},benchmark,totals,counts,missing,
+    total:complete?MULTI_SG_CATEGORIES.reduce((sum,k)=>sum+totals[k],totals.penalty):null};
 }
 function multiShotSg(row){
   const info=sgBenchmarkInfo(row.r),x=computeShotSG(row.h,row.s,row.si,info);
@@ -3950,13 +3990,12 @@ function renderFullMultiAnalysis(rounds){
       ['후반 평균',rounds.length?multiSigned((backScore-backPar)/rounds.length,1):'—']
     ]);
 
-  const sgRows=rounds.map(r=>({r,...multiSgForRound(r)}));
-  const sgTotals=sgRows.reduce((o,x)=>{Object.keys(o).forEach(k=>o[k]+=Number(x.totals[k]||0));return o},{ott:0,app:0,arg:0,putt:0,penalty:0});
-  const sgTotal=Object.values(sgTotals).reduce((a,b)=>a+b,0);
+  const sgRows=rounds.map(r=>({r,...multiSgForRound(r)})),sgCategories=multiPlayerFacingSg(rounds);
+  const totalAvg=multiSgSameBenchmark(rounds)&&sgRows.every(x=>Number.isFinite(x.total))?avg(sgRows.map(x=>x.total)):null;
   $('analysisSg').innerHTML=
-    '<div class="analysisNote">각 라운드 시작 시 고정된 SG 비교 기준으로 계산합니다. 서로 다른 기준을 사용한 라운드가 섞여 있으면 그대로 합산하지 않고 해석에 주의해야 합니다.</div>'+
-    multiKpis([['라운드당 획득타수',multiSigned(sgTotal/Math.max(1,rounds.length))],['티샷/라운드',multiSigned(sgTotals.ott/Math.max(1,rounds.length))],['어프로치/라운드',multiSigned(sgTotals.app/Math.max(1,rounds.length))],['그린 주변/라운드',multiSigned(sgTotals.arg/Math.max(1,rounds.length))],['퍼팅/라운드',multiSigned(sgTotals.putt/Math.max(1,rounds.length))],['벌타 영향/라운드',multiSigned(sgTotals.penalty/Math.max(1,rounds.length))]])+
-    multiTable(['날짜','스코어','비교 기준','전체 획득타수','티샷','어프로치','그린 주변','퍼팅'],sgRows.map(x=>[
+    '<div class="analysisNote">라운드 평균 SG · 동일 Benchmark와 계산 가능한 전체 라운드 기준. 누락 또는 혼합 기준은 —로 표시합니다.</div>'+
+    multiKpis([['SG Total / 라운드',multiSigned(totalAvg)],...MULTI_SG_CATEGORIES.map(k=>['SG '+k.toUpperCase()+' / 라운드',multiSigned(sgCategories[k].avgRound)])])+
+    multiTable(['날짜','스코어','비교 기준','SG Total / 라운드','SG OTT','SG APP','SG ARG','SG PUTT'],sgRows.map(x=>[
       resultDateLabel(x.r),resultScore(x.r),safeText(x.info.label),multiSigned(x.total),multiSigned(x.totals.ott),multiSigned(x.totals.app),multiSigned(x.totals.arg),multiSigned(x.totals.putt)
     ]));
 
@@ -4172,28 +4211,16 @@ function multiDisplayCategory(h,s,i){
   return 'SECOND';
 }
 function multiPlayerFacingSg(rounds){
-  const out={
-    TEE:{label:'티샷',total:0,n:0,byRound:[]},
-    SECOND:{label:'세컨샷',total:0,n:0,byRound:[]},
-    APPROACH:{label:'어프로치',total:0,n:0,byRound:[]},
-    PUTTER:{label:'퍼터',total:0,n:0,byRound:[]}
-  };
   const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
-  ordered.forEach(r=>{
-    const one={TEE:0,SECOND:0,APPROACH:0,PUTTER:0};
-    (r.holes||[]).forEach(h=>{
-      (h.shots||[]).forEach((s,i)=>{
-        const x=computeShotSG(h,s,i,sgBenchmarkInfo(r));if(!x)return;
-        const cat=multiDisplayCategory(h,s,i);out[cat].total+=x.value;out[cat].n++;one[cat]+=x.value;
-      });
-      (h.puttsDetail||[]).forEach((p,i)=>{
-        const x=computePuttSG(h,p,i,sgBenchmarkInfo(r));if(!x)return;
-        out.PUTTER.total+=x.value;out.PUTTER.n++;one.PUTTER+=x.value;
-      });
-    });
-    Object.keys(one).forEach(k=>out[k].byRound.push(one[k]));
+  const rows=ordered.map(multiSgForRound),same=multiSgSameBenchmark(rounds),out={};
+  MULTI_SG_CATEGORIES.forEach(k=>{
+    const byRound=rows.map(x=>x.totals[k]),complete=byRound.length>0&&byRound.every(Number.isFinite);
+    const n=rows.reduce((sum,x)=>sum+x.counts[k],0);
+    const total=same&&complete?byRound.reduce((a,b)=>a+b,0):null;
+    out[k]={label:'SG '+k.toUpperCase(),total,n,byRound,
+      avgRound:Number.isFinite(total)?total/rounds.length:null,
+      avgShot:Number.isFinite(total)&&n?total/n:null};
   });
-  Object.values(out).forEach(x=>{x.avgRound=rounds.length?x.total/rounds.length:null;x.avgShot=x.n?x.total/x.n:null});
   return out;
 }
 
@@ -4284,7 +4311,8 @@ function multiCategoryAvgFor(rounds,key){
 function multiRecentChangeHtml(rounds){
   const {prev,recent}=multiRecentSplit(rounds);
   if(!prev.length||!recent.length)return '<div class="analysisEmpty">비교할 이전 라운드가 더 필요합니다.</div>';
-  const items=[['평균 스코어',multiAvgScoreFor(prev),multiAvgScoreFor(recent),'SCORE'],['티샷 SG',multiCategoryAvgFor(prev,'TEE'),multiCategoryAvgFor(recent,'TEE'),'SG'],['세컨샷 SG',multiCategoryAvgFor(prev,'SECOND'),multiCategoryAvgFor(recent,'SECOND'),'SG'],['어프로치 SG',multiCategoryAvgFor(prev,'APPROACH'),multiCategoryAvgFor(recent,'APPROACH'),'SG'],['퍼터 SG',multiCategoryAvgFor(prev,'PUTTER'),multiCategoryAvgFor(recent,'PUTTER'),'SG']];
+  const comparable=multiSgSameBenchmark([...prev,...recent]);
+  const items=[['평균 스코어',multiAvgScoreFor(prev),multiAvgScoreFor(recent),'SCORE'],...MULTI_SG_CATEGORIES.map(k=>['SG '+k.toUpperCase()+' / 라운드',comparable?multiCategoryAvgFor(prev,k):null,comparable?multiCategoryAvgFor(recent,k):null,'SG'])];
   const max=Math.max(1,...items.flatMap(x=>[Math.abs(Number(x[1])||0),Math.abs(Number(x[2])||0)]));
   return items.map(([label,a,b,type])=>{const delta=Number.isFinite(a)&&Number.isFinite(b)?b-a:null,improved=delta===null?null:(type==='SCORE'?delta<0:delta>0),cls=delta===null||Math.abs(delta)<.01?'neutral':improved?'up':'down',value=type==='SCORE'?(Number.isFinite(a)?a.toFixed(1):'—')+' → '+(Number.isFinite(b)?b.toFixed(1):'—'):multiSigned(a)+' → '+multiSigned(b),diff=delta===null?'—':(type==='SCORE'?(delta>0?'+':'')+delta.toFixed(1):multiSigned(delta)),ha=Math.max(5,Math.abs(Number(a)||0)/max*28),hb=Math.max(5,Math.abs(Number(b)||0)/max*28);return '<div class="multiRecentItem"><span>'+label+'</span><b>'+value+'</b><div class="multiRecentBars"><i class="prev" style="height:'+ha+'px"></i><i class="now" style="height:'+hb+'px"></i></div><small class="'+cls+'">'+diff+' '+(delta===null?'':Math.abs(delta)<.01?'유지':improved?'개선':'악화')+'</small></div>'}).join('');
 }
@@ -5049,8 +5077,8 @@ function multiRecentSummaryText(rounds){
   const {prev,recent}=multiRecentSplit(rounds);
   if(!prev.length||!recent.length)return '<b>최근 변화 요약</b>비교할 이전 라운드가 더 필요합니다.';
   const scoreA=multiAvgScoreFor(prev),scoreB=multiAvgScoreFor(recent);
-  const defs=[['티샷','TEE'],['세컨샷','SECOND'],['어프로치','APPROACH'],['퍼터','PUTTER']].map(([label,key])=>({
-    label,key,a:multiCategoryAvgFor(prev,key),b:multiCategoryAvgFor(recent,key)
+  const defs=MULTI_SG_CATEGORIES.map(k=>['SG '+k.toUpperCase(),k]).map(([label,key])=>({
+    label,key,a:multiSgSameBenchmark([...prev,...recent])?multiCategoryAvgFor(prev,key):null,b:multiSgSameBenchmark([...prev,...recent])?multiCategoryAvgFor(recent,key):null
   })).map(x=>({...x,d:(Number.isFinite(x.a)&&Number.isFinite(x.b))?x.b-x.a:null}));
   const improve=[...defs].filter(x=>Number.isFinite(x.d)).sort((a,b)=>b.d-a.d)[0];
   const decline=[...defs].filter(x=>Number.isFinite(x.d)).sort((a,b)=>a.d-b.d)[0];
@@ -5058,30 +5086,31 @@ function multiRecentSummaryText(rounds){
     ?'평균 스코어는 '+scoreA.toFixed(1)+' → '+scoreB.toFixed(1)+'로 '+Math.abs(scoreB-scoreA).toFixed(1)+'타 '+(scoreB<scoreA?'낮아졌습니다.':'높아졌습니다.')
     :'스코어 비교 데이터가 부족합니다.';
   const perfText=(improve&&decline)
-    ? improve.label+'는 '+multiSigned(improve.d)+' 개선됐고, '+decline.label+'는 '+multiSigned(decline.d)+' 변했습니다.'
-    :'';
-  return '<b>최근 3라운드 요약</b>'+safeText(perfText+' '+scoreText);
+    ? '라운드 평균 SG 변화: '+improve.label+' '+multiSigned(improve.d)+' · '+decline.label+' '+multiSigned(decline.d)+'.'
+    :'SG 비교 unavailable.';
+  return '<b>최근 '+recent.length+'R vs 이전 '+prev.length+'R 요약</b>'+safeText(perfText+' '+scoreText);
 }
 function renderMultiDashboard(rounds){
   const sg=multiPlayerFacingSg(rounds);
-  const split=multiRecentSplit(rounds),prevSg=split.prev.length?multiPlayerFacingSg(split.prev):null,recentSg=split.recent.length?multiPlayerFacingSg(split.recent):null,icons={TEE:'⛳',SECOND:'◔',APPROACH:'↗',PUTTER:'⌟'};
-  $('multiPlayerSgCards').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{const x=sg[k],delta=prevSg&&recentSg&&Number.isFinite(prevSg[k].avgRound)&&Number.isFinite(recentSg[k].avgRound)?recentSg[k].avgRound-prevSg[k].avgRound:null;return '<div class="multiPlayerSgCard"><span>'+icons[k]+' '+x.label+'</span><b>'+multiSgHtml(x.avgRound)+'</b><small>'+(Number.isFinite(delta)?multiSigned(delta)+' · 이전 구간 대비':'라운드 평균 · '+x.n+'개')+'</small></div>'}).join('');
+  $('multiSgBenchmark').textContent=multiSgBenchmarkLabel(rounds);
+  const split=multiRecentSplit(rounds),prevSg=split.prev.length?multiPlayerFacingSg(split.prev):null,recentSg=split.recent.length?multiPlayerFacingSg(split.recent):null,icons={ott:'⛳',app:'↗',arg:'◔',putt:'⌟'};
+  $('multiPlayerSgCards').innerHTML=MULTI_SG_CATEGORIES.map(k=>{const x=sg[k],delta=multiSgSameBenchmark([...split.prev,...split.recent])&&prevSg&&recentSg&&Number.isFinite(prevSg[k].avgRound)&&Number.isFinite(recentSg[k].avgRound)?recentSg[k].avgRound-prevSg[k].avgRound:null;return '<div class="multiPlayerSgCard"><span>'+icons[k]+' '+x.label+'</span><b>'+multiSgHtml(x.avgRound)+'</b><small>'+('라운드 평균 SG'+(Number.isFinite(delta)?' · '+multiSigned(delta)+' 이전 구간 대비':''))+'</small></div>'}).join('');
   $('multiCoreRateCards').innerHTML=multiCoreRateCardsHtml(rounds,split.prev,split.recent);
-  $('multiSgTrend').innerHTML=['TEE','SECOND','APPROACH','PUTTER'].map(k=>{
+  $('multiSgTrend').innerHTML=MULTI_SG_CATEGORIES.map(k=>{
     const x=sg[k],vals=x.byRound,max=Math.max(1,...vals.map(v=>Math.abs(v)));
     return '<div class="multiSgTrendRow"><span>'+x.label+'</span><div class="multiSgTrendTrack">'+vals.map(v=>{
       const alpha=.16+Math.min(.5,Math.abs(v)/max*.45),bg=v>0?'rgba(39,233,120,'+alpha+')':v<0?'rgba(255,103,116,'+alpha+')':'rgba(255,255,255,.05)';
-      return '<div class="multiSgTrendPoint" style="background:'+bg+'">'+formatSg(v)+'</div>';
+      return '<div class="multiSgTrendPoint" style="background:'+bg+'">'+(Number.isFinite(v)?formatSg(v):'—')+'</div>';
     }).join('')+'</div></div>';
   }).join('');
 
   const tee=multiTeeAllRows(rounds),driver=multiDriverRows(rounds);
   const right=driver.filter(x=>String(x.s.direction||'').toUpperCase()==='RIGHT').length;
-  const strengths=['TEE','SECOND','APPROACH','PUTTER'].map(k=>({k,...sg[k]})).sort((a,b)=>b.avgRound-a.avgRound);
+  const strengths=MULTI_SG_CATEGORIES.map(k=>({k,...sg[k]})).filter(x=>Number.isFinite(x.avgRound)).sort((a,b)=>b.avgRound-a.avgRound);
   const mentalData=buildStateResultsForRounds(rounds),mental=mentalInsightCandidates(mentalData)[0];
   $('multiCoreInsights').innerHTML=
     '<div class="multiCoreInsight loss"><div class="ey">1 · 반복 손실 패턴</div><strong>드라이버 · 우측 미스 '+right+'회</strong><p>드라이버 '+driver.length+'개 중 '+right+'회 ('+(driver.length?Math.round(right/driver.length*100):0)+'%). 코스 상황별 결과는 아래 티샷 상세에서 확인합니다.</p></div>'+
-    '<div class="multiCoreInsight gain"><div class="ey">2 · 가장 큰 강점</div><strong>'+safeText(strengths[0]?.label||'—')+' '+multiSigned(strengths[0]?.avgRound)+'</strong><p>선택한 '+rounds.length+'라운드의 Player 기준 영역 중 라운드 평균 SG가 가장 높았습니다.</p></div>'+
+    '<div class="multiCoreInsight gain"><div class="ey">2 · 가장 큰 강점</div><strong>'+safeText(strengths[0]?.label||'—')+' '+multiSigned(strengths[0]?.avgRound)+'</strong><p>'+(strengths.length?'선택한 '+rounds.length+'라운드의 공식 SG Category 중 라운드 평균 SG가 가장 높았습니다.':'SG unavailable · Benchmark 또는 계산 데이터를 확인해야 합니다.')+'</p></div>'+
     '<div class="multiCoreInsight mental"><div class="ey">3 · 멘탈 패턴</div><strong>'+safeText(mental?.condition||'초기 관찰')+'</strong><p>'+safeText(mental?(mental.label+' '+mental.aM+'/'+mental.aN+' vs '+mental.bM+'/'+mental.bN+' · 초기 관찰'):'비교 가능한 상태 그룹 샘플이 더 필요합니다.')+'</p></div>';
 
   $('multiRecentCompare').innerHTML=multiRecentChangeHtml(rounds);
