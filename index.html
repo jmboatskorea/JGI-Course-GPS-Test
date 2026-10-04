@@ -4400,11 +4400,11 @@ function multiTeeOutcomeLegendHtml(){
     '<span><i class="bunker"></i>Bunker/Hazard</span>'+
     '</div>';
 }
-function multiDriverDispersionV1Html(rows){
-  const driverRows=(rows||[]).filter(x=>multiTeeClubType(x.s.club)==='DRIVER');
-  if(!driverRows.length)return '<div class="analysisEmpty">Driver Tee Shot 데이터가 없습니다.</div>';
+function multiTeeDispersionV1Html(rows){
+  const teeRows=(rows||[]);
+  if(!teeRows.length)return '<div class="analysisEmpty">선택한 클럽의 Tee Shot 데이터가 없습니다.</div>';
 
-  const plotted=driverRows.map((row,i)=>{
+  const plotted=teeRows.map((row,i)=>{
     const holeNo=Number(row?.h?.hole??row?.s?.hole);
     const h=Number.isFinite(holeNo)?courseHoleGeometryByNumber(holeNo):null;
     const end=row?.s?.end;
@@ -4440,7 +4440,7 @@ function multiDriverDispersionV1Html(rows){
     return {...row,_disp:{xM:xFairwayM,yM,rawXM,side,fairway,bunker,cls,index:i}};
   }).filter(Boolean);
 
-  if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
+  if(!plotted.length)return '<div class="analysisEmpty">선택한 클럽에 실제 GPS 좌표가 있는 Tee Shot 데이터가 없습니다.</div>';
 
   const W=320,H=300,cx=160,teeY=250,xScale=3.1;
   const guides=[100,150,180,200,220,240,260];
@@ -4455,7 +4455,7 @@ function multiDriverDispersionV1Html(rows){
 
   const points=plotted.map((row,i)=>{
     const p=row._disp,screen=toScreen(p.xM,p.yM);
-    const shotId=row.s.id||('driver-'+i);
+    const shotId=row.s.id||('tee-'+i);
     const title='Shot '+safeText(shotId)+' · Fairway center '+(p.xM>=0?'+':'')+p.xM.toFixed(1)+'m · '+p.yM.toFixed(1)+'m';
     return '<g class="driverDispPoint '+p.cls+'" data-shot-id="'+safeText(shotId)+'">'+
       '<circle cx="'+screen.x.toFixed(1)+'" cy="'+screen.y.toFixed(1)+'" r="4.8"></circle>'+
@@ -4473,7 +4473,7 @@ function multiDriverDispersionV1Html(rows){
 
   return '<div class="driverDispV1 mapOnly">'+
     '<div class="driverDispCanvasWrap">'+
-    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver dispersion fairway-centered schematic">'+
+    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Tee shot dispersion fairway-centered schematic">'+
       '<defs>'+
         '<linearGradient id="driverDispBgV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#06150f"></stop><stop offset="100%" stop-color="#020706"></stop></linearGradient>'+
         '<linearGradient id="driverDispFairwayV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7a42"></stop><stop offset="50%" stop-color="#24683a"></stop><stop offset="100%" stop-color="#1a5632"></stop></linearGradient>'+
@@ -4564,12 +4564,14 @@ function multiTeeIntelPatterns(allRows,rows){
   out.push('Fairway 적중 '+fw+'/'+rows.length+'회 ('+Math.round(fw/rows.length*100)+'%)가 기록되었습니다.');
   if(dist.length)out.push('평균 티샷 거리 '+Math.round(avg(dist))+'m · 실제 Range '+Math.round(Math.min(...dist))+'–'+Math.round(Math.max(...dist))+'m입니다.');
   if(left!==right)out.push((right>left?'우측':'좌측')+' 미스가 '+Math.max(left,right)+'회 ('+Math.round(Math.max(left,right)/rows.length*100)+'%)로 반대 방향보다 '+Math.abs(right-left)+'회 많았습니다.');
-  const best=groups.filter(o=>o.n>=3).sort((a,b)=>(b.fw/b.n)-(a.fw/a.n))[0];
-  if(best)out.push(best.club+'의 Fairway 적중이 '+best.fw+'/'+best.n+'회 ('+Math.round(best.fw/best.n*100)+'%)로 관찰되었습니다.');
-  const dr=groups.find(o=>o.type==='DRIVER'&&o.n>=3),wood=groups.filter(o=>o.type==='WOOD'&&o.n>=3).sort((a,b)=>b.n-a.n)[0];
-  if(dr&&wood&&dr.dist.length&&wood.dist.length){
-    const dd=avg(dr.dist)-avg(wood.dist),dfw=wood.fw/wood.n*100-dr.fw/dr.n*100;
-    out.push(wood.club+'는 Driver 대비 평균 '+Math.abs(dd).toFixed(0)+'m '+(dd>=0?'짧고':'길며')+', Fairway 적중은 '+(dfw>=0?'+':'')+dfw.toFixed(0)+'%p 차이가 관찰되었습니다.');
+  if(multiTeeClubFilter==='ALL'){
+    const best=groups.filter(o=>o.n>=3).sort((a,b)=>(b.fw/b.n)-(a.fw/a.n))[0];
+    if(best)out.push(best.club+'의 Fairway 적중이 '+best.fw+'/'+best.n+'회 ('+Math.round(best.fw/best.n*100)+'%)로 관찰되었습니다.');
+    const dr=groups.find(o=>o.type==='DRIVER'&&o.n>=3),wood=groups.filter(o=>o.type==='WOOD'&&o.n>=3).sort((a,b)=>b.n-a.n)[0];
+    if(dr&&wood&&dr.dist.length&&wood.dist.length){
+      const dd=avg(dr.dist)-avg(wood.dist),dfw=wood.fw/wood.n*100-dr.fw/dr.n*100;
+      out.push(wood.club+'는 Driver 대비 평균 '+Math.abs(dd).toFixed(0)+'m '+(dd>=0?'짧고':'길며')+', Fairway 적중은 '+(dfw>=0?'+':'')+dfw.toFixed(0)+'%p 차이가 관찰되었습니다.');
+    }
   }
   return out.slice(0,5);
 }
@@ -4584,7 +4586,7 @@ function multiTeeIntelligenceHtml(tee){
     multiTeeFilterButtonsHtml(tee)+
     '<div class="multiTeeIntelGrid">'+
       '<div class="multiTeeIntelCard usage"><h4>클럽 사용 비율 (Par 4·5 티샷)</h4>'+multiTeeTypeUsageHtml(tee)+'</div>'+
-      '<div class="multiTeeIntelCard map"><h4>Driver Dispersion · Fairway Centered</h4>'+multiDriverDispersionV1Html(tee)+'</div>'+
+      '<div class="multiTeeIntelCard map"><h4>Tee Shot Dispersion · '+safeText(label)+' · Fairway Centered</h4>'+multiTeeDispersionV1Html(selected)+'</div>'+
       '<div class="multiTeeIntelRight"><div class="multiTeeIntelCard distance"><h4>티샷 거리 분포 · '+safeText(label)+'</h4>'+multiTeeDistanceHtml(selected)+'</div>'+
       '<div class="multiTeeIntelCard summary"><h4>선택 클럽 요약 · '+safeText(label)+'</h4>'+multiTeeSelectedSummaryHtml(tee,selected)+'</div></div>'+
     '</div>'+
