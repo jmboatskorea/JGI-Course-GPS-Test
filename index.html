@@ -4442,10 +4442,15 @@ function multiDriverDispersionV1Html(rows){
 
   if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
 
-  const W=320,H=600,cx=160,teeY=528,yScale=1.78,xScale=3.1;
+  const W=320,H=470,cx=160,teeY=400,xScale=3.1;
   const guides=[100,150,180,200,220,240,260];
-  const toScreen=(xM,yM)=>({x:cx+xM*xScale,y:teeY-yM*yScale});
-  const guideY=d=>teeY-d*yScale;
+  // Display-only vertical compression: shorten Tee→100m while preserving actual shot data.
+  const yToPx=yM=>{
+    const y=Math.max(0,Number(yM)||0);
+    return .70*Math.min(y,100)+1.48*Math.max(0,y-100);
+  };
+  const toScreen=(xM,yM)=>({x:cx+xM*xScale,y:teeY-yToPx(yM)});
+  const guideY=d=>teeY-yToPx(d);
 
   const points=plotted.map((row,i)=>{
     const p=row._disp,screen=toScreen(p.xM,p.yM);
@@ -4463,7 +4468,8 @@ function multiDriverDispersionV1Html(rows){
   const distanceSpread=Math.max(...ys)-Math.min(...ys);
   const center=toScreen(meanX,meanY);
   const ellipseRx=Math.max(34,Math.min(82,lateralSpread*xScale/2));
-  const ellipseRy=Math.max(24,Math.min(72,distanceSpread*yScale/2));
+  const screenYs=plotted.map(x=>toScreen(x._disp.xM,x._disp.yM).y);
+  const ellipseRy=Math.max(22,Math.min(58,(Math.max(...screenYs)-Math.min(...screenYs))/2));
   const dispersion=plotted.length>1
     ?'<g class="driverDispAverage">'+
        '<ellipse cx="'+center.x.toFixed(1)+'" cy="'+center.y.toFixed(1)+'" rx="'+ellipseRx.toFixed(1)+'" ry="'+ellipseRy.toFixed(1)+'"></ellipse>'+
@@ -4477,9 +4483,9 @@ function multiDriverDispersionV1Html(rows){
   const guideHtml=guides.map(d=>{
     const y=guideY(d),label=d===260?'260m+':d+'m';
     return '<g class="driverDispGuide">'+
-      '<path d="M 50 '+y.toFixed(1)+' Q 160 '+(y-26).toFixed(1)+' 270 '+y.toFixed(1)+'"></path>'+
-      '<rect x="137" y="'+(y-12).toFixed(1)+'" width="46" height="22" rx="6"></rect>'+
-      '<text x="160" y="'+(y+3).toFixed(1)+'" text-anchor="middle">'+label+'</text>'+
+      '<path d="M 80 '+y.toFixed(1)+' Q 160 '+(y-17).toFixed(1)+' 240 '+y.toFixed(1)+'"></path>'+
+      '<rect x="139" y="'+(y-9).toFixed(1)+'" width="42" height="17" rx="5"></rect>'+
+      '<text x="160" y="'+(y+2.5).toFixed(1)+'" text-anchor="middle">'+label+'</text>'+
     '</g>';
   }).join('');
 
@@ -4497,26 +4503,26 @@ function multiDriverDispersionV1Html(rows){
         '<linearGradient id="driverDispFairwayV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7a42"></stop><stop offset="50%" stop-color="#24683a"></stop><stop offset="100%" stop-color="#1a5632"></stop></linearGradient>'+
       '</defs>'+
       '<rect width="'+W+'" height="'+H+'" fill="url(#driverDispBgV3)"></rect>'+
-      '<path class="driverDispTreeBand left" d="M0 0 H74 Q57 110 68 210 Q42 330 66 600 H0 Z"></path>'+
-      '<path class="driverDispTreeBand right" d="M320 0 H246 Q263 110 252 210 Q278 330 254 600 H320 Z"></path>'+
-      '<path class="driverDispFairwayShape" d="M124 42 Q160 18 196 42 Q217 122 220 214 Q212 340 198 455 Q190 520 181 548 L139 548 Q130 520 122 455 Q108 340 100 214 Q103 122 124 42 Z" fill="url(#driverDispFairwayV3)"></path>'+
-      '<path class="driverDispHazard left" d="M0 155 Q34 137 54 162 Q42 235 63 310 Q47 385 0 420 Z"></path>'+
-      '<path class="driverDispHazard right" d="M320 150 Q286 137 266 162 Q278 235 257 310 Q273 385 320 416 Z"></path>'+
-      '<path class="driverDispBoundary left" d="M18 78 Q62 135 48 218 Q34 318 65 458"></path>'+
-      '<path class="driverDispBoundary right" d="M302 78 Q258 135 272 218 Q286 318 255 458"></path>'+
-      '<path class="driverDispBunker left" d="M62 196 Q83 178 103 191 Q111 212 92 228 Q68 236 56 218 Q53 207 62 196 Z"></path>'+
-      '<path class="driverDispBunker right" d="M258 196 Q237 178 217 191 Q209 212 228 228 Q252 236 264 218 Q267 207 258 196 Z"></path>'+
+      '<path class="driverDispTreeBand left" d="M0 0 H74 Q57 85 68 165 Q42 265 66 470 H0 Z"></path>'+
+      '<path class="driverDispTreeBand right" d="M320 0 H246 Q263 85 252 165 Q278 265 254 470 H320 Z"></path>'+
+      '<path class="driverDispFairwayShape" d="M124 38 Q160 18 196 38 Q216 92 220 164 Q214 258 200 342 Q191 388 181 414 L139 414 Q129 388 120 342 Q106 258 100 164 Q104 92 124 38 Z" fill="url(#driverDispFairwayV3)"></path>'+
+      '<path class="driverDispHazard left" d="M0 122 Q34 110 54 132 Q42 190 63 245 Q47 305 0 330 Z"></path>'+
+      '<path class="driverDispHazard right" d="M320 118 Q286 110 266 132 Q278 190 257 245 Q273 305 320 328 Z"></path>'+
+      '<path class="driverDispBoundary left" d="M18 62 Q62 105 48 174 Q34 254 65 356"></path>'+
+      '<path class="driverDispBoundary right" d="M302 62 Q258 105 272 174 Q286 254 255 356"></path>'+
+      '<path class="driverDispBunker left" d="M62 158 Q83 143 103 154 Q111 171 92 184 Q68 190 56 176 Q53 167 62 158 Z"></path>'+
+      '<path class="driverDispBunker right" d="M258 158 Q237 143 217 154 Q209 171 228 184 Q252 190 264 176 Q267 167 258 158 Z"></path>'+
       '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="38"></line>'+
       guideHtml+
       '<g class="driverDispGreenTag"><rect x="127" y="18" width="66" height="26" rx="8"></rect><text x="160" y="35" text-anchor="middle">그린</text></g>'+
-      '<g class="driverDispBunkerLabel left"><rect x="42" y="160" width="70" height="24" rx="7"></rect><text x="77" y="176" text-anchor="middle">좌측 벙커</text></g>'+
-      '<g class="driverDispBunkerLabel right"><rect x="208" y="160" width="70" height="24" rx="7"></rect><text x="243" y="176" text-anchor="middle">우측 벙커</text></g>'+
-      '<g class="driverDispHazardLabel left"><rect x="8" y="290" width="72" height="35" rx="7"></rect><text x="44" y="305" text-anchor="middle">해저드</text><text x="44" y="319" text-anchor="middle">(이후 OB)</text></g>'+
-      '<g class="driverDispHazardLabel right"><rect x="240" y="290" width="72" height="35" rx="7"></rect><text x="276" y="305" text-anchor="middle">해저드</text><text x="276" y="319" text-anchor="middle">(이후 OB)</text></g>'+
+      '<g class="driverDispBunkerLabel left"><rect x="42" y="128" width="70" height="22" rx="7"></rect><text x="77" y="143" text-anchor="middle">좌측 벙커</text></g>'+
+      '<g class="driverDispBunkerLabel right"><rect x="208" y="128" width="70" height="22" rx="7"></rect><text x="243" y="143" text-anchor="middle">우측 벙커</text></g>'+
+      '<g class="driverDispHazardLabel left"><rect x="8" y="224" width="72" height="33" rx="7"></rect><text x="44" y="238" text-anchor="middle">해저드</text><text x="44" y="251" text-anchor="middle">(이후 OB)</text></g>'+
+      '<g class="driverDispHazardLabel right"><rect x="240" y="224" width="72" height="33" rx="7"></rect><text x="276" y="238" text-anchor="middle">해저드</text><text x="276" y="251" text-anchor="middle">(이후 OB)</text></g>'+
       dispersion+
       points+
-      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="125" y="545" width="70" height="28" rx="8"></rect><text x="160" y="563" text-anchor="middle">티잉 구역</text></g>'+
-      '<text class="driverDispSchematicNote" x="160" y="590" text-anchor="middle">SCHEMATIC · Fairway center = x 0m</text>'+
+      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="125" y="414" width="70" height="26" rx="8"></rect><text x="160" y="431" text-anchor="middle">티잉 구역</text></g>'+
+      '<text class="driverDispSchematicNote" x="160" y="456" text-anchor="middle">SCHEMATIC · Fairway center = x 0m</text>'+
     '</svg>'+
     '</div>'+
     '<div class="driverDispSummaryTitle">드라이버 분포 요약</div>'+
@@ -4613,7 +4619,7 @@ function multiTeeIntelligenceHtml(tee){
     multiTeeFilterButtonsHtml(tee)+
     '<div class="multiTeeIntelGrid">'+
       '<div class="multiTeeIntelCard usage"><h4>클럽 사용 비율 (Par 4·5 티샷)</h4>'+multiTeeTypeUsageHtml(tee)+'</div>'+
-      '<div class="multiTeeIntelCard map"><h4>Driver Dispersion Display V1</h4>'+multiDriverDispersionV1Html(tee)+'</div>'+
+      '<div class="multiTeeIntelCard map"><h4>Driver Dispersion · Fairway Centered</h4>'+multiDriverDispersionV1Html(tee)+'</div>'+
       '<div class="multiTeeIntelRight"><div class="multiTeeIntelCard distance"><h4>티샷 거리 분포 · '+safeText(label)+'</h4>'+multiTeeDistanceHtml(selected)+'</div>'+
       '<div class="multiTeeIntelCard summary"><h4>선택 클럽 요약 · '+safeText(label)+'</h4>'+multiTeeSelectedSummaryHtml(tee,selected)+'</div></div>'+
     '</div>'+
