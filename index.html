@@ -3926,17 +3926,14 @@ function multiSgForRound(r){
     (h.shots||[]).forEach((s,i)=>{
       const cat=sgShotCategory(h,s,i);
       if(!MULTI_SG_CATEGORIES.includes(cat)){counts.missing++;return;}
-      const x=benchmark.available?computeShotSG(h,s,i,info):null;
-      if(!x||!Number.isFinite(x.value)){missing[cat]++;counts.missing++;return;}
-      totals[cat]+=x.value;counts[cat]++;
+      const value=multiShotSg({r,h,s,si:i});
+      if(!Number.isFinite(value)){missing[cat]++;counts.missing++;return;}
+      totals[cat]+=value;counts[cat]++;
     });
     (h.puttsDetail||[]).forEach((p,i)=>{
-      const distance=p.distanceM,next=h.puttsDetail?.[i+1];
-      const distancesValid=distance!=null&&distance!==''&&Number.isFinite(Number(distance))&&
-        (p.result==='HOLED'||(next?.distanceM!=null&&next.distanceM!==''&&Number.isFinite(Number(next.distanceM))));
-      const x=benchmark.available&&distancesValid?computePuttSG(h,p,i,info):null;
-      if(!x||!Number.isFinite(x.value)){missing.putt++;counts.missing++;return;}
-      totals.putt+=x.value;counts.putt++;
+      const value=multiPuttSg({r,h,p,pi:i});
+      if(!Number.isFinite(value)){missing.putt++;counts.missing++;return;}
+      totals.putt+=value;counts.putt++;
     });
     totals.penalty-=Number(h.penalties||0);
   });
@@ -3947,8 +3944,20 @@ function multiSgForRound(r){
     total:complete?MULTI_SG_CATEGORIES.reduce((sum,k)=>sum+totals[k],totals.penalty):null};
 }
 function multiShotSg(row){
-  const info=sgBenchmarkInfo(row.r),x=computeShotSG(row.h,row.s,row.si,info);
-  return x?.value??null;
+  const benchmark=multiSgBenchmarkInfo(row?.r);
+  if(!benchmark.available)return null;
+  const x=computeShotSG(row.h,row.s,row.si,benchmark.info);
+  return Number.isFinite(x?.value)?x.value:null;
+}
+function multiPuttSg(row){
+  const benchmark=multiSgBenchmarkInfo(row?.r);
+  if(!benchmark.available)return null;
+  const distance=row?.p?.distanceM,next=row?.h?.puttsDetail?.[row.pi+1];
+  const distancesValid=distance!=null&&distance!==''&&Number.isFinite(Number(distance))&&
+    (row?.p?.result==='HOLED'||(next?.distanceM!=null&&next.distanceM!==''&&Number.isFinite(Number(next.distanceM))));
+  if(!distancesValid)return null;
+  const x=computePuttSG(row.h,row.p,row.pi,benchmark.info);
+  return Number.isFinite(x?.value)?x.value:null;
 }
 function multiWidthBucket(v){
   const n=Number(v);if(!Number.isFinite(n))return null;
@@ -4104,7 +4113,7 @@ function renderFullMultiAnalysis(rounds){
     if(!k)return;
     const o=puttGroups[k]||(puttGroups[k]={n:0,holed:0,left:0,right:0,short:0,long:0,sg:[]});
     o.n++;if(x.p.result==='HOLED')o.holed++;if(x.p.result==='MISS_LEFT')o.left++;if(x.p.result==='MISS_RIGHT')o.right++;if(x.p.result==='SHORT')o.short++;if(x.p.result==='LONG')o.long++;
-    const sg=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg?.value))o.sg.push(sg.value);
+    const sg=({value:multiPuttSg(x)});if(Number.isFinite(sg?.value))o.sg.push(sg.value);
     const sl=multiPuttSlopeLabel(x.p.slope);const so=slopeGroups[sl]||(slopeGroups[sl]={n:0,holed:0});so.n++;if(x.p.result==='HOLED')so.holed++;
     const br=multiPuttBreakLabel(x.p.break);const bo=breakGroups[br]||(breakGroups[br]={n:0,holed:0});bo.n++;if(x.p.result==='HOLED')bo.holed++;
   });
@@ -4322,8 +4331,7 @@ function multiDriverRows(rounds){
     const s=h.shots?.[0];if(!s||Number(h.par)<4)return;
     const club=String(s.club||'').toUpperCase();
     if(!['DR','DRIVER'].includes(club))return;
-    const sg=computeShotSG(h,s,0,sgBenchmarkInfo(r));
-    rows.push({r,h,s,sg:Number.isFinite(sg?.value)?sg.value:null});
+    rows.push({r,h,s,sg:multiShotSg({r,h,s,si:0})});
   }));
   return rows;
 }
@@ -4331,8 +4339,7 @@ function multiTeeAllRows(rounds){
   const rows=[];
   rounds.forEach(r=>(r.holes||[]).forEach(h=>{
     const s=h.shots?.[0];if(!s||Number(h.par)<4)return;
-    const sg=computeShotSG(h,s,0,sgBenchmarkInfo(r));
-    rows.push({r,h,s,sg:Number.isFinite(sg?.value)?sg.value:null});
+    rows.push({r,h,s,sg:multiShotSg({r,h,s,si:0})});
   }));
   return rows;
 }
@@ -4843,11 +4850,11 @@ function multiPuttGroups(putts){
     const dk=multiPuttBucket(x.p.distanceM);
     if(dk){
       const o=dist[dk]||(dist[dk]={label:dk,n:0,holed:0,sg:[]});o.n++;if(x.p.result==='HOLED')o.holed++;
-      const sg=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg?.value))o.sg.push(sg.value);
+      const sg=({value:multiPuttSg(x)});if(Number.isFinite(sg?.value))o.sg.push(sg.value);
     }
     const sl=multiPuttSlopeLabel(x.p.slope),br=multiPuttBreakLabel(x.p.break),mk=sl+'|'+br;
     const m=matrix[mk]||(matrix[mk]={slope:sl,break:br,n:0,holed:0,sg:[]});m.n++;if(x.p.result==='HOLED')m.holed++;
-    const sg2=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(sg2?.value))m.sg.push(sg2.value);
+    const sg2=({value:multiPuttSg(x)});if(Number.isFinite(sg2?.value))m.sg.push(sg2.value);
   });
   return {dist,matrix};
 }
@@ -4965,7 +4972,7 @@ function multiPerformanceDetail(rounds,mode){
   }
 
   const putts=data.putts,pg=multiPuttGroups(putts),sg=[];
-  putts.forEach(x=>{const v=computePuttSG(x.h,x.p,x.pi,sgBenchmarkInfo(x.r));if(Number.isFinite(v?.value))sg.push(v.value)});
+  putts.forEach(x=>{const v=({value:multiPuttSg(x)});if(Number.isFinite(v?.value))sg.push(v.value)});
   const holed=putts.filter(x=>x.p.result==='HOLED').length;
   const pdist=putts.map(x=>Number(x.p.distanceM)).filter(Number.isFinite);
   const patterns=multiPuttPatterns(putts,pg.dist,pg.matrix);
@@ -5511,11 +5518,39 @@ function computePuttSG(h,p,index,info=sgBenchmarkInfo()){
   if(!Number.isFinite(b))return null;
   return {value:a-b-1,startExpected:a,endExpected:b};
 }
+function greenEdgePolygonForHole(holeNo){
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  const green=(ch?.s||[]).find(x=>x?.[0]==='G'&&Array.isArray(x?.[2])&&x[2].length>=2);
+  return green?.[2]||null;
+}
+function pointToGeoSegmentDistanceM(point,a,b){
+  if(!point||!Array.isArray(a)||!Array.isArray(b))return null;
+  const lat=Number(point.lat),lng=Number(point.lng),aLat=Number(a[0]),aLng=Number(a[1]),bLat=Number(b[0]),bLng=Number(b[1]);
+  if(![lat,lng,aLat,aLng,bLat,bLng].every(Number.isFinite))return null;
+  const mLat=111320,mLng=111320*Math.cos(lat*Math.PI/180);
+  const ax=(aLng-lng)*mLng,ay=(aLat-lat)*mLat,bx=(bLng-lng)*mLng,by=(bLat-lat)*mLat;
+  const dx=bx-ax,dy=by-ay,len2=dx*dx+dy*dy;
+  const t=len2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len2)):0;
+  return Math.hypot(ax+t*dx,ay+t*dy);
+}
+function distanceToGreenEdgeM(h,s){
+  const direct=s?.courseContext?.distanceToGreenEdgeM??s?.courseContext?.greenEdgeDistanceM;
+  if(direct!=null&&direct!==''&&Number.isFinite(Number(direct)))return Number(direct);
+  const point=s?.start,poly=greenEdgePolygonForHole(h?.hole);
+  if(!point||!poly?.length)return null;
+  let best=Infinity;
+  for(let i=0;i<poly.length;i++){
+    const d=pointToGeoSegmentDistanceM(point,poly[i],poly[(i+1)%poly.length]);
+    if(Number.isFinite(d)&&d<best)best=d;
+  }
+  return Number.isFinite(best)?best:null;
+}
 function sgShotCategory(h,s,index){
-  if(index===0&&Number(h.par)>=4)return 'ott';
-  const d=shotStartDistanceToHoleM(h,s,index);
-  const yards=Number.isFinite(d)?d*1.0936133:null;
-  if(Number.isFinite(yards)&&yards<=30&&sgLieKey(s.startLie)!=='green')return 'arg';
+  const lie=sgLieKey(s?.startLie);
+  if(lie==='green')return 'putt';
+  if(index===0&&lie==='tee')return Number(h?.par)>=4?'ott':'app';
+  const edgeM=distanceToGreenEdgeM(h,s);
+  if(Number.isFinite(edgeM)&&edgeM<=27.432)return 'arg';
   return 'app';
 }
 function sgRoundSummary(){
