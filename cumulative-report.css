@@ -522,3 +522,48 @@
 #resultsMultiView .driverDispPoint.red circle{fill:#ff3b30;stroke:#fff}
 #resultsMultiView .driverDispPoint.white circle{fill:#fff;stroke:#8c9791}
 #resultsMultiView .driverDispPoint.blue circle{fill:#1487ff;stroke:#fff}
+
+/* Driver Dispersion vertical card V3 */
+#resultsMultiView .multiTeeIntelGrid{grid-template-columns:22fr 44fr 34fr;align-items:start}
+#resultsMultiView .multiTeeIntelCard.map{min-height:0}
+#resultsMultiView .driverDispV1{max-width:360px;margin:0 auto;border-radius:14px;overflow:hidden;border:1px solid #315f70;background:#03100c;box-shadow:0 12px 26px rgba(0,0,0,.26)}
+#resultsMultiView .driverDispCardHead{min-height:54px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#082638,#061d2b);border-bottom:1px solid #315f70}
+#resultsMultiView .driverDispCardHead>div{display:grid;gap:2px}
+#resultsMultiView .driverDispCardHead b{font-size:14px;color:#fff;letter-spacing:.04em}
+#resultsMultiView .driverDispCardHead span{font-size:9px;color:#b9d0dc}
+#resultsMultiView .driverDispCardHead em{padding:5px 7px;border-radius:999px;border:1px solid rgba(100,239,157,.48);color:#7ef0a6;background:rgba(22,104,58,.22);font-size:7px;font-style:normal;font-weight:950;white-space:nowrap}
+#resultsMultiView .driverDispCanvasWrap{background:#020706}
+#resultsMultiView .driverDispSvg{display:block;width:100%;height:auto;aspect-ratio:320/600;max-height:660px;margin:0 auto;background:#020706}
+#resultsMultiView .driverDispTreeBand{fill:#06110c}
+#resultsMultiView .driverDispFairwayShape{stroke:#53a767;stroke-width:1;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispHazard{fill:rgba(211,26,35,.52);stroke:#ff3238;stroke-width:1.6;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispBoundary{fill:none;stroke:#ff252d;stroke-width:2;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispBunker{fill:#dec996;stroke:#f5e3b8;stroke-width:1.3;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispAxis{stroke:#fff;stroke-width:1.2;stroke-dasharray:6 6;opacity:.92;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispGuide path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:1;stroke-dasharray:5 5;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispGuide rect{fill:rgba(247,249,248,.95);stroke:#9eadab;stroke-width:.5}
+#resultsMultiView .driverDispGuide text{fill:#112019;font-size:9px;font-weight:950}
+#resultsMultiView .driverDispGreenTag rect,#resultsMultiView .driverDispTeeTag rect{fill:#08713f;stroke:#e8fff1;stroke-width:1}
+#resultsMultiView .driverDispGreenTag text,#resultsMultiView .driverDispTeeTag text{fill:#fff;font-size:10px;font-weight:950}
+#resultsMultiView .driverDispTeeTag circle{fill:#fff;stroke:#d8e2dc;stroke-width:1.4}
+#resultsMultiView .driverDispBunkerLabel rect{fill:#0d477a;stroke:#dcecff;stroke-width:1}
+#resultsMultiView .driverDispBunkerLabel text{fill:#fff;font-size:8px;font-weight:950}
+#resultsMultiView .driverDispHazardLabel rect{fill:#861218;stroke:#ff6469;stroke-width:1}
+#resultsMultiView .driverDispHazardLabel text{fill:#fff;font-size:8px;font-weight:950}
+#resultsMultiView .driverDispAverage ellipse{fill:rgba(255,230,0,.06);stroke:#ffe600;stroke-width:1.8;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispAverage line{stroke:#ffe600;stroke-width:1.4;vector-effect:non-scaling-stroke}
+#resultsMultiView .driverDispAverage text{fill:#ffe600;font-size:8px;font-weight:950}
+#resultsMultiView .driverDispAverage .verticalLabel{font-size:7px}
+#resultsMultiView .driverDispPoint circle{stroke-width:1.2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px rgba(0,0,0,.88))}
+#resultsMultiView .driverDispPoint.white circle{fill:#fff;stroke:#c7d0cb}
+#resultsMultiView .driverDispPoint.blue circle{fill:#159cff;stroke:#d9f2ff}
+#resultsMultiView .driverDispPoint.red circle{fill:#ff262f;stroke:#ffe0e2}
+#resultsMultiView .driverDispPoint.bunker circle{fill:#ffad17;stroke:#fff0c7}
+#resultsMultiView .driverDispSchematicNote{fill:#71867b;font-size:6.5px;font-weight:800;letter-spacing:.04em}
+#resultsMultiView .driverDispSummaryTitle{padding:8px 10px 5px;background:#061d2b;border-top:1px solid #244b5a;color:#e9f4ef;font-size:9px;font-weight:950}
+#resultsMultiView .driverDispSummary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 7px 8px;background:#061d2b}
+#resultsMultiView .driverDispSummary>div{min-width:0;padding:7px 3px;border-radius:7px;background:#0a2a3d;text-align:center;border:1px solid rgba(255,255,255,.06)}
+#resultsMultiView .driverDispSummary span{display:block;color:#a8bec9;font-size:7px;white-space:nowrap}
+#resultsMultiView .driverDispSummary b{display:block;margin-top:4px;color:#fff;font-size:13px}
+@media(max-width:1000px){#resultsMultiView .multiTeeIntelGrid{grid-template-columns:1fr 1.35fr}#resultsMultiView .driverDispV1{max-width:340px}}
+@media(max-width:620px){#resultsMultiView .multiTeeIntelGrid{grid-template-columns:1fr}#resultsMultiView .driverDispV1{max-width:330px}}

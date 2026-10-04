@@ -4402,70 +4402,130 @@ function multiTeeOutcomeLegendHtml(){
 }
 function multiDriverDispersionV1Html(rows){
   const driverRows=(rows||[]).filter(x=>multiTeeClubType(x.s.club)==='DRIVER');
-  const plotted=teeShotCoordinateRows(driverRows);
+  if(!driverRows.length)return '<div class="analysisEmpty">Driver Tee Shot 데이터가 없습니다.</div>';
+
+  const plotted=driverRows.map((row,i)=>{
+    const holeNo=Number(row?.h?.hole??row?.s?.hole);
+    const h=Number.isFinite(holeNo)?courseHoleGeometryByNumber(holeNo):null;
+    const end=row?.s?.end;
+    let xFairwayM=null,yM=null,rawXM=null;
+    if(h&&end){
+      const teePoint=teeShotCoordinatePoint(row.s,h);
+      rawXM=Number.isFinite(teePoint?.xM)?teePoint.xM:null;
+      const model=buildCourseIntelligenceModel(h,row?.h?.par??null);
+      if(model){
+        const q=model.projector.toXY(end);
+        const station=q.x*model.u.x+q.y*model.u.y;
+        const cross=q.x*model.v.x+q.y*model.v.y;
+        let sec=null;
+        model.sections.forEach(s=>{
+          if(!sec||Math.abs(s.stationM-station)<Math.abs(sec.stationM-station))sec=s;
+        });
+        if(sec){
+          xFairwayM=-(cross-sec.centerC);
+          yM=station;
+        }
+      }
+      if(!Number.isFinite(xFairwayM)&&teePoint){
+        xFairwayM=teePoint.xM;
+        yM=teePoint.yM;
+      }
+    }
+    if(!Number.isFinite(xFairwayM)||!Number.isFinite(yM))return null;
+    const lie=String(row.s.endLie||row.s.end_lie_final||'').toUpperCase();
+    const fairway=lie==='FAIRWAY';
+    const bunker=lie.includes('BUNKER');
+    const side=xFairwayM<0?'LEFT':'RIGHT';
+    const cls=bunker?'bunker':fairway?'white':side==='LEFT'?'blue':'red';
+    return {...row,_disp:{xM:xFairwayM,yM,rawXM,side,fairway,bunker,cls,index:i}};
+  }).filter(Boolean);
+
   if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
 
-  // Normalized analysis canvas: Tee = (0,0), +Y = Tee→Green, +X = player right.
-  // Raw GPS remains unchanged; only the derived local coordinates are plotted here.
-  const W=760,H=520,cx=380,teeY=476,scale=1.52;
+  const W=320,H=600,cx=160,teeY=528,yScale=1.78,xScale=3.1;
   const guides=[100,150,180,200,220,240,260];
-  const toScreen=(xM,yM)=>({x:cx+xM*scale,y:teeY-yM*scale});
-  const arcPath=d=>{
-    const r=d*scale;
-    return 'M '+(cx-r).toFixed(1)+' '+teeY+
-      ' A '+r.toFixed(1)+' '+r.toFixed(1)+' 0 0 1 '+(cx+r).toFixed(1)+' '+teeY;
-  };
-  const labelAt=d=>{
-    const r=d*scale,theta=50*Math.PI/180;
-    const x=Math.min(W-70,cx+r*Math.sin(theta)+8);
-    const y=Math.max(26,teeY-r*Math.cos(theta));
-    const text=d===260?'260m+':d+'m';
-    return '<g class="driverDispGuideLabel" transform="translate('+x.toFixed(1)+' '+y.toFixed(1)+')">'+
-      '<rect x="-28" y="-12" width="56" height="24" rx="9"></rect>'+
-      '<text x="0" y="1" text-anchor="middle">'+text+'</text></g>';
-  };
+  const toScreen=(xM,yM)=>({x:cx+xM*xScale,y:teeY-yM*yScale});
+  const guideY=d=>teeY-d*yScale;
 
-  const points=plotted.map((x,i)=>{
-    const p=x.teeCoordinate,screen=toScreen(p.xM,p.yM);
-    const cls=p.xM<=-9?'red':p.xM>=9?'blue':'white';
-    const shotId=x.s.id||('driver-'+i);
-    const title='Shot '+safeText(shotId)+' · x '+p.xM.toFixed(1)+'m · y '+p.yM.toFixed(1)+'m';
-    return '<g class="driverDispPoint '+cls+'" data-shot-id="'+safeText(shotId)+'">'+
-      '<circle cx="'+screen.x.toFixed(1)+'" cy="'+screen.y.toFixed(1)+'" r="5"></circle>'+
+  const points=plotted.map((row,i)=>{
+    const p=row._disp,screen=toScreen(p.xM,p.yM);
+    const shotId=row.s.id||('driver-'+i);
+    const title='Shot '+safeText(shotId)+' · Fairway center '+(p.xM>=0?'+':'')+p.xM.toFixed(1)+'m · '+p.yM.toFixed(1)+'m';
+    return '<g class="driverDispPoint '+p.cls+'" data-shot-id="'+safeText(shotId)+'">'+
+      '<circle cx="'+screen.x.toFixed(1)+'" cy="'+screen.y.toFixed(1)+'" r="4.8"></circle>'+
       '<title>'+title+'</title></g>';
   }).join('');
 
-  const arcs=guides.map(d=>'<path class="driverDispArc" d="'+arcPath(d)+'"></path>').join('');
-  const labels=guides.map(labelAt).join('');
+  const xs=plotted.map(x=>x._disp.xM);
+  const ys=plotted.map(x=>x._disp.yM);
+  const meanX=avg(xs),meanY=avg(ys);
+  const lateralSpread=Math.max(...xs)-Math.min(...xs);
+  const distanceSpread=Math.max(...ys)-Math.min(...ys);
+  const center=toScreen(meanX,meanY);
+  const ellipseRx=Math.max(34,Math.min(82,lateralSpread*xScale/2));
+  const ellipseRy=Math.max(24,Math.min(72,distanceSpread*yScale/2));
+  const dispersion=plotted.length>1
+    ?'<g class="driverDispAverage">'+
+       '<ellipse cx="'+center.x.toFixed(1)+'" cy="'+center.y.toFixed(1)+'" rx="'+ellipseRx.toFixed(1)+'" ry="'+ellipseRy.toFixed(1)+'"></ellipse>'+
+       '<line x1="'+(center.x-ellipseRx).toFixed(1)+'" y1="'+(center.y+ellipseRy+13).toFixed(1)+'" x2="'+(center.x+ellipseRx).toFixed(1)+'" y2="'+(center.y+ellipseRy+13).toFixed(1)+'"></line>'+
+       '<text x="'+center.x.toFixed(1)+'" y="'+(center.y+ellipseRy+28).toFixed(1)+'" text-anchor="middle">좌우 분산폭 약 '+Math.round(lateralSpread)+'m</text>'+
+       '<line x1="'+(center.x+ellipseRx+12).toFixed(1)+'" y1="'+(center.y-ellipseRy).toFixed(1)+'" x2="'+(center.x+ellipseRx+12).toFixed(1)+'" y2="'+(center.y+ellipseRy).toFixed(1)+'"></line>'+
+       '<text class="verticalLabel" x="'+(center.x+ellipseRx+27).toFixed(1)+'" y="'+center.y.toFixed(1)+'">거리 '+Math.round(distanceSpread)+'m</text>'+
+     '</g>'
+    :'';
+
+  const guideHtml=guides.map(d=>{
+    const y=guideY(d),label=d===260?'260m+':d+'m';
+    return '<g class="driverDispGuide">'+
+      '<path d="M 50 '+y.toFixed(1)+' Q 160 '+(y-26).toFixed(1)+' 270 '+y.toFixed(1)+'"></path>'+
+      '<rect x="137" y="'+(y-12).toFixed(1)+'" width="46" height="22" rx="6"></rect>'+
+      '<text x="160" y="'+(y+3).toFixed(1)+'" text-anchor="middle">'+label+'</text>'+
+    '</g>';
+  }).join('');
+
+  const fairway=plotted.filter(x=>x._disp.fairway).length;
+  const left=plotted.filter(x=>!x._disp.fairway&&x._disp.side==='LEFT').length;
+  const right=plotted.filter(x=>!x._disp.fairway&&x._disp.side==='RIGHT').length;
+  const pct=n=>Math.round(n/plotted.length*100);
 
   return '<div class="driverDispV1">'+
-    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver Tee Shot normalized coordinate dispersion">'+
+    '<div class="driverDispCardHead"><div><b>DRIVER</b><span>Par 4·5 Tee Shots</span></div><em>FAIRWAY CENTERED</em></div>'+
+    '<div class="driverDispCanvasWrap">'+
+    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver dispersion fairway-centered schematic">'+
       '<defs>'+
-        '<linearGradient id="driverDispBg" x1="0" y1="0" x2="0" y2="1">'+
-          '<stop offset="0%" stop-color="#020807"></stop>'+
-          '<stop offset="55%" stop-color="#06110d"></stop>'+
-          '<stop offset="100%" stop-color="#020504"></stop>'+
-        '</linearGradient>'+
-        '<linearGradient id="driverDispLane" x1="0" y1="0" x2="0" y2="1">'+
-          '<stop offset="0%" stop-color="#174f38" stop-opacity=".10"></stop>'+
-          '<stop offset="100%" stop-color="#35a866" stop-opacity=".24"></stop>'+
-        '</linearGradient>'+
+        '<linearGradient id="driverDispBgV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#06150f"></stop><stop offset="100%" stop-color="#020706"></stop></linearGradient>'+
+        '<linearGradient id="driverDispFairwayV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7a42"></stop><stop offset="50%" stop-color="#24683a"></stop><stop offset="100%" stop-color="#1a5632"></stop></linearGradient>'+
       '</defs>'+
-      '<rect class="driverDispBg" x="0" y="0" width="'+W+'" height="'+H+'" rx="16" fill="url(#driverDispBg)"></rect>'+
-      '<path class="driverDispLane" d="M 215 92 Q 380 55 545 92 L 414 476 L 346 476 Z" fill="url(#driverDispLane)"></path>'+
-      '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="42"></line>'+
-      arcs+labels+
-      '<g class="driverDispGreenTag"><rect x="'+(cx-42)+'" y="14" width="84" height="28" rx="10"></rect><text x="'+cx+'" y="33" text-anchor="middle">그린 방향</text></g>'+
-      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="'+(cx-44)+'" y="'+(teeY+12)+'" width="88" height="28" rx="10"></rect><text x="'+cx+'" y="'+(teeY+31)+'" text-anchor="middle">티잉 구역</text></g>'+
-      '<g class="driverDispLegend" transform="translate(18 18)">'+
-        '<rect x="0" y="0" width="176" height="76" rx="11"></rect>'+
-        '<text class="legendTitle" x="12" y="18">DISPLAY ONLY · X OFFSET</text>'+
-        '<circle class="legendRed" cx="16" cy="35" r="5"></circle><text x="28" y="39">x ≤ -9m</text>'+
-        '<circle class="legendWhite" cx="16" cy="52" r="5"></circle><text x="28" y="56">-9m &lt; x &lt; +9m</text>'+
-        '<circle class="legendBlue" cx="16" cy="69" r="5"></circle><text x="28" y="73">x ≥ +9m</text>'+
-      '</g>'+
+      '<rect width="'+W+'" height="'+H+'" fill="url(#driverDispBgV3)"></rect>'+
+      '<path class="driverDispTreeBand left" d="M0 0 H74 Q57 110 68 210 Q42 330 66 600 H0 Z"></path>'+
+      '<path class="driverDispTreeBand right" d="M320 0 H246 Q263 110 252 210 Q278 330 254 600 H320 Z"></path>'+
+      '<path class="driverDispFairwayShape" d="M124 42 Q160 18 196 42 Q217 122 220 214 Q212 340 198 455 Q190 520 181 548 L139 548 Q130 520 122 455 Q108 340 100 214 Q103 122 124 42 Z" fill="url(#driverDispFairwayV3)"></path>'+
+      '<path class="driverDispHazard left" d="M0 155 Q34 137 54 162 Q42 235 63 310 Q47 385 0 420 Z"></path>'+
+      '<path class="driverDispHazard right" d="M320 150 Q286 137 266 162 Q278 235 257 310 Q273 385 320 416 Z"></path>'+
+      '<path class="driverDispBoundary left" d="M18 78 Q62 135 48 218 Q34 318 65 458"></path>'+
+      '<path class="driverDispBoundary right" d="M302 78 Q258 135 272 218 Q286 318 255 458"></path>'+
+      '<path class="driverDispBunker left" d="M62 196 Q83 178 103 191 Q111 212 92 228 Q68 236 56 218 Q53 207 62 196 Z"></path>'+
+      '<path class="driverDispBunker right" d="M258 196 Q237 178 217 191 Q209 212 228 228 Q252 236 264 218 Q267 207 258 196 Z"></path>'+
+      '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="38"></line>'+
+      guideHtml+
+      '<g class="driverDispGreenTag"><rect x="127" y="18" width="66" height="26" rx="8"></rect><text x="160" y="35" text-anchor="middle">그린</text></g>'+
+      '<g class="driverDispBunkerLabel left"><rect x="42" y="160" width="70" height="24" rx="7"></rect><text x="77" y="176" text-anchor="middle">좌측 벙커</text></g>'+
+      '<g class="driverDispBunkerLabel right"><rect x="208" y="160" width="70" height="24" rx="7"></rect><text x="243" y="176" text-anchor="middle">우측 벙커</text></g>'+
+      '<g class="driverDispHazardLabel left"><rect x="8" y="290" width="72" height="35" rx="7"></rect><text x="44" y="305" text-anchor="middle">해저드</text><text x="44" y="319" text-anchor="middle">(이후 OB)</text></g>'+
+      '<g class="driverDispHazardLabel right"><rect x="240" y="290" width="72" height="35" rx="7"></rect><text x="276" y="305" text-anchor="middle">해저드</text><text x="276" y="319" text-anchor="middle">(이후 OB)</text></g>'+
+      dispersion+
       points+
+      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="125" y="545" width="70" height="28" rx="8"></rect><text x="160" y="563" text-anchor="middle">티잉 구역</text></g>'+
+      '<text class="driverDispSchematicNote" x="160" y="590" text-anchor="middle">SCHEMATIC · Fairway center = x 0m</text>'+
     '</svg>'+
+    '</div>'+
+    '<div class="driverDispSummaryTitle">드라이버 분포 요약</div>'+
+    '<div class="driverDispSummary">'+
+      '<div><span>샷 수</span><b>'+plotted.length+'</b></div>'+
+      '<div><span>페어웨이</span><b>'+pct(fairway)+'%</b></div>'+
+      '<div><span>좌측 미스</span><b>'+pct(left)+'%</b></div>'+
+      '<div><span>우측 미스</span><b>'+pct(right)+'%</b></div>'+
+    '</div>'+
   '</div>';
 }
 
