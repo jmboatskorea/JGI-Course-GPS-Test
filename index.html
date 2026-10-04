@@ -4248,7 +4248,8 @@ function multiDistanceDistributionHtml(driver){
   if(!values.length)return '<div class="analysisEmpty">드라이버 거리 데이터가 없습니다.</div>';
   const minV=Math.min(...values),maxV=Math.max(...values);
   const start=Math.floor(minV/5)*5;
-  const end=Math.ceil(maxV/5)*5 || start+5;
+  const rawEnd=Math.ceil(maxV/5)*5;
+  const end=rawEnd<=start?start+5:rawEnd;
   const bins=[];
   for(let a=start;a<end;a+=5){
     const b=a+5;
