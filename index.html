@@ -4254,7 +4254,7 @@ function multiTeeDispersionHtml(rows){
     const jitter=((i%7)-3)*1.7;
     const d=Number(x.s.distanceM);
     const y=Number.isFinite(d)?Math.max(16,Math.min(72,72-(d-minD)/span*52)):46;
-    const type=multiTeeClubType(x.s.club).toLowerCase();
+    const type='club-'+multiTeeClubType(x.s.club).toLowerCase();
     const outcome=multiTeeOutcomeClass(x);
     const title=(x.h.hole||'')+'번 홀 · '+safeText(x.s.club||'클럽')+' · '+(Number.isFinite(d)?Math.round(d)+'m':'거리 없음')+' · '+dirLabel(x.s.direction);
     return '<span class="multiTeeIntelDot '+type+' '+outcome+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+title+'"></span>';
