@@ -4400,38 +4400,58 @@ function multiTeeOutcomeLegendHtml(){
     '<span><i class="bunker"></i>Bunker/Hazard</span>'+
     '</div>';
 }
-function multiTeeDispersionHtml(rows){
-  if(!rows.length)return '<div class="analysisEmpty">선택한 클럽의 티샷 데이터가 없습니다.</div>';
-  const dots=rows.map((x,i)=>{
-    const dir=String(x.s.direction||'CENTER').toUpperCase();
-    const base=dir==='LEFT'?26:dir==='RIGHT'?74:50;
-    const jitter=((i%9)-4)*1.5;
-    const d=Number(x.s.distanceM);
-    const displayMinM=multiTeeClubFilter==='DRIVER'?100:0;
-    const displayMaxM=300;
-    const displaySpanM=displayMaxM-displayMinM;
-    const normalizedD=Number.isFinite(d)?Math.max(displayMinM,Math.min(displayMaxM,d)):null;
-    const y=Number.isFinite(normalizedD)?Math.max(9,Math.min(78,78-(normalizedD-displayMinM)/displaySpanM*70)):46;
-    const type=multiTeeShapeClass(multiTeeClubType(x.s.club));
-    const outcome=multiTeeOutcomeClass(x);
-    const title=(x.h.hole||'')+'번 홀 · '+multiTeeClubDisplayName(x.s.club)+' · '+(Number.isFinite(d)?Math.round(d)+'m':'거리 없음')+' · '+dirLabel(x.s.direction);
-    return '<span class="multiTeeIntelDot '+type+' '+outcome+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+safeText(title)+'"></span>';
+function multiDriverDispersionV1Html(rows){
+  const driverRows=(rows||[]).filter(x=>multiTeeClubType(x.s.club)==='DRIVER');
+  const plotted=teeShotCoordinateRows(driverRows);
+  if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
+
+  const W=600,H=820,cx=300,teeY=776,scale=1.55;
+  const arcDistances=[100,150,180,200,220,240,260];
+  const arcPath=d=>{
+    const r=d*scale,pts=[];
+    for(let deg=180;deg>=0;deg-=4){
+      const a=deg*Math.PI/180;
+      pts.push((pts.length?'L':'M')+(cx+r*Math.cos(a)).toFixed(1)+','+(teeY-r*Math.sin(a)).toFixed(1));
+    }
+    return pts.join(' ');
+  };
+
+  const arcs=arcDistances.map(d=>{
+    const r=d*scale;
+    const label=d===260?'260m+':d+'m';
+    const labelY=teeY-r+5;
+    return '<path class="driverDispArc" d="'+arcPath(d)+'"></path>'+
+      '<text class="driverDispArcLabel" x="'+cx+'" y="'+labelY.toFixed(1)+'" text-anchor="middle">'+label+'</text>';
   }).join('');
-  const fw=rows.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
-  const left=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='LEFT').length;
-  const right=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='RIGHT').length;
-  const pct=n=>Math.round(n/rows.length*100);
-  const guideValues=multiTeeClubFilter==='DRIVER'?[300,250,200,150,100]:[300,250,200,150,100,50];
-  const guideMinM=multiTeeClubFilter==='DRIVER'?100:0;
-  const guideSpanM=300-guideMinM;
-  const guides=guideValues.map(d=>{
-    const top=78-(d-guideMinM)/guideSpanM*70;
-    return '<span class="multiTeeIntelGuide" style="top:'+top+'%"><i></i><b>'+d+'m</b></span>';
+
+  const points=plotted.map((x,i)=>{
+    const p=x.teeCoordinate;
+    const screenX=cx+p.xM*scale;
+    const screenY=teeY-p.yM*scale;
+    const cls=p.xM<=-9?'red':p.xM>=9?'blue':'white';
+    const shotId=x.s.id||('driver-'+i);
+    const title='Shot '+safeText(shotId)+' · x '+p.xM.toFixed(1)+'m · y '+p.yM.toFixed(1)+'m';
+    return '<g class="driverDispPoint '+cls+'" data-shot-id="'+safeText(shotId)+'">'+
+      '<circle cx="'+screenX.toFixed(1)+'" cy="'+screenY.toFixed(1)+'" r="6"></circle>'+
+      '<title>'+title+'</title></g>';
   }).join('');
-  const badges='<span class="multiTeeIntelPct left">좌측 '+pct(left)+'%</span><span class="multiTeeIntelPct center">Fairway '+pct(fw)+'%</span><span class="multiTeeIntelPct right">우측 '+pct(right)+'%</span>';
-  return '<div class="multiTeeIntelMap"><span class="multiTeeIntelGreen">그린</span>'+guides+dots+badges+'<span class="multiTeeIntelTee">TEE</span></div>'+
-    '<div class="multiCourseImageNote">정규화된 Tee–Target 축 · 색상=결과 · 모양=클럽 종류</div>';
+
+  return '<div class="driverDispV1">'+
+    '<div class="driverDispTitle"><b>드라이버 탄착군 분포도</b><span>(거리 가이드라인 포함)</span></div>'+
+    '<div class="driverDispGreen">그린</div>'+
+    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver Tee Shot actual coordinate dispersion">'+
+      '<line class="driverDispCenterLine" x1="'+cx+'" y1="70" x2="'+cx+'" y2="'+teeY+'"></line>'+
+      arcs+points+
+    '</svg>'+
+    '<div class="driverDispTee">티잉 구역</div>'+
+    '<div class="driverDispNote">실제 (xM, yM) 좌표 그대로 표시 · 임의 이동/분산 없음 · 색상은 Display용 xM 구분</div>'+
+  '</div>';
 }
+
+function multiTeeDispersionHtml(rows){
+  return multiDriverDispersionV1Html(rows);
+}
+
 function multiTeeDistanceHtml(rows){
   const values=rows.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
   if(!values.length)return '<div class="analysisEmpty">거리 데이터가 없습니다.</div>';
@@ -4512,7 +4532,7 @@ function multiTeeIntelligenceHtml(tee){
     multiTeeFilterButtonsHtml(tee)+
     '<div class="multiTeeIntelGrid">'+
       '<div class="multiTeeIntelCard usage"><h4>클럽 사용 비율 (Par 4·5 티샷)</h4>'+multiTeeTypeUsageHtml(tee)+'</div>'+
-      '<div class="multiTeeIntelCard map"><h4>Tee Shot Distribution · '+safeText(label)+'</h4>'+multiTeeDispersionHtml(selected)+'</div>'+
+      '<div class="multiTeeIntelCard map"><h4>Driver Dispersion Display V1</h4>'+multiDriverDispersionV1Html(tee)+'</div>'+
       '<div class="multiTeeIntelRight"><div class="multiTeeIntelCard distance"><h4>티샷 거리 분포 · '+safeText(label)+'</h4>'+multiTeeDistanceHtml(selected)+'</div>'+
       '<div class="multiTeeIntelCard summary"><h4>선택 클럽 요약 · '+safeText(label)+'</h4>'+multiTeeSelectedSummaryHtml(tee,selected)+'</div></div>'+
     '</div>'+
