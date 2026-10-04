@@ -1246,15 +1246,17 @@ body.round-active .bottomnav{display:none!important}
           <div class="card multiChartCard">
             <div class="title">스코어 추이</div>
             <div id="multiScoreTrend" class="multiTrend"></div>
+            <div id="multiScoreProgress" class="multiChartNote"></div>
           </div>
           <div class="card multiChartCard">
             <div class="title">획득 타수 추이 · Avg SG</div>
             <div id="multiSgLineChart"></div>
+            <div id="multiSgProgress" class="multiChartNote"></div>
           </div>
           <div class="card multiChartCard">
             <div class="title">Player Progress · HCP</div>
             <div id="multiHcpTrend"></div>
-            <div id="multiHcpProgress" class="multiHcpProgress"></div>
+            <div id="multiHcpProgress" class="multiHcpProgress multiChartNote"></div>
           </div>
         </div>
 
@@ -4622,6 +4624,25 @@ function multiRenderSgLineChart(rounds){
   return multiSvgSeries([x.TEE.byRound,x.SECOND.byRound,x.APPROACH.byRound,x.PUTTER.byRound],
     ['#5aa7ff','#45e587','#f2b94b','#ff6f7d'],['티샷','세컨샷','어프로치','퍼터'],v=>formatSg(v),'multiSgLineChart');
 }
+function multiRenderScoreProgress(rounds){
+  const ordered=[...rounds].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0));
+  const vals=ordered.map(resultScore).filter(Number.isFinite);
+  if(!vals.length)return '<span>스코어 데이터가 없습니다.</span>';
+  const first=vals[0],last=vals.at(-1),delta=last-first;
+  const cls=Math.abs(delta)<.05?'neutral':delta<0?'better':'worse';
+  const trend=Math.abs(delta)<.05?'유지':delta<0?Math.abs(delta).toFixed(0)+'타 개선':Math.abs(delta).toFixed(0)+'타 높음';
+  return '<b>CURRENT SCORE</b><strong>'+Math.round(last)+'</strong><span class="'+cls+'">'+trend+'</span><small>1R 대비 현재 스코어 변화</small>';
+}
+function multiRenderSgProgress(rounds){
+  const x=multiPlayerFacingSg(rounds);
+  const totals=(x.TEE.byRound||[]).map((_,i)=>['TEE','SECOND','APPROACH','PUTTER'].reduce((sum,k)=>sum+(Number(x[k].byRound?.[i])||0),0));
+  const vals=totals.filter(Number.isFinite);
+  if(!vals.length)return '<span>SG 데이터가 없습니다.</span>';
+  const first=vals[0],last=vals.at(-1),delta=last-first;
+  const cls=Math.abs(delta)<.01?'neutral':delta>0?'better':'worse';
+  const trend=Math.abs(delta)<.01?'유지':(delta>0?'+':'')+delta.toFixed(2)+' 변화';
+  return '<b>CURRENT TOTAL SG</b><strong>'+multiSigned(last)+'</strong><span class="'+cls+'">'+trend+'</span><small>1R 대비 현재 총 SG 변화</small>';
+}
 function multiRoundPerformanceHcp(r){
   const d=resultToPar(r);
   return Number.isFinite(Number(d))?Number(d):null;
@@ -4691,6 +4712,8 @@ function renderMultiDashboard(rounds){
   $('multiRecentCompare').innerHTML=multiRecentChangeHtml(rounds);
   $('multiRecentSummary').innerHTML=multiRecentSummaryText(rounds);
   $('multiSgLineChart').innerHTML=multiRenderSgLineChart(rounds);
+  $('multiScoreProgress').innerHTML=multiRenderScoreProgress(rounds);
+  $('multiSgProgress').innerHTML=multiRenderSgProgress(rounds);
   $('multiHcpTrend').innerHTML=multiRenderHcpChart(rounds);
   $('multiHcpProgress').innerHTML=multiRenderHcpProgress(rounds);
   $('multiDetailRange').textContent='최근 '+rounds.length+'라운드';
