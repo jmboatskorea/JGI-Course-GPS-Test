@@ -4405,25 +4405,65 @@ function multiDriverDispersionV1Html(rows){
   const plotted=teeShotCoordinateRows(driverRows);
   if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
 
-  // Approved raster: native pixels, tee marker (755,948), 260m arc apex y=170.
-  // Use one uniform meter scale. Baked intermediate guides are illustrative/nonlinear.
-  const W=1490,H=1055,cx=755,teeY=948,scale=(948-170)/260;
+  // Normalized analysis canvas: Tee = (0,0), +Y = Tee→Green, +X = player right.
+  // Raw GPS remains unchanged; only the derived local coordinates are plotted here.
+  const W=760,H=520,cx=380,teeY=476,scale=1.52;
+  const guides=[100,150,180,200,220,240,260];
+  const toScreen=(xM,yM)=>({x:cx+xM*scale,y:teeY-yM*scale});
+  const arcPath=d=>{
+    const r=d*scale;
+    return 'M '+(cx-r).toFixed(1)+' '+teeY+
+      ' A '+r.toFixed(1)+' '+r.toFixed(1)+' 0 0 1 '+(cx+r).toFixed(1)+' '+teeY;
+  };
+  const labelAt=d=>{
+    const r=d*scale,theta=50*Math.PI/180;
+    const x=Math.min(W-70,cx+r*Math.sin(theta)+8);
+    const y=Math.max(26,teeY-r*Math.cos(theta));
+    const text=d===260?'260m+':d+'m';
+    return '<g class="driverDispGuideLabel" transform="translate('+x.toFixed(1)+' '+y.toFixed(1)+')">'+
+      '<rect x="-28" y="-12" width="56" height="24" rx="9"></rect>'+
+      '<text x="0" y="1" text-anchor="middle">'+text+'</text></g>';
+  };
 
   const points=plotted.map((x,i)=>{
-    const p=x.teeCoordinate;
-    const screenX=cx+p.xM*scale;
-    const screenY=teeY-p.yM*scale;
+    const p=x.teeCoordinate,screen=toScreen(p.xM,p.yM);
     const cls=p.xM<=-9?'red':p.xM>=9?'blue':'white';
     const shotId=x.s.id||('driver-'+i);
     const title='Shot '+safeText(shotId)+' · x '+p.xM.toFixed(1)+'m · y '+p.yM.toFixed(1)+'m';
     return '<g class="driverDispPoint '+cls+'" data-shot-id="'+safeText(shotId)+'">'+
-      '<circle cx="'+screenX.toFixed(1)+'" cy="'+screenY.toFixed(1)+'" r="6"></circle>'+
+      '<circle cx="'+screen.x.toFixed(1)+'" cy="'+screen.y.toFixed(1)+'" r="5"></circle>'+
       '<title>'+title+'</title></g>';
   }).join('');
 
+  const arcs=guides.map(d=>'<path class="driverDispArc" d="'+arcPath(d)+'"></path>').join('');
+  const labels=guides.map(labelAt).join('');
+
   return '<div class="driverDispV1">'+
-    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver Tee Shot actual coordinate dispersion">'+
-      '<image href="assets/driver-dispersion-bg-v1.png" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMid meet"></image>'+
+    '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver Tee Shot normalized coordinate dispersion">'+
+      '<defs>'+
+        '<linearGradient id="driverDispBg" x1="0" y1="0" x2="0" y2="1">'+
+          '<stop offset="0%" stop-color="#020807"></stop>'+
+          '<stop offset="55%" stop-color="#06110d"></stop>'+
+          '<stop offset="100%" stop-color="#020504"></stop>'+
+        '</linearGradient>'+
+        '<linearGradient id="driverDispLane" x1="0" y1="0" x2="0" y2="1">'+
+          '<stop offset="0%" stop-color="#174f38" stop-opacity=".10"></stop>'+
+          '<stop offset="100%" stop-color="#35a866" stop-opacity=".24"></stop>'+
+        '</linearGradient>'+
+      '</defs>'+
+      '<rect class="driverDispBg" x="0" y="0" width="'+W+'" height="'+H+'" rx="16" fill="url(#driverDispBg)"></rect>'+
+      '<path class="driverDispLane" d="M 215 92 Q 380 55 545 92 L 414 476 L 346 476 Z" fill="url(#driverDispLane)"></path>'+
+      '<line class="driverDispAxis" x1="'+cx+'" y1="'+teeY+'" x2="'+cx+'" y2="42"></line>'+
+      arcs+labels+
+      '<g class="driverDispGreenTag"><rect x="'+(cx-42)+'" y="14" width="84" height="28" rx="10"></rect><text x="'+cx+'" y="33" text-anchor="middle">그린 방향</text></g>'+
+      '<g class="driverDispTeeTag"><circle cx="'+cx+'" cy="'+teeY+'" r="6"></circle><rect x="'+(cx-44)+'" y="'+(teeY+12)+'" width="88" height="28" rx="10"></rect><text x="'+cx+'" y="'+(teeY+31)+'" text-anchor="middle">티잉 구역</text></g>'+
+      '<g class="driverDispLegend" transform="translate(18 18)">'+
+        '<rect x="0" y="0" width="176" height="76" rx="11"></rect>'+
+        '<text class="legendTitle" x="12" y="18">DISPLAY ONLY · X OFFSET</text>'+
+        '<circle class="legendRed" cx="16" cy="35" r="5"></circle><text x="28" y="39">x ≤ -9m</text>'+
+        '<circle class="legendWhite" cx="16" cy="52" r="5"></circle><text x="28" y="56">-9m &lt; x &lt; +9m</text>'+
+        '<circle class="legendBlue" cx="16" cy="69" r="5"></circle><text x="28" y="73">x ≥ +9m</text>'+
+      '</g>'+
       points+
     '</svg>'+
   '</div>';
