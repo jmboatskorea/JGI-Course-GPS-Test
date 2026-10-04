@@ -4405,24 +4405,9 @@ function multiDriverDispersionV1Html(rows){
   const plotted=teeShotCoordinateRows(driverRows);
   if(!plotted.length)return '<div class="analysisEmpty">실제 GPS 좌표가 있는 Driver Tee Shot 데이터가 없습니다.</div>';
 
-  const W=600,H=820,cx=300,teeY=776,scale=1.55;
-  const arcDistances=[100,150,180,200,220,240,260];
-  const arcPath=d=>{
-    const r=d*scale,pts=[];
-    for(let deg=180;deg>=0;deg-=4){
-      const a=deg*Math.PI/180;
-      pts.push((pts.length?'L':'M')+(cx+r*Math.cos(a)).toFixed(1)+','+(teeY-r*Math.sin(a)).toFixed(1));
-    }
-    return pts.join(' ');
-  };
-
-  const arcs=arcDistances.map(d=>{
-    const r=d*scale;
-    const label=d===260?'260m+':d+'m';
-    const labelY=teeY-r+5;
-    return '<path class="driverDispArc" d="'+arcPath(d)+'"></path>'+
-      '<text class="driverDispArcLabel" x="'+cx+'" y="'+labelY.toFixed(1)+'" text-anchor="middle">'+label+'</text>';
-  }).join('');
+  // Approved raster: native pixels, tee marker (755,948), 260m arc apex y=170.
+  // Use one uniform meter scale. Baked intermediate guides are illustrative/nonlinear.
+  const W=1490,H=1055,cx=755,teeY=948,scale=(948-170)/260;
 
   const points=plotted.map((x,i)=>{
     const p=x.teeCoordinate;
@@ -4437,14 +4422,10 @@ function multiDriverDispersionV1Html(rows){
   }).join('');
 
   return '<div class="driverDispV1">'+
-    '<div class="driverDispTitle"><b>드라이버 탄착군 분포도</b><span>(거리 가이드라인 포함)</span></div>'+
-    '<div class="driverDispGreen">그린</div>'+
     '<svg class="driverDispSvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="Driver Tee Shot actual coordinate dispersion">'+
-      '<line class="driverDispCenterLine" x1="'+cx+'" y1="70" x2="'+cx+'" y2="'+teeY+'"></line>'+
-      arcs+points+
+      '<image href="assets/driver-dispersion-bg-v1.png" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMid meet"></image>'+
+      points+
     '</svg>'+
-    '<div class="driverDispTee">티잉 구역</div>'+
-    '<div class="driverDispNote">실제 (xM, yM) 좌표 그대로 표시 · 임의 이동/분산 없음 · 색상은 Display용 xM 구분</div>'+
   '</div>';
 }
 
