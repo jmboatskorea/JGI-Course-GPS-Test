@@ -212,3 +212,8 @@
   #resultsMultiView .multiTeeUsageCompact{grid-template-columns:92px minmax(0,1fr)}
   #resultsMultiView .multiDriverScatter{height:210px}
 }
+
+
+/* Dynamic driver distance range */
+#resultsMultiView .multiDistanceRangeNote{margin:-2px 0 6px;font-size:8px;color:#9fb2a7;font-weight:800}
+#resultsMultiView .multiDistanceBars{height:138px}
