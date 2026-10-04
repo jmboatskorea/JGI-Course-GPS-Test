@@ -1742,15 +1742,15 @@ body.round-active .bottomnav{display:none!important}
 <div id="puttModal" class="modal hidden">
   <div class="sheet puttSheet">
     <div class="sheetHead">
-      <div><strong id="puttTitle">퍼트 #1</strong><div class="sub">거리 0.5m 단위 · 직접 입력</div></div>
+      <div><strong id="puttTitle">퍼트 #1</strong><div class="sub">거리 0.1m 단위 · 직접 입력</div></div>
       <button id="puttClose" class="x">×</button>
     </div>
 
     <div class="sectionLabel">거리</div>
     <div class="puttDistanceRow">
-      <button id="puttMinus" class="puttStepBtn">−0.5</button>
-      <div class="puttDistanceDisplay"><input id="puttDistanceInput" type="number" min="0.5" step="0.5" value="3.0"><span>m</span></div>
-      <button id="puttPlus" class="puttStepBtn">+0.5</button>
+      <button id="puttMinus" class="puttStepBtn">−0.1</button>
+      <div class="puttDistanceDisplay"><input id="puttDistanceInput" type="number" min="0.1" step="0.1" value="" placeholder="—"><span>m</span></div>
+      <button id="puttPlus" class="puttStepBtn">+0.1</button>
     </div>
 
     <div class="sectionLabel">경사</div>
@@ -1817,7 +1817,7 @@ let sgBenchmarkMode=null;
 let playerHandicap=null;
 let floDraft={commitment:null,thinking:null,tension:null,routineExecution:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
-let puttDraft={distanceM:3,slope:null,break:null,result:null};
+let puttDraft={distanceM:null,slope:null,break:null,result:null};
 let penaltyDraft={type:null,strokes:1};
 let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
 let specialEventContext={event:null,after:null};
@@ -7166,8 +7166,8 @@ $('savePenaltyBtn').onclick=()=>{
 $('onGreenBtn').onclick=openPutt;
 
 function resetPuttDraft(){
-  puttDraft={distanceM:3,slope:null,break:null,result:null,playerState:null};
-  $('puttDistanceInput').value='3.0';
+  puttDraft={distanceM:null,slope:null,break:null,result:null,playerState:null};
+  $('puttDistanceInput').value='';
   ['puttSlope','puttBreak','puttResult'].forEach(id=>setSelected($(id),'__'));
 }
 function renderPuttHistory(){
@@ -7197,15 +7197,21 @@ function openPutt(){
   if(ask.yes)openStateCheck('putting',false,ask.reason,null,'AUTO',ask.group);
 }
 function adjustPuttDistance(delta){
-  let v=Number($('puttDistanceInput').value)||0.5;
-  v=Math.max(0.5,Math.round((v+delta)*2)/2);
-  $('puttDistanceInput').value=v.toFixed(1);puttDraft.distanceM=v;
+  const input=$('puttDistanceInput');
+  const raw=input.value.trim();
+  const current=raw===''?0:Number(raw);
+  let v=Math.max(0.1,Math.round(((Number.isFinite(current)?current:0)+delta)*10)/10);
+  input.value=v.toFixed(1);puttDraft.distanceM=v;
 }
-$('puttMinus').onclick=()=>adjustPuttDistance(-0.5);
-$('puttPlus').onclick=()=>adjustPuttDistance(0.5);
+$('puttMinus').onclick=()=>adjustPuttDistance(-0.1);
+$('puttPlus').onclick=()=>adjustPuttDistance(0.1);
 $('puttDistanceInput').onchange=()=>{
-  let v=Math.max(0.5,Number($('puttDistanceInput').value)||0.5);
-  v=Math.round(v*2)/2;$('puttDistanceInput').value=v.toFixed(1);puttDraft.distanceM=v;
+  const input=$('puttDistanceInput'),raw=input.value.trim();
+  if(raw===''){puttDraft.distanceM=null;return}
+  const n=Number(raw);
+  if(!Number.isFinite(n)||n<0.1){input.value='';puttDraft.distanceM=null;return}
+  const v=Math.round(n*10)/10;
+  input.value=v.toFixed(1);puttDraft.distanceM=v;
 };
 $('puttSlope').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.slope=v;setSelected($('puttSlope'),v)};
 $('puttBreak').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.break=v;setSelected($('puttBreak'),v)};
@@ -7213,7 +7219,12 @@ $('puttResult').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)
 $('puttStateBtn').onclick=()=>openStateCheck('putting',false,'플레이어 선택 입력 · 퍼팅',null,'MANUAL');
 $('puttClose').onclick=()=>{$('puttModal').classList.add('hidden')};
 $('savePuttBtn').onclick=()=>{
-  puttDraft.distanceM=Math.round(Math.max(0.5,Number($('puttDistanceInput').value)||0.5)*2)/2;
+  const rawDistance=$('puttDistanceInput').value.trim();
+  if(rawDistance===''){alert('퍼트 거리를 입력하세요.');return}
+  const distance=Number(rawDistance);
+  if(!Number.isFinite(distance)||distance<0.1){alert('퍼트 거리는 0.1m 이상으로 입력하세요.');return}
+  puttDraft.distanceM=Math.round(distance*10)/10;
+  $('puttDistanceInput').value=puttDraft.distanceM.toFixed(1);
   if(!puttDraft.slope||!puttDraft.break||!puttDraft.result){
     alert('Distance, Slope, Break, Result를 입력하세요.');return;
   }
