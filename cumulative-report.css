@@ -159,8 +159,8 @@
 
 
 /* 27-round chart readability */
-#resultsMultiView .multiChartsGrid{grid-template-columns:minmax(0,1.08fr) minmax(0,1.92fr);align-items:start}
-#resultsMultiView .multiChartsGrid .multiChartCard{min-height:205px}
+#resultsMultiView .multiChartsGrid{grid-template-columns:minmax(0,1.08fr) minmax(0,1.92fr);align-items:stretch}
+#resultsMultiView .multiChartsGrid .multiChartCard{min-height:205px;height:100%}
 #resultsMultiView .sgTrendCard{display:block}
 #resultsMultiView .sgTrendCard .sub{margin-top:3px;font-size:9px;color:#8fa097}
 #resultsMultiView .sgTrendCard #multiSgLineChart{margin-top:4px}
