@@ -1275,7 +1275,7 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div class="card">
-          <div class="title">최근 변화 <span style="font-size:10px;color:#91a39a;font-weight:800">· 최근 3R vs 이전 3R</span></div>
+          <div class="title">최근 변화 <span id="multiRecentRangeLabel" style="font-size:10px;color:#91a39a;font-weight:800">· 최근 3R vs 이전 3R</span></div>
           <div class="multiRecentWrap">
             <div id="multiRecentCompare" class="multiRecentCompare"></div>
             <div id="multiRecentSummary" class="multiRecentSummary"></div>
@@ -5113,6 +5113,7 @@ function renderMultiDashboard(rounds){
     '<div class="multiCoreInsight gain"><div class="ey">2 · 가장 큰 강점</div><strong>'+safeText(strengths[0]?.label||'—')+' '+multiSigned(strengths[0]?.avgRound)+'</strong><p>'+(strengths.length?'선택한 '+rounds.length+'라운드의 공식 SG Category 중 라운드 평균 SG가 가장 높았습니다.':'SG unavailable · Benchmark 또는 계산 데이터를 확인해야 합니다.')+'</p></div>'+
     '<div class="multiCoreInsight mental"><div class="ey">3 · 멘탈 패턴</div><strong>'+safeText(mental?.condition||'초기 관찰')+'</strong><p>'+safeText(mental?(mental.label+' '+mental.aM+'/'+mental.aN+' vs '+mental.bM+'/'+mental.bN+' · 초기 관찰'):'비교 가능한 상태 그룹 샘플이 더 필요합니다.')+'</p></div>';
 
+  $('multiRecentRangeLabel').textContent='· 최근 '+split.recent.length+'R vs 이전 '+split.prev.length+'R';
   $('multiRecentCompare').innerHTML=multiRecentChangeHtml(rounds);
   $('multiRecentSummary').innerHTML=multiRecentSummaryText(rounds);
   $('multiSgLineChart').innerHTML=multiRenderSgLineChart(rounds);
