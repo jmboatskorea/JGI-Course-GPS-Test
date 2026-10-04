@@ -170,3 +170,21 @@
 @media(max-width:760px){
   #resultsMultiView .multiChartsGrid{grid-template-columns:1fr}
 }
+
+
+/* Equal-height trend KPI cards */
+#resultsMultiView .multiChartsGrid{align-items:stretch}
+#resultsMultiView .multiChartCard{display:flex;flex-direction:column;height:100%;min-height:330px}
+#resultsMultiView .multiChartCard .multiLineLegend{min-height:22px}
+#resultsMultiView .multiChartNote{margin-top:auto;padding:8px 9px;border-radius:10px;border:1px solid #174837;background:#071a14;display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;row-gap:2px;min-height:54px}
+#resultsMultiView .multiChartNote>b{font-size:10px;color:#9fb2a7}
+#resultsMultiView .multiChartNote>strong{font-size:14px;color:#f5f8f6;line-height:1.2;white-space:nowrap}
+#resultsMultiView .multiChartNote>span{font-size:10px;font-weight:900;white-space:nowrap;text-align:right}
+#resultsMultiView .multiChartNote>span.better{color:#67f29a}
+#resultsMultiView .multiChartNote>span.worse{color:#ff7b7b}
+#resultsMultiView .multiChartNote>span.neutral{color:#cbd7d0}
+#resultsMultiView .multiChartNote>small{grid-column:1/-1;margin-top:1px;font-size:7px;line-height:1.25;color:#7f9086}
+#resultsMultiView .multiHcpProgress{margin-top:auto}
+@media(max-width:760px){
+  #resultsMultiView .multiChartCard{min-height:310px}
+}
