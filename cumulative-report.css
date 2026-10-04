@@ -211,11 +211,11 @@
 #resultsMultiView .multiTeeIntelMap:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.34)}
 #resultsMultiView .multiTeeIntelMap:after{content:"LEFT     FAIRWAY     RIGHT";position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:9px;letter-spacing:.07em;color:#e5eee9;background:#001b14c9;z-index:2}
 #resultsMultiView .multiTeeIntelDot{position:absolute;width:10px;height:10px;transform:translate(-50%,-50%);z-index:2;border:1.5px solid rgba(255,255,255,.92);box-shadow:0 1px 5px rgba(0,0,0,.55)}
-#resultsMultiView .multiTeeIntelDot.driver{border-radius:50%}
-#resultsMultiView .multiTeeIntelDot.wood{clip-path:polygon(50% 0,100% 100%,0 100%)}
-#resultsMultiView .multiTeeIntelDot.hybrid{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
-#resultsMultiView .multiTeeIntelDot.long_iron{border-radius:1px}
-#resultsMultiView .multiTeeIntelDot.other{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+#resultsMultiView .multiTeeIntelDot.club-driver{border-radius:50%}
+#resultsMultiView .multiTeeIntelDot.club-wood{clip-path:polygon(50% 0,100% 100%,0 100%)}
+#resultsMultiView .multiTeeIntelDot.club-hybrid{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+#resultsMultiView .multiTeeIntelDot.club-long_iron{border-radius:1px}
+#resultsMultiView .multiTeeIntelDot.club-other{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
 #resultsMultiView .multiTeeIntelDot.fairway{background:#f4fbf6}
 #resultsMultiView .multiTeeIntelDot.left{background:#42a5ff}
 #resultsMultiView .multiTeeIntelDot.right{background:#ff626d}
