@@ -4234,37 +4234,86 @@ function multiTeeOutcomeClass(x){
   if(dir==='RIGHT')return 'right';
   return 'other';
 }
+function multiTeeClubDisplayName(club){
+  const k=String(club||'미확인').trim().toUpperCase();
+  if(k==='DRIVER')return 'DR';
+  return k||'미확인';
+}
+function multiTeeClubColor(club){
+  const type=multiTeeClubType(club);
+  if(type==='DRIVER')return '#43e78a';
+  if(type==='WOOD'){
+    const k=String(club||'').toUpperCase();
+    return k==='3W'?'#5aa7ff':'#f0b84e';
+  }
+  if(type==='HYBRID')return '#b46cff';
+  if(type==='LONG_IRON')return '#c8d0cc';
+  return '#eef4f1';
+}
+function multiTeeClubGroups(rows){
+  const g={};
+  rows.forEach(x=>{
+    const club=multiTeeClubDisplayName(x.s.club);
+    const o=g[club]||(g[club]={club,type:multiTeeClubType(x.s.club),n:0,fw:0,left:0,right:0,bunker:0,dist:[],sg:[]});
+    o.n++;
+    const lie=String(x.s.endLie||'').toUpperCase(),dir=String(x.s.direction||'').toUpperCase();
+    if(lie==='FAIRWAY')o.fw++;
+    if(dir==='LEFT')o.left++;
+    if(dir==='RIGHT')o.right++;
+    if(lie.includes('BUNKER')||lie==='SAND')o.bunker++;
+    const d=Number(x.s.distanceM);if(Number.isFinite(d))o.dist.push(d);
+    if(Number.isFinite(x.sg))o.sg.push(x.sg);
+  });
+  return Object.values(g).sort((a,b)=>b.n-a.n);
+}
 function multiTeeTypeUsageHtml(rows){
   if(!rows.length)return '<div class="analysisEmpty">티샷 데이터가 없습니다.</div>';
-  const order=['DRIVER','WOOD','HYBRID','LONG_IRON','OTHER'];
-  const colors={DRIVER:'#43e78a',WOOD:'#65aef7',HYBRID:'#b46cff',LONG_IRON:'#d8e3e9',OTHER:'#f0b84e'};
-  const counts={};order.forEach(k=>counts[k]=0);rows.forEach(x=>counts[multiTeeClubType(x.s.club)]++);
+  const groups=multiTeeClubGroups(rows).slice(0,7);
   let cursor=0,stops=[];
-  order.forEach(k=>{const p=counts[k]/rows.length*100;if(p>0){stops.push(colors[k]+' '+cursor+'% '+(cursor+p)+'%');cursor+=p}});
-  if(!stops.length)stops=['#24483b 0% 100%'];
-  return '<div class="multiDonutWrap multiTeeIntelUsage"><div class="multiDonut" style="background:conic-gradient('+stops.join(',')+')"><strong>'+rows.length+'</strong><span>Par 4·5 티샷</span></div><div class="multiDonutLegend">'+order.filter(k=>counts[k]>0).map(k=>'<div><i style="background:'+colors[k]+'"></i><span>'+safeText(multiTeeFilterLabel(k))+'</span><b>'+counts[k]+' ('+Math.round(counts[k]/rows.length*100)+'%)</b></div>').join('')+'</div></div>';
+  groups.forEach(o=>{const p=o.n/rows.length*100,clr=multiTeeClubColor(o.club);stops.push(clr+' '+cursor+'% '+(cursor+p)+'%');cursor+=p});
+  return '<div class="multiDonutWrap multiTeeIntelUsage"><div class="multiDonut" style="background:conic-gradient('+stops.join(',')+')"><strong>'+rows.length+'</strong><span>티샷<br>(Par 4·5)</span></div><div class="multiDonutLegend">'+groups.map(o=>'<div><i style="background:'+multiTeeClubColor(o.club)+'"></i><span>'+safeText(o.club)+'</span><b>'+o.n+' ('+Math.round(o.n/rows.length*100)+'%)</b></div>').join('')+'</div></div>';
+}
+function multiTeeShapeClass(type){return 'club-'+String(type||'OTHER').toLowerCase()}
+function multiTeeShapeLegendHtml(){
+  return '<div class="multiTeeLegendGroup club"><b>클럽 종류 (모양)</b>'+
+    '<span><i class="shape club-driver"></i>Driver</span>'+
+    '<span><i class="shape club-wood"></i>Wood</span>'+
+    '<span><i class="shape club-hybrid"></i>Hybrid</span>'+
+    '<span><i class="shape club-long_iron"></i>Long Iron</span>'+
+    '</div>';
+}
+function multiTeeOutcomeLegendHtml(){
+  return '<div class="multiTeeLegendGroup"><b>샷 결과 (색상)</b>'+
+    '<span><i class="fairway"></i>Fairway</span>'+
+    '<span><i class="left"></i>Left</span>'+
+    '<span><i class="right"></i>Right</span>'+
+    '<span><i class="bunker"></i>Bunker/Hazard</span>'+
+    '</div>';
 }
 function multiTeeDispersionHtml(rows){
   if(!rows.length)return '<div class="analysisEmpty">선택한 클럽의 티샷 데이터가 없습니다.</div>';
-  const dist=rows.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
-  const minD=dist.length?Math.min(...dist):0,maxD=dist.length?Math.max(...dist):1,span=Math.max(10,maxD-minD);
   const dots=rows.map((x,i)=>{
     const dir=String(x.s.direction||'CENTER').toUpperCase();
-    const base=dir==='LEFT'?24:dir==='RIGHT'?76:50;
-    const jitter=((i%7)-3)*1.7;
+    const base=dir==='LEFT'?26:dir==='RIGHT'?74:50;
+    const jitter=((i%9)-4)*1.5;
     const d=Number(x.s.distanceM);
-    const y=Number.isFinite(d)?Math.max(16,Math.min(72,72-(d-minD)/span*52)):46;
-    const type='club-'+multiTeeClubType(x.s.club).toLowerCase();
+    const y=Number.isFinite(d)?Math.max(9,Math.min(78,78-Math.max(0,Math.min(300,d))/300*70)):46;
+    const type=multiTeeShapeClass(multiTeeClubType(x.s.club));
     const outcome=multiTeeOutcomeClass(x);
-    const title=(x.h.hole||'')+'번 홀 · '+safeText(x.s.club||'클럽')+' · '+(Number.isFinite(d)?Math.round(d)+'m':'거리 없음')+' · '+dirLabel(x.s.direction);
-    return '<span class="multiTeeIntelDot '+type+' '+outcome+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+title+'"></span>';
+    const title=(x.h.hole||'')+'번 홀 · '+multiTeeClubDisplayName(x.s.club)+' · '+(Number.isFinite(d)?Math.round(d)+'m':'거리 없음')+' · '+dirLabel(x.s.direction);
+    return '<span class="multiTeeIntelDot '+type+' '+outcome+'" style="left:'+(base+jitter)+'%;top:'+y+'%" title="'+safeText(title)+'"></span>';
   }).join('');
   const fw=rows.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
   const left=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='LEFT').length;
   const right=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='RIGHT').length;
   const pct=n=>Math.round(n/rows.length*100);
-  const badges='<span class="multiTeeIntelPct left">좌 '+pct(left)+'%</span><span class="multiTeeIntelPct center">Fairway '+pct(fw)+'%</span><span class="multiTeeIntelPct right">우 '+pct(right)+'%</span>';
-  return '<div class="multiTeeIntelMap">'+dots+badges+'</div><div class="multiCourseImageNote">정규화된 Tee–Target 축 · 점 색상은 결과, 점 모양은 클럽 종류</div>';
+  const guides=[300,250,200,150,100,50].map(d=>{
+    const top=78-d/300*70;
+    return '<span class="multiTeeIntelGuide" style="top:'+top+'%"><i></i><b>'+d+'m</b></span>';
+  }).join('');
+  const badges='<span class="multiTeeIntelPct left">좌측 '+pct(left)+'%</span><span class="multiTeeIntelPct center">Fairway '+pct(fw)+'%</span><span class="multiTeeIntelPct right">우측 '+pct(right)+'%</span>';
+  return '<div class="multiTeeIntelMap"><span class="multiTeeIntelGreen">그린</span>'+guides+dots+badges+'<span class="multiTeeIntelTee">TEE</span></div>'+
+    '<div class="multiCourseImageNote">정규화된 Tee–Target 축 · 색상=결과 · 모양=클럽 종류</div>';
 }
 function multiTeeDistanceHtml(rows){
   const values=rows.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
@@ -4275,7 +4324,7 @@ function multiTeeDistanceHtml(rows){
   for(let a=start;a<end;a+=5){const b=a+5;bins.push([a+'–'+b,values.filter(v=>v>=a&&(b===end?v<=b:v<b)).length])}
   const max=Math.max(1,...bins.map(x=>x[1]));
   return '<div class="multiTeeRangeLabel">Player Range <b>'+Math.round(minV)+'–'+Math.round(maxV)+'m</b> · 5m 단위</div>'+
-    '<div class="multiDistanceBars multiTeeIntelDistance">'+bins.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(3,n/max*105)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
+    '<div class="multiDistanceBars multiTeeIntelDistance">'+bins.map(([l,n])=>'<div class="multiDistanceBar"><b>'+n+'</b><i style="height:'+Math.max(4,n/max*135)+'px"></i><span>'+safeText(l).replace('–','–<wbr>')+'<br>m</span></div>').join('')+'</div>';
 }
 function multiTeeSelectedSummaryHtml(allRows,rows){
   if(!rows.length)return '<div class="analysisEmpty">선택한 클럽의 요약 데이터가 없습니다.</div>';
@@ -4292,19 +4341,67 @@ function multiTeeSelectedSummaryHtml(allRows,rows){
     '<div><span>우측 미스</span><b>'+multiPct(right,rows.length)+'</b><small>'+right+' / '+rows.length+'</small></div>'+
   '</div>';
 }
+function multiTeeClubRangeBarHtml(group,globalMin,globalMax){
+  if(!group.dist.length)return '—';
+  const lo=Math.min(...group.dist),hi=Math.max(...group.dist),mean=avg(group.dist),span=Math.max(1,globalMax-globalMin);
+  const left=Math.max(0,(lo-globalMin)/span*100),width=Math.max(3,(hi-lo)/span*100),mark=Math.max(0,Math.min(100,(mean-globalMin)/span*100));
+  return '<div class="multiTeeClubRange"><small>'+Math.round(lo)+'</small><span><i style="left:'+left+'%;width:'+width+'%"></i><b style="left:'+mark+'%"></b></span><small>'+Math.round(hi)+'</small></div>';
+}
+function multiTeeClubComparisonHtml(rows){
+  const groups=multiTeeClubGroups(rows),allDist=rows.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
+  if(!groups.length)return '<div class="analysisEmpty">비교 가능한 티샷 데이터가 없습니다.</div>';
+  const globalMin=allDist.length?Math.min(...allDist):0,globalMax=allDist.length?Math.max(...allDist):1;
+  return '<div class="multiTeeClubTable"><div class="head">'+
+    '<b>클럽</b><b>사용률</b><b>평균 거리</b><b>거리 분포 (5m 단위)</b><b>Fairway</b><b>좌측</b><b>우측</b><b>Bunker</b></div>'+
+    groups.map(o=>'<div class="row">'+
+      '<strong><i class="shape '+multiTeeShapeClass(o.type)+'" style="background:'+multiTeeClubColor(o.club)+'"></i>'+safeText(o.club)+'</strong>'+
+      '<span>'+o.n+' ('+Math.round(o.n/rows.length*100)+'%)</span>'+
+      '<span>'+(o.dist.length?Math.round(avg(o.dist))+'m':'—')+'</span>'+
+      '<span>'+multiTeeClubRangeBarHtml(o,globalMin,globalMax)+'</span>'+
+      '<span class="good">'+multiPct(o.fw,o.n)+'</span>'+
+      '<span class="left">'+multiPct(o.left,o.n)+'</span>'+
+      '<span class="right">'+multiPct(o.right,o.n)+'</span>'+
+      '<span>'+multiPct(o.bunker,o.n)+'</span>'+
+    '</div>').join('')+'</div>';
+}
+function multiTeeIntelPatterns(allRows,rows){
+  if(!rows.length)return ['선택한 클럽의 티샷 데이터가 없습니다.'];
+  const fw=rows.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const left=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='LEFT').length;
+  const right=rows.filter(x=>String(x.s.direction||'').toUpperCase()==='RIGHT').length;
+  const dist=rows.map(x=>Number(x.s.distanceM)).filter(Number.isFinite);
+  const groups=multiTeeClubGroups(allRows);
+  const out=[];
+  out.push('Fairway 적중 '+fw+'/'+rows.length+'회 ('+Math.round(fw/rows.length*100)+'%)가 기록되었습니다.');
+  if(dist.length)out.push('평균 티샷 거리 '+Math.round(avg(dist))+'m · 실제 Range '+Math.round(Math.min(...dist))+'–'+Math.round(Math.max(...dist))+'m입니다.');
+  if(left!==right)out.push((right>left?'우측':'좌측')+' 미스가 '+Math.max(left,right)+'회 ('+Math.round(Math.max(left,right)/rows.length*100)+'%)로 반대 방향보다 '+Math.abs(right-left)+'회 많았습니다.');
+  const best=groups.filter(o=>o.n>=3).sort((a,b)=>(b.fw/b.n)-(a.fw/a.n))[0];
+  if(best)out.push(best.club+'의 Fairway 적중이 '+best.fw+'/'+best.n+'회 ('+Math.round(best.fw/best.n*100)+'%)로 관찰되었습니다.');
+  const dr=groups.find(o=>o.type==='DRIVER'&&o.n>=3),wood=groups.filter(o=>o.type==='WOOD'&&o.n>=3).sort((a,b)=>b.n-a.n)[0];
+  if(dr&&wood&&dr.dist.length&&wood.dist.length){
+    const dd=avg(dr.dist)-avg(wood.dist),dfw=wood.fw/wood.n*100-dr.fw/dr.n*100;
+    out.push(wood.club+'는 Driver 대비 평균 '+Math.abs(dd).toFixed(0)+'m '+(dd>=0?'짧고':'길며')+', Fairway 적중은 '+(dfw>=0?'+':'')+dfw.toFixed(0)+'%p 차이가 관찰되었습니다.');
+  }
+  return out.slice(0,5);
+}
 function multiTeeIntelligenceHtml(tee){
   const selected=multiTeeFilterRows(tee,multiTeeClubFilter);
   const label=multiTeeFilterLabel(multiTeeClubFilter);
+  const patterns=multiTeeIntelPatterns(tee,selected);
   return '<div class="multiTeeIntelPanel">'+
-    '<div class="multiTeeIntelHead"><div><b>Tee Shot Intelligence</b><span>Par 4·5 티샷 · 클럽별 방향, 거리, 정확도 비교</span></div>'+
-      '<div class="multiTeeIntelLegend"><span><i class="fairway"></i>Fairway</span><span><i class="left"></i>Left</span><span><i class="right"></i>Right</span><span><i class="bunker"></i>Bunker</span></div>'+
+    '<div class="multiTeeIntelHead"><div><b>Tee Shot Intelligence</b><span>클럽별 사용 비율, 방향, 거리, 정확도를 한 화면에서 비교합니다.</span></div>'+
+      '<div class="multiTeeIntelLegendWrap">'+multiTeeOutcomeLegendHtml()+multiTeeShapeLegendHtml()+'</div>'+
     '</div>'+
     multiTeeFilterButtonsHtml(tee)+
     '<div class="multiTeeIntelGrid">'+
-      '<div class="multiTeeIntelCard usage"><h4>클럽 사용 비율</h4>'+multiTeeTypeUsageHtml(tee)+'</div>'+
+      '<div class="multiTeeIntelCard usage"><h4>클럽 사용 비율 (Par 4·5 티샷)</h4>'+multiTeeTypeUsageHtml(tee)+'</div>'+
       '<div class="multiTeeIntelCard map"><h4>Tee Shot Distribution · '+safeText(label)+'</h4>'+multiTeeDispersionHtml(selected)+'</div>'+
-      '<div class="multiTeeIntelRight"><div class="multiTeeIntelCard"><h4>거리 분포 · '+safeText(label)+'</h4>'+multiTeeDistanceHtml(selected)+'</div>'+
+      '<div class="multiTeeIntelRight"><div class="multiTeeIntelCard distance"><h4>티샷 거리 분포 · '+safeText(label)+'</h4>'+multiTeeDistanceHtml(selected)+'</div>'+
       '<div class="multiTeeIntelCard summary"><h4>선택 클럽 요약 · '+safeText(label)+'</h4>'+multiTeeSelectedSummaryHtml(tee,selected)+'</div></div>'+
+    '</div>'+
+    '<div class="multiTeeIntelBottom">'+
+      '<div class="multiTeeIntelCard compare"><h4>클럽별 티샷 상세 비교 (Par 4·5 티샷)</h4>'+multiTeeClubComparisonHtml(tee)+'</div>'+
+      '<div class="multiTeeIntelCard patterns"><h4>티샷 주요 패턴 · '+safeText(label)+'</h4><div class="multiTeeIntelPatternList">'+patterns.map((x,i)=>'<div><b>'+String(i+1).padStart(2,'0')+'</b><span>'+safeText(x)+'</span></div>').join('')+'</div></div>'+
     '</div>'+
   '</div>';
 }
@@ -4587,14 +4684,11 @@ function multiPerformanceDetail(rounds,mode){
     return tab+
       '<div class="multiTeeKpis">'+
         '<div class="multiTeeKpi"><span>티샷 수</span><b>'+tee.length+'</b></div>'+
-        '<div class="multiTeeKpi"><span>드라이버 평균 거리</span><b>'+(dist.length?Math.round(avg(dist))+'m':'—')+'</b></div>'+
+        '<div class="multiTeeKpi"><span>평균 티샷 거리 (Driver)</span><b>'+(dist.length?Math.round(avg(dist))+'m':'—')+'</b></div>'+
         '<div class="multiTeeKpi"><span>페어웨이 적중</span><b>'+multiPct(fw,tee.length)+'</b></div>'+
         '<div class="multiTeeKpi"><span>Avg SG/티샷</span><b>'+multiSgHtml(avg(sg))+'</b></div>'+
       '</div>'+
-      multiTeeIntelligenceHtml(tee)+
-      '<div class="multiTeeLower"><div><div class="sectionLabel" style="margin-top:12px">상황별 드라이버 결과</div>'+
-      multiTable(['상황','샷','페어웨이','우측 미스','좌측 미스','평균 거리','Avg SG'],situations.map(x=>[x.label,x.n,multiPct(x.fw,x.n),multiPct(x.right,x.n),multiPct(x.left,x.n),Number.isFinite(x.avgDist)?Math.round(x.avgDist)+'m':'—',multiSgHtml(x.avgSg)]))+
-      '</div><div><div class="sectionLabel" style="margin-top:12px">티샷 주요 패턴</div><div class="multiPatternList">'+patterns.map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div></div>';
+      multiTeeIntelligenceHtml(tee);
   }
 
   if(mode==='SECOND'){
