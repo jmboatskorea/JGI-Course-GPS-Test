@@ -756,6 +756,20 @@ body.round-active .bottomnav{display:none!important}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
+.multiShotDetailIntro{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:rgba(39,233,120,.06);border:1px solid rgba(39,233,120,.18);color:#abc0b4;font-size:9px;line-height:1.5}
+.multiShotRound{margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,20,15,.72);overflow:hidden}
+.multiShotRound>summary,.multiShotHole>summary{cursor:pointer;list-style:none}.multiShotRound>summary::-webkit-details-marker,.multiShotHole>summary::-webkit-details-marker{display:none}
+.multiShotRound>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 13px}.multiShotRound>summary span{font-size:11px;font-weight:950;color:#f2f7f4}.multiShotRound>summary b{font-size:11px;color:#7cf4a1;white-space:nowrap}
+.multiShotRoundBody{padding:0 8px 8px;display:grid;gap:7px}
+.multiShotHole{border:1px solid rgba(255,255,255,.10);border-radius:13px;background:rgba(255,255,255,.025);overflow:hidden}
+.multiShotHole>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px}.multiShotHole>summary span{font-size:10px;font-weight:950}.multiShotHole>summary b{font-size:9px;color:#a9bbb0;white-space:nowrap}
+.multiShotList{padding:0 8px 8px;display:grid;gap:7px}
+.multiShotCard{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:start;padding:9px;border-radius:12px;background:rgba(4,20,15,.72);border:1px solid rgba(255,255,255,.09)}
+.multiShotSeq{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#ff9430;color:#fff;font-size:10px;font-weight:1000}
+.multiShotTop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.multiShotTop strong{font-size:11px;line-height:1.3}.multiShotTop span{font-size:10px;font-weight:950;white-space:nowrap}
+.multiShotRoute{margin-top:3px;font-size:9px;color:#c4d2ca;font-weight:850}.multiShotMeta{margin-top:3px;font-size:8px;color:#91a59a;line-height:1.45}
+.multiShotSg{font-size:9px;font-weight:1000;white-space:nowrap;padding-top:2px}.multiShotSg.positive{color:#67f29a}.multiShotSg.negative{color:#ff7b7b}.multiShotSg.neutral{color:#d6e1db}.multiShotSg.pending{color:#74847a}
+@media(max-width:620px){.multiShotCard{grid-template-columns:26px minmax(0,1fr)}.multiShotSg{grid-column:2;justify-self:start;padding-top:0}.multiShotTop{align-items:flex-start}}
 @media(max-width:620px){.multiHero{padding:10px}.multiHero .resultsTop{gap:8px}.multiHero .resultsMetric b{font-size:22px}.multiCockpitSummary{grid-template-columns:repeat(2,1fr)!important}.multiPlayerSgCards{grid-template-columns:repeat(2,1fr)}.multiChartsGrid{grid-template-columns:1fr}.multiCoreInsights{grid-template-columns:1fr}.multiRecentWrap{grid-template-columns:1fr}.multiRecentCompare{grid-template-columns:repeat(2,1fr)}.multiDashboardTabs{grid-template-columns:repeat(2,1fr)}.multiTeeKpis{grid-template-columns:repeat(2,1fr)}.multiTeeGrid{grid-template-columns:1fr}.multiDriverScatter{height:180px}}
 
 .sampleStatus{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:950;white-space:nowrap}.sampleStatus.low{color:#a8b4ad;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)}.sampleStatus.early{color:#ffd071;border:1px solid rgba(255,193,68,.24);background:rgba(255,193,68,.06)}.sampleStatus.ready{color:#75f29d;border:1px solid rgba(54,239,124,.24);background:rgba(54,239,124,.06)}
@@ -1330,6 +1344,10 @@ body.round-active .bottomnav{display:none!important}
           <p>선택한 라운드의 저장된 샷·코스·타깃·퍼팅·상태 데이터를 항목별로 모두 펼쳐봅니다. 저장되지 않은 정보는 임의로 만들지 않습니다.</p>
         </div>
 
+        <details class="analysisDetail" open>
+          <summary>샷별 상세 · Hole → Shot</summary>
+          <div id="analysisShotDetail" class="analysisBody"></div>
+        </details>
         <details class="analysisDetail" open>
           <summary>1. 라운드 전체 개요</summary>
           <div id="analysisOverall" class="analysisBody"></div>
@@ -4040,8 +4058,65 @@ function multiPuttBucket(v){
 function multiStateValueLabel(key){
   return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
+function multiShotSgBadge(value){
+  if(!Number.isFinite(value))return '<span class="multiShotSg pending">SG —</span>';
+  const cls=value>0.005?'positive':value<-0.005?'negative':'neutral';
+  return '<span class="multiShotSg '+cls+'">SG '+multiSigned(value)+'</span>';
+}
+function multiShotHoleDetailHtml(r,h,open=false){
+  const shots=h?.shots||[],putts=h?.puttsDetail||[];
+  const score=storedHoleScore(h),par=Number(h?.par),delta=Number.isFinite(score)&&Number.isFinite(par)?score-par:null;
+  const scoreText=Number.isFinite(score)?String(score)+(delta===null?'':(' · '+(delta===0?'E':(delta>0?'+':'')+delta))):'—';
+  const penalty=Number(h?.penalties||0);
+  const cards=[
+    ...shots.map((s,i)=>{
+      const sg=multiShotSg({r,h,s,si:i});
+      const targetRaw=s?.targetZone||s?.target?.zone;
+      const meta=[];
+      if(s?.shotIntent)meta.push(intentLabel(s.shotIntent));
+      if(targetRaw)meta.push('Target '+multiTargetLabel(targetRaw));
+      if(s?.direction)meta.push(dirLabel(s.direction));
+      if(s?.depth)meta.push(depthLabel(s.depth));
+      const remaining=Number(s?.courseContext?.endGreenDistanceM);
+      if(Number.isFinite(remaining))meta.push('남은 거리 '+Math.round(remaining)+'m');
+      return '<div class="multiShotCard"><div class="multiShotSeq">'+(i+1)+'</div><div>'+
+        '<div class="multiShotTop"><strong>'+safeText(playerShotLabel(h,s,i))+' · '+safeText(s?.club||'클럽 미확인')+'</strong><span>'+safeText(distanceLabel(s?.distanceM))+'</span></div>'+
+        '<div class="multiShotRoute">'+safeText(lieDisplayLabel(s?.startLie))+' → '+safeText(lieDisplayLabel(s?.endLie))+'</div>'+
+        (meta.length?'<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>':'')+
+        '</div>'+multiShotSgBadge(sg)+'</div>';
+    }),
+    ...putts.map((p,i)=>{
+      const sg=multiPuttSg({r,h,p,pi:i});
+      const meta=[multiPuttSlopeLabel(p?.slope),multiPuttBreakLabel(p?.break),puttResultLabel(p?.result)].filter(Boolean);
+      const d=Number(p?.distanceM);
+      return '<div class="multiShotCard"><div class="multiShotSeq">'+(shots.length+i+1)+'</div><div>'+
+        '<div class="multiShotTop"><strong>퍼트 '+(i+1)+' · Putter</strong><span>'+(Number.isFinite(d)?d.toFixed(1)+'m':'—')+'</span></div>'+
+        '<div class="multiShotRoute">GREEN → '+safeText(String(p?.result||'').toUpperCase()==='HOLED'?'HOLED':'GREEN')+'</div>'+
+        '<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>'+
+        '</div>'+multiShotSgBadge(sg)+'</div>';
+    })
+  ].join('');
+  return '<details class="multiShotHole" '+(open?'open':'')+'><summary><span>HOLE '+safeText(h?.hole??'—')+(Number.isFinite(par)?' · PAR '+par:'')+'</span><b>'+safeText(scoreText)+' · 샷 '+shots.length+' · 퍼트 '+putts.length+(penalty?' · 벌타 '+penalty:'')+'</b></summary>'+
+    '<div class="multiShotList">'+(cards||'<div class="analysisEmpty">저장된 샷이 없습니다.</div>')+'</div></details>';
+}
+function multiShotRoundDetailHtml(r,open=false){
+  const holes=(r?.holes||[]).filter(h=>(h?.shots||[]).length||(h?.puttsDetail||[]).length||h?.completed);
+  const score=resultScore(r),delta=resultToPar(r);
+  const scoreText=Number.isFinite(score)?('Score '+score+(Number.isFinite(delta)?' · '+(delta===0?'E':(delta>0?'+':'')+delta):'')):'Score —';
+  const course=[r?.course,r?.nine].filter(Boolean).join(' · ');
+  return '<details class="multiShotRound" '+(open?'open':'')+'><summary><span>'+safeText(resultDateLabel(r))+' · '+safeText(course||'코스 미확인')+'</span><b>'+safeText(scoreText)+'</b></summary>'+
+    '<div class="multiShotRoundBody">'+(holes.length?holes.map((h,i)=>multiShotHoleDetailHtml(r,h,i===0)).join(''):'<div class="analysisEmpty">저장된 홀 데이터가 없습니다.</div>')+'</div></details>';
+}
+function multiShotDetailHtml(rounds){
+  const ordered=[...(rounds||[])].sort((a,b)=>Number(b?.startedAt||0)-Number(a?.startedAt||0));
+  if(!ordered.length)return '<div class="analysisEmpty">선택한 라운드가 없습니다.</div>';
+  return '<div class="multiShotDetailIntro"><b>Hole → Shot 순서로 실제 저장 기록을 봅니다.</b><br>클럽 · 거리 · Lie 변화 · Target/결과 · 남은 거리 · SG를 저장된 값이 있을 때만 표시합니다. 기존 분석과 계산은 변경하지 않습니다.</div>'+
+    ordered.map((r,i)=>multiShotRoundDetailHtml(r,i===0)).join('');
+}
+
 function renderFullMultiAnalysis(rounds){
   const data=multiRows(rounds),{shots,putts,holes,states}=data;
+  if($('analysisShotDetail'))$('analysisShotDetail').innerHTML=multiShotDetailHtml(rounds);
   const scoreRows=rounds.map(r=>({score:resultScore(r),par:resultPar(r),delta:resultToPar(r)}));
   const scoreVals=scoreRows.map(x=>x.score).filter(Number.isFinite);
   let birdie=0,par=0,bogey=0,doublePlus=0,frontScore=0,frontPar=0,backScore=0,backPar=0;
