@@ -3160,7 +3160,8 @@ function activateDropForStart(){
   startPositionOverride='DROP';
   dropMode=true;
   $('dropBallBtn')?.classList.add('active');
-  if($('dropBallBtn'))$('dropBallBtn').textContent='지도 선택';
+  if($('dropBallBtn'))$('dropBallBtn').textContent='공 위치 완료';
+  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 지도에서 공 위치를 탭하세요';
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
 }
@@ -3508,6 +3509,11 @@ function beginNextShot(club,previousShot=null){
 }
 function beginPending(club,previousShot=null){
   const startSnapshot=resolveShotStart(previousShot);
+  if(dropMode){
+    dropMode=false;
+    if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치'}
+    if($('gpsOverlay')&&manualPosition)$('gpsOverlay').textContent='위치 · DROP 확정';
+  }
   if(!startSnapshot){
     alert('샷 시작 위치를 확인할 수 없습니다. GPS, 티박스 또는 지도에서 공 위치 지정을 선택해 주세요.');
     startGPS();
@@ -6303,9 +6309,9 @@ function setManualPosition(latLng){
       icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}
     });
   }else{manualPositionMarker.setPosition(manualPosition);manualPositionMarker.setMap(googleMap)}
-  dropMode=false;
-  $('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치';
-  if($('gpsOverlay'))$('gpsOverlay').textContent='위치 · 수동 지정';
+  dropMode=true;
+  $('dropBallBtn').classList.add('active');$('dropBallBtn').textContent='공 위치 완료';
+  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 다른 곳을 탭하면 위치 수정';
   renderStartPositionControl();
   renderJgiCourseView();
 }
@@ -8262,7 +8268,12 @@ $('dropBallBtn').onclick=()=>{
   if(dropMode&&!round?.pending)startPositionOverride='DROP';
   if(!dropMode&&startPositionOverride==='DROP'&&!manualPosition)startPositionOverride=null;
   $('dropBallBtn').classList.toggle('active',dropMode);
-  $('dropBallBtn').textContent=dropMode?'지도 선택':'공 위치';
+  $('dropBallBtn').textContent=dropMode?'공 위치 완료':'공 위치';
+  if($('gpsOverlay')){
+    $('gpsOverlay').textContent=dropMode
+      ? (manualPosition?'DROP · 다른 곳을 탭하면 위치 수정':'DROP · 지도에서 공 위치를 탭하세요')
+      : (manualPosition?'위치 · DROP 확정':(gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기'));
+  }
   renderStartPositionControl();
 };
 function undoEditableHole(){
