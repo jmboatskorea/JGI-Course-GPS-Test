@@ -1851,6 +1851,7 @@ let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,en
 let puttDraft={distanceM:null,slope:null,break:null,result:null};
 let clubModalMode='START';
 let editingPuttIndex=null;
+let undoReturnHole=null;
 let penaltyDraft={type:null,strokes:1};
 let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
 let specialEventContext={event:null,after:null};
@@ -5627,7 +5628,7 @@ function updatePendingClub(club){
 }
 function restoreFinalizedShotAsPending(shot){
   if(!round||!shot)return false;
-  const h=hole();
+  const h=hole(),wasCompleted=!!h.completed,completedAt=h.completedAt||null,achievement=h.achievement||null;
   h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;
   round.pending={
     id:shot.id,club:shot.club,start:shot.start,startLie:shot.startLie,startedAt:shot.startedAt,
@@ -5644,8 +5645,10 @@ function restoreFinalizedShotAsPending(shot){
     playerState:shot.playerState||null,preShotReset:shot.preShotReset||null,queuedClub:null,
     editingExisting:true,editEnd:shot.end||null,editHistory:[...(shot.editHistory||[])],
     originalShot:JSON.parse(JSON.stringify(shot)),
+    editHoleWasCompleted:wasCompleted,editHoleCompletedAt:completedAt,editHoleAchievement:achievement,editReturnHole:undoReturnHole,
     editSnapshot:{club:shot.club,shotIntent:shot.shotIntent,endLie:shot.endLie,direction:shot.direction,depth:shot.depth,holed:shot.holed===true}
   };
+  undoReturnHole=null;
   currentLie=shot.startLie||'Unknown';
   save();renderRound();
   if(round.pending.target)showTargetSnapshot(round.pending.target,round.pending.start);
@@ -5656,7 +5659,16 @@ function cancelPendingEdit(){
   const p=round?.pending;if(!p?.editingExisting)return false;
   const h=hole(),original=p.originalShot?JSON.parse(JSON.stringify(p.originalShot)):null;
   if(original)h.shots.push(original);
-  round.pending=null;currentLie=original?.endLie||'Unknown';save();renderRound();return true;
+  h.completed=!!p.editHoleWasCompleted;
+  h.completedAt=p.editHoleWasCompleted?(p.editHoleCompletedAt||Date.now()):null;
+  h.achievement=p.editHoleWasCompleted?(p.editHoleAchievement||holeAchievementCode(h)):null;
+  h.review=p.editHoleWasCompleted?buildHoleReview(h):null;
+  const returnHole=p.editReturnHole;
+  round.pending=null;currentLie=original?.endLie||'Unknown';
+  if(Number.isFinite(Number(returnHole))&&Number(returnHole)!==round.currentHole){
+    round.currentHole=Number(returnHole);currentLie='Unknown';
+  }
+  save();renderRound();renderCourseHole();return true;
 }
 function startShot(club){
   if(round.pending){
@@ -7461,11 +7473,13 @@ $('dropBallBtn').onclick=()=>{
 };
 function undoEditableHole(){
   let h=hole();
+  undoReturnHole=null;
   const hasInput=(h?.shots||[]).length||(h?.puttsDetail||[]).length||(h?.penaltyEvents||[]).length;
   if(!hasInput&&round.currentHole>1){
     const prev=round.holes[round.currentHole-2];
     if(prev?.completed){
-      round.currentHole--;h=hole();h.completed=false;h.completedAt=null;h.review=null;
+      undoReturnHole=round.currentHole;
+      round.currentHole--;h=hole();
       save();renderRound();renderCourseHole();
     }
   }
@@ -7480,7 +7494,6 @@ $('undoLastBtn').onclick=()=>{
   }
   const h=undoEditableHole();
   if((h.puttsDetail||[]).length){
-    h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;
     openPuttEdit(h.puttsDetail.length-1);save();return;
   }
   if((h.shots||[]).length){
@@ -7683,7 +7696,14 @@ function resetPuttDraft(){
 function openPuttEdit(index){
   const h=hole(),p=h?.puttsDetail?.[index];if(!p)return false;
   editingPuttIndex=index;
-  puttDraft={distanceM:p.distanceM,slope:p.slope,break:p.break,result:p.result,playerState:p.playerState||null};
+  puttDraft.editReturnHole=undoReturnHole;
+  puttDraft.editHoleWasCompleted=!!h.completed;
+  puttDraft.editHoleCompletedAt=h.completedAt||null;
+  puttDraft.editHoleAchievement=h.achievement||null;
+  undoReturnHole=null;
+  puttDraft={distanceM:p.distanceM,slope:p.slope,break:p.break,result:p.result,playerState:p.playerState||null,
+    editReturnHole:puttDraft.editReturnHole,editHoleWasCompleted:puttDraft.editHoleWasCompleted,
+    editHoleCompletedAt:puttDraft.editHoleCompletedAt,editHoleAchievement:puttDraft.editHoleAchievement};
   $('puttDistanceInput').value=Number(p.distanceM).toFixed(1);
   setSelected($('puttSlope'),p.slope);setSelected($('puttBreak'),p.break);setSelected($('puttResult'),p.result);
   $('savePuttBtn').textContent='퍼트 수정 저장';
@@ -7741,7 +7761,16 @@ $('puttSlope').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)r
 $('puttBreak').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.break=v;setSelected($('puttBreak'),v)};
 $('puttResult').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;puttDraft.result=v;setSelected($('puttResult'),v)};
 $('puttStateBtn').onclick=()=>openStateCheck('putting',false,'플레이어 선택 입력 · 퍼팅',null,'MANUAL');
-$('puttClose').onclick=()=>{$('puttModal').classList.add('hidden')};
+$('puttClose').onclick=()=>{
+  $('puttModal').classList.add('hidden');
+  if(editingPuttIndex!==null){
+    const returnHole=puttDraft.editReturnHole;
+    editingPuttIndex=null;
+    if(Number.isFinite(Number(returnHole))&&Number(returnHole)!==round.currentHole){
+      round.currentHole=Number(returnHole);currentLie='Unknown';save();renderRound();renderCourseHole();
+    }
+  }
+};
 $('savePuttBtn').onclick=()=>{
   const rawDistance=$('puttDistanceInput').value.trim();
   if(rawDistance===''){alert('퍼트 거리를 입력하세요.');return}
@@ -7753,10 +7782,11 @@ $('savePuttBtn').onclick=()=>{
     alert('Distance, Slope, Break, Result를 입력하세요.');return;
   }
   const h=hole();h.puttsDetail=h.puttsDetail||[];
-  const entry={number:editingPuttIndex!==null?editingPuttIndex+1:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,playerState:puttDraft.playerState||null,at:Date.now()};
-  if(editingPuttIndex!==null)h.puttsDetail[editingPuttIndex]=entry;else h.puttsDetail.push(entry);
+  const wasEditing=editingPuttIndex!==null,returnHole=puttDraft.editReturnHole;
+  const entry={number:wasEditing?editingPuttIndex+1:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,playerState:puttDraft.playerState||null,at:Date.now()};
+  if(wasEditing)h.puttsDetail[editingPuttIndex]=entry;else h.puttsDetail.push(entry);
   editingPuttIndex=null;$('savePuttBtn').textContent='퍼트 저장';
-  h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;h.completed=false;h.review=null;h.achievement=null;save();
+  h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;save();
   if(puttDraft.result==='HOLED'){
     finalizeHoleAfterPutting();
   }else{
