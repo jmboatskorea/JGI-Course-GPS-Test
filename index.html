@@ -3286,7 +3286,7 @@ function activateDropForStart(){
   $('dropBallBtn')?.classList.remove('hidden');
   $('dropBallBtn')?.classList.add('active');
   if($('dropBallBtn'))$('dropBallBtn').textContent='공 위치 완료';
-  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 지도에서 공 위치를 탭하세요';
+  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 공 위치 1회 탭 → 자동 LOCK';
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
 }
@@ -6434,10 +6434,18 @@ function setManualPosition(latLng){
       icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}
     });
   }else{manualPositionMarker.setPosition(manualPosition);manualPositionMarker.setMap(googleMap)}
-  dropMode=true;
-  $('dropBallBtn').classList.remove('hidden');$('dropBallBtn').classList.add('active');$('dropBallBtn').textContent='공 위치 완료';
-  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 다른 곳을 탭하면 위치 수정';
+
+  // Manual ball position is a one-tap action. Lock it immediately so
+  // the next map tap can be used as TARGET even when GPS is unavailable.
+  dropMode=false;
+  if($('dropBallBtn')){
+    $('dropBallBtn').classList.remove('active');
+    $('dropBallBtn').classList.add('hidden');
+    $('dropBallBtn').textContent='공 위치 완료';
+  }
+  if($('gpsOverlay'))$('gpsOverlay').textContent='START · DROP';
   renderStartPositionControl();
+  if(targetMarker&&!round?.pending)updateTargetDistance();
   renderJgiCourseView();
 }
 function clearManualPosition(){
@@ -8397,8 +8405,8 @@ $('dropBallBtn').onclick=()=>{
   $('dropBallBtn').textContent='공 위치 완료';
   if($('gpsOverlay')){
     $('gpsOverlay').textContent=dropMode
-      ? (manualPosition?'DROP · 다른 곳을 탭하면 위치 수정':'DROP · 지도에서 공 위치를 탭하세요')
-      : (manualPosition?'위치 · DROP 확정':(gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기'));
+      ? (manualPosition?'DROP · 새 공 위치 1회 탭 → 자동 LOCK':'DROP · 공 위치 1회 탭 → 자동 LOCK')
+      : (manualPosition?'START · DROP':(gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기'));
   }
   renderStartPositionControl();
 };
