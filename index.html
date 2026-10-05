@@ -1126,7 +1126,8 @@ body.round-active .bottomnav{display:none!important}
             <small id="pendingGPS"></small>
           </div>
           <div class="pendingActions">
-            <button id="stateCheckBtn" class="dockAction subtle hidden">상태 입력 · 선택</button>
+            <button id="stateCheckBtn" class="dockAction subtle hidden">+ 멘탈 상태</button>
+            <button id="changeClubBtn" class="dockAction subtle hidden">클럽 변경</button>
             <button id="shotResultBtn" class="dockAction primary">샷 완료 · 결과 입력</button>
             <button id="cancelShotBtn" class="dockAction subtle">취소</button>
           </div>
@@ -1670,7 +1671,7 @@ body.round-active .bottomnav{display:none!important}
       <div><strong>상태 체크</strong><div id="floShotLabel" class="sub">방금 샷 직전 상태는?</div></div>
       <button id="floClose" class="x">×</button>
     </div>
-    <div class="stateQuestion">결과가 아니라 <b>방금 샷 직전의 상태</b>를 입력해 주세요.</div>
+    <div class="stateQuestion">결과가 아니라 <b>샷 직전의 상태</b>를 입력해 주세요.</div>
     <div id="stateReason" class="stateReason hidden"></div>
 
     <div class="sectionLabel">1. 압박감</div>
@@ -1848,6 +1849,8 @@ let playerHandicap=null;
 let floDraft={pressure:null,interference:null,tension:null,confidence:null,focus:null,thoughtFocus:null,note:''};
 let shotResultDraft={shotIntent:null,resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null};
 let puttDraft={distanceM:null,slope:null,break:null,result:null};
+let clubModalMode='START';
+let editingPuttIndex=null;
 let penaltyDraft={type:null,strokes:1};
 let stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
 let specialEventContext={event:null,after:null};
@@ -2918,7 +2921,7 @@ function activateDropForStart(){
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
 }
-function inferShotIntent(){
+function inferShotIntent(startGreenDistanceM=null,targetSnapshot=null){
   const h=hole();
   const shotNo=(h?.shots?.length||0)+1;
   if(shotNo===1){
@@ -2926,6 +2929,12 @@ function inferShotIntent(){
     return 'TEE_POSITION';
   }
   if(currentLie==='RECOVERY'||currentLie==='Recovery')return 'RECOVERY';
+  if(Number(h?.par)===5&&targetSnapshot){
+    const g=greenPointForHole(round?.currentHole);
+    const targetToGreen=g&&Number.isFinite(Number(targetSnapshot.lat))&&Number.isFinite(Number(targetSnapshot.lng))
+      ?hav({lat:Number(targetSnapshot.lat),lng:Number(targetSnapshot.lng)},g):null;
+    if(Number.isFinite(targetToGreen)&&targetToGreen>45)return 'LAYUP';
+  }
   return 'GREEN_ATTACK';
 }
 function intentLabel(v){
@@ -2938,33 +2947,48 @@ function depthOptions(intent){
 }
 function lieOptions(intent){
   const base=['FAIRWAY','A CUT','B CUT','BUNKER','RECOVERY','OTHER'];
-  if(intent==='GREEN_ATTACK')return ['GREEN','FRINGE',...base];
-  return base;
+  if(intent==='GREEN_ATTACK')return ['HOLED','GREEN','FRINGE',...base];
+  return ['HOLED',...base];
 }
 function lieLabel(v){
-  return ({GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',BUNKER:'벙커',RECOVERY:'트러블',OTHER:'기타'})[v]||v;
+  return ({HOLED:'홀인',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',BUNKER:'벙커',RECOVERY:'트러블',OTHER:'기타'})[v]||v;
 }
 function renderShotResultOptions(){
   const intent=shotResultDraft.shotIntent||inferShotIntent();
+  const holed=shotResultDraft.endLie==='HOLED'||shotResultDraft.holed===true;
   setSelected($('shotIntentChoice'),intent);
-  $('depthSectionLabel').textContent=intent==='GREEN_ATTACK'?'핀 기준 거리':'목표 지점 기준 거리';
-  $('depthChoice').innerHTML=depthOptions(intent).map(x=>'<button data-v="'+x.v+'">'+x.a+'<span>'+x.l+'</span></button>').join('');
+  $('depthSectionLabel').textContent=holed?'홀 아웃':(intent==='GREEN_ATTACK'?'핀 기준 거리':'목표 지점 기준 거리');
+  $('depthChoice').innerHTML=holed
+    ? '<button data-v="HOLED">●<span>홀인</span></button>'
+    : depthOptions(intent).map(x=>'<button data-v="'+x.v+'">'+x.a+'<span>'+x.l+'</span></button>').join('');
   $('endLieChoice').innerHTML=lieOptions(intent).map(v=>'<button data-v="'+v+'"><span>'+lieLabel(v)+'</span></button>').join('');
   if(shotResultDraft.endLie)setSelected($('endLieChoice'),shotResultDraft.endLie);
   if(shotResultDraft.depth)setSelected($('depthChoice'),shotResultDraft.depth);
 }
-function resetShotResult(){
+function resetShotResult(existing=null){
+  const x=existing||{};
   shotResultDraft={
-    shotIntent:round?.pending?.shotIntent||inferShotIntent(),
-    resultSource:'MANUAL',intendedShape:null,endLie:null,ballFlight:null,trajectory:null,direction:null,depth:null
+    shotIntent:x.shotIntent||round?.pending?.shotIntent||inferShotIntent(),
+    resultSource:x.resultSource||'MANUAL',
+    intendedShape:x.intendedShape||null,
+    endLie:x.endLie||null,
+    ballFlight:x.ballFlight||null,
+    trajectory:x.trajectory||null,
+    direction:x.direction||null,
+    depth:x.depth||null,
+    holed:x.holed===true||x.endLie==='HOLED'
   };
   ['intendedShapeChoice','flightChoice','trajectoryChoice','directionChoice'].forEach(id=>setSelected($(id),'__'));
-  setSelected($('resultModeChoice'),'MANUAL');
+  setSelected($('resultModeChoice'),shotResultDraft.resultSource);
   renderShotResultOptions();
+  if(shotResultDraft.intendedShape)setSelected($('intendedShapeChoice'),shotResultDraft.intendedShape);
+  if(shotResultDraft.ballFlight)setSelected($('flightChoice'),shotResultDraft.ballFlight);
+  if(shotResultDraft.trajectory)setSelected($('trajectoryChoice'),shotResultDraft.trajectory);
+  if(shotResultDraft.direction)setSelected($('directionChoice'),shotResultDraft.direction);
 }
 function openShotResult(){
   if(!round?.pending)return;
-  resetShotResult();
+  resetShotResult(round.pending.result||null);
   $('shotResultLabel').textContent=round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
   $('shotResultModal').classList.remove('hidden');
 }
@@ -3197,9 +3221,10 @@ function openStateCheck(type='shot',required=false,reason='',after=null,promptSo
   }
   stateContext={type,required:false,reason,after,promptSource,samplingGroup:samplingGroup||null,samplingEventId:eventId};
   if(type==='putting'){
-    $('floShotLabel').textContent='방금 퍼트 직전 상태는? · '+round.currentHole+'번 홀';
+    $('floShotLabel').textContent='퍼트 직전 상태는? · '+round.currentHole+'번 홀';
   }else{
-    $('floShotLabel').textContent='방금 샷 직전 상태는? · '+round.currentHole+'번 홀 · '+(round.pending?.club||'샷');
+    const timing=round?.pending?.result?'방금 샷 직전 상태는?':'이번 샷 직전 상태는?';
+    $('floShotLabel').textContent=timing+' · '+round.currentHole+'번 홀 · '+(round.pending?.club||'샷');
   }
   $('stateReason').textContent=reason||'선수 상태 확인';
   $('stateReason').classList.toggle('hidden',!reason);
@@ -3272,10 +3297,11 @@ function beginPending(club,previousShot=null){
   }
   const greenPt=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
   const startGreenDistanceM=greenPt?hav(startSnapshot,greenPt):null;
+  const shotIntent=inferShotIntent(startGreenDistanceM,targetSnapshot);
   round.pending={
     id:'s'+Date.now(),club,start:startSnapshot,
     startLie:hole().shots.length===0?'TEE':currentLie,
-    startedAt:Date.now(),shotIntent:inferShotIntent(),
+    startedAt:Date.now(),shotIntent,
     centerWidthM:master?.centerWidth??null,target:targetSnapshot,
     targetZone:targetSnapshot?.zone||targetZone,
     targetSource:targetSnapshot?.source||targetZoneSource,
@@ -3306,7 +3332,7 @@ function beginPending(club,previousShot=null){
 }
 function finishPendingAndMaybeStart(club=null){
   if(!round?.pending||!round.pending.result)return false;
-  const endPoint=gpsPoint();
+  const endPoint=round.pending.editingExisting&&round.pending.editEnd?round.pending.editEnd:gpsPoint();
   if(!endPoint){
     alert('현재 공 위치를 확인할 수 없습니다. 지도에서 샷 종료 위치를 지정해 주세요.');
     return false;
@@ -5550,15 +5576,21 @@ function finalizePending(endPoint,endLie){
   const p=round.pending;
   const r=p.result||{};
   const g=greenPointForHole(round.currentHole);
-  const endGreenDistanceM=g&&endPoint?hav(endPoint,g):null;
+  const isHoled=r.holed===true||r.endLie==='HOLED';
+  const endGreenDistanceM=isHoled?0:(g&&endPoint?hav(endPoint,g):null);
+  const editHistory=[...(p.editHistory||[])];
+  if(p.editingExisting&&p.editSnapshot){
+    editHistory.push({at:Date.now(),type:'UNDO_EDIT',previous:p.editSnapshot});
+  }
   const shot={
     id:p.id,hole:round.currentHole,club:p.club,start:p.start,end:endPoint||null,
-    startLie:p.startLie||'UNKNOWN',endLie:r.endLie||endLie||'UNKNOWN',
-    distanceM:hav(p.start,endPoint),startedAt:p.startedAt,
+    startLie:p.startLie||'UNKNOWN',endLie:isHoled?'HOLED':(r.endLie||endLie||'UNKNOWN'),
+    holed:isHoled,
+    distanceM:endPoint&&p.start?hav(p.start,endPoint):null,startedAt:p.startedAt,updatedAt:Date.now(),
     shotIntent:p.shotIntent||r.shotIntent||null,
     intendedShape:r.intendedShape||null,
     resultSource:r.resultSource||'MANUAL',
-    ballFlight:r.ballFlight||null,trajectory:r.trajectory||null,direction:r.direction||null,depth:r.depth||null,
+    ballFlight:r.ballFlight||null,trajectory:r.trajectory||null,direction:r.direction||null,depth:isHoled?'HOLED':(r.depth||null),
     centerWidthM:p.centerWidthM??null,target:p.target||null,
     targetZone:p.targetZone||p.target?.zone||null,
     targetSource:p.targetSource||p.target?.source||null,
@@ -5568,9 +5600,74 @@ function finalizePending(endPoint,endLie){
     courseContext:{...(p.courseContext||{}),endGreenDistanceM},
     positionSource:{start:p.start?.source||'GPS',end:endPoint?.source||'GPS'},
     preShotReset:p.preShotReset||null,
-    playerState:p.playerState||null
+    playerState:p.playerState||null,
+    editHistory
   };
   hole().shots.push(shot); round.pending=null; clearTarget(); save(); return shot;
+}
+function updatePendingClub(club){
+  if(!round?.pending||!club||club==='Putter')return false;
+  const p=round.pending,master=masterClubs.find(c=>c.name===club),ch=courseHoleData();
+  p.club=club;
+  p.centerWidthM=master?.centerWidth??null;
+  let target=p.target||null;
+  if(target?.basis!=='MAP_OVERRIDE'){
+    target=targetZonePointForShot(ch,p.start,master?.carry??null,p.targetZone||targetZone,hole().par);
+    if(target)target.source=p.targetSource||targetZoneSource;
+  }
+  p.target=target;
+  p.targetZone=target?.zone||p.targetZone||targetZone;
+  p.targetSource=target?.source||p.targetSource||targetZoneSource;
+  p.targetLat=target?.lat??null;p.targetLng=target?.lng??null;p.targetFairwayWidthM=target?.fairwayWidthM??null;
+  p.courseContext={...(p.courseContext||{}),...deriveCourseIntelligence(ch,p.start,master?.carry??null,target,hole().par)};
+  p.shotIntent=inferShotIntent(p.courseContext?.startGreenDistanceM,target);
+  save();renderRound();
+  if(target)showTargetSnapshot(target,p.start);
+  return true;
+}
+function restoreFinalizedShotAsPending(shot){
+  if(!round||!shot)return false;
+  const h=hole();
+  h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;
+  round.pending={
+    id:shot.id,club:shot.club,start:shot.start,startLie:shot.startLie,startedAt:shot.startedAt,
+    shotIntent:shot.shotIntent,centerWidthM:shot.centerWidthM??null,target:shot.target||null,
+    targetZone:shot.targetZone||shot.target?.zone||'CENTER',targetSource:shot.targetSource||shot.target?.source||'SYSTEM_DEFAULT',
+    targetLat:shot.targetLat??shot.target?.lat??null,targetLng:shot.targetLng??shot.target?.lng??null,
+    targetFairwayWidthM:shot.targetFairwayWidthM??shot.target?.fairwayWidthM??null,
+    courseContext:{...(shot.courseContext||{}),endGreenDistanceM:null},
+    result:{
+      shotIntent:shot.shotIntent||null,resultSource:shot.resultSource||'MANUAL',
+      intendedShape:shot.intendedShape||null,endLie:shot.endLie||null,ballFlight:shot.ballFlight||null,
+      trajectory:shot.trajectory||null,direction:shot.direction||null,depth:shot.depth||null,holed:shot.holed===true
+    },
+    playerState:shot.playerState||null,preShotReset:shot.preShotReset||null,queuedClub:null,
+    editingExisting:true,editEnd:shot.end||null,editHistory:[...(shot.editHistory||[])],
+    editSnapshot:{club:shot.club,shotIntent:shot.shotIntent,endLie:shot.endLie,direction:shot.direction,depth:shot.depth,holed:shot.holed===true}
+  };
+  currentLie=shot.startLie||'Unknown';
+  save();renderRound();
+  if(round.pending.target)showTargetSnapshot(round.pending.target,round.pending.start);
+  openShotResult();
+  return true;
+}
+function cancelPendingEdit(){
+  const p=round?.pending;if(!p?.editingExisting)return false;
+  const h=hole();
+  const original={
+    id:p.id,hole:round.currentHole,club:p.editSnapshot?.club||p.club,start:p.start,end:p.editEnd||null,
+    startLie:p.startLie||'UNKNOWN',endLie:p.editSnapshot?.endLie||p.result?.endLie||'UNKNOWN',
+    holed:p.editSnapshot?.holed===true,distanceM:p.editEnd&&p.start?hav(p.start,p.editEnd):null,
+    startedAt:p.startedAt,shotIntent:p.editSnapshot?.shotIntent||p.shotIntent,
+    intendedShape:p.result?.intendedShape||null,resultSource:p.result?.resultSource||'MANUAL',
+    ballFlight:p.result?.ballFlight||null,trajectory:p.result?.trajectory||null,
+    direction:p.editSnapshot?.direction??p.result?.direction??null,depth:p.editSnapshot?.depth??p.result?.depth??null,
+    centerWidthM:p.centerWidthM??null,target:p.target||null,targetZone:p.targetZone||null,targetSource:p.targetSource||null,
+    targetLat:p.targetLat??null,targetLng:p.targetLng??null,targetFairwayWidthM:p.targetFairwayWidthM??null,
+    courseContext:{...(p.courseContext||{})},positionSource:{start:p.start?.source||'GPS',end:p.editEnd?.source||'GPS'},
+    preShotReset:p.preShotReset||null,playerState:p.playerState||null,editHistory:[...(p.editHistory||[])]
+  };
+  h.shots.push(original);round.pending=null;currentLie=original.endLie||'Unknown';save();renderRound();return true;
 }
 function startShot(club){
   if(round.pending){
@@ -5606,11 +5703,13 @@ function renderRound(){
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · '+pending.result.endLie+' · '+pending.result.direction+' · '+pending.result.depth;
       $('shotResultBtn').textContent='결과 수정';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
+      $('changeClubBtn').classList.remove('hidden');
     }else{
       $('pendingStatusLabel').textContent='샷 준비';
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
-      $('stateCheckBtn').classList.add('hidden');
+      $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
+      $('changeClubBtn').classList.remove('hidden');
     }
   }
   renderStartPositionControl();
@@ -5622,6 +5721,7 @@ function finalizeHoleAfterPutting(){
   h.putts=(h.puttsDetail||[]).length;
   h.firstPutt=h.puttsDetail?.[0]?.distanceM??null;
   h.completed=true;h.completedAt=Date.now();
+  h.achievement=holeAchievementCode(h);
   h.review=buildHoleReview(h);
 
   let special=null;
@@ -5653,6 +5753,43 @@ function completeHole(){
   }
   finalizeHoleAfterPutting();
 }function holeScore(h){return h.completed?h.shots.length+(h.putts||0)+(h.penalties||0):null}
+function holeAchievementCode(h){
+  const score=holeScore(h),par=Number(h?.par);
+  if(!Number.isFinite(Number(score))||!Number.isFinite(par))return null;
+  if(Number(score)===1)return 'HOLE_IN_ONE';
+  const d=Number(score)-par;
+  if(d<=-3)return 'ALBATROSS';
+  if(d===-2)return 'EAGLE';
+  if(d===-1)return 'BIRDIE';
+  return null;
+}
+function holeAchievementLabel(v){
+  return ({HOLE_IN_ONE:'홀인원',ALBATROSS:'알바트로스',EAGLE:'이글',BIRDIE:'버디'})[v]||v||'';
+}
+function finalizeHoleFromShot(){
+  const p=round?.pending;if(!p?.result||(p.result.holed!==true&&p.result.endLie!=='HOLED'))return false;
+  const h=hole(),g=greenPointForHole(round.currentHole);
+  const endPoint=g?{lat:g.lat,lng:g.lng,source:'HOLE_REFERENCE'}:(p.target?{lat:p.target.lat,lng:p.target.lng,source:'TARGET_ESTIMATE'}:p.editEnd||gpsPoint());
+  currentLie='HOLED';
+  finalizePending(endPoint,'HOLED');
+  h.putts=(h.puttsDetail||[]).length;
+  h.firstPutt=h.puttsDetail?.[0]?.distanceM??null;
+  h.completed=true;h.completedAt=Date.now();
+  h.achievement=holeAchievementCode(h);
+  h.review=buildHoleReview(h);
+  const achievement=h.achievement;
+  save();$('shotResultModal').classList.add('hidden');clearTarget();
+  if(round.currentHole<18){
+    round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
+  }else{
+    round.completedAt=Date.now();
+    recordCompletedSamplingRound(round);
+    archiveRound(round,'FULL');
+    save();showScreen('overview');
+  }
+  if(['HOLE_IN_ONE','ALBATROSS','EAGLE'].includes(achievement))setTimeout(()=>alert('🎉 '+holeAchievementLabel(achievement)+'!'),20);
+  return true;
+}
 function toPar(){
   const valid=round.holes.filter(h=>h.completed&&h.par);
   if(!valid.length)return {s:round.holes.filter(h=>h.completed).reduce((a,h)=>a+(holeScore(h)||0),0),p:null,d:null};
@@ -5759,6 +5896,7 @@ function shotStartDistanceToHoleM(h,s,index){
   return g&&s.start?hav(s.start,g):null;
 }
 function shotEndDistanceToHoleM(h,s,index){
+  if(s?.holed===true||String(s?.endLie||'').toUpperCase()==='HOLED')return 0;
   if(sgLieKey(s.endLie)==='green'){
     const firstPutt=h.puttsDetail?.[0]?.distanceM;
     if(index===h.shots.length-1&&Number.isFinite(Number(firstPutt)))return Number(firstPutt);
@@ -5770,11 +5908,16 @@ function shotEndDistanceToHoleM(h,s,index){
 }
 function computeShotSG(h,s,index,info=sgBenchmarkInfo()){
   const startD=shotStartDistanceToHoleM(h,s,index);
-  const endD=shotEndDistanceToHoleM(h,s,index);
-  if(!Number.isFinite(startD)||!Number.isFinite(endD))return null;
+  if(!Number.isFinite(startD))return null;
   const a=sgExpected(startD,s.startLie,info);
+  if(!Number.isFinite(a))return null;
+  if(s?.holed===true||String(s?.endLie||'').toUpperCase()==='HOLED'){
+    return {value:a-1,startExpected:a,endExpected:0,startDistanceM:startD,endDistanceM:0};
+  }
+  const endD=shotEndDistanceToHoleM(h,s,index);
+  if(!Number.isFinite(endD))return null;
   const b=sgExpected(endD,s.endLie,info);
-  if(!Number.isFinite(a)||!Number.isFinite(b))return null;
+  if(!Number.isFinite(b))return null;
   return {value:a-b-1,startExpected:a,endExpected:b,startDistanceM:startD,endDistanceM:endD};
 }
 function computePuttSG(h,p,index,info=sgBenchmarkInfo()){
@@ -5883,8 +6026,8 @@ function safeText(v){return v===null||v===undefined||v===''?'—':String(v)}
 function distanceLabel(m){return Number.isFinite(m)?Math.round(m)+'m':'—'}
 function shapeLabel(v){return ({HOOK:'훅',DRAW:'드로우',STRAIGHT:'스트레이트',FADE:'페이드',SLICE:'슬라이스'})[v]||v||'—'}
 function dirLabel(v){return ({LEFT:'왼쪽',CENTER:'센터',RIGHT:'오른쪽'})[v]||v||'—'}
-function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목표 거리',LONG:'김'})[v]||v||'—'}
-function lieDisplayLabel(v){return ({TEE:'티',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
+function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목표 거리',LONG:'김',HOLED:'홀인'})[v]||v||'—'}
+function lieDisplayLabel(v){return ({TEE:'티',HOLED:'홀인',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
 function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정',GREEN_REFERENCE:'그린 기준점'})[v]||v||'—'}
 function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'김'})[v]||v||'—'}
 function puttSlopeLabel(v){return ({UPHILL:'오르막',FLAT:'평지',DOWNHILL:'내리막'})[String(v||'').toUpperCase()]||v||'—'}
@@ -5917,19 +6060,19 @@ function buildHoleReview(h){
   const second=classified.filter(x=>x.cat==='SECOND').map(x=>x.s);
   const third=classified.filter(x=>x.cat==='THIRD').map(x=>x.s);
   const approach=classified.filter(x=>x.cat==='APPROACH').map(x=>x.s);
-  const greenHits=second.filter(s=>s.endLie==='GREEN').length;
-  const approachGreenHits=approach.filter(s=>s.endLie==='GREEN').length;
+  const greenHits=second.filter(s=>['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase())).length;
+  const approachGreenHits=approach.filter(s=>['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase())).length;
   const tee=classified.find(x=>x.cat==='TEE')?.s||null;
   const missParts=[];
   if(dDir&&dDirN>=1)missParts.push(dDirN+'× '+dirLabel(dDir));
   if(dDepth&&dDepthN>=1)missParts.push(dDepthN+'× '+depthLabel(dDepth));
   if((h.penalties||0)>0)missParts.push('벌타 '+h.penalties);
   return {
-    generatedAt:Date.now(),hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexMen:h.strokeIndexMen??null,strokeIndexLadies:h.strokeIndexLadies??null,score:holeScore(h),
+    generatedAt:Date.now(),hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexMen:h.strokeIndexMen??null,strokeIndexLadies:h.strokeIndexLadies??null,score:holeScore(h),achievement:h.achievement||holeAchievementCode(h),
     shotCount:shots.length,putts:putts.length,penalties:h.penalties||0,
     tee:{club:tee?.club||null,endLie:tee?.endLie||null,direction:tee?.direction||null,distanceM:tee?.distanceM??null},
     approach:{attempts:second.length,greenHits,short:second.filter(s=>s.depth==='SHORT').length,long:second.filter(s=>s.depth==='LONG').length},
-    third:{attempts:third.length,greenHits:third.filter(s=>s.endLie==='GREEN').length,short:third.filter(s=>s.depth==='SHORT').length,long:third.filter(s=>s.depth==='LONG').length},
+    third:{attempts:third.length,greenHits:third.filter(s=>['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase())).length,short:third.filter(s=>s.depth==='SHORT').length,long:third.filter(s=>s.depth==='LONG').length},
     around:{attempts:approach.length,greenHits:approachGreenHits},
     putting:{putts:putts.length,firstPutt:putts[0]?.distanceM??null,threePutt:putts.length>=3},
     keyMiss:missParts.length?missParts.join(' · '):'큰 반복 미스 없음'
@@ -5949,10 +6092,10 @@ function liveCategories(){
   const makeShotCategory=(key,name,items)=>{
     const shots=items.map(x=>x.s);
     const nonCenter=shots.filter(s=>s.direction&&s.direction!=='CENTER');
-    const trouble=shots.filter(s=>!['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
+    const trouble=shots.filter(s=>!['FAIRWAY','GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase()));
     const short=shots.filter(s=>s.depth==='SHORT');
     const long=shots.filter(s=>s.depth==='LONG');
-    const green=shots.filter(s=>String(s.endLie||'').toUpperCase()==='GREEN').length;
+    const green=shots.filter(s=>['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase())).length;
     const dir=dominantCount(countBy(nonCenter,s=>s.direction));
     const depth=dominantCount(countBy(shots.filter(s=>s.depth&&s.depth!=='PIN_HIGH'&&s.depth!=='TARGET'),s=>s.depth));
     const issue=trouble.length+nonCenter.length*.35+Math.max(short.length,long.length)*.35;
@@ -5967,8 +6110,8 @@ function liveCategories(){
   const tee=makeShotCategory('tee','티샷',teeRows);
   // Tee-specific wording is clearer than generic green-finish wording.
   const teeShots=teeRows.map(x=>x.s);
-  const teeHits=teeShots.filter(s=>['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
-  const teeTrouble=teeShots.filter(s=>!['FAIRWAY','GREEN'].includes(String(s.endLie||'').toUpperCase()));
+  const teeHits=teeShots.filter(s=>['FAIRWAY','GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase()));
+  const teeTrouble=teeShots.filter(s=>!['FAIRWAY','GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase()));
   const teeLieCounts=countBy(teeTrouble,s=>lieDisplayLabel(s.endLie));
   const teeLieBreakdown=Object.entries(teeLieCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+v).join(' · ');
   const teeDirCounts=countBy(teeShots.filter(s=>s.direction&&s.direction!=='CENTER'),s=>s.direction);
@@ -6057,7 +6200,7 @@ function renderTestHistory(h){
   const g=greenPointForHole(h.hole);
   const shotRows=(h.shots||[]).map((s,i)=>{
     const endToGreen=g&&s.end?hav(s.end,g):null;
-    const suspicious=String(s.endLie||'').toUpperCase()==='GREEN'&&Number.isFinite(endToGreen)&&endToGreen>100;
+    const suspicious=['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase())&&Number.isFinite(endToGreen)&&endToGreen>100;
     return '<div class="testHistoryRow"><b>샷 '+(i+1)+' · '+safeText(s.club)+'</b><br>'+
       '시작: '+positionSourceLabel(s.positionSource?.start)+' · '+coordText(s.start)+'<br>'+
       '종료: '+positionSourceLabel(s.positionSource?.end)+' · '+coordText(s.end)+'<br>'+
@@ -6959,7 +7102,7 @@ function storySegmentStats(startHole,endHole,info,mentalData){
     Object.keys(totals).forEach(k=>totals[k]+=x.totals[k]||0);
     (h.shots||[]).forEach(s=>{if(s.direction==='RIGHT')right++});
     if((h.puttsDetail||[]).length>=3)threePutt++;
-    const onGreen=(h.shots||[]).findIndex(s=>String(s.endLie||'').toUpperCase()==='GREEN')+1;
+    const onGreen=(h.shots||[]).findIndex(s=>['GREEN','HOLED'].includes(String(s.endLie||'').toUpperCase()))+1;
     if(h.par&&onGreen>0&&onGreen<=h.par-2)gir++;
   });
   const stateRows=[...(mentalData?.shots||[]),...(mentalData?.putts||[])].filter(x=>x.hole>=startHole&&x.hole<=endHole);
@@ -7289,13 +7432,21 @@ $('clubSuggestions').addEventListener('click',e=>{
   if(b.dataset.club==='Putter'){openPutt();return}
   startShot(b.dataset.club);
 });
-$('clubMoreBtn').onclick=()=>{$('clubModal').classList.remove('hidden')};
-$('clubClose').onclick=()=>{$('clubModal').classList.add('hidden')};
+$('clubMoreBtn').onclick=()=>{clubModalMode='START';$('clubModal').classList.remove('hidden')};
+$('changeClubBtn').onclick=()=>{if(!round?.pending)return;clubModalMode='EDIT_PENDING';$('clubModal').classList.remove('hidden')};
+$('clubClose').onclick=()=>{clubModalMode='START';$('clubModal').classList.add('hidden')};
 $('allClubList').addEventListener('click',e=>{
   const b=e.target.closest('[data-club]');if(!b)return;
+  const club=b.dataset.club;
   $('clubModal').classList.add('hidden');
-  if(b.dataset.club==='Putter'){openPutt();return}
-  startShot(b.dataset.club);
+  if(clubModalMode==='EDIT_PENDING'){
+    clubModalMode='START';
+    if(club==='Putter'){alert('진행 중인 일반 Shot은 Putter로 변경할 수 없습니다.');return}
+    updatePendingClub(club);return;
+  }
+  clubModalMode='START';
+  if(club==='Putter'){openPutt();return}
+  startShot(club);
 });
 
 $('targetZoneSegment').onclick=e=>{
@@ -7316,23 +7467,38 @@ $('dropBallBtn').onclick=()=>{
   $('dropBallBtn').textContent=dropMode?'지도 선택':'공 위치';
   renderStartPositionControl();
 };
+function undoEditableHole(){
+  let h=hole();
+  const hasInput=(h?.shots||[]).length||(h?.puttsDetail||[]).length||(h?.penaltyEvents||[]).length;
+  if(!hasInput&&round.currentHole>1){
+    const prev=round.holes[round.currentHole-2];
+    if(prev?.completed){
+      round.currentHole--;h=hole();h.completed=false;h.completedAt=null;h.review=null;
+      save();renderRound();renderCourseHole();
+    }
+  }
+  return h;
+}
 $('undoLastBtn').onclick=()=>{
   if(!round)return;
   if(round.pending){
+    if(round.pending.editingExisting){cancelPendingEdit();return}
     if(confirm('현재 진행 중인 Shot을 취소할까요?')){round.pending=null;save();renderRound()}
     return;
   }
-  const h=hole();
+  const h=undoEditableHole();
   if((h.puttsDetail||[]).length){
-    h.puttsDetail.pop();h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;h.completed=false;h.review=null;save();renderRound();return;
+    h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;
+    openPuttEdit(h.puttsDetail.length-1);save();return;
   }
   if((h.shots||[]).length){
-    const s=h.shots.pop();currentLie=s.startLie||'Unknown';h.completed=false;h.review=null;save();renderRound();return;
+    const shot=h.shots.pop();
+    restoreFinalizedShotAsPending(shot);return;
   }
   if((h.penaltyEvents||[]).length){
     const p=h.penaltyEvents.pop();h.penalties=Math.max(0,(h.penalties||0)-(p.strokes||1));h.review=null;save();renderRound();return;
   }
-  alert('취소할 마지막 입력이 없습니다.');
+  alert('수정할 마지막 입력이 없습니다.');
 };
 $('clearTargetBtn').onclick=clearTarget;
 $('autoBtn').onclick=()=>{courseAutoHeading=true;fitCurrentHole(true)};
@@ -7370,7 +7536,13 @@ $('resultModeChoice').onclick=e=>{
   }
   shotResultDraft.resultSource=v;setSelected($('resultModeChoice'),v);
 };
-$('endLieChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;shotResultDraft.endLie=v;setSelected($('endLieChoice'),v)};
+$('endLieChoice').onclick=e=>{
+  const v=e.target.closest('button')?.dataset.v;if(!v)return;
+  shotResultDraft.endLie=v;shotResultDraft.holed=v==='HOLED';
+  if(shotResultDraft.holed){shotResultDraft.depth='HOLED';shotResultDraft.direction=null}
+  else if(shotResultDraft.depth==='HOLED')shotResultDraft.depth=null;
+  renderShotResultOptions();
+};
 $('intendedShapeChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;shotResultDraft.intendedShape=v;setSelected($('intendedShapeChoice'),v)};
 $('flightChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;shotResultDraft.ballFlight=v;setSelected($('flightChoice'),v)};
 $('trajectoryChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;shotResultDraft.trajectory=v;setSelected($('trajectoryChoice'),v)};
@@ -7378,17 +7550,20 @@ $('directionChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;i
 $('depthChoice').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(!v)return;shotResultDraft.depth=v;setSelected($('depthChoice'),v)};
 
 $('saveShotResultBtn').onclick=()=>{
-  if(!shotResultDraft.endLie||!shotResultDraft.intendedShape||!shotResultDraft.ballFlight||!shotResultDraft.trajectory||!shotResultDraft.direction||!shotResultDraft.depth){
-    alert('공 위치, 의도 구질, 실제 구질, 탄도, 방향, 거리 결과를 모두 선택하세요.');return;
+  const holed=shotResultDraft.endLie==='HOLED'||shotResultDraft.holed===true;
+  if(!shotResultDraft.endLie||!shotResultDraft.intendedShape||!shotResultDraft.ballFlight||!shotResultDraft.trajectory||(!holed&&(!shotResultDraft.direction||!shotResultDraft.depth))){
+    alert(holed?'홀인, 의도 구질, 실제 구질, 탄도를 확인하세요.':'공 위치, 의도 구질, 실제 구질, 탄도, 방향, 거리 결과를 모두 선택하세요.');return;
   }
+  shotResultDraft.holed=holed;
+  if(holed){shotResultDraft.endLie='HOLED';shotResultDraft.depth='HOLED'}
   round.pending.shotIntent=shotResultDraft.shotIntent;
   round.pending.result={...shotResultDraft};
-  const queued=round.pending.queuedClub||null;
+  const queued=holed?null:(round.pending.queuedClub||null);
   round.pending.queuedClub=null;
   save();$('shotResultModal').classList.add('hidden');
   const proceed=()=>{
     const ask=shouldPromptStateCheck(round.pending);
-    const after=()=>{if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
+    const after=()=>{if(holed)finalizeHoleFromShot();else if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
     if(ask.yes)openStateCheck('shot',false,ask.reason,after,'AUTO',ask.group);else after();
   };
   if(round.pending.result.endLie==='RECOVERY'){
@@ -7397,8 +7572,11 @@ $('saveShotResultBtn').onclick=()=>{
   }else proceed();
 };
 
-$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'플레이어 선택 입력',null,'MANUAL');
-$('cancelShotBtn').onclick=()=>{if(confirm('선택한 샷을 취소할까요?')){round.pending=null;clearTarget();save();renderRound()}};
+$('stateCheckBtn').onclick=()=>openStateCheck('shot',false,'플레이어 직접 입력',null,'MANUAL');
+$('cancelShotBtn').onclick=()=>{
+  if(round?.pending?.editingExisting){if(confirm('수정을 취소하고 기존 Shot으로 되돌릴까요?'))cancelPendingEdit();return}
+  if(confirm('선택한 샷을 취소할까요?')){round.pending=null;clearTarget();save();renderRound()}
+};
 
 $('specialEventClose').onclick=()=>{
   $('specialEventModal').classList.add('hidden');
@@ -7510,6 +7688,18 @@ function resetPuttDraft(){
   $('puttDistanceInput').value='';
   ['puttSlope','puttBreak','puttResult'].forEach(id=>setSelected($(id),'__'));
 }
+function openPuttEdit(index){
+  const h=hole(),p=h?.puttsDetail?.[index];if(!p)return false;
+  editingPuttIndex=index;
+  puttDraft={distanceM:p.distanceM,slope:p.slope,break:p.break,result:p.result,playerState:p.playerState||null};
+  $('puttDistanceInput').value=Number(p.distanceM).toFixed(1);
+  setSelected($('puttSlope'),p.slope);setSelected($('puttBreak'),p.break);setSelected($('puttResult'),p.result);
+  $('puttTitle').textContent='퍼트 #'+(index+1)+' 수정';
+  $('savePuttBtn').textContent='퍼트 수정 저장';
+  $('puttModal').classList.remove('hidden');
+  renderPuttHistory();
+  return true;
+}
 function renderPuttHistory(){
   const h=hole();const arr=h?.puttsDetail||[];
   $('puttTitle').textContent='퍼트 #'+(arr.length+1);
@@ -7517,6 +7707,8 @@ function renderPuttHistory(){
 }
 function openPutt(){
   if(!round)return;
+  editingPuttIndex=null;
+  $('savePuttBtn').textContent='퍼트 저장';
   if(round.pending&&!round.pending.result){openShotResult();return}
   if(round.pending&&round.pending.result){
     currentLie=round.pending.result.endLie||'GREEN';
@@ -7569,12 +7761,14 @@ $('savePuttBtn').onclick=()=>{
     alert('Distance, Slope, Break, Result를 입력하세요.');return;
   }
   const h=hole();h.puttsDetail=h.puttsDetail||[];
-  h.puttsDetail.push({number:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,playerState:puttDraft.playerState||null,at:Date.now()});
-  h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;save();
+  const entry={number:editingPuttIndex!==null?editingPuttIndex+1:h.puttsDetail.length+1,distanceM:puttDraft.distanceM,slope:puttDraft.slope,break:puttDraft.break,result:puttDraft.result,playerState:puttDraft.playerState||null,at:Date.now()};
+  if(editingPuttIndex!==null)h.puttsDetail[editingPuttIndex]=entry;else h.puttsDetail.push(entry);
+  editingPuttIndex=null;$('savePuttBtn').textContent='퍼트 저장';
+  h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0]?.distanceM??null;h.completed=false;h.review=null;h.achievement=null;save();
   if(puttDraft.result==='HOLED'){
     finalizeHoleAfterPutting();
   }else{
-    resetPuttDraft();renderPuttHistory();
+    resetPuttDraft();renderPuttHistory();$('puttTitle').textContent='퍼트 #'+(h.puttsDetail.length+1);
   }
 };
 
