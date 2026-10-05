@@ -5038,13 +5038,11 @@ function mentalImpactAreaLabel(area){
 function mentalImpactStateLabel(key){
   return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
-function mentalImpactBandLabel(key,high=true){
-  if(key==='pressure')return high?'압박 높음':'압박 낮음';
-  if(key==='interference')return high?'간섭 많음':'간섭 적음';
-  if(key==='tension')return high?'긴장 높음':'긴장 낮음';
-  if(key==='confidence')return high?'확신 높음':'확신 낮음';
-  if(key==='focus')return high?'집중 높음':'집중 낮음';
-  return high?'높음':'낮음';
+function mentalImpactStateGroupLabel(key,values){
+  const vals=[...(values||[])].sort((a,b)=>a-b);
+  if(!vals.length)return mentalImpactStateLabel(key);
+  const range=vals.length===1?String(vals[0]):vals[0]+'–'+vals.at(-1);
+  return mentalImpactStateLabel(key)+' '+range;
 }
 function mentalImpactAreaRows(data,area){
   if(area==='PUTTER')return data.putts||[];
@@ -5077,22 +5075,112 @@ function mentalImpactMetricDefs(area){
   );
   return defs;
 }
+function mentalImpactStateGroups(rows,key){
+  const vals=rows.map(x=>stateResultValue(x.state,key)).filter(Number.isFinite);
+  const unique=[...new Set(vals)].sort((a,b)=>a-b);
+  if(unique.length<2)return {available:false,stable:unique.length===1,unique,lowValues:unique,highValues:[]};
+  let lowValues,highValues;
+  if(unique.length===2){lowValues=[unique[0]];highValues=[unique[1]]}
+  else if(unique.length===3){lowValues=[unique[0]];highValues=[unique[2]]}
+  else{
+    const half=Math.floor(unique.length/2);
+    lowValues=unique.slice(0,half);
+    highValues=unique.slice(unique.length-half);
+  }
+  const lowSet=new Set(lowValues),highSet=new Set(highValues);
+  return {
+    available:true,unique,lowValues,highValues,
+    low:rows.filter(x=>lowSet.has(stateResultValue(x.state,key))),
+    high:rows.filter(x=>highSet.has(stateResultValue(x.state,key)))
+  };
+}
+function mentalContextDistanceBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return 'D?';
+  if(n<100)return 'D<100';if(n<140)return 'D100-139';if(n<180)return 'D140-179';if(n<220)return 'D180-219';return 'D220+';
+}
+function mentalContextWidthBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return 'W?';
+  if(n<=20)return 'W<=20';if(n<=25)return 'W21-25';if(n<=30)return 'W26-30';return 'W30+';
+}
+function mentalContextRiskBucket(row){
+  const c=row?.courseContext||{},d=Number(c.nearestRiskDistanceM);
+  if(!c.nearestRiskType||!Number.isFinite(d))return 'R_NONE';
+  const band=d<=15?'NEAR':d<=30?'MID':'FAR';
+  return 'R_'+String(c.nearestRiskType)+'_'+String(c.nearestRiskSide||'?')+'_'+band;
+}
+function mentalContextPuttBucket(v){
+  const n=Number(v);if(!Number.isFinite(n))return 'P?';
+  if(n<=1)return 'P<=1';if(n<=3)return 'P1-3';if(n<=5)return 'P3-5';if(n<=8)return 'P5-8';return 'P8+';
+}
+function mentalContextKey(row,area){
+  const si=row?.holeIndexBand||'SI_UNKNOWN',sc=row?.shotContext||{},cc=row?.courseContext||{};
+  if(area==='DRIVER'){
+    return [si,mentalContextWidthBucket(cc.landingZoneWidthM),mentalContextRiskBucket(row),cc.doglegDirection||'DL?',sc.targetZone||'T?'].join('|');
+  }
+  if(area==='IRON'){
+    return [si,mentalContextDistanceBucket(sc.startDistanceM),sc.startLie||'L?',mentalContextRiskBucket(row),sc.shotPurpose||'S?'].join('|');
+  }
+  if(area==='APPROACH'){
+    return [si,mentalContextDistanceBucket(sc.startDistanceM),sc.startLie||'L?',mentalContextRiskBucket(row),sc.targetZone||'T?'].join('|');
+  }
+  return [si,mentalContextPuttBucket(sc.puttDistanceM),sc.slope||'SL?',sc.break||'BR?'].join('|');
+}
+function mentalContextAdjustedMetric(lowRows,highRows,metric,area){
+  const lowMap=new Map(),highMap=new Map();
+  const add=(map,row)=>{if(!metric.known(row))return;const k=mentalContextKey(row,area);if(!map.has(k))map.set(k,[]);map.get(k).push(row)};
+  lowRows.forEach(x=>add(lowMap,x));highRows.forEach(x=>add(highMap,x));
+  const strata=[];
+  [...lowMap.keys()].forEach(k=>{
+    const a=lowMap.get(k)||[],b=highMap.get(k)||[];
+    if(a.length<2||b.length<2)return;
+    const ar=a.filter(metric.hit).length/a.length,br=b.filter(metric.hit).length/b.length,w=Math.min(a.length,b.length);
+    strata.push({key:k,a,b,ar,br,w,diff:br-ar});
+  });
+  if(!strata.length)return null;
+  const weight=strata.reduce((sum,x)=>sum+x.w,0);
+  if(!weight)return null;
+  const lowRate=strata.reduce((sum,x)=>sum+x.ar*x.w,0)/weight;
+  const highRate=strata.reduce((sum,x)=>sum+x.br*x.w,0)/weight;
+  const diff=highRate-lowRate;
+  const sign=Math.sign(diff);
+  const directional=strata.filter(x=>Math.sign(x.diff)===sign&&Math.abs(x.diff)>.0001).length;
+  const rounds=new Set();
+  strata.forEach(x=>[...x.a,...x.b].forEach(r=>{if(r.roundId)rounds.add(r.roundId)}));
+  const matchedLowN=strata.reduce((sum,x)=>sum+x.a.length,0),matchedHighN=strata.reduce((sum,x)=>sum+x.b.length,0);
+  return {
+    lowRate,highRate,diff,gap:Math.abs(diff),strata:strata.length,
+    matchedLowN,matchedHighN,matchedN:matchedLowN+matchedHighN,
+    matchedRounds:rounds.size,consistency:strata.length?directional/strata.length:0
+  };
+}
+function mentalImpactConfidence(adjusted,rawGap){
+  if(!adjusted)return 'LOW';
+  const gap=Math.abs(adjusted.diff);
+  if(adjusted.matchedN>=40&&adjusted.matchedRounds>=8&&adjusted.strata>=3&&adjusted.consistency>=.60&&gap>=.10)return 'HIGH';
+  if(adjusted.matchedN>=20&&adjusted.matchedRounds>=5&&adjusted.strata>=2&&gap>=.07)return 'MEDIUM';
+  return 'LOW';
+}
 function mentalImpactCell(data,key,area){
-  const rows=mentalImpactAreaRows(data,area);
-  const low=rows.filter(x=>stateResultBand(x.state,key)===0);
-  const high=rows.filter(x=>stateResultBand(x.state,key)===2);
+  const rows=mentalImpactAreaRows(data,area),groups=mentalImpactStateGroups(rows,key);
+  if(!groups.available)return {key,area,available:false,stable:groups.stable,unique:groups.unique||[],lowN:0,highN:0};
+  const low=groups.low,high=groups.high;
   const candidates=mentalImpactMetricDefs(area).map(metric=>{
     const lowKnown=low.filter(metric.known),highKnown=high.filter(metric.known);
     if(lowKnown.length<5||highKnown.length<5)return null;
     const lowHit=lowKnown.filter(metric.hit).length,highHit=highKnown.filter(metric.hit).length;
     const lowRate=lowHit/lowKnown.length,highRate=highHit/highKnown.length,diff=highRate-lowRate;
-    return {metric:metric.key,label:metric.label,lowHit,highHit,lowN:lowKnown.length,highN:highKnown.length,lowRate,highRate,diff,gap:Math.abs(diff)};
+    const adjusted=mentalContextAdjustedMetric(low,high,metric,area);
+    const effectDiff=adjusted?.diff??diff,effectGap=Math.abs(effectDiff);
+    return {
+      metric:metric.key,label:metric.label,lowHit,highHit,lowN:lowKnown.length,highN:highKnown.length,
+      lowRate,highRate,diff,gap:effectGap,rawGap:Math.abs(diff),adjusted,
+      lowValues:groups.lowValues,highValues:groups.highValues,
+      confidence:mentalImpactConfidence(adjusted,Math.abs(diff))
+    };
   }).filter(Boolean).sort((a,b)=>b.gap-a.gap);
   const best=candidates[0]||null;
-  if(!best)return {key,area,available:false,lowN:low.length,highN:high.length};
-  const minN=Math.min(best.lowN,best.highN);
-  const confidence=minN>=20&&best.gap>=.20?'HIGH':minN>=10&&best.gap>=.12?'MEDIUM':'LOW';
-  return {...best,key,area,available:true,confidence};
+  if(!best)return {key,area,available:false,stable:false,unique:groups.unique||[],lowN:low.length,highN:high.length,lowValues:groups.lowValues,highValues:groups.highValues};
+  return {...best,key,area,available:true};
 }
 function mentalImpactAll(data){
   const cells=[];
@@ -5102,6 +5190,13 @@ function mentalImpactAll(data){
 function mentalImpactConfidenceText(x){
   return x==='HIGH'?'높음':x==='MEDIUM'?'보통':'초기 관찰';
 }
+function mentalImpactRiskText(x){
+  const d=x?.adjusted?.diff??x?.diff;
+  if(!Number.isFinite(d))return '판단 대기';
+  if(d>=.15)return '미스 위험 증가';
+  if(d<=-.15)return '미스 위험 감소';
+  return '큰 변화 없음';
+}
 function setMultiMentalState(key){
   if(!MENTAL_IMPACT_KEYS.includes(key))return;
   multiMentalStateKey=key;
@@ -5110,7 +5205,7 @@ function setMultiMentalState(key){
 function mentalImpactSummaryHtml(data,roundCount){
   const cells=mentalImpactAll(data),valid=cells.filter(x=>x.available);
   if(!valid.length){
-    return '<div class="mentalImpactSummary"><div class="analysisEmpty">멘탈 영향 요약 · 전체 데이터가 없는 것이 아니라, 현재 선택한 조건에서 낮음/높음 그룹을 직접 비교할 데이터가 아직 부족합니다.</div></div>';
+    return '<div class="mentalImpactSummary"><div class="analysisEmpty">멘탈 영향 요약 · 현재 저장된 상태값의 변동 또는 비교 가능한 결과 데이터가 아직 충분하지 않습니다. 한 값에 안정적으로 몰려 있다면 그것도 Player의 특성으로 유지합니다.</div></div>';
   }
   const overallLead=[...valid].sort((a,b)=>b.gap-a.gap)[0];
   if(!multiMentalStateKey||!valid.some(x=>x.key===multiMentalStateKey))multiMentalStateKey=overallLead.key;
@@ -5119,20 +5214,24 @@ function mentalImpactSummaryHtml(data,roundCount){
   const comparable=stateCells.filter(x=>x?.available);
   const lead=(comparable.length?[...comparable].sort((a,b)=>b.gap-a.gap)[0]:overallLead);
   const stateLabel=mentalImpactStateLabel(selected),leadArea=mentalImpactAreaLabel(lead.area);
-  const lowLabel=mentalImpactBandLabel(selected,false),highLabel=mentalImpactBandLabel(selected,true);
-  const d=Math.round(lead.diff*100),lowPct=Math.round(lead.lowRate*100),highPct=Math.round(lead.highRate*100);
+  const lowLabel=mentalImpactStateGroupLabel(selected,lead.lowValues),highLabel=mentalImpactStateGroupLabel(selected,lead.highValues);
+  const adj=lead.adjusted;
+  const shownLow=adj?.lowRate??lead.lowRate,shownHigh=adj?.highRate??lead.highRate,shownDiff=adj?.diff??lead.diff;
+  const d=Math.round(shownDiff*100),lowPct=Math.round(shownLow*100),highPct=Math.round(shownHigh*100);
   const totalStateSamples=(data.shots?.length||0)+(data.putts?.length||0);
+  const contextText=adj?'비슷한 코스·샷 조건으로 다시 비교한 결과':'현재는 단순 상태 비교 결과';
   const observation=comparable.length
-    ? highLabel+'에서 '+leadArea+'의 '+lead.label+'가 '+lowPct+'% → '+highPct+'%로 '+Math.abs(d)+'%p '+(d>0?'증가':'감소')+'했습니다.'
+    ? contextText+' '+highLabel+'에서 '+leadArea+'의 '+lead.label+'가 '+lowPct+'% → '+highPct+'%로 '+Math.abs(d)+'%p '+(d>0?'증가':d<0?'감소':'변화 없음')+'했습니다.'
     : stateLabel+'은 현재 직접 비교 가능한 영역이 더 필요합니다.';
   let html='<div class="mentalImpactSummary">'+
     '<div class="mentalImpactTop">'+
-      '<div class="mentalImpactHero"><div class="ey">멘탈 영향 요약 · '+roundCount+'라운드</div>'+
+      '<div class="mentalImpactHero"><div class="ey">멘탈 × 코스·샷 컨텍스트 · '+roundCount+'라운드</div>'+
       '<strong>'+safeText(observation)+'</strong>'+
-      '<p>'+safeText(lowLabel)+'과 '+safeText(highLabel)+'에서 실제 샷 결과가 어떻게 달라졌는지 비교합니다. 관찰된 관계이며 원인을 의미하지 않습니다.</p></div>'+
+      '<p>먼저 Mental 단독 관계를 보고, Hole Index · 거리 · Lie · Landing Zone 폭 · Hazard/Bunker · Dogleg · Target 등 현재 저장된 Context가 비슷한 샷끼리 다시 비교합니다. 관찰된 관계이며 원인을 의미하지 않습니다.</p></div>'+
       '<div class="mentalImpactSide">'+
         '<div class="mentalImpactSideCard"><span>현재 선택</span><b>'+safeText(stateLabel)+'</b><small>드라이버 · 아이언 · 어프로치 · 퍼터 비교</small></div>'+
-        '<div class="mentalImpactSideCard"><span>데이터 상태</span><b>'+mentalImpactConfidenceText(lead.confidence)+'</b><small>상태 연결 데이터 '+totalStateSamples+'개 · 선택 '+roundCount+'R</small></div>'+
+        '<div class="mentalImpactSideCard"><span>컨텍스트 비교</span><b>'+(adj?(adj.matchedN+'개 · '+adj.matchedRounds+'R'):'대기')+'</b><small>'+(adj?('유사 조건 '+adj.strata+'개 · 반복 '+Math.round(adj.consistency*100)+'%'):'비슷한 Course/Shot Context가 더 필요합니다.')+'</small></div>'+
+        '<div class="mentalImpactSideCard"><span>개인 미스 위험</span><b>'+mentalImpactRiskText(lead)+'</b><small>Confidence '+mentalImpactConfidenceText(lead.confidence)+'</small></div>'+
       '</div>'+
     '</div>'+
     '<div class="mentalImpactTabs">'+MENTAL_IMPACT_KEYS.map(k=>'<button type="button" class="'+(k===selected?'sel':'')+'" onclick="setMultiMentalState(\''+k+'\')">'+mentalImpactStateLabel(k)+'</button>').join('')+'</div>'+
@@ -5140,20 +5239,25 @@ function mentalImpactSummaryHtml(data,roundCount){
   stateCells.forEach(x=>{
     const area=mentalImpactAreaLabel(x.area);
     if(!x?.available){
-      html+='<div class="mentalImpactCard empty"><div class="area">'+area+'</div><span class="metric">비교 데이터 부족</span><small>이 조건의 낮음/높음 그룹 비교 대기</small></div>';return;
+      const note=x?.stable?'상태값 변화가 거의 없어 비교하지 않습니다.':'이 조건의 비교 데이터가 더 필요합니다.';
+      html+='<div class="mentalImpactCard empty"><div class="area">'+area+'</div><span class="metric">'+(x?.stable?'상태 안정':'비교 데이터 부족')+'</span><small>'+note+'</small></div>';return;
     }
-    const delta=Math.round(x.diff*100),lp=Math.round(x.lowRate*100),hp=Math.round(x.highRate*100);
+    const cardLowLabel=mentalImpactStateGroupLabel(selected,x.lowValues),cardHighLabel=mentalImpactStateGroupLabel(selected,x.highValues);
+    const rawDelta=Math.round(x.diff*100),rawLp=Math.round(x.lowRate*100),rawHp=Math.round(x.highRate*100);
+    const ca=x.adjusted,delta=Math.round((ca?.diff??x.diff)*100),lp=Math.round((ca?.lowRate??x.lowRate)*100),hp=Math.round((ca?.highRate??x.highRate)*100);
     const cls=delta>0?'bad':delta<0?'good':'neutral';
     const deltaMeaning=delta>0?'미스 증가':delta<0?'미스 감소':'변화 없음';
     html+='<div class="mentalImpactCard"><div class="area">'+area+'</div><span class="metric">'+safeText(x.label)+'</span>'+
       '<div class="mentalImpactBars">'+
-        '<div class="mentalImpactBar"><span>'+safeText(lowLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,lp)+'%"></i></div><b>'+lp+'%</b></div>'+
-        '<div class="mentalImpactBar high"><span>'+safeText(highLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,hp)+'%"></i></div><b>'+hp+'%</b></div>'+
+        '<div class="mentalImpactBar"><span>'+safeText(cardLowLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,lp)+'%"></i></div><b>'+lp+'%</b></div>'+
+        '<div class="mentalImpactBar high"><span>'+safeText(cardHighLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,hp)+'%"></i></div><b>'+hp+'%</b></div>'+
       '</div>'+
-      '<div class="mentalImpactDelta '+cls+'">'+(delta>0?'+':'')+delta+'%p · '+deltaMeaning+'</div>'+
-      '<small>비교 샘플 '+x.lowN+' / '+x.highN+' · '+mentalImpactConfidenceText(x.confidence)+'</small></div>';
+      '<div class="mentalImpactDelta '+cls+'">'+(ca?'Context ':'')+(delta>0?'+':'')+delta+'%p · '+deltaMeaning+'</div>'+
+      '<small>'+(ca?('유사 조건 '+ca.matchedN+'개 · '+ca.matchedRounds+'R · 반복 '+Math.round(ca.consistency*100)+'%'):'Context 보정 대기')+' · '+mentalImpactConfidenceText(x.confidence)+'</small>'+
+      (ca&&rawDelta!==delta?'<small>단순 비교 '+rawLp+'% → '+rawHp+'% · '+(rawDelta>0?'+':'')+rawDelta+'%p</small>':'')+
+      '</div>';
   });
-  html+='</div><div class="mentalImpactObservation"><b>JGI 관찰</b> · '+safeText(observation)+' 같은 관계가 여러 라운드와 상황에서 반복되는지 계속 확인합니다.</div></div>';
+  html+='</div><div class="mentalImpactObservation"><b>JGI 관찰</b> · '+safeText(observation)+' 충분한 표본에서 같은 관계가 반복될 때 개인 Miss Risk 신호로 강화합니다.</div></div>';
   return html;
 }
 
@@ -6446,14 +6550,33 @@ function stateResultBand(state,key){
 function stateResultEscape(value){
   return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function mentalHoleIndex(r,h){
+  const teeName=normalizeTeeName(r?.tee||'White');
+  const raw=teeName==='Red'?(h?.strokeIndexLadies??h?.strokeIndexMen):(h?.strokeIndexMen??h?.strokeIndexLadies);
+  const n=Number(raw);
+  return Number.isFinite(n)&&n>=1&&n<=18?n:null;
+}
+function mentalHoleIndexBand(v){
+  const n=Number(v);if(!Number.isFinite(n))return 'SI_UNKNOWN';
+  if(n<=6)return 'SI_1_6';
+  if(n<=12)return 'SI_7_12';
+  return 'SI_13_18';
+}
+function mentalNearestCourseRisk(context){
+  const cr=context?.courseRisk||{};
+  const rows=[cr.left?{...cr.left,side:'LEFT'}:null,cr.right?{...cr.right,side:'RIGHT'}:null]
+    .filter(x=>x&&Number.isFinite(Number(x.distanceM)))
+    .sort((a,b)=>Number(a.distanceM)-Number(b.distanceM));
+  return rows[0]||null;
+}
 function buildStateResults(r){
   const shots=[],putts=[];let unlinked=0;
   if(!r)return {shots,putts,unlinked};
   const info=sgBenchmarkInfo(r);
   (r.holes||[]).forEach(h=>{
+    const holeIndex=mentalHoleIndex(r,h),holeIndexBand=mentalHoleIndexBand(holeIndex);
     (h.shots||[]).forEach((s,i)=>{
       const state=s.playerState||s.flo;if(!state)return;
-      // Empty stored distances must not become zero in the existing SG helpers.
       const numeric=v=>v!==null&&v!==undefined&&v!==''&&typeof v!=='boolean'&&Number.isFinite(Number(v));
       const context={...(s.courseContext||{})};
       ['startGreenDistanceM','greenDistanceM','endGreenDistanceM'].forEach(k=>{if(!numeric(context[k]))delete context[k]});
@@ -6461,17 +6584,55 @@ function buildStateResults(r){
         puttsDetail:(h.puttsDetail||[]).map(p=>({...p,distanceM:numeric(p.distanceM)?p.distanceM:undefined}))};
       const sg=computeShotSG(sgHole,{...s,courseContext:context},i,info);
       const lie=String(s.endLie||'').toUpperCase();
-      shots.push({state,hole:h.hole,shotIndex:i,club:s.club||null,category:playerShotCategory(h,s,i),
+      const risk=mentalNearestCourseRisk(context);
+      const landingWidth=context?.landingZoneWidth?.widthM??context?.fairwayWidth?.landingWidthM??s.targetFairwayWidthM??null;
+      const dogleg=context?.courseRisk?.dogleg||context?.dogleg||null;
+      shots.push({
+        state,roundId:r.id||String(r.startedAt||''),hole:h.hole,holeIndex,holeIndexBand,shotIndex:i,
+        club:s.club||null,category:playerShotCategory(h,s,i),
         direction:['LEFT','CENTER','RIGHT'].includes(s.direction)?s.direction:null,
         depth:['SHORT','PIN_HIGH','TARGET','LONG'].includes(s.depth)?s.depth:null,
         fairway:i===0&&Number(h.par)>=4&&['FAIRWAY','ROUGH','A CUT','B CUT','BUNKER','SAND','GREEN','FRINGE','RECOVERY','OB','HAZARD','WATER','LOST_BALL'].includes(lie)?lie==='FAIRWAY':null,
         green:s.shotIntent==='GREEN_ATTACK'&&['FAIRWAY','ROUGH','A CUT','B CUT','BUNKER','SAND','GREEN','FRINGE','RECOVERY','OB','HAZARD','WATER','LOST_BALL'].includes(lie)?lie==='GREEN':null,
-        sg:Number.isFinite(sg?.value)?sg.value:null});
+        sg:Number.isFinite(sg?.value)?sg.value:null,
+        penaltyHole:Number(h.penalties||0)>0,
+        shotContext:{
+          startDistanceM:numeric(context.startGreenDistanceM)?Number(context.startGreenDistanceM):numeric(context.greenDistanceM)?Number(context.greenDistanceM):null,
+          startLie:String(s.startLie||'UNKNOWN').toUpperCase(),
+          shotPurpose:s.shotIntent||null,
+          targetZone:s.targetZone||s.target?.zone||null,
+          club:s.club||null
+        },
+        courseContext:{
+          landingZoneWidthM:numeric(landingWidth)?Number(landingWidth):null,
+          fairwayStartWidthM:numeric(context?.fairwayWidth?.startWidthM)?Number(context.fairwayWidth.startWidthM):null,
+          nearestRiskType:risk?.type||null,
+          nearestRiskSide:risk?.side||null,
+          nearestRiskDistanceM:numeric(risk?.distanceM)?Number(risk.distanceM):null,
+          doglegDirection:dogleg?.applicable?dogleg.direction:null,
+          doglegAngleDeg:numeric(dogleg?.angleDeg)?Number(dogleg.angleDeg):null
+        }
+      });
     });
     (h.puttsDetail||[]).forEach((p,pi)=>{
       if(!p.playerState)return;
       const psg=computePuttSG(h,p,pi,info);
-      putts.push({state:p.playerState,hole:h.hole,category:'PUTTING',result:['HOLED','MISS_LEFT','MISS_RIGHT','SHORT','LONG'].includes(p.result)?p.result:null,sg:Number.isFinite(psg?.value)?psg.value:null});
+      putts.push({
+        state:p.playerState,roundId:r.id||String(r.startedAt||''),hole:h.hole,holeIndex,holeIndexBand,
+        category:'PUTTING',
+        result:['HOLED','MISS_LEFT','MISS_RIGHT','SHORT','LONG'].includes(p.result)?p.result:null,
+        sg:Number.isFinite(psg?.value)?psg.value:null,
+        penaltyHole:Number(h.penalties||0)>0,
+        shotContext:{
+          puttDistanceM:Number.isFinite(Number(p.distanceM))?Number(p.distanceM):null,
+          slope:p.slope||null,
+          break:p.break||null,
+          startLie:'GREEN',
+          shotPurpose:'PUTTING',
+          club:'Putter'
+        },
+        courseContext:{}
+      });
     });
     if(h.puttingState&&!(h.puttsDetail||[]).some(p=>p.playerState))unlinked++;
   });
