@@ -792,7 +792,7 @@ body.round-active .bottomnav{display:none!important}
 .mentalAction{padding:12px;border-radius:15px;border:1px solid rgba(39,233,120,.32);background:rgba(26,112,59,.14);margin-top:8px}.mentalAction b{display:block;color:#78f5a0;font-size:10px}.mentalAction strong{display:block;margin-top:5px;font-size:14px;line-height:1.45}
 .mentalFlowLine{display:grid;grid-template-columns:repeat(18,minmax(24px,1fr));gap:4px;margin-top:10px;overflow-x:auto;padding-bottom:3px}.mentalHole{min-width:24px;height:28px;border-radius:50%;display:grid;place-items:center;background:#0b1711;border:1px solid rgba(255,255,255,.08);color:#65766c;font-size:8px;font-weight:950}.mentalHole.sampled{color:#08110c;border-color:transparent}.mentalHole.low{background:#3fe27f}.mentalHole.mid{background:#f5bd45}.mentalHole.high{background:#ff8c42}.mentalHole.veryHigh{background:#ff6874}.mentalLegend{display:flex;gap:9px;flex-wrap:wrap;margin-top:7px;color:#8fa096;font-size:8px}.mentalLegend span{display:flex;align-items:center;gap:4px}.mentalLegend i{width:8px;height:8px;border-radius:50%;display:inline-block}
 .mentalSampleRail{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px}.mentalSampleCard{min-width:205px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#08130d}.mentalSampleCard b{font-size:11px}.mentalSampleCard .vals{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:7px;font-size:8px;color:#8fa096}.mentalSampleCard .vals strong{display:block;color:#eef6f1;font-size:12px;margin-top:2px}.mentalSampleCard .result{margin-top:7px;font-size:9px;font-weight:900}
-.mentalTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.mentalTabs button{border:1px solid rgba(255,255,255,.1);background:#07130d;color:#91a398;border-radius:999px;padding:8px 5px;font-size:8px;font-weight:900}.mentalTabs button.sel{border-color:#27e978;color:#74f39d;background:rgba(39,233,120,.09)}
+.mentalTabs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px 0}.mentalTabs button{border:1px solid rgba(255,255,255,.1);background:#07130d;color:#91a398;border-radius:999px;padding:8px 5px;font-size:8px;font-weight:900}.mentalTabs button.sel{border-color:#27e978;color:#74f39d;background:rgba(39,233,120,.09)}
 .mentalDual{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mentalPanel{padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.11);background:rgba(7,24,18,.7)}.mentalPanel h3{font-size:14px;margin:0}.mentalPanel .sub{font-size:9px}.mentalDetailToggle{margin-top:10px;border:1px solid rgba(39,233,120,.24);border-radius:14px;background:#07130d}.mentalDetailToggle summary{padding:12px;cursor:pointer;text-align:center;color:#dff4e7;font-size:11px;font-weight:950}.mentalDetailBody{padding:0 8px 8px}
 .mentalDiffGood{color:#67f29a;font-weight:950}.mentalDiffBad{color:#ff7b7b;font-weight:950}.mentalDiffNeutral{color:#d7e2dc;font-weight:950}
 @media(max-width:430px){.mentalTopGrid{grid-template-columns:repeat(2,1fr)}.mentalInsightGrid,.mentalDual{grid-template-columns:1fr}.mentalCompareRow{grid-template-columns:76px 38px 1fr}}
@@ -5938,10 +5938,10 @@ function categoryCard(cat,story=false){
 function liveMentalStateCard(){
   const data=buildStateResults(round);
   const n=data.shots.length+data.putts.length;
-  if(!n)return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">0개</span></div><div class="catMain">아직 결과와 연결된 멘탈 상태 샘플이 없습니다.</div><div class="catSub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행을 실제 결과와 연결합니다.</div><div class="whyBox"><b>오늘 관찰</b><br>샘플이 쌓이면 결과 차이를 표시합니다.</div></div>';
+  if(!n)return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">0개</span></div><div class="catMain">아직 결과와 연결된 멘탈 상태 샘플이 없습니다.</div><div class="catSub">압박감 · 생각 간섭 · 신체 긴장 · 샷 확신 · 집중도을 실제 결과와 연결합니다.</div><div class="whyBox"><b>오늘 관찰</b><br>샘플이 쌓이면 결과 차이를 표시합니다.</div></div>';
   const patterns=stateResultPatterns(data,'현재 라운드');
   const first=patterns[0]||'아직 뚜렷한 비교 패턴이 없습니다.';
-  return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">'+n+'개</span></div><div class="catMain">멘탈 상태와 실제 샷·퍼트 결과를 함께 봅니다.</div><div class="catSub">결정 확신 · 생각의 양 · 긴장도 · 루틴 실행</div><div class="whyBox"><b>오늘 관찰</b><br>'+first+'</div></div>';
+  return '<div class="analysisCard"><div class="catTop"><span class="catName">멘탈 상태 분석</span><span class="catValue">'+n+'개</span></div><div class="catMain">멘탈 상태와 실제 샷·퍼트 결과를 함께 봅니다.</div><div class="catSub">압박감 · 생각 간섭 · 신체 긴장 · 샷 확신 · 집중도</div><div class="whyBox"><b>오늘 관찰</b><br>'+first+'</div></div>';
 }
 function coordText(p){
   return p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))
@@ -6939,10 +6939,11 @@ function renderStory(){
 
   let action=live.nextAction;
   if(mentalLead){
-    if(mentalLead.key==='thinking')action='샷 전 생각을 한 가지로 제한하고, 타깃을 먼저 확정하세요.';
-    else if(mentalLead.key==='tension')action='타깃을 먼저 확정하고 평소 호흡과 루틴을 그대로 유지하세요.';
-    else if(mentalLead.key==='commitment')action='클럽과 타깃 결정을 끝낸 뒤 어드레스에 들어가세요.';
-    else if(mentalLead.key==='routineExecution')action='결과보다 평소 프리샷 루틴을 끝까지 수행하는 데 집중하세요.';
+    if(mentalLead.key==='pressure')action='압박을 느끼더라도 결과보다 지금 해야 할 샷과 타깃에만 주의를 모으세요.';
+    else if(mentalLead.key==='interference')action='불필요한 생각을 줄이고 한 가지 실행 단서만 유지하세요.';
+    else if(mentalLead.key==='tension')action='타깃을 먼저 확정하고 평소 호흡과 준비 속도를 유지하세요.';
+    else if(mentalLead.key==='confidence')action='클럽·타깃·샷 결정을 끝낸 뒤 어드레스에 들어가세요.';
+    else if(mentalLead.key==='focus')action='주의를 지금 해야 할 샷과 타깃 한 곳에만 모으세요.';
   }
   $('nextFocus').innerHTML='<strong style="color:#ffd36e;font-size:15px">'+action+'</strong><br><br><span class="dataNote">'+(mentalLead?mentalText+' 이 관계를 원인으로 단정하지 않고 다음 라운드에서 다시 확인합니다.':'현재 라운드의 실제 샷 기록에서 가장 큰 반복 이슈를 기준으로 한 행동 제안입니다.')+'</span>';
 }
