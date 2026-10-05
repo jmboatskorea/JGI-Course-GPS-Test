@@ -1412,9 +1412,9 @@ body.round-active .bottomnav{display:none!important}
 
         <div class="mapRightControls">
           <button id="recenterBtn" class="mapControlBtn" title="현재 위치로 이동">◎</button>
-          <button id="dropBallBtn" class="mapControlBtn mapControlText" title="GPS가 틀릴 때 실제 공 위치를 지도에 지정">공 위치</button>
-          <button id="undoLastBtn" class="mapControlBtn mapControlText" title="마지막 입력 취소">UNDO</button>
-          <button id="autoBtn" class="mapControlBtn mapControlText" title="티박스에서 그린 방향으로 자동 정렬">자동</button>
+          <button id="dropBallBtn" class="mapControlBtn mapControlText hidden" title="DROP 위치 확정">공 위치 완료</button>
+          <button id="undoLastBtn" class="mapControlBtn mapControlText hidden" title="마지막 입력 취소">UNDO</button>
+          <button id="autoBtn" class="mapControlBtn mapControlText hidden" title="티박스에서 그린 방향으로 자동 정렬">자동</button>
           <button id="clearTargetBtn" class="mapControlBtn mapControlText hidden" title="타깃을 중간 기본값으로 재설정">C</button>
         </div>
 
@@ -2874,7 +2874,7 @@ window.initGoogleMap=function(){
     fullscreenControl:false,
     rotateControl:false,
     scaleControl:true,
-    zoomControl:true,
+    zoomControl:false,
     gestureHandling:'greedy'
   });
   const status=$('mapLoadStatus');
@@ -3265,6 +3265,7 @@ function openStartPositionModal(){
 function activateDropForStart(){
   startPositionOverride='DROP';
   dropMode=true;
+  $('dropBallBtn')?.classList.remove('hidden');
   $('dropBallBtn')?.classList.add('active');
   if($('dropBallBtn'))$('dropBallBtn').textContent='공 위치 완료';
   if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 지도에서 공 위치를 탭하세요';
@@ -3617,7 +3618,7 @@ function beginPending(club,previousShot=null){
   const startSnapshot=resolveShotStart(previousShot);
   if(dropMode){
     dropMode=false;
-    if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치'}
+    if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').classList.add('hidden');$('dropBallBtn').textContent='공 위치 완료'}
     if($('gpsOverlay')&&manualPosition)$('gpsOverlay').textContent='위치 · DROP 확정';
   }
   if(!startSnapshot){
@@ -6416,7 +6417,7 @@ function setManualPosition(latLng){
     });
   }else{manualPositionMarker.setPosition(manualPosition);manualPositionMarker.setMap(googleMap)}
   dropMode=true;
-  $('dropBallBtn').classList.add('active');$('dropBallBtn').textContent='공 위치 완료';
+  $('dropBallBtn').classList.remove('hidden');$('dropBallBtn').classList.add('active');$('dropBallBtn').textContent='공 위치 완료';
   if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 다른 곳을 탭하면 위치 수정';
   renderStartPositionControl();
   renderJgiCourseView();
@@ -6425,7 +6426,7 @@ function clearManualPosition(){
   manualPosition=null;
   if(manualPositionMarker)manualPositionMarker.setMap(null);
   dropMode=false;
-  if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').textContent='공 위치'}
+  if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').classList.add('hidden');$('dropBallBtn').textContent='공 위치 완료'}
   renderStartPositionControl();
 }
 function startGPS(){
@@ -8374,7 +8375,8 @@ $('dropBallBtn').onclick=()=>{
   if(dropMode&&!round?.pending)startPositionOverride='DROP';
   if(!dropMode&&startPositionOverride==='DROP'&&!manualPosition)startPositionOverride=null;
   $('dropBallBtn').classList.toggle('active',dropMode);
-  $('dropBallBtn').textContent=dropMode?'공 위치 완료':'공 위치';
+  $('dropBallBtn').classList.toggle('hidden',!dropMode);
+  $('dropBallBtn').textContent='공 위치 완료';
   if($('gpsOverlay')){
     $('gpsOverlay').textContent=dropMode
       ? (manualPosition?'DROP · 다른 곳을 탭하면 위치 수정':'DROP · 지도에서 공 위치를 탭하세요')
