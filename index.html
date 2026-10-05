@@ -755,6 +755,10 @@ body.round-active .bottomnav{display:none!important}
 .multiDriverScatter{position:relative;height:210px;border-radius:14px;overflow:hidden;background:linear-gradient(90deg,rgba(68,39,20,.34) 0 30%,rgba(32,98,49,.3) 30% 70%,rgba(68,39,20,.34) 70% 100%);border:1px solid rgba(255,255,255,.08)}.multiDriverScatter:before{content:"";position:absolute;left:49.5%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.23)}.multiDriverScatter:after{content:"좌   페어웨이   우";position:absolute;left:0;right:0;bottom:5px;text-align:center;color:#d6e1da;font-size:7px;letter-spacing:.18em}.multiDriverPct{position:absolute;top:7px;z-index:4;padding:4px 7px;border-radius:999px;background:rgba(2,18,13,.80);border:1px solid rgba(255,255,255,.18);color:#f2f7f4;font-size:9px;font-weight:950;line-height:1}.multiDriverPct.left{left:7px}.multiDriverPct.center{left:50%;transform:translateX(-50%);color:#74f39d}.multiDriverPct.right{right:7px}.multiDriverDot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);background:#ff737d;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 5px rgba(0,0,0,.35)}.multiDriverDot.fw{background:#45e587}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
+.multiSplitRows{display:grid;gap:8px}.multiSplitRow{padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07)}.multiSplitHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;margin-bottom:6px}.multiSplitHead b{font-size:9px}.multiSplitHead span{color:#91a49a}.multiSplitTrack{display:flex;height:8px;border-radius:99px;overflow:hidden;background:#122019}.multiSplitTrack i{display:block;height:100%}.multiSplitTrack .left{background:#f2b94b}.multiSplitTrack .center{background:#45e587}.multiSplitTrack .right{background:#ff737d}.multiSplitLegend{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;color:#91a49a;font-size:7px}.multiSplitLegend b{color:#dce7e0}
+.multiDashboardObservation{margin-top:10px;padding:12px;border-radius:15px;border:1px solid rgba(39,233,120,.22);background:rgba(12,48,32,.34)}.multiDashboardObservation>div:first-child{font-size:9px;font-weight:950;color:#79f5a1;letter-spacing:.04em}.multiDashboardObservation .multiPatternList{margin-top:7px}
+.multiDashboardFoot{margin-top:10px;font-size:8px;line-height:1.5;color:#82958a;text-align:right}
+@media(max-width:620px){.multiSplitHead{align-items:flex-start}.multiDashboardObservation{padding:10px}}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
 .multiShotDetailIntro{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:rgba(39,233,120,.06);border:1px solid rgba(39,233,120,.18);color:#abc0b4;font-size:9px;line-height:1.5}
 .multiShotRound{margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,20,15,.72);overflow:hidden}
@@ -5694,6 +5698,165 @@ function mentalImpactSummaryHtml(data,roundCount){
   return html;
 }
 
+
+function multiClubDashboardGroups(rounds){
+  const rows=multiRows(rounds).shots||[],groups={};
+  rows.forEach(x=>{
+    const key=x.s?.club||'미확인';
+    const o=groups[key]||(groups[key]={key,n:0,dist:[],left:0,center:0,right:0,short:0,long:0,sg:[]});
+    o.n++;
+    const d=Number(x.s?.distanceM);if(Number.isFinite(d))o.dist.push(d);
+    const dir=String(x.s?.direction||'').toUpperCase();
+    if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    const dep=String(x.s?.depth||'').toUpperCase();
+    if(dep==='SHORT')o.short++;if(dep==='LONG')o.long++;
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  return Object.values(groups).sort((a,b)=>b.n-a.n);
+}
+function multiClubUsageBarsHtml(groups){
+  if(!groups.length)return '<div class="analysisEmpty">클럽 데이터가 없습니다.</div>';
+  const rows=groups.slice(0,8),max=Math.max(1,...rows.map(o=>o.n));
+  return rows.map(o=>'<div class="multiUsageRow"><b>'+safeText(o.key)+'</b><span class="multiUsageTrack"><i style="width:'+Math.max(3,o.n/max*100)+'%"></i></span><strong>'+o.n+'</strong></div>').join('');
+}
+function multiClubDistanceBarsHtml(groups){
+  const rows=groups.filter(o=>o.dist.length).map(o=>({...o,avgDist:avg(o.dist)})).sort((a,b)=>b.avgDist-a.avgDist).slice(0,8);
+  if(!rows.length)return '<div class="analysisEmpty">거리 데이터가 없습니다.</div>';
+  const max=Math.max(1,...rows.map(o=>o.avgDist));
+  return rows.map(o=>'<div class="multiUsageRow"><b>'+safeText(o.key)+'</b><span class="multiUsageTrack"><i style="width:'+Math.max(3,o.avgDist/max*100)+'%"></i></span><strong>'+Math.round(o.avgDist)+'m</strong></div>').join('');
+}
+function multiClubMissSplitHtml(groups){
+  const rows=groups.filter(o=>(o.left+o.center+o.right)>0).slice(0,6);
+  if(!rows.length)return '<div class="analysisEmpty">방향 데이터가 없습니다.</div>';
+  return '<div class="multiSplitRows">'+rows.map(o=>{
+    const n=o.left+o.center+o.right,l=o.left/n*100,c=o.center/n*100,r=o.right/n*100;
+    return '<div class="multiSplitRow"><div class="multiSplitHead"><b>'+safeText(o.key)+'</b><span>N '+n+'</span></div>'+
+      '<div class="multiSplitTrack"><i class="left" style="width:'+l+'%"></i><i class="center" style="width:'+c+'%"></i><i class="right" style="width:'+r+'%"></i></div>'+
+      '<div class="multiSplitLegend"><span><b>L</b> '+o.left+'</span><span><b>C</b> '+o.center+'</span><span><b>R</b> '+o.right+'</span></div></div>';
+  }).join('')+'</div>';
+}
+function multiClubDashboardHtml(rounds){
+  const rows=multiRows(rounds).shots||[],groups=multiClubDashboardGroups(rounds),top=groups[0]||null;
+  const driver=groups.find(o=>['DR','DRIVER','1W'].includes(String(o.key||'').toUpperCase()));
+  const approach=rows.filter(x=>multiApproach5mBucket(multiStartDistance(x)));
+  const left=groups.reduce((a,o)=>a+o.left,0),right=groups.reduce((a,o)=>a+o.right,0),center=groups.reduce((a,o)=>a+o.center,0);
+  const dirN=left+right+center;
+  const topSg=top?.sg?.length?avg(top.sg):null;
+  const patterns=[];
+  if(top)patterns.push('가장 많이 사용한 클럽은 '+top.key+' '+top.n+'회이며, 평균 거리 '+(top.dist.length?Math.round(avg(top.dist))+'m':'—')+'가 기록되었습니다.');
+  if(dirN){
+    const side=right>left?'오른쪽':left>right?'왼쪽':'좌·우 동일';
+    patterns.push('저장된 방향 결과 '+dirN+'개에서 '+side+' 미스가 '+Math.max(left,right)+'회입니다. 중앙 결과는 '+center+'회입니다.');
+  }
+  const sgGroups=groups.filter(o=>o.sg.length).map(o=>({...o,avgSg:avg(o.sg)})).sort((a,b)=>b.avgSg-a.avgSg);
+  if(sgGroups.length){
+    const best=sgGroups[0];
+    patterns.push('현재 Avg SG가 가장 높은 클럽은 '+best.key+' '+multiSigned(best.avgSg)+'이며 표본은 '+best.sg.length+'샷입니다. 표본 수와 함께 확인합니다.');
+  }
+  return '<div class="analysisNote">상세 표보다 먼저 클럽 사용 패턴 · 거리 · 방향 결과를 요약합니다. 모든 수치는 선택한 라운드의 기존 저장 샷에서 계산합니다.</div>'+
+    '<div class="multiTeeKpis">'+
+      multiMetricTile('Most Used Club',top?safeText(top.key):'—',top?top.n+' shots':'0 shots')+
+      multiMetricTile('Top Club Distance',top&&top.dist.length?Math.round(avg(top.dist))+'m':'—',top?safeText(top.key):'')+
+      multiMetricTile('Top Club Avg SG',top?multiSgHtml(topSg):'—',top?(top.sg.length+' SG shots'):'')+
+      multiMetricTile('Driver Distance',driver&&driver.dist.length?Math.round(avg(driver.dist))+'m':'—',driver?driver.n+' shots':'0 shots')+
+      multiMetricTile('Clubs Used',groups.length,(rounds?.length||0)+'R')+
+      multiMetricTile('5–80m Shots',approach.length,'approach context')+
+    '</div>'+
+    '<div class="multiTeeGrid">'+
+      '<div class="multiVizCard"><h4>클럽 사용 빈도</h4>'+multiClubUsageBarsHtml(groups)+'</div>'+
+      '<div class="multiVizCard"><h4>클럽 평균 거리</h4>'+multiClubDistanceBarsHtml(groups)+'</div>'+
+      '<div class="multiVizCard"><h4>클럽별 방향 결과</h4>'+multiClubMissSplitHtml(groups)+'</div>'+
+    '</div>'+
+    '<div class="multiDashboardObservation"><div>JGI 관찰 · CLUB</div><div class="multiPatternList">'+patterns.slice(0,3).map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div>'+
+    '<div class="multiDashboardFoot">전체 클럽별 수치와 5–80m 상세는 「상세 데이터 보기」에서 확인합니다.</div>';
+}
+function multiCourseDashboardRows(rounds){
+  const rows=[];
+  (rounds||[]).forEach(r=>(r.holes||[]).forEach(h=>{
+    const s=h.shots?.[0];if(!s||Number(h.par)<4)return;
+    rows.push({r,h,s,sg:multiShotSg({r,h,s,si:0}),dogleg:multiDoglegData(s)});
+  }));
+  return rows;
+}
+function multiCourseShapeStats(rows){
+  const g={};
+  rows.forEach(x=>{
+    const k=multiDoglegDirectionLabel(x.dogleg?.direction||'STRAIGHT');
+    const o=g[k]||(g[k]={label:k,n:0,fw:0,left:0,right:0,sg:[]});
+    o.n++;if(String(x.s.endLie||'').toUpperCase()==='FAIRWAY')o.fw++;
+    if(String(x.s.direction||'').toUpperCase()==='LEFT')o.left++;
+    if(String(x.s.direction||'').toUpperCase()==='RIGHT')o.right++;
+    if(Number.isFinite(x.sg))o.sg.push(x.sg);
+  });
+  return g;
+}
+function multiCourseWidthStats(rows){
+  const g={};
+  rows.forEach(x=>{
+    const width=x.s.courseContext?.landingZoneWidth?.widthM??x.s.courseContext?.fairwayWidth?.landingWidthM;
+    const k=multiWidthBucket(width);if(!k)return;
+    const o=g[k]||(g[k]={label:k,n:0,fw:0,left:0,right:0,sg:[]});
+    o.n++;if(String(x.s.endLie||'').toUpperCase()==='FAIRWAY')o.fw++;
+    if(String(x.s.direction||'').toUpperCase()==='LEFT')o.left++;
+    if(String(x.s.direction||'').toUpperCase()==='RIGHT')o.right++;
+    if(Number.isFinite(x.sg))o.sg.push(x.sg);
+  });
+  return g;
+}
+function multiCourseShapeResultHtml(shape){
+  const order=['RIGHT','LEFT','STRAIGHT'];
+  const rows=order.filter(k=>shape[k]);
+  if(!rows.length)return '<div class="analysisEmpty">도그렉 데이터가 없습니다.</div>';
+  return '<div class="multiResultBars">'+rows.map(k=>{const o=shape[k],p=o.n?o.fw/o.n*100:0;return '<div class="multiResultBar"><div><b>'+k+'</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(p)+'%"></i></span><strong>'+Math.round(p)+'% FW</strong></div>'}).join('')+'</div>';
+}
+function multiCourseWidthResultHtml(width){
+  const order=['20m 이하','20~25m','25~30m','30m 초과'];
+  const rows=order.filter(k=>width[k]);
+  if(!rows.length)return '<div class="analysisEmpty">착지구역 폭 데이터가 없습니다.</div>';
+  return '<div class="multiResultBars">'+rows.map(k=>{const o=width[k],p=o.n?o.fw/o.n*100:0;return '<div class="multiResultBar"><div><b>'+safeText(k)+'</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(p)+'%"></i></span><strong>'+Math.round(p)+'% FW</strong></div>'}).join('')+'</div>';
+}
+function multiCourseShapeMixHtml(shape,total){
+  const order=['RIGHT','LEFT','STRAIGHT'],groups=order.filter(k=>shape[k]).map(k=>({label:k,n:shape[k].n}));
+  return multiSituationDonutHtml(groups,total,'TEE');
+}
+function multiCourseDashboardHtml(rounds){
+  const rows=multiCourseDashboardRows(rounds),shape=multiCourseShapeStats(rows),width=multiCourseWidthStats(rows);
+  const shapes=Object.values(shape).sort((a,b)=>b.n-a.n),topShape=shapes[0]||null;
+  const doglegN=rows.filter(x=>x.dogleg&&x.dogleg.direction!=='STRAIGHT').length;
+  const narrow=rows.filter(x=>{const w=Number(x.s.courseContext?.landingZoneWidth?.widthM??x.s.courseContext?.fairwayWidth?.landingWidthM);return Number.isFinite(w)&&w<=25;});
+  const risk30=rows.filter(x=>{
+    const cr=x.s.courseContext?.courseRisk||{},l=Number(cr.left?.distanceM),r=Number(cr.right?.distanceM);
+    return (Number.isFinite(l)&&l<=30)||(Number.isFinite(r)&&r<=30);
+  });
+  const targets={};
+  rows.forEach(x=>{const k=multiTargetLabel(x.s.targetZone||x.s.target?.zone);targets[k]=(targets[k]||0)+1});
+  const topTarget=Object.entries(targets).sort((a,b)=>b[1]-a[1])[0];
+  const sgv=rows.map(x=>x.sg).filter(Number.isFinite);
+  const narrowFw=narrow.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const riskFw=risk30.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const patterns=[];
+  if(topShape)patterns.push('가장 많이 플레이한 코스 형태는 '+topShape.label+' '+topShape.n+'회이며 Fairway '+multiPct(topShape.fw,topShape.n)+'가 기록되었습니다.');
+  if(narrow.length)patterns.push('Landing Zone 25m 이하 티샷은 '+narrow.length+'회 · Fairway '+multiPct(narrowFw,narrow.length)+'가 기록되었습니다.');
+  if(risk30.length)patterns.push('착지 예상 지점 기준 좌·우 위험요소 30m 이내 상황은 '+risk30.length+'회 · Fairway '+multiPct(riskFw,risk30.length)+'가 기록되었습니다.');
+  if(topTarget)patterns.push('가장 많이 사용한 Target은 '+topTarget[0]+' '+topTarget[1]+'회입니다.');
+  return '<div class="analysisNote">Course Context와 실제 티샷 결과만 요약합니다. Mental/State는 포함하지 않으며, Dogleg·폭·위험요소 구간은 기존 Course Intelligence 기준을 그대로 사용합니다.</div>'+
+    '<div class="multiTeeKpis">'+
+      multiMetricTile('Course Tee Shots',rows.length,(rounds?.length||0)+'R')+
+      multiMetricTile('Most Played Shape',topShape?topShape.label:'—',topShape?topShape.n+' shots':'0 shots')+
+      multiMetricTile('Dogleg Shots',doglegN,'LEFT + RIGHT')+
+      multiMetricTile('Landing ≤25m',narrow.length,'tee shots')+
+      multiMetricTile('Risk ≤30m',risk30.length,'landing context')+
+      multiMetricTile('Avg SG / Tee',multiSgHtml(avg(sgv)),sgv.length+' SG shots')+
+    '</div>'+
+    '<div class="multiTeeGrid">'+
+      '<div class="multiVizCard"><h4>코스 형태 비율</h4>'+multiCourseShapeMixHtml(shape,rows.length)+'</div>'+
+      '<div class="multiVizCard"><h4>Dogleg · Fairway 결과</h4>'+multiCourseShapeResultHtml(shape)+'</div>'+
+      '<div class="multiVizCard"><h4>Landing Zone 폭 · Fairway 결과</h4>'+multiCourseWidthResultHtml(width)+'</div>'+
+    '</div>'+
+    '<div class="multiDashboardObservation"><div>JGI 관찰 · COURSE</div><div class="multiPatternList">'+patterns.slice(0,3).map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div>'+
+    '<div class="multiDashboardFoot">Hazard · Dogleg Angle · Turn Point · Target · Club 조합의 전체 근거는 「상세 데이터 보기」에서 확인합니다.</div>';
+}
+
 function renderMultiPrimaryDetail(){
   const rounds=multiReviewRounds||[];
   const title=$('multiPrimaryTitle'),sub=$('multiPrimarySub'),host=$('multiPrimaryDetail');if(!host)return;
@@ -5704,8 +5867,8 @@ function renderMultiPrimaryDetail(){
     host.innerHTML=multiPerformanceDetail(rounds,multiPerformanceMode);return;
   }
   if(multiDashboardMode==='CLUB'){
-    title.textContent='클럽 · 거리 분석';sub.textContent='클럽별 성과와 5~80m 거리별 어프로치 데이터를 함께 봅니다.';
-    host.innerHTML='<div class="sectionLabel">클럽별 성능</div>'+($('analysisClub')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">5~80m 어프로치</div>'+($('analysisApproach')?.innerHTML||'');return;
+    title.textContent='클럽 · 거리 분석';sub.textContent='클럽 사용 빈도 → 거리 → 방향 결과 → JGI 관찰 순서로 봅니다.';
+    host.innerHTML=multiClubDashboardHtml(rounds);return;
   }
   if(multiDashboardMode==='MENTAL'){
     title.textContent='멘탈 분석';sub.textContent='멘탈 상태가 드라이버 · 아이언 · 어프로치 · 퍼터 결과와 어떻게 함께 움직였는지 요약하고, 아래에서 근거 데이터를 확인합니다.';
@@ -5714,8 +5877,8 @@ function renderMultiPrimaryDetail(){
       '<div class="mentalImpactDetailLabel">상세 데이터 · 상태 × 실제 결과</div>'+
       ($('analysisState')?.innerHTML||'<div class="analysisEmpty">멘탈 데이터가 없습니다.</div>');return;
   }
-  title.textContent='코스 · 상황 분석';sub.textContent='위험요소 · 도그렉 · 페어웨이 폭 · 타깃 선택과 실제 샷 결과를 함께 봅니다.';
-  host.innerHTML='<div class="sectionLabel">위험요소</div>'+($('analysisRisk')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">DOGLEG PERFORMANCE</div>'+($('analysisDogleg')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">페어웨이 폭 · 착지구역</div>'+($('analysisWidth')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">타깃 선택</div>'+($('analysisDecision')?.innerHTML||'');
+  title.textContent='코스 · 상황 분석';sub.textContent='코스 형태 → Dogleg → Landing Zone → 위험요소의 샷 결과를 먼저 요약합니다.';
+  host.innerHTML=multiCourseDashboardHtml(rounds);
 }
 function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1),chartId){
   const all=series.flatMap(x=>x).filter(Number.isFinite);
