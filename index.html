@@ -5142,14 +5142,15 @@ function mentalImpactSummaryHtml(data,roundCount){
     if(!x?.available){
       html+='<div class="mentalImpactCard empty"><div class="area">'+area+'</div><span class="metric">비교 데이터 부족</span><small>이 조건의 낮음/높음 그룹 비교 대기</small></div>';return;
     }
-    const delta=Math.round(x.diff*100),lp=Math.round(x.lowRate*100),hp=Math.round(x.highRate*100),abs=Math.abs(delta);
-    const cls=abs<8?'neutral':delta>0?'bad':'good',arrow=abs<8?'→':delta>0?'↑':'↓';
+    const delta=Math.round(x.diff*100),lp=Math.round(x.lowRate*100),hp=Math.round(x.highRate*100);
+    const cls=delta>0?'bad':delta<0?'good':'neutral';
+    const deltaMeaning=delta>0?'미스 증가':delta<0?'미스 감소':'변화 없음';
     html+='<div class="mentalImpactCard"><div class="area">'+area+'</div><span class="metric">'+safeText(x.label)+'</span>'+
       '<div class="mentalImpactBars">'+
         '<div class="mentalImpactBar"><span>'+safeText(lowLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,lp)+'%"></i></div><b>'+lp+'%</b></div>'+
         '<div class="mentalImpactBar high"><span>'+safeText(highLabel)+'</span><div class="mentalImpactTrack"><i style="width:'+Math.min(100,hp)+'%"></i></div><b>'+hp+'%</b></div>'+
       '</div>'+
-      '<div class="mentalImpactDelta '+cls+'">'+(delta>0?'+':'')+delta+'%p '+arrow+'</div>'+
+      '<div class="mentalImpactDelta '+cls+'">'+(delta>0?'+':'')+delta+'%p · '+deltaMeaning+'</div>'+
       '<small>비교 샘플 '+x.lowN+' / '+x.highN+' · '+mentalImpactConfidenceText(x.confidence)+'</small></div>';
   });
   html+='</div><div class="mentalImpactObservation"><b>JGI 관찰</b> · '+safeText(observation)+' 같은 관계가 여러 라운드와 상황에서 반복되는지 계속 확인합니다.</div></div>';
