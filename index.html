@@ -755,10 +755,18 @@ body.round-active .bottomnav{display:none!important}
 .multiDriverScatter{position:relative;height:210px;border-radius:14px;overflow:hidden;background:linear-gradient(90deg,rgba(68,39,20,.34) 0 30%,rgba(32,98,49,.3) 30% 70%,rgba(68,39,20,.34) 70% 100%);border:1px solid rgba(255,255,255,.08)}.multiDriverScatter:before{content:"";position:absolute;left:49.5%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.23)}.multiDriverScatter:after{content:"좌   페어웨이   우";position:absolute;left:0;right:0;bottom:5px;text-align:center;color:#d6e1da;font-size:7px;letter-spacing:.18em}.multiDriverPct{position:absolute;top:7px;z-index:4;padding:4px 7px;border-radius:999px;background:rgba(2,18,13,.80);border:1px solid rgba(255,255,255,.18);color:#f2f7f4;font-size:9px;font-weight:950;line-height:1}.multiDriverPct.left{left:7px}.multiDriverPct.center{left:50%;transform:translateX(-50%);color:#74f39d}.multiDriverPct.right{right:7px}.multiDriverDot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);background:#ff737d;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 5px rgba(0,0,0,.35)}.multiDriverDot.fw{background:#45e587}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
-.multiSplitRows{display:grid;gap:8px}.multiSplitRow{padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07)}.multiSplitHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;margin-bottom:6px}.multiSplitHead b{font-size:9px}.multiSplitHead span{color:#91a49a}.multiSplitTrack{display:flex;height:8px;border-radius:99px;overflow:hidden;background:#122019}.multiSplitTrack i{display:block;height:100%}.multiSplitTrack .left{background:#f2b94b}.multiSplitTrack .center{background:#45e587}.multiSplitTrack .right{background:#ff737d}.multiSplitLegend{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;color:#91a49a;font-size:7px}.multiSplitLegend b{color:#dce7e0}
+.multiDashboardKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+.multiDashboardGrid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.multiDashboardGrid .multiVizCard{min-height:300px;padding:14px}
+.multiDashboardGrid .multiVizCard h4{font-size:12px;margin-bottom:12px}
+.multiDashboardGrid .multiUsageRow{grid-template-columns:52px minmax(0,1fr) 48px;gap:8px;margin:9px 0;font-size:10px}
+.multiDashboardGrid .multiUsageRow b{font-size:10px}
+.multiDashboardGrid .multiUsageRow strong{font-size:9px;text-align:right}
+.multiDashboardGrid .multiUsageTrack{height:10px}
+.multiSplitRows{display:grid;gap:9px}.multiSplitRow{padding:10px 10px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07)}.multiSplitHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;margin-bottom:7px}.multiSplitHead b{font-size:10px}.multiSplitHead span{color:#91a49a;font-size:8px}.multiSplitTrack{display:flex;height:11px;border-radius:99px;overflow:hidden;background:#122019}.multiSplitTrack i{display:block;height:100%}.multiSplitTrack .left{background:#f2b94b}.multiSplitTrack .center{background:#45e587}.multiSplitTrack .right{background:#ff737d}.multiSplitLegend{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;color:#a4b5ab;font-size:8px}.multiSplitLegend b{color:#eef6f1}
 .multiDashboardObservation{margin-top:10px;padding:12px;border-radius:15px;border:1px solid rgba(39,233,120,.22);background:rgba(12,48,32,.34)}.multiDashboardObservation>div:first-child{font-size:9px;font-weight:950;color:#79f5a1;letter-spacing:.04em}.multiDashboardObservation .multiPatternList{margin-top:7px}
 .multiDashboardFoot{margin-top:10px;font-size:8px;line-height:1.5;color:#82958a;text-align:right}
-@media(max-width:620px){.multiSplitHead{align-items:flex-start}.multiDashboardObservation{padding:10px}}
+@media(max-width:620px){.multiDashboardKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.multiDashboardGrid{grid-template-columns:1fr}.multiDashboardGrid .multiVizCard{min-height:0}.multiSplitHead{align-items:flex-start}.multiDashboardObservation{padding:10px}}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
 .multiShotDetailIntro{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:rgba(39,233,120,.06);border:1px solid rgba(39,233,120,.18);color:#abc0b4;font-size:9px;line-height:1.5}
 .multiShotRound{margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,20,15,.72);overflow:hidden}
@@ -5754,7 +5762,7 @@ function multiClubDashboardHtml(rounds){
     patterns.push('현재 Avg SG가 가장 높은 클럽은 '+best.key+' '+multiSigned(best.avgSg)+'이며 표본은 '+best.sg.length+'샷입니다. 표본 수와 함께 확인합니다.');
   }
   return '<div class="analysisNote">상세 표보다 먼저 클럽 사용 패턴 · 거리 · 방향 결과를 요약합니다. 모든 수치는 선택한 라운드의 기존 저장 샷에서 계산합니다.</div>'+
-    '<div class="multiTeeKpis">'+
+    '<div class="multiTeeKpis multiDashboardKpis">'+
       multiMetricTile('Most Used Club',top?safeText(top.key):'—',top?top.n+' shots':'0 shots')+
       multiMetricTile('Top Club Distance',top&&top.dist.length?Math.round(avg(top.dist))+'m':'—',top?safeText(top.key):'')+
       multiMetricTile('Top Club Avg SG',top?multiSgHtml(topSg):'—',top?(top.sg.length+' SG shots'):'')+
@@ -5762,7 +5770,7 @@ function multiClubDashboardHtml(rounds){
       multiMetricTile('Clubs Used',groups.length,(rounds?.length||0)+'R')+
       multiMetricTile('5–80m Shots',approach.length,'approach context')+
     '</div>'+
-    '<div class="multiTeeGrid">'+
+    '<div class="multiTeeGrid multiDashboardGrid">'+
       '<div class="multiVizCard"><h4>클럽 사용 빈도</h4>'+multiClubUsageBarsHtml(groups)+'</div>'+
       '<div class="multiVizCard"><h4>클럽 평균 거리</h4>'+multiClubDistanceBarsHtml(groups)+'</div>'+
       '<div class="multiVizCard"><h4>클럽별 방향 결과</h4>'+multiClubMissSplitHtml(groups)+'</div>'+
@@ -5840,7 +5848,7 @@ function multiCourseDashboardHtml(rounds){
   if(risk30.length)patterns.push('착지 예상 지점 기준 좌·우 위험요소 30m 이내 상황은 '+risk30.length+'회 · Fairway '+multiPct(riskFw,risk30.length)+'가 기록되었습니다.');
   if(topTarget)patterns.push('가장 많이 사용한 Target은 '+topTarget[0]+' '+topTarget[1]+'회입니다.');
   return '<div class="analysisNote">Course Context와 실제 티샷 결과만 요약합니다. Mental/State는 포함하지 않으며, Dogleg·폭·위험요소 구간은 기존 Course Intelligence 기준을 그대로 사용합니다.</div>'+
-    '<div class="multiTeeKpis">'+
+    '<div class="multiTeeKpis multiDashboardKpis">'+
       multiMetricTile('Course Tee Shots',rows.length,(rounds?.length||0)+'R')+
       multiMetricTile('Most Played Shape',topShape?topShape.label:'—',topShape?topShape.n+' shots':'0 shots')+
       multiMetricTile('Dogleg Shots',doglegN,'LEFT + RIGHT')+
@@ -5848,7 +5856,7 @@ function multiCourseDashboardHtml(rounds){
       multiMetricTile('Risk ≤30m',risk30.length,'landing context')+
       multiMetricTile('Avg SG / Tee',multiSgHtml(avg(sgv)),sgv.length+' SG shots')+
     '</div>'+
-    '<div class="multiTeeGrid">'+
+    '<div class="multiTeeGrid multiDashboardGrid">'+
       '<div class="multiVizCard"><h4>코스 형태 비율</h4>'+multiCourseShapeMixHtml(shape,rows.length)+'</div>'+
       '<div class="multiVizCard"><h4>Dogleg · Fairway 결과</h4>'+multiCourseShapeResultHtml(shape)+'</div>'+
       '<div class="multiVizCard"><h4>Landing Zone 폭 · Fairway 결과</h4>'+multiCourseWidthResultHtml(width)+'</div>'+
