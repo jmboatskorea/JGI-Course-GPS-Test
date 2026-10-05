@@ -2946,6 +2946,20 @@ function showTargetSnapshot(target,startRef=null){
   if($('targetMeta'))$('targetMeta').textContent=targetZoneLabel(target.zone)+' · 페어웨이 폭 '+(Number.isFinite(Number(target.fairwayWidthM))?Number(target.fairwayWidthM).toFixed(1)+'m':'—');
   renderJgiCourseView();
 }
+function activeTargetStartReference(){
+  if(round?.pending?.start)return round.pending.start;
+  const start=resolveShotStart();
+  if(start)return start;
+  return targetDistanceReference||rawGpsPoint();
+}
+function targetStartReferenceLabel(ref){
+  const source=String(ref?.source||'').toUpperCase();
+  if(source==='TEE_BOX')return 'TEE BOX';
+  if(source==='MANUAL_DROP')return 'DROP';
+  if(source==='PREVIOUS_END')return 'PREVIOUS SHOT';
+  if(source==='GPS')return 'GPS';
+  return 'START';
+}
 function setTarget(latLng){
   if(!window.google?.maps||round?.pending)return;
   const pos={lat:latLng.lat(),lng:latLng.lng()};
@@ -2953,7 +2967,7 @@ function setTarget(latLng){
   targetZoneSource='PLAYER_SELECTED';
   targetZone=inferZoneForPoint(courseHoleData(),pos,hole()?.par);
   renderTargetZoneControl();
-  targetDistanceReference=gps?{lat:gps.lat,lng:gps.lng}:null;
+  targetDistanceReference=activeTargetStartReference();
   if(!targetMarker){
     targetMarker=new google.maps.Marker({
       map:googleMap,position:pos,draggable:true,title:'Target',zIndex:60,
@@ -2994,11 +3008,12 @@ function updateTargetDistance(){
     renderClubSuggestions();
     return;
   }
-  const ref=round?.pending?.start||targetDistanceReference||(gps?{lat:gps.lat,lng:gps.lng}:null);
+  const ref=activeTargetStartReference();
+  targetDistanceReference=ref||null;
   if(!ref){
     targetDistanceM=null;
     $('targetDistance').textContent='위치 대기';
-    $('targetMeta').textContent=targetZoneLabel(targetZone);
+    $('targetMeta').textContent=targetZoneLabel(targetZone)+' · START 위치 대기';
     renderClubSuggestions();
     return;
   }
@@ -3006,7 +3021,7 @@ function updateTargetDistance(){
   const target={lat:t.lat(),lng:t.lng()};
   targetDistanceM=hav(ref,target);
   $('targetDistance').textContent=Math.round(targetDistanceM)+'m';
-  $('targetMeta').textContent=targetZoneLabel(targetZone)+' · '+(targetManualOverride?'직접 지정':'자동 좌표');
+  $('targetMeta').textContent='START '+targetStartReferenceLabel(ref)+' · '+targetZoneLabel(targetZone)+' · '+(targetManualOverride?'직접 지정':'자동 좌표');
   if(targetLine)targetLine.setPath([ref,target]);
   renderClubSuggestions();
 }
@@ -3098,6 +3113,7 @@ function renderStartPositionControl(){
   }
   $('startPositionHint').textContent=hint;
   btn.classList.toggle('warn',warn);
+  if(targetMarker&&!round?.pending)updateTargetDistance();
 }
 function openStartPositionModal(){
   if(!round)return;
