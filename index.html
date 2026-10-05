@@ -930,6 +930,163 @@ body.round-active .bottomnav{display:none!important}
   .sgHead .big{font-size:27px}
 }
 
+
+
+/* ===== ON-COURSE INPUT · SUNLIGHT PREVIEW V1 ===== */
+body.round-active{background:#edf7f1!important;color:#102019}
+body.round-active .app{background:#edf7f1!important;color:#102019}
+#roundScreen{background:#edf7f1!important;color:#102019;padding:8px 8px 18px!important}
+#roundScreen .roundOutsideHeader{
+  background:#ffffff!important;border:1px solid #d9e6de!important;
+  box-shadow:0 8px 24px rgba(25,73,47,.08)!important
+}
+#roundScreen .mapCourseName,#roundScreen .holeLine strong{color:#102019!important;font-weight:1000}
+#roundScreen .mapCourseMeta,#roundScreen #holeParText{color:#53655a!important}
+#roundScreen .mapShotCount{
+  background:#08a75d!important;color:#fff!important;border:0!important;
+  padding:8px 12px!important;font-size:11px!important;letter-spacing:.04em!important;
+  box-shadow:0 5px 14px rgba(8,167,93,.22)
+}
+#roundScreen .mapHoleBar .holebtn{
+  background:#f4f8f5!important;color:#203229!important;border:1px solid #dbe6df!important;
+  min-width:34px!important;height:34px!important
+}
+#roundScreen .mapHoleBar .holebtn.sel{
+  background:#08a75d!important;color:#fff!important;border-color:#08a75d!important;
+  box-shadow:0 4px 10px rgba(8,167,93,.2)
+}
+#roundScreen .roundMapStage{border:1px solid #d8e4dd!important;box-shadow:0 8px 24px rgba(27,73,49,.08)}
+#roundScreen .mapControlBtn{
+  background:rgba(255,255,255,.96)!important;color:#17251d!important;
+  border:1px solid rgba(25,56,39,.16)!important;
+  box-shadow:0 5px 16px rgba(23,56,39,.16)!important;backdrop-filter:none!important
+}
+#roundScreen .mapControlBtn.active{background:#08a75d!important;color:#fff!important;border-color:#08a75d!important}
+#roundScreen .targetInfo{
+  background:rgba(255,255,255,.96)!important;color:#102019!important;
+  border:1px solid rgba(8,167,93,.28)!important;box-shadow:0 7px 20px rgba(25,62,42,.15)!important;
+  backdrop-filter:none!important
+}
+#roundScreen .targetEyebrow{color:#07884d!important}
+#roundScreen .targetMeta{color:#52675b!important}
+#roundScreen .mapBottomStatus span{
+  background:rgba(255,255,255,.96)!important;color:#102019!important;
+  border:1px solid rgba(25,56,39,.14)!important;box-shadow:0 4px 14px rgba(25,56,39,.13)!important;
+  backdrop-filter:none!important;font-size:10px!important
+}
+#roundScreen .clubDockOutside{
+  background:#ffffff!important;border:1px solid #d9e6de!important;
+  box-shadow:0 10px 26px rgba(25,73,47,.10)!important;border-radius:20px!important;padding:12px!important
+}
+#roundScreen .startPositionStrip{
+  background:#f6faf7!important;color:#102019!important;border:1px solid #dce8e0!important;
+  min-height:64px!important;padding:11px 13px!important
+}
+#roundScreen .startPositionStrip .eyebrow{color:#658074!important;font-size:9px!important}
+#roundScreen .startPositionStrip strong{color:#102019!important;font-size:15px!important}
+#roundScreen .startPositionStrip small{color:#6b7f73!important;font-size:10px!important}
+#roundScreen .startPositionStrip .value{
+  background:#e7f8ee!important;color:#078d50!important;border:1px solid #a8dfc1!important;
+  padding:8px 10px!important;font-size:10px!important
+}
+#roundScreen .targetZoneBlock{background:transparent!important;border:0!important;padding:3px 0 4px!important;margin:7px 0 9px!important}
+#roundScreen .targetZoneHead b{color:#102019!important;font-size:12px!important}
+#roundScreen .targetZoneHead span{color:#6c8175!important;font-size:10px!important}
+#roundScreen .targetZoneSegment{gap:8px!important}
+#roundScreen .targetZoneSegment button{
+  min-height:50px!important;background:#f1f5f2!important;color:#22332a!important;
+  border:1px solid #dce7e0!important;border-radius:14px!important;font-size:13px!important
+}
+#roundScreen .targetZoneSegment button.sel{
+  background:#08a75d!important;color:#fff!important;border-color:#08a75d!important;
+  box-shadow:0 4px 12px rgba(8,167,93,.17)!important
+}
+#roundScreen .dockLabel{color:#078d50!important;font-size:9px!important}
+#roundScreen #clubBasisLabel{color:#102019!important;font-size:14px!important}
+#roundScreen .dockAction{min-height:44px!important;border-radius:13px!important;font-size:11px!important}
+#roundScreen .dockAction.primary{
+  background:#08a75d!important;color:#fff!important;border-color:#08a75d!important;
+  box-shadow:0 5px 14px rgba(8,167,93,.20)!important
+}
+#roundScreen .dockAction.green{background:#e8f8ee!important;color:#087e49!important;border-color:#b9e4ca!important}
+#roundScreen .dockAction.danger{background:#fff2f1!important;color:#d94743!important;border-color:#f2c6c4!important}
+#roundScreen .dockAction.subtle{background:#f4f7f5!important;color:#33463b!important;border-color:#dce5df!important}
+#roundScreen .clubSuggestions{gap:8px!important}
+#roundScreen .clubSuggestion{
+  min-height:64px!important;background:#f4f7f5!important;color:#102019!important;border:1px solid #dde7e1!important;
+  text-align:center!important;padding:10px 8px!important
+}
+#roundScreen .clubSuggestion b{font-size:19px!important;color:#102019!important}
+#roundScreen .clubSuggestion span{font-size:10px!important;color:#6d8075!important}
+#roundScreen .clubSuggestion.best{
+  background:#08a75d!important;border-color:#08a75d!important;box-shadow:0 6px 16px rgba(8,167,93,.18)!important
+}
+#roundScreen .clubSuggestion.best b,#roundScreen .clubSuggestion.best span{color:#fff!important}
+#roundScreen .clubMoreBtn{color:#315143!important;font-size:10px!important;min-height:34px!important}
+#roundScreen .pendingStrip{color:#102019!important}
+#roundScreen .pendingLabel{color:#078d50!important;font-size:9px!important}
+#roundScreen .pendingStrip strong{color:#102019!important;font-size:24px!important}
+#roundScreen .pendingStrip small{color:#62786b!important;font-size:10px!important;line-height:1.4!important}
+
+body.round-active .modal{background:rgba(8,22,14,.46)!important}
+body.round-active .modal .sheet{
+  background:#ffffff!important;color:#102019!important;border:0!important;
+  box-shadow:0 -18px 48px rgba(19,58,38,.18)!important
+}
+body.round-active .modal .sheetHead strong{color:#102019!important;font-size:24px!important}
+body.round-active .modal .sub{color:#61776a!important}
+body.round-active .modal .x{
+  background:#f2f6f3!important;color:#203229!important;border:1px solid #d9e4dd!important
+}
+body.round-active .modal .sectionLabel{color:#102019!important;font-size:18px!important}
+body.round-active .modal .helper{color:#657a6e!important}
+body.round-active .modal .choice button,
+body.round-active .modal .scale button,
+body.round-active .modal .puttResultChoice button{
+  background:#f1f5f2!important;color:#192a21!important;border:1px solid #d9e4dd!important;
+  min-height:56px!important
+}
+body.round-active .modal .choice button.sel,
+body.round-active .modal .scale button.sel,
+body.round-active .modal .puttResultChoice button.sel{
+  background:#08a75d!important;color:#fff!important;border-color:#08a75d!important;
+  outline:0!important;box-shadow:0 4px 12px rgba(8,167,93,.18)!important
+}
+body.round-active .modal .resultChoice button{min-height:68px!important}
+body.round-active .modal .resultChoice button span,
+body.round-active .modal .puttResultChoice button span{font-size:14px!important;color:inherit!important}
+body.round-active .modal .btn.primary{
+  background:#08a75d!important;color:#fff!important;min-height:56px!important;border-radius:16px!important;
+  font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 18px rgba(8,167,93,.20)!important
+}
+body.round-active .modal .btn.ghost{background:#f3f6f4!important;color:#31463a!important;border:1px solid #d9e4dd!important}
+body.round-active .modal input,
+body.round-active .modal textarea,
+body.round-active .modal select{background:#fff!important;color:#102019!important;border:1px solid #ccdcd2!important}
+body.round-active .modal .positionChoice button{
+  background:#f4f7f5!important;color:#102019!important;border:1px solid #dce7e0!important;min-height:62px!important
+}
+body.round-active .modal .positionChoice button span{color:#667b6f!important}
+body.round-active .modal .positionChoice button.sel{background:#e8f8ee!important;color:#087d48!important;border-color:#8bd0ab!important}
+body.round-active .modal .positionModeNote{background:#f3f7f4!important;color:#5c7265!important;border:1px solid #dce6df!important}
+body.round-active .modal .stateQuestion{background:#edf9f2!important;color:#173226!important;border-color:#c3ead3!important}
+body.round-active .modal .puttStepBtn,
+body.round-active .modal .penaltyStepBtn{background:#f3f6f4!important;color:#102019!important;border-color:#d7e2db!important}
+body.round-active .modal .puttDistanceDisplay,
+body.round-active .modal .penaltyStrokeDisplay{background:#fff!important;color:#102019!important;border-color:#d7e2db!important}
+body.round-active .modal .puttDistanceDisplay input{color:#102019!important}
+body.round-active .modal .puttHistoryRow{background:#f5f8f6!important;color:#203229!important;border-color:#dce5df!important}
+
+@media(max-width:520px){
+  #roundScreen{padding:4px 4px 14px!important}
+  #roundScreen .roundOutsideHeader{border-radius:14px!important;padding:9px 10px 7px!important}
+  #roundScreen .roundMapStage{height:52svh!important;min-height:360px!important;border-radius:17px!important}
+  #roundScreen .clubDockOutside{margin-top:7px!important}
+  #roundScreen .clubSuggestions{grid-template-columns:repeat(3,1fr)!important}
+  #roundScreen .pendingStrip{display:block!important}
+  #roundScreen .pendingActions{margin-top:10px!important;display:grid!important;grid-template-columns:1fr 1fr!important}
+  #roundScreen #shotResultBtn{grid-column:1/-1!important;min-height:54px!important;font-size:13px!important}
+}
 </style>
 <link rel="stylesheet" href="cumulative-report.css">
 </head>
@@ -2899,7 +3056,8 @@ function renderStartPositionControl(){
   const btn=$('startPositionBtn');if(!btn||!round)return;
   const first=!currentHoleHasPreviousShot();
   const mode=effectiveStartPositionMode();
-  $('startPositionTitle').textContent=first?'첫 샷 위치':'다음 샷 위치';
+  const shotNo=(hole()?.shots?.length||0)+1;
+  $('startPositionTitle').textContent='SHOT '+shotNo+' 시작 위치';
   $('startPositionValue').textContent=startPositionLabel(mode);
   let hint=first?'GPS 기본 · 필요 시 Tee Box 또는 Drop':'직전 Shot End 자동 연결 · 필요 시 위치 수정';
   let warn=false;
@@ -3013,7 +3171,8 @@ function resetShotResult(existing=null){
 function openShotResult(){
   if(!round?.pending)return;
   resetShotResult(round.pending.result||null);
-  $('shotResultLabel').textContent=round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
+  const shotNo=(hole()?.shots?.length||0)+1;
+  $('shotResultLabel').textContent='SHOT '+shotNo+' · '+round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
   $('shotResultModal').classList.remove('hidden');
 }
 function normalizeCollectionLevel(v){
@@ -6097,7 +6256,8 @@ function renderRound(){
   refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
   $('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
-  $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
+  const activeShotNo=(hole().shots?.length||0)+1;
+  $('liveScore').textContent='SHOT '+activeShotNo;
   $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
   const pending=round.pending;
@@ -6107,13 +6267,13 @@ function renderRound(){
   if(pending){
     $('pendingClub').textContent=pending.club;
     if(pending.result){
-      $('pendingStatusLabel').textContent='결과 저장됨';
+      $('pendingStatusLabel').textContent='SHOT '+activeShotNo+' · 결과 저장됨';
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · '+pending.result.endLie+' · '+pending.result.direction+' · '+pending.result.depth;
       $('shotResultBtn').textContent='결과 수정';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
       $('changeClubBtn').classList.remove('hidden');
     }else{
-      $('pendingStatusLabel').textContent='샷 준비';
+      $('pendingStatusLabel').textContent='SHOT '+activeShotNo+' · READY';
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
