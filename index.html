@@ -4296,6 +4296,52 @@ function multiRegulationShotIndex(par){
   const p=Number(par);
   return p===3?0:p===4?1:p===5?2:null;
 }
+function multiShotReachedGreenOrHoled(s){
+  const end=String(s?.endLie||'').toUpperCase();
+  return s?.holed===true||end==='HOLED'||end==='GREEN';
+}
+function multiHoleGirStatus(h){
+  const regIndex=multiRegulationShotIndex(h?.par);
+  if(regIndex===null)return null;
+  const shots=h?.shots||[];
+  for(let i=0;i<=regIndex&&i<shots.length;i++){
+    if(multiShotReachedGreenOrHoled(shots[i]))return true;
+  }
+  const regShot=shots[regIndex];
+  if(!regShot)return null; // 정규 타수까지 Raw Shot이 없으면 GIR 분모에서 제외
+  if(!String(regShot.endLie||'').trim()&&regShot.holed!==true)return null;
+  return false;
+}
+function multiIsGreensideBunkerShot(h,s){
+  const lie=String(s?.startLie||'').toUpperCase();
+  if(!['BUNKER','SAND'].includes(lie))return false;
+  const edgeM=distanceToGreenEdgeM(h,s);
+  return Number.isFinite(Number(edgeM))&&Number(edgeM)<=27.432; // green edge 30 yd 이내
+}
+function multiHoleBunkerSaveCounts(h){
+  const out={hit:0,total:0};
+  if(!h?.completed)return out;
+  const shots=h.shots||[],putts=h.puttsDetail||[];
+  for(let i=0;i<shots.length;i++){
+    const s=shots[i];
+    if(!multiIsGreensideBunkerShot(h,s))continue;
+    if(i>0&&multiIsGreensideBunkerShot(h,shots[i-1]))continue; // 같은 벙커에서 연속 샷은 1 opportunity
+    out.total++;
+    let strokesToHole=null;
+    for(let j=i;j<shots.length;j++){
+      if(shots[j]?.holed===true||String(shots[j]?.endLie||'').toUpperCase()==='HOLED'){
+        strokesToHole=j-i+1;
+        break;
+      }
+    }
+    if(strokesToHole===null){
+      const holedPuttIndex=putts.findIndex(p=>String(p?.result||'').toUpperCase()==='HOLED');
+      if(holedPuttIndex>=0)strokesToHole=(shots.length-i)+holedPuttIndex+1;
+    }
+    if(Number.isFinite(strokesToHole)&&strokesToHole<=2)out.hit++;
+  }
+  return out;
+}
 function multiPar4SecondRows(rounds){
   const out=[];
   rounds.forEach(r=>(r.holes||[]).forEach(h=>{
@@ -4309,40 +4355,30 @@ function multiCorePerformanceRates(rounds){
   const out={
     FAIRWAY:{label:'Fairway %',hit:0,total:0},
     GIR:{label:'GIR %',hit:0,total:0},
-    APPROACH_SAVE:{label:'Approach Save %',hit:0,total:0},
+    RECOVERY:{label:'Recovery %',hit:0,total:0},
     BUNKER_SAVE:{label:'Bunker Save %',hit:0,total:0}
   };
   rounds.forEach(r=>(r.holes||[]).forEach(h=>{
     const shots=h.shots||[],par=Number(h.par);
-    const tee=shots[0],club=String(tee?.club||'').toUpperCase();
-    if(tee&&par>=4&&['DR','DRIVER'].includes(club)){
+    const tee=shots[0];
+    if(tee&&par>=4){
       out.FAIRWAY.total++;
       if(String(tee.endLie||'').toUpperCase()==='FAIRWAY')out.FAIRWAY.hit++;
     }
 
-    const regIndex=multiRegulationShotIndex(par);
-    if(regIndex===null)return;
-    const regShot=shots[regIndex];
-    if(!regShot)return; // Raw data가 없으면 분모를 만들지 않는다.
-    out.GIR.total++;
-    if(String(regShot.endLie||'').toUpperCase()==='GREEN'){
-      out.GIR.hit++;
-      return;
+    const gir=multiHoleGirStatus(h);
+    if(gir!==null){
+      out.GIR.total++;
+      if(gir)out.GIR.hit++;
+      else if(h.completed){
+        out.RECOVERY.total++;
+        if(storedHoleScore(h)<=par)out.RECOVERY.hit++;
+      }
     }
 
-    const saveShot=shots[regIndex+1];
-    if(!saveShot)return;
-    const d=shotStartDistanceToHoleM(h,saveShot,regIndex+1);
-    if(!Number.isFinite(Number(d))||Number(d)<5||Number(d)>80)return;
-    const lie=String(saveShot.startLie||regShot.endLie||'').toUpperCase();
-    const saved=storedHoleScore(h)<=par;
-    if(['BUNKER','SAND'].includes(lie)){
-      out.BUNKER_SAVE.total++;
-      if(saved)out.BUNKER_SAVE.hit++;
-    }else{
-      out.APPROACH_SAVE.total++;
-      if(saved)out.APPROACH_SAVE.hit++;
-    }
+    const bunker=multiHoleBunkerSaveCounts(h);
+    out.BUNKER_SAVE.total+=bunker.total;
+    out.BUNKER_SAVE.hit+=bunker.hit;
   }));
   Object.values(out).forEach(x=>{x.rate=x.total?x.hit/x.total*100:null});
   return out;
@@ -4351,8 +4387,8 @@ function multiCoreRateCardsHtml(rounds,prevRounds=[],recentRounds=[]){
   const all=multiCorePerformanceRates(rounds);
   const prev=prevRounds.length?multiCorePerformanceRates(prevRounds):null;
   const recent=recentRounds.length?multiCorePerformanceRates(recentRounds):null;
-  const order=['FAIRWAY','GIR','APPROACH_SAVE','BUNKER_SAVE'];
-  const icons={FAIRWAY:'↗',GIR:'◎',APPROACH_SAVE:'↙',BUNKER_SAVE:'◒'};
+  const order=['FAIRWAY','GIR','RECOVERY','BUNKER_SAVE'];
+  const icons={FAIRWAY:'↗',GIR:'◎',RECOVERY:'↙',BUNKER_SAVE:'◒'};
   return order.map(k=>{
     const x=all[k];
     let deltaText='';
