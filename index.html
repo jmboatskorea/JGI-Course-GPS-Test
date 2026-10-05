@@ -774,7 +774,7 @@ body.round-active .bottomnav{display:none!important}
 .mentalImpactHero p{margin:6px 0 0;color:#c3d0c8;font-size:10px;line-height:1.55}
 .mentalImpactSide{display:grid;gap:7px}.mentalImpactSideCard{padding:11px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:#07140e}
 .mentalImpactSideCard span{display:block;color:#90a298;font-size:8px;font-weight:900}.mentalImpactSideCard b{display:block;margin-top:4px;font-size:14px}.mentalImpactSideCard small{display:block;margin-top:3px;color:#819188;font-size:7px;line-height:1.35}
-.mentalImpactTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:11px}.mentalImpactTabs button{border:1px solid rgba(255,255,255,.11);background:#07140e;color:#9aaca1;border-radius:12px;padding:9px 6px;font-size:9px;font-weight:950}
+.mentalImpactTabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:11px}.mentalImpactTabs button{border:1px solid rgba(255,255,255,.11);background:#07140e;color:#9aaca1;border-radius:12px;padding:9px 6px;font-size:9px;font-weight:950}
 .mentalImpactTabs button.sel{border-color:#27e978;color:#76f49f;background:rgba(39,233,120,.10)}
 .mentalImpactCards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
 .mentalImpactCard{padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:#07140e;min-width:0}
@@ -1523,7 +1523,7 @@ body.round-active .bottomnav{display:none!important}
 
       <div class="card">
         <div class="title">멘탈 흐름 · 오늘 라운드</div>
-        <div class="sub">체크한 홀만 표시합니다. 원의 색은 해당 홀에서 체크한 샘플의 평균 긴장도입니다.</div>
+        <div class="sub">체크한 홀만 표시합니다. 원의 색은 해당 홀에서 체크한 샘플의 평균 신체 긴장입니다.</div>
         <div id="floFlow" class="mentalFlowLine"></div>
         <div class="mentalLegend"><span><i style="background:#3fe27f"></i>긴장 낮음</span><span><i style="background:#f5bd45"></i>보통</span><span><i style="background:#ff8c42"></i>높음</span><span><i style="background:#ff6874"></i>매우 높음</span><span><i style="background:#0b1711;border:1px solid rgba(255,255,255,.1)"></i>미체크</span></div>
         <div id="floFlowCards" class="mentalSampleRail"></div>
@@ -4010,7 +4010,7 @@ function multiPuttBucket(v){
   if(n<=1)return '0~1m';if(n<=2)return '1~2m';if(n<=3)return '2~3m';if(n<=5)return '3~5m';if(n<=8)return '5~8m';return '8m 초과';
 }
 function multiStateValueLabel(key){
-  return ({commitment:'결정 확신',thinking:'생각의 양',tension:'긴장도',routineExecution:'루틴 실행'})[key]||key;
+  return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
 function renderFullMultiAnalysis(rounds){
   const data=multiRows(rounds),{shots,putts,holes,states}=data;
@@ -5028,7 +5028,7 @@ function multiPerformanceDetail(rounds,mode){
 }
 
 
-const MENTAL_IMPACT_KEYS=['commitment','thinking','tension','routineExecution'];
+const MENTAL_IMPACT_KEYS=['pressure','interference','tension','confidence','focus'];
 const MENTAL_IMPACT_AREAS=['DRIVER','IRON','APPROACH','PUTTER'];
 let multiMentalStateKey=null;
 
@@ -5036,13 +5036,14 @@ function mentalImpactAreaLabel(area){
   return ({DRIVER:'드라이버',IRON:'아이언',APPROACH:'어프로치',PUTTER:'퍼터'})[area]||area;
 }
 function mentalImpactStateLabel(key){
-  return ({commitment:'결정 확신',thinking:'생각의 양',tension:'긴장도',routineExecution:'루틴 실행'})[key]||key;
+  return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
 function mentalImpactBandLabel(key,high=true){
-  if(key==='commitment')return high?'확신 높음':'확신 낮음';
-  if(key==='thinking')return high?'생각 많음':'생각 적음';
+  if(key==='pressure')return high?'압박 높음':'압박 낮음';
+  if(key==='interference')return high?'간섭 많음':'간섭 적음';
   if(key==='tension')return high?'긴장 높음':'긴장 낮음';
-  if(key==='routineExecution')return high?'루틴 좋음':'루틴 낮음';
+  if(key==='confidence')return high?'확신 높음':'확신 낮음';
+  if(key==='focus')return high?'집중 높음':'집중 낮음';
   return high?'높음':'낮음';
 }
 function mentalImpactAreaRows(data,area){
@@ -6425,14 +6426,14 @@ function render퍼포먼스(){
   syncSgBenchmarkUI();
 }
 function legacyRoutineValue(x){
-  if(Number.isFinite(Number(x?.routineExecution)))return Number(x.routineExecution);
-  return ({Full:5,Partial:3,Broken:1})[x?.routine]||null;
+  const n=Number(x?.routineExecution);
+  return Number.isInteger(n)&&n>=1&&n<=5?n:null;
 }
 // Report-only analysis: never changes saved samples or sampling decisions.
-const STATE_RESULT_KEYS=['commitment','thinking','tension','routineExecution'];
+const STATE_RESULT_KEYS=['pressure','interference','tension','confidence','focus'];
 const STATE_RESULT_BANDS=['낮음 (1~2)','보통 (3)','높음 (4~5)'];
 function stateResultValue(state,key){
-  const raw=key==='routineExecution'?(state[key]??({Full:5,Partial:3,Broken:1})[state.routine]):state[key];
+  const raw=state?.[key];
   if(raw===null||raw===undefined||raw===''||typeof raw==='boolean')return null;
   const n=Number(raw);
   return Number.isInteger(n)&&n>=1&&n<=5?n:null;
@@ -6525,7 +6526,7 @@ function renderStateResults(data,scopeLabel='이 라운드'){
     });
   });
   if(data.unlinked)html+='<div class="analysisNote">기존 홀 단위 퍼팅 상태 '+data.unlinked+'개: 개별 퍼트 결과 미연결. 위 결과 표에는 포함하지 않습니다.</div>';
-  html+='</div><div class="card"><div class="title">생각의 초점별 결과</div><div class="analysisNote">thoughtFocus는 생각의 양 4~5에서 조건부로 입력됩니다. 전체 샷의 대표 표본이나 원인으로 해석하지 않습니다.</div>';
+  html+='</div><div class="card"><div class="title">생각의 초점별 결과</div><div class="analysisNote">thoughtFocus는 생각 간섭 4~5에서 조건부로 입력됩니다. 전체 샷의 대표 표본이나 원인으로 해석하지 않습니다.</div>';
   const labels={SWING:'스윙',TARGET:'타깃',SCORE:'스코어',HAZARD:'위험지역',PREVIOUS_SHOT:'이전 샷'};
   [['SHOT','샷',data.shots],['PUTTING','퍼팅',data.putts]].forEach(([type,label,rows])=>{
     const groups=new Map();
@@ -6538,18 +6539,20 @@ function stateResultPatterns(data,scopeLabel='현재 라운드'){
   const candidates=[];
   const bandText=(key,name)=>{
     const high=name.startsWith('높음'),low=name.startsWith('낮음');
-    if(key==='thinking')return high?'생각 많음':low?'생각 적음':'생각 보통';
+    if(key==='pressure')return high?'압박 높음':low?'압박 낮음':'압박 보통';
+    if(key==='interference')return high?'간섭 많음':low?'간섭 적음':'간섭 보통';
     if(key==='tension')return high?'긴장 높음':low?'긴장 낮음':'긴장 보통';
-    if(key==='commitment')return high?'확신 높음':low?'확신 낮음':'확신 보통';
-    if(key==='routineExecution')return high?'루틴 좋음':low?'루틴 낮음':'루틴 보통';
+    if(key==='confidence')return high?'확신 높음':low?'확신 낮음':'확신 보통';
+    if(key==='focus')return high?'집중 높음':low?'집중 낮음':'집중 보통';
     return name;
   };
   const conditionText=(key,name)=>{
     const high=name.startsWith('높음'),low=name.startsWith('낮음');
-    if(key==='thinking')return high?'생각이 많았을 때':low?'생각이 적었을 때':'생각이 보통일 때';
-    if(key==='tension')return high?'긴장도가 높았을 때':low?'긴장도가 낮았을 때':'긴장도가 보통일 때';
-    if(key==='commitment')return high?'결정 확신이 높았을 때':low?'결정 확신이 낮았을 때':'결정 확신이 보통일 때';
-    if(key==='routineExecution')return high?'루틴 실행이 좋았을 때':low?'루틴 실행이 낮았을 때':'루틴 실행이 보통일 때';
+    if(key==='pressure')return high?'압박감이 높았을 때':low?'압박감이 낮았을 때':'압박감이 보통일 때';
+    if(key==='interference')return high?'생각 간섭이 많았을 때':low?'생각 간섭이 적었을 때':'생각 간섭이 보통일 때';
+    if(key==='tension')return high?'신체 긴장이 높았을 때':low?'신체 긴장이 낮았을 때':'신체 긴장이 보통일 때';
+    if(key==='confidence')return high?'샷 확신이 높았을 때':low?'샷 확신이 낮았을 때':'샷 확신이 보통일 때';
+    if(key==='focus')return high?'집중도가 높았을 때':low?'집중도가 낮았을 때':'집중도가 보통일 때';
     return multiStateValueLabel(key)+' '+name+'일 때';
   };
   [['SHOT','샷',data.shots],['PUTTING','퍼트',data.putts]].forEach(([type,label,rows])=>{
@@ -6575,19 +6578,20 @@ function stateResultPatterns(data,scopeLabel='현재 라운드'){
   return [...text,scopeLabel+'에서 관찰된 관계이며, 멘탈 상태가 결과의 원인이라고 단정하지 않습니다.'];
 }
 
-let mentalStateResultKey='thinking';
+let mentalStateResultKey='interference';
 let mentalMissType='RIGHT';
 
 function mentalMetricLabel(key){
-  return ({commitment:'결정 확신',thinking:'생각의 양',tension:'긴장도',routineExecution:'루틴 실행'})[key]||key;
+  return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
 function mentalValueNote(key,v){
   if(!Number.isFinite(Number(v)))return '—';
   const n=Number(v);
-  if(key==='thinking')return n>=4?'많음':n<=2?'적음':'보통';
+  if(key==='pressure')return n>=4?'높음':n<=2?'낮음':'보통';
+  if(key==='interference')return n>=4?'많음':n<=2?'적음':'보통';
   if(key==='tension')return n>=4?'높음':n<=2?'낮음':'보통';
-  if(key==='commitment')return n>=4?'높음':n<=2?'낮음':'보통';
-  if(key==='routineExecution')return n>=4?'좋음':n<=2?'낮음':'보통';
+  if(key==='confidence')return n>=4?'높음':n<=2?'낮음':'보통';
+  if(key==='focus')return n>=4?'높음':n<=2?'낮음':'보통';
   return '보통';
 }
 function mentalShotMiss(row){
@@ -6605,9 +6609,24 @@ function mentalMissLabel(type){
 }
 function mentalInsightCandidates(data){
   const out=[];
-  const keys=STATE_RESULT_KEYS;
   const metrics=[['RIGHT','우측 미스'],['LEFT','좌측 미스'],['SHORT','짧은 결과'],['LONG','긴 결과']];
-  keys.forEach(key=>{
+  const conditionLabel=(key,highSide)=>{
+    if(key==='pressure')return highSide?'압박감이 높았을 때':'압박감이 낮았을 때';
+    if(key==='interference')return highSide?'생각 간섭이 많았을 때':'생각 간섭이 적었을 때';
+    if(key==='tension')return highSide?'신체 긴장이 높았을 때':'신체 긴장이 낮았을 때';
+    if(key==='confidence')return highSide?'샷 확신이 높았을 때':'샷 확신이 낮았을 때';
+    if(key==='focus')return highSide?'집중도가 높았을 때':'집중도가 낮았을 때';
+    return mentalMetricLabel(key);
+  };
+  const sideLabel=(key,high)=>{
+    if(key==='pressure')return high?'압박 높음':'압박 낮음';
+    if(key==='interference')return high?'간섭 많음':'간섭 적음';
+    if(key==='tension')return high?'긴장 높음':'긴장 낮음';
+    if(key==='confidence')return high?'확신 높음':'확신 낮음';
+    if(key==='focus')return high?'집중 높음':'집중 낮음';
+    return high?'높음':'낮음';
+  };
+  STATE_RESULT_KEYS.forEach(key=>{
     const low=data.shots.filter(x=>stateResultBand(x.state,key)===0);
     const high=data.shots.filter(x=>stateResultBand(x.state,key)===2);
     if(low.length<5||high.length<5)return;
@@ -6617,15 +6636,10 @@ function mentalInsightCandidates(data){
       const gap=Math.abs(a-b);
       if(gap<.20)return;
       const highSide=b>=a;
-      const condition=key==='thinking'?(highSide?'생각이 많았을 때':'생각이 적었을 때'):
-        key==='tension'?(highSide?'긴장도가 높았을 때':'긴장도가 낮았을 때'):
-        key==='commitment'?(highSide?'결정 확신이 높았을 때':'결정 확신이 낮았을 때'):
-        (highSide?'루틴 실행이 좋았을 때':'루틴 실행이 낮았을 때');
-      out.push({key,type,gap,label,condition,
+      out.push({key,type,gap,label,condition:conditionLabel(key,highSide),
         aN:low.length,aM:low.filter(x=>mentalMissMatch(x,type)).length,
         bN:high.length,bM:high.filter(x=>mentalMissMatch(x,type)).length,
-        aLabel:key==='thinking'?'생각 적음':key==='tension'?'긴장 낮음':key==='commitment'?'확신 낮음':'루틴 낮음',
-        bLabel:key==='thinking'?'생각 많음':key==='tension'?'긴장 높음':key==='commitment'?'확신 높음':'루틴 좋음'});
+        aLabel:sideLabel(key,false),bLabel:sideLabel(key,true)});
     });
   });
   return out.sort((a,b)=>b.gap-a.gap);
@@ -6666,12 +6680,12 @@ function renderMentalFlow(data){
   $('floFlowCards').innerHTML=cards.length?cards.map(({hole,x})=>{
     const s=x.state||{};
     return '<div class="mentalSampleCard"><b>'+hole+'번 홀 · '+(x.category==='PUTTING'?'퍼팅':({TEE:'티샷',SECOND:'세컨샷',THIRD:'서드샷',APPROACH:'어프로치'})[x.category]||'샷')+'</b>'+
-      '<div class="vals"><span>확신<strong>'+safeText(stateResultValue(s,'commitment'))+'</strong></span><span>생각<strong>'+safeText(stateResultValue(s,'thinking'))+'</strong></span><span>긴장<strong>'+safeText(stateResultValue(s,'tension'))+'</strong></span><span>루틴<strong>'+safeText(stateResultValue(s,'routineExecution'))+'</strong></span></div>'+
+      '<div class="vals"><span>압박<strong>'+safeText(stateResultValue(s,'pressure'))+'</strong></span><span>간섭<strong>'+safeText(stateResultValue(s,'interference'))+'</strong></span><span>긴장<strong>'+safeText(stateResultValue(s,'tension'))+'</strong></span><span>확신<strong>'+safeText(stateResultValue(s,'confidence'))+'</strong></span><span>집중<strong>'+safeText(stateResultValue(s,'focus'))+'</strong></span></div>'+
       '<div class="result">결과 · '+safeText(mentalResultText(x))+(Number.isFinite(x.sg)?' · SG '+formatSg(x.sg):'')+'</div></div>';
   }).join(''):'<div class="analysisEmpty">아직 멘탈 상태 샘플이 없습니다.</div>';
 }
 function renderMentalStateToResult(data){
-  const keys=['commitment','thinking','tension','routineExecution'];
+  const keys=['pressure','interference','tension','confidence','focus'];
   $('floStateTabs').innerHTML=keys.map(k=>'<button class="'+(k===mentalStateResultKey?'sel':'')+'" onclick="mentalStateResultKey=\''+k+'\';renderFlo()">'+mentalMetricLabel(k)+'</button>').join('');
   const rows=[1,2,3,4,5].map(v=>{
     const items=data.shots.filter(x=>stateResultValue(x.state,mentalStateResultKey)===v);
@@ -6686,7 +6700,7 @@ function renderMentalStateToResult(data){
 }
 function mentalDiffHtml(key,diff){
   if(!Number.isFinite(diff))return '—';
-  const concern=(key==='thinking'||key==='tension')?diff:-diff;
+  const concern=(key==='pressure'||key==='interference'||key==='tension')?diff:-diff;
   const cls=concern>.15?'mentalDiffBad':concern<-.15?'mentalDiffGood':'mentalDiffNeutral';
   return '<span class="'+cls+'">'+(diff>0?'+':'')+diff.toFixed(1)+'</span>';
 }
@@ -6720,33 +6734,33 @@ function renderMentalTypeImpact(data){
   const puts=data.putts,puttMiss=puts.filter(x=>x.result&&x.result!=='HOLED'),pt=puts.map(x=>stateResultValue(x.state,'tension')).filter(Number.isFinite);
   const psg=puts.map(x=>x.sg).filter(Number.isFinite);
   rows.push(['퍼팅',puts.length,puts.length?Math.round(puttMiss.length/puts.length*100)+'%':'—',pt.length?avg(pt).toFixed(1):'—',psg.length?multiSgHtml(avg(psg)):'—']);
-  $('floTypeImpact').innerHTML=multiTable(['샷 유형','샘플','미스 비율','평균 긴장도','Avg SG'],rows);
+  $('floTypeImpact').innerHTML=multiTable(['샷 유형','샘플','미스 비율','평균 신체 긴장','Avg SG'],rows);
 }
 function renderFlo(){
   const f=allStates();
-  const ac=avg(f.map(x=>Number(x.commitment)).filter(Boolean));
-  const at=avg(f.map(x=>Number(x.thinking)).filter(Boolean));
-  const ax=avg(f.map(x=>Number(x.tension)).filter(Boolean));
-  const ar=avg(f.map(legacyRoutineValue).filter(Boolean));
-  $('floCommit').textContent=ac?ac.toFixed(1):'—';
-  $('floThink').textContent=at?at.toFixed(1):'—';
-  $('floTension').textContent=ax?ax.toFixed(1):'—';
-  $('floRoutine').textContent=ar?ar.toFixed(1):'—';
-  $('floCommitNote').textContent=mentalValueNote('commitment',ac);
-  $('floThinkNote').textContent=mentalValueNote('thinking',at);
-  $('floTensionNote').textContent=mentalValueNote('tension',ax);
-  $('floRoutineNote').textContent=mentalValueNote('routineExecution',ar);
+  const values={
+    pressure:avg(f.map(x=>stateResultValue(x,'pressure')).filter(Number.isFinite)),
+    interference:avg(f.map(x=>stateResultValue(x,'interference')).filter(Number.isFinite)),
+    tension:avg(f.map(x=>stateResultValue(x,'tension')).filter(Number.isFinite)),
+    confidence:avg(f.map(x=>stateResultValue(x,'confidence')).filter(Number.isFinite)),
+    focus:avg(f.map(x=>stateResultValue(x,'focus')).filter(Number.isFinite))
+  };
+  [['floPressure','floPressureNote','pressure'],['floInterference','floInterferenceNote','interference'],['floTension','floTensionNote','tension'],['floConfidence','floConfidenceNote','confidence'],['floFocus','floFocusNote','focus']].forEach(([id,noteId,key])=>{
+    $(id).textContent=Number.isFinite(values[key])?values[key].toFixed(1):'—';
+    $(noteId).textContent=mentalValueNote(key,values[key]);
+  });
 
   const analysis=buildStateResults(round);
   const insights=mentalInsightCandidates(analysis).slice(0,2);
-  $('floInsightCards').innerHTML=insights.length?insights.map(mentalInsightHtml).join(''):'<div class="analysisEmpty" style="grid-column:1/-1">아직 두 상태 그룹을 비교할 만큼 샘플이 충분하지 않습니다. 샘플이 쌓이면 가장 큰 차이부터 보여줍니다.</div>';
-  let action='다음 샷에서는 평소 루틴을 그대로 실행하고, 한 가지 타깃에만 집중해 보세요.';
+  $('floInsightCards').innerHTML=insights.length?insights.map(mentalInsightHtml).join(''):'<div class="analysisEmpty" style="grid-column:1/-1">아직 비교 가능한 상태 그룹 데이터가 충분하지 않습니다. 데이터가 쌓이면 가장 큰 차이부터 보여줍니다.</div>';
+  let action='다음 샷에서는 한 가지 타깃에 주의를 모으고 현재 상태를 그대로 관찰해 보세요.';
   if(insights[0]){
     const k=insights[0].key;
-    if(k==='thinking')action='다음 샷에서는 생각을 한 가지로 제한하고 평소 루틴을 그대로 실행해 보세요.';
-    else if(k==='tension')action='다음 샷에서는 타깃을 먼저 확정하고 평소 호흡·루틴을 그대로 유지해 보세요.';
-    else if(k==='commitment')action='다음 샷에서는 클럽과 타깃 결정을 먼저 끝낸 뒤 어드레스에 들어가 보세요.';
-    else if(k==='routineExecution')action='다음 샷에서는 결과보다 평소 프리샷 루틴을 끝까지 수행하는 데 집중해 보세요.';
+    if(k==='pressure')action='다음 샷에서는 결과보다 지금 해야 할 샷과 타깃에만 주의를 모아 보세요.';
+    else if(k==='interference')action='다음 샷에서는 불필요한 생각을 줄이고 한 가지 실행 단서만 유지해 보세요.';
+    else if(k==='tension')action='다음 샷에서는 타깃을 확정한 뒤 평소 호흡과 준비 속도를 유지해 보세요.';
+    else if(k==='confidence')action='다음 샷에서는 클럽·타깃·샷 결정을 끝낸 뒤 어드레스에 들어가 보세요.';
+    else if(k==='focus')action='다음 샷에서는 주의를 지금 해야 할 샷과 타깃 한 곳에만 모아 보세요.';
   }
   $('floNextAction').innerHTML='<b>다음 행동 제안</b><strong>'+action+'</strong><div class="dataNote" style="margin-top:5px">현재 관찰된 관계를 바탕으로 한 1개 행동 제안입니다.</div>';
 
@@ -6754,7 +6768,6 @@ function renderFlo(){
   renderMentalStateToResult(analysis);
   renderMentalMissToState(analysis);
   renderMentalTypeImpact(analysis);
-
   $('floResults').innerHTML=renderStateResults(analysis);
   $('floPattern').textContent=stateResultPatterns(analysis).join('\n\n');
   $('floPattern').style.whiteSpace='pre-line';
@@ -6788,11 +6801,11 @@ function storySegmentStats(startHole,endHole,info,mentalData){
     if(h.par&&onGreen>0&&onGreen<=h.par-2)gir++;
   });
   const stateRows=[...(mentalData?.shots||[]),...(mentalData?.putts||[])].filter(x=>x.hole>=startHole&&x.hole<=endHole);
-  const think=stateRows.map(x=>stateResultValue(x.state,'thinking')).filter(Number.isFinite);
-  const routine=stateRows.map(x=>stateResultValue(x.state,'routineExecution')).filter(Number.isFinite);
+  const interference=stateRows.map(x=>stateResultValue(x.state,'interference')).filter(Number.isFinite);
+  const focus=stateRows.map(x=>stateResultValue(x.state,'focus')).filter(Number.isFinite);
   const putts=holes.reduce((s,h)=>s+(h.puttsDetail||[]).length,0);
   return {start:startHole,end:endHole,holes,total,known,totals,right,threePutt,gir,putts,
-    avgPutts:holes.length?putts/holes.length:null,thinking:avg(think),routine:avg(routine)};
+    avgPutts:holes.length?putts/holes.length:null,interference:avg(interference),focus:avg(focus)};
 }
 function storyFlowWindows(info,mentalData){
   const completed=new Set((round?.holes||[]).filter(h=>h.completed).map(h=>h.hole));
@@ -6827,11 +6840,11 @@ function storyFlowObservation(kind,cur,prev){
   if(lead&&Math.abs(lead[1])>=.25)parts.push(storySgLabel(lead[0])+' SG가 이전 4홀보다 '+formatSg(lead[1])+' 변했습니다');
   if(kind==='loss'&&cur.right>prev.right)parts.push('우측 미스가 '+prev.right+'회에서 '+cur.right+'회로 늘었습니다');
   if(kind==='loss'&&cur.threePutt>prev.threePutt)parts.push('3퍼트가 '+prev.threePutt+'회에서 '+cur.threePutt+'회로 늘었습니다');
-  if(Number.isFinite(cur.thinking)&&Number.isFinite(prev.thinking)&&Math.abs(cur.thinking-prev.thinking)>=.5){
-    parts.push('생각의 양 평균도 '+prev.thinking.toFixed(1)+' → '+cur.thinking.toFixed(1)+'로 함께 변했습니다');
+  if(Number.isFinite(cur.interference)&&Number.isFinite(prev.interference)&&Math.abs(cur.interference-prev.interference)>=.5){
+    parts.push('생각 간섭 평균도 '+prev.interference.toFixed(1)+' → '+cur.interference.toFixed(1)+'로 함께 변했습니다');
   }
-  if(kind==='recovery'&&Number.isFinite(cur.routine)&&Number.isFinite(prev.routine)&&cur.routine-prev.routine>=.5){
-    parts.push('루틴 실행 평균이 '+prev.routine.toFixed(1)+' → '+cur.routine.toFixed(1)+'로 높아졌습니다');
+  if(kind==='recovery'&&Number.isFinite(cur.focus)&&Number.isFinite(prev.focus)&&cur.focus-prev.focus>=.5){
+    parts.push('집중도 평균이 '+prev.focus.toFixed(1)+' → '+cur.focus.toFixed(1)+'로 높아졌습니다');
   }
   return parts.length?parts.join(' · ')+'.':'이전 4홀과 비교해 여러 지표가 함께 달라진 구간입니다.';
 }
@@ -6848,7 +6861,7 @@ function storyFlowPanel(kind,item){
       '<div>퍼팅 SG</div><div class="v">'+formatSg(c.totals.putt)+'</div><div class="v">'+formatSg(p.totals.putt)+'</div>'+
       '<div>우측 미스</div><div class="v">'+c.right+'회</div><div class="v">'+p.right+'회</div>'+
       '<div>3퍼트</div><div class="v">'+c.threePutt+'회</div><div class="v">'+p.threePutt+'회</div>'+
-      '<div>생각의 양</div><div class="v">'+(Number.isFinite(c.thinking)?c.thinking.toFixed(1):'—')+'</div><div class="v">'+(Number.isFinite(p.thinking)?p.thinking.toFixed(1):'—')+'</div>'+
+      '<div>생각 간섭</div><div class="v">'+(Number.isFinite(c.interference)?c.interference.toFixed(1):'—')+'</div><div class="v">'+(Number.isFinite(p.interference)?p.interference.toFixed(1):'—')+'</div>'+
     '</div><div class="storyFlowObservation"><b>관찰된 특징</b><br>'+storyFlowObservation(kind,c,p)+'</div></div>';
 }
 function storyRoleSg(cat){
