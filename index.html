@@ -5643,6 +5643,7 @@ function restoreFinalizedShotAsPending(shot){
     },
     playerState:shot.playerState||null,preShotReset:shot.preShotReset||null,queuedClub:null,
     editingExisting:true,editEnd:shot.end||null,editHistory:[...(shot.editHistory||[])],
+    originalShot:JSON.parse(JSON.stringify(shot)),
     editSnapshot:{club:shot.club,shotIntent:shot.shotIntent,endLie:shot.endLie,direction:shot.direction,depth:shot.depth,holed:shot.holed===true}
   };
   currentLie=shot.startLie||'Unknown';
@@ -5653,21 +5654,9 @@ function restoreFinalizedShotAsPending(shot){
 }
 function cancelPendingEdit(){
   const p=round?.pending;if(!p?.editingExisting)return false;
-  const h=hole();
-  const original={
-    id:p.id,hole:round.currentHole,club:p.editSnapshot?.club||p.club,start:p.start,end:p.editEnd||null,
-    startLie:p.startLie||'UNKNOWN',endLie:p.editSnapshot?.endLie||p.result?.endLie||'UNKNOWN',
-    holed:p.editSnapshot?.holed===true,distanceM:p.editEnd&&p.start?hav(p.start,p.editEnd):null,
-    startedAt:p.startedAt,shotIntent:p.editSnapshot?.shotIntent||p.shotIntent,
-    intendedShape:p.result?.intendedShape||null,resultSource:p.result?.resultSource||'MANUAL',
-    ballFlight:p.result?.ballFlight||null,trajectory:p.result?.trajectory||null,
-    direction:p.editSnapshot?.direction??p.result?.direction??null,depth:p.editSnapshot?.depth??p.result?.depth??null,
-    centerWidthM:p.centerWidthM??null,target:p.target||null,targetZone:p.targetZone||null,targetSource:p.targetSource||null,
-    targetLat:p.targetLat??null,targetLng:p.targetLng??null,targetFairwayWidthM:p.targetFairwayWidthM??null,
-    courseContext:{...(p.courseContext||{})},positionSource:{start:p.start?.source||'GPS',end:p.editEnd?.source||'GPS'},
-    preShotReset:p.preShotReset||null,playerState:p.playerState||null,editHistory:[...(p.editHistory||[])]
-  };
-  h.shots.push(original);round.pending=null;currentLie=original.endLie||'Unknown';save();renderRound();return true;
+  const h=hole(),original=p.originalShot?JSON.parse(JSON.stringify(p.originalShot)):null;
+  if(original)h.shots.push(original);
+  round.pending=null;currentLie=original?.endLie||'Unknown';save();renderRound();return true;
 }
 function startShot(club){
   if(round.pending){
@@ -5723,6 +5712,7 @@ function finalizeHoleAfterPutting(){
   h.completed=true;h.completedAt=Date.now();
   h.achievement=holeAchievementCode(h);
   h.review=buildHoleReview(h);
+  const achievement=h.achievement;
 
   let special=null;
   const score=holeScore(h);
@@ -5736,6 +5726,7 @@ function finalizeHoleAfterPutting(){
   if(round.currentHole<18){
     round.currentHole++;currentLie='Unknown';save();renderRound();renderCourseHole();
     if(special)showSpecialEvent(special);
+    if(['HOLE_IN_ONE','ALBATROSS','EAGLE'].includes(achievement))setTimeout(()=>alert('🎉 '+holeAchievementLabel(achievement)+'!'),20);
   }else{
     round.completedAt=Date.now();
     recordCompletedSamplingRound(round);
@@ -5743,6 +5734,7 @@ function finalizeHoleAfterPutting(){
     save();
     showScreen('overview');
     if(special)showSpecialEvent(special);
+    if(['HOLE_IN_ONE','ALBATROSS','EAGLE'].includes(achievement))setTimeout(()=>alert('🎉 '+holeAchievementLabel(achievement)+'!'),20);
   }
 }
 function completeHole(){
@@ -7694,10 +7686,10 @@ function openPuttEdit(index){
   puttDraft={distanceM:p.distanceM,slope:p.slope,break:p.break,result:p.result,playerState:p.playerState||null};
   $('puttDistanceInput').value=Number(p.distanceM).toFixed(1);
   setSelected($('puttSlope'),p.slope);setSelected($('puttBreak'),p.break);setSelected($('puttResult'),p.result);
-  $('puttTitle').textContent='퍼트 #'+(index+1)+' 수정';
   $('savePuttBtn').textContent='퍼트 수정 저장';
   $('puttModal').classList.remove('hidden');
   renderPuttHistory();
+  $('puttTitle').textContent='퍼트 #'+(index+1)+' 수정';
   return true;
 }
 function renderPuttHistory(){
