@@ -958,6 +958,10 @@ body.round-active .bottomnav{display:none!important}
 #puttModal .puttRequirement{margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff4de;border:1px solid #efd59d;color:#755313;font-size:11px;font-weight:850;text-align:center}
 #puttModal .puttRequirement.ready{background:#e8f9ef;border-color:#b7e4ca;color:#087a44}
 #puttModal #puttNext:disabled,#puttModal #savePuttBtn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+#puttModal .puttRangeHead{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+#puttModal .puttRangeHead .helper{flex:1;margin:8px 0!important;text-align:left}
+#puttModal .puttRangeToggle{min-height:38px!important;padding:7px 12px;border-radius:999px;border:1px solid #a9d7bf;background:#e8f8ef;color:#087a44;font-size:11px;font-weight:1000;white-space:nowrap}
+#puttModal .puttRangeToggle.long{background:#0da55a;color:#fff;border-color:#0a914e}
 </style>
 <link rel="stylesheet" href="cumulative-report.css">
 <style id="onCourseFreshFinal">
@@ -2115,7 +2119,7 @@ body.round-active .bottomnav{display:none!important}
   <div class="sheet puttSheet">
     <div class="sheetHead"><div><strong id="puttTitle">퍼트 #1</strong><div id="puttStepLabel" class="sub">1 / 2 · 퍼팅 시작 위치</div></div><button id="puttClose" class="x" aria-label="퍼팅 입력 닫기">×</button></div>
     <div id="puttGreenPanel">
-      <p id="puttGreenHint" class="helper">PIN은 중앙에 고정됩니다. 공 위치를 원 안에 탭하세요.</p>
+      <div class="puttRangeHead"><p id="puttGreenHint" class="helper">PIN은 중앙에 고정됩니다. 공 위치를 원 안에 탭하세요.</p><button id="puttRangeToggle" type="button" class="puttRangeToggle">5m+</button></div>
       <svg id="puttGreen" viewBox="0 0 360 360" role="img" aria-label="핀 기준 퍼팅 시작 위치 입력">
         <defs><clipPath id="puttGreenClip"><circle cx="180" cy="180" r="140"/></clipPath></defs>
         <circle cx="180" cy="180" r="140" fill="#e5f8ef" stroke="#72bfa0" stroke-width="2"/>
@@ -2130,7 +2134,7 @@ body.round-active .bottomnav{display:none!important}
         <circle id="puttBall" r="9" fill="#1687ff" stroke="#ffffff" stroke-width="3" visibility="hidden"/>
       </svg>
       <div id="puttPositionSummary" class="puttPositionSummary" aria-live="polite">공 위치를 탭하세요</div>
-      <div id="puttScaleLabel" class="helper">PIN 기준 · 5m / 10m / 15m / 20m</div>
+      <div id="puttScaleLabel" class="helper">PIN 기준 · 0.5m / 1m / 2m / 3m / 5m</div>
     </div>
     <div id="puttStartPanel">
       <div class="sectionLabel">거리 · 탭으로 자동 계산 / 필요하면 보정</div>
@@ -8615,7 +8619,7 @@ $('savePenaltyBtn').onclick=()=>{
 };
 $('onGreenBtn').onclick=openPutt;
 
-let puttGreenUI={step:'start',pin:{x:180,y:180},ball:null,radiusM:20,relativeSide:null,relativeDepth:null};
+let puttGreenUI={step:'start',pin:{x:180,y:180},ball:null,radiusM:5,rangeMode:'SHORT',relativeSide:null,relativeDepth:null};
 function updatePuttNextState(){
   const next=$('puttNext');if(!next)return;
   if(puttGreenUI.step!=='start'){next.disabled=false;return}
@@ -8656,11 +8660,18 @@ function showPuttStep(step){
 function renderPuttGreen(){
   const b=puttGreenUI.ball,p={x:180,y:180};
   $('puttPin').setAttribute('transform','translate(180 180)');
-  $('puttRings').innerHTML=[5,10,15,20].map(m=>{
-    const r=140*m/20;
+  const rings=puttGreenUI.rangeMode==='LONG'?[5,10,15,20]:[0.5,1,2,3,5];
+  const max=puttGreenUI.rangeMode==='LONG'?20:5;
+  puttGreenUI.radiusM=max;
+  $('puttRings').innerHTML=rings.map(m=>{
+    const r=140*m/max;
     return '<circle cx="180" cy="180" r="'+r+'" fill="none" stroke="#8cc6ad" stroke-dasharray="4 5"/><text x="180" y="'+(180-r+15)+'" text-anchor="middle">'+m+'m</text>';
   }).join('');
-  $('puttScaleLabel').textContent='PIN 기준 · 5m / 10m / 15m / 20m';
+  $('puttScaleLabel').textContent=puttGreenUI.rangeMode==='LONG'?'PIN 기준 · 5m / 10m / 15m / 20m':'PIN 기준 · 0.5m / 1m / 2m / 3m / 5m';
+  if($('puttRangeToggle')){
+    $('puttRangeToggle').textContent=puttGreenUI.rangeMode==='LONG'?'0–5m':'5m+';
+    $('puttRangeToggle').classList.toggle('long',puttGreenUI.rangeMode==='LONG');
+  }
   $('puttBall').setAttribute('visibility',b&&puttGreenUI.step==='start'?'visible':'hidden');
   $('puttLine').setAttribute('visibility',b&&puttGreenUI.step==='start'?'visible':'hidden');
   if(b){
@@ -8679,6 +8690,17 @@ function setPuttBallFromSvgPoint(q){
   renderPuttGreen();
   updatePuttNextState();
 }
+$('puttRangeToggle').onclick=()=>{
+  puttGreenUI.rangeMode=puttGreenUI.rangeMode==='LONG'?'SHORT':'LONG';
+  puttGreenUI.radiusM=puttGreenUI.rangeMode==='LONG'?20:5;
+  puttGreenUI.ball=null;
+  puttGreenUI.relativeSide=null;
+  puttGreenUI.relativeDepth=null;
+  puttDraft.distanceM=null;
+  $('puttDistanceInput').value='';
+  renderPuttGreen();
+  updatePuttNextState();
+};
 $('puttGreen').onclick=e=>{
   if(puttGreenUI.step!=='start')return;
   const svg=$('puttGreen'),ctm=svg.getScreenCTM();if(!ctm)return;
@@ -8693,7 +8715,7 @@ $('puttBack').onclick=()=>showPuttStep('start');
 function resetPuttDraft(){
   puttDraft={distanceM:null,slope:null,break:null,result:null,playerState:null};
   $('puttDistanceInput').value='';
-  puttGreenUI={step:'start',pin:{x:180,y:180},ball:null,radiusM:20,relativeSide:null,relativeDepth:null};
+  puttGreenUI={step:'start',pin:{x:180,y:180},ball:null,radiusM:5,rangeMode:'SHORT',relativeSide:null,relativeDepth:null};
   ['puttSlope','puttBreak','puttResult'].forEach(id=>setSelected($(id),'__'));
   showPuttStep('start');
 }
@@ -8710,7 +8732,8 @@ function openPuttEdit(index){
     editHoleCompletedAt:puttDraft.editHoleCompletedAt,editHoleAchievement:puttDraft.editHoleAchievement};
   $('puttDistanceInput').value=Number(p.distanceM).toFixed(1);
   setSelected($('puttSlope'),p.slope);setSelected($('puttBreak'),p.break);setSelected($('puttResult'),p.result);
-  puttGreenUI={step:'start',pin:{x:180,y:180},ball:{x:180,y:180+Math.min(140,Number(p.distanceM)/20*140)},radiusM:20,relativeSide:'CENTER',relativeDepth:'SHORT'};
+  const editLong=Number(p.distanceM)>5,editRadius=editLong?20:5;
+  puttGreenUI={step:'start',pin:{x:180,y:180},ball:{x:180,y:180+Math.min(140,Number(p.distanceM)/editRadius*140)},radiusM:editRadius,rangeMode:editLong?'LONG':'SHORT',relativeSide:p.relativeSide||'CENTER',relativeDepth:p.relativeDepth||'SHORT'};
   showPuttStep('start');
   $('savePuttBtn').textContent='퍼트 수정 저장';
   $('puttModal').classList.remove('hidden');
