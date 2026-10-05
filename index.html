@@ -3970,6 +3970,46 @@ function multiTable(headers,rows){
 function multiKpis(items){
   return '<div class="analysisKpis">'+items.map(x=>'<div class="analysisKpi"><b>'+safeText(String(x[1]))+'</b><span>'+safeText(x[0])+'</span></div>').join('')+'</div>';
 }
+function multiClubOrderKey(club){
+  const raw=String(club||'').trim().toUpperCase().replace(/\s+/g,'');
+  if(!raw||raw==='미확인'||raw==='UNKNOWN')return 9999;
+  if(['DR','DRIVER','1W'].includes(raw))return 0;
+
+  let m=raw.match(/^(\d+)W$/);
+  if(m)return 100+Number(m[1]);
+
+  m=raw.match(/^(?:H|HY|HYBRID)(\d+)$/);
+  if(m)return 200+Number(m[1]);
+  m=raw.match(/^(?:UT|UTILITY)(\d+)$/);
+  if(m)return 220+Number(m[1]);
+
+  m=raw.match(/^(\d+)(?:I|IRON)$/);
+  if(m)return 300+Number(m[1]);
+
+  if(raw==='PW'||raw==='PITCHINGWEDGE')return 400;
+  if(raw==='AW'||raw==='APPROACHWEDGE')return 410;
+  if(raw==='GW'||raw==='GAPWEDGE')return 420;
+
+  m=raw.match(/^(\d{2})(?:°|DEG|D)?$/);
+  if(m){
+    const loft=Number(m[1]);
+    if(loft>=40&&loft<=64)return 430+loft;
+  }
+  m=raw.match(/^(?:W|WEDGE)(\d{2})(?:°|DEG|D)?$/);
+  if(m){
+    const loft=Number(m[1]);
+    if(loft>=40&&loft<=64)return 430+loft;
+  }
+
+  if(raw==='SW'||raw==='SANDWEDGE')return 490;
+  if(raw==='LW'||raw==='LOBWEDGE')return 500;
+  if(raw==='PUTTER'||raw==='PT')return 900;
+  return 800;
+}
+function multiClubOrderSort(a,b){
+  const d=multiClubOrderKey(a[0])-multiClubOrderKey(b[0]);
+  return d||String(a[0]).localeCompare(String(b[0]),'en',{numeric:true,sensitivity:'base'});
+}
 // Cumulative display only: preserve the benchmark engine and raw round data.
 const MULTI_SG_CATEGORIES=['ott','app','arg','putt'];
 function multiSgBenchmarkInfo(r){
@@ -4225,7 +4265,7 @@ function renderFullMultiAnalysis(rounds){
   });
   $('analysisClub').innerHTML=
     '<div class="analysisNote">사용된 모든 샷을 클럽별로 모읍니다. 샘플 수가 적은 클럽은 수치 옆의 사용 횟수를 함께 확인해야 합니다.</div>'+
-    multiTable(['클럽','사용','평균 거리','왼쪽','중앙','오른쪽','짧음','김','평균 획득타수'],Object.entries(clubGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
+    multiTable(['클럽','사용','평균 거리','왼쪽','중앙','오른쪽','짧음','김','평균 획득타수'],Object.entries(clubGroups).sort(multiClubOrderSort).map(([k,o])=>[
       safeText(k),o.n,o.dist.length?Math.round(o.dist.reduce((a,b)=>a+b,0)/o.dist.length)+'m':'—',o.left,o.center,o.right,o.short,o.long,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
     ]));
 
