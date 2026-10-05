@@ -562,6 +562,185 @@ body.round-active .bottomnav{display:none!important}
 }
 .penaltyStrokeDisplay strong{font-size:26px}.penaltyStrokeDisplay span{font-size:12px;color:#d7b9bd}
 
+/* ===== ON-COURSE INPUT PREVIEW · SUNLIGHT / FRESH V1 ===== */
+#roundScreen{
+  background:#f5faf7!important;color:#10231a;
+}
+#roundScreen .roundOutsideHeader{
+  background:#fff!important;border:1px solid #d8e5dd!important;
+  box-shadow:0 4px 18px rgba(17,66,41,.08);
+}
+#roundScreen .mapCourseName,#roundScreen .holeLine strong{color:#10231a}
+#roundScreen .mapCourseMeta,#roundScreen #holeParText{color:#5b6f63}
+#roundScreen .mapMiniBtn,#roundScreen .mapViewToggle{
+  background:#fff;color:#173a29;border-color:#cbdcd2;
+}
+#roundScreen .mapViewToggle button{color:#446355;background:#fff}
+#roundScreen .mapViewToggle button.sel{background:#0da55a;color:#fff}
+#roundScreen .mapShotCount{
+  background:#0da55a;color:#fff;border-color:#0a914e;
+  font-size:12px;font-weight:1000;padding:7px 12px;letter-spacing:.04em;
+}
+#roundScreen .mapHoleBar .holebtn{
+  background:#eef5f1;color:#294a3a;border-color:#d1dfd7;
+}
+#roundScreen .mapHoleBar .holebtn.sel{
+  background:#0da55a;color:#fff;border-color:#0a914e;
+}
+#roundScreen .roundMapStage{
+  border:1px solid #cbdcd2!important;box-shadow:0 6px 20px rgba(13,51,32,.10);
+}
+#roundScreen .mapControlBtn{
+  background:rgba(255,255,255,.96);color:#163c2a;border-color:#d1dfd7;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);backdrop-filter:none;
+}
+#roundScreen .targetInfo{
+  background:rgba(255,255,255,.96);border-color:#20b66a;color:#10231a;
+  box-shadow:0 5px 16px rgba(0,0,0,.13);backdrop-filter:none;
+}
+#roundScreen .targetEyebrow{color:#07884a}
+#roundScreen .targetMeta{color:#526b5d}
+#roundScreen .mapBottomStatus span{
+  background:rgba(255,255,255,.95);color:#163c2a;border-color:#d2ded7;
+  backdrop-filter:none;font-size:11px;
+}
+#roundScreen .clubDockOutside{
+  background:#fff!important;border:1px solid #d2e1d8!important;
+  box-shadow:0 8px 26px rgba(17,66,41,.10)!important;
+  border-radius:22px!important;padding:12px!important;
+}
+#roundScreen .onCourseShotNow{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:10px;padding:10px 12px;border-radius:15px;
+  background:linear-gradient(135deg,#e9fff3,#f7fffb);border:1px solid #b9e9cf;
+}
+#roundScreen .onCourseShotNow div{display:flex;align-items:center;gap:8px}
+#roundScreen .onCourseShotNow span{
+  font-size:9px;font-weight:1000;color:#07884a;letter-spacing:.15em;
+}
+#roundScreen .onCourseShotNow strong{
+  font-size:20px;font-weight:1000;color:#10231a;letter-spacing:-.02em;
+}
+#roundScreen .onCourseShotNow small{
+  font-size:11px;font-weight:900;color:#4f6b5d;
+}
+#roundScreen .startPositionStrip{
+  background:#f7faf8!important;border:1px solid #d7e4dc!important;color:#173529!important;
+  min-height:62px;
+}
+#roundScreen .startPositionStrip .eyebrow{color:#07884a}
+#roundScreen .startPositionStrip small{color:#65796e!important;font-size:10px!important}
+#roundScreen .startPositionStrip .value{
+  background:#e5f7ed!important;color:#07884a!important;border:1px solid #bae4cd!important;
+  font-size:11px!important;font-weight:1000!important;
+}
+#roundScreen .targetZoneBlock{
+  background:#f7faf8!important;border:1px solid #d7e4dc!important;
+}
+#roundScreen .targetZoneHead b{color:#173529;font-size:12px}
+#roundScreen .targetZoneHead span{color:#65796e;font-size:10px}
+#roundScreen .targetZoneSegment button{
+  min-height:52px;background:#eef4f0;color:#27483a;border-color:#d3e0d8;
+  font-size:14px;
+}
+#roundScreen .targetZoneSegment button.sel{
+  background:#0da55a;color:#fff;border-color:#0a914e;box-shadow:0 3px 10px rgba(13,165,90,.20);
+}
+#roundScreen .dockLabel{color:#07884a;font-size:10px}
+#roundScreen #clubBasisLabel{color:#18372a;font-size:14px}
+#roundScreen .dockAction{
+  min-height:46px;background:#f2f6f3;color:#1b3a2c;border-color:#d4e0d9;
+  font-size:11px;
+}
+#roundScreen .dockAction.primary{
+  background:#0da55a;color:#fff;border-color:#0a914e;
+}
+#roundScreen .dockAction.green{
+  background:#e4f8ed;color:#087a44;border-color:#b5e5ca;
+}
+#roundScreen .dockAction.danger{
+  background:#fff0ef;color:#c63c35;border-color:#f0c4c1;
+}
+#roundScreen .dockAction.subtle{
+  background:#f1f5f2;color:#385748;border-color:#d8e3dc;
+}
+#roundScreen .clubSuggestions{
+  gap:9px;margin-top:10px;
+}
+#roundScreen .clubSuggestion{
+  min-height:68px;background:#f7faf8;color:#143426;border:1px solid #d4e1d9;
+  border-radius:16px;padding:10px 11px;
+}
+#roundScreen .clubSuggestion b{font-size:20px}
+#roundScreen .clubSuggestion span{font-size:11px;color:#60766a}
+#roundScreen .clubSuggestion.best{
+  background:#e8fff2;border-color:#24b86e;box-shadow:0 3px 12px rgba(13,165,90,.12);
+}
+#roundScreen .clubMoreBtn{
+  color:#1b6c45;font-size:11px;padding:9px 3px;
+}
+#roundScreen .pendingStrip{background:#fff;color:#18372a}
+#roundScreen .pendingStrip strong{font-size:24px;color:#10231a}
+#roundScreen .pendingLabel{font-size:11px;color:#07884a}
+#roundScreen .pendingStrip small{font-size:10px;color:#5e7568}
+
+#clubModal .sheet,#startPositionModal .sheet,#shotResultModal .sheet,#penaltyModal .sheet,#puttModal .sheet{
+  background:#fff;color:#132c21;border:1px solid #d2e1d8;
+}
+#clubModal .sheetHead,#startPositionModal .sheetHead,#shotResultModal .sheetHead,#penaltyModal .sheetHead,#puttModal .sheetHead{color:#132c21}
+#clubModal .sub,#startPositionModal .sub,#shotResultModal .sub,#penaltyModal .sub,#puttModal .sub,
+#clubModal .helper,#startPositionModal .helper,#shotResultModal .helper,#penaltyModal .helper,#puttModal .helper{color:#60766a!important}
+#clubModal .x,#startPositionModal .x,#shotResultModal .x,#penaltyModal .x,#puttModal .x{
+  background:#eef4f0;color:#17372a;border-color:#d5e1da;
+}
+#clubModal .allClubBtn{
+  background:#f6faf7;color:#153428;border-color:#d3e1d8;min-height:70px;
+}
+#clubModal .allClubBtn span{color:#60766a}
+#startPositionModal .positionChoice button,
+#shotResultModal .choice button,
+#penaltyModal .choice button,
+#puttModal .choice button{
+  background:#f3f7f4;color:#17372a;border-color:#d3e0d8;
+}
+#startPositionModal .positionChoice button.sel,
+#shotResultModal .choice button.sel,
+#penaltyModal .choice button.sel,
+#puttModal .choice button.sel{
+  background:#e4f8ed!important;color:#087a44!important;outline:2px solid #0da55a!important;
+}
+#shotResultModal .sectionLabel,#penaltyModal .sectionLabel,#puttModal .sectionLabel{
+  color:#234536;font-size:12px;font-weight:1000;
+}
+#shotResultModal .resultChoice button,#puttModal .puttResultChoice button{
+  min-height:72px;font-size:27px;
+}
+#shotResultModal .resultChoice button span,#puttModal .puttResultChoice button span{
+  color:inherit;font-size:14px;
+}
+#penaltyModal .penaltyStepBtn,#puttModal .puttStepBtn{
+  background:#f4f8f5;color:#17372a;border-color:#d0dfd6;
+}
+#penaltyModal .penaltyStrokeDisplay,#puttModal .puttDistanceDisplay{
+  background:#f8fbf9;color:#17372a;border-color:#d0dfd6;
+}
+#puttModal .puttDistanceDisplay input{color:#17372a!important}
+#shotResultModal .btn.primary,#penaltyModal .btn.primary,#puttModal .btn.primary{
+  background:#0da55a!important;color:#fff!important;border-color:#0a914e!important;
+}
+@media(max-width:520px){
+  #roundScreen.round-map-screen{padding:7px 7px 12px!important}
+  #roundScreen .roundOutsideHeader{padding:10px}
+  #roundScreen .roundMapStage{height:52svh;min-height:360px}
+  #roundScreen .clubDockOutside{margin-top:7px!important}
+  #roundScreen .clubSuggestions{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:390px){
+  #roundScreen .roundMapStage{height:48svh;min-height:330px}
+  #roundScreen .clubSuggestion{min-height:64px}
+  #roundScreen .clubSuggestion b{font-size:18px}
+}
+
 /* ===== JGI PLAYER · PERFORMANCE INTELLIGENCE INTRO ===== */
 .introScreen{
   min-height:100svh;
@@ -755,6 +934,18 @@ body.round-active .bottomnav{display:none!important}
 .multiDriverScatter{position:relative;height:210px;border-radius:14px;overflow:hidden;background:linear-gradient(90deg,rgba(68,39,20,.34) 0 30%,rgba(32,98,49,.3) 30% 70%,rgba(68,39,20,.34) 70% 100%);border:1px solid rgba(255,255,255,.08)}.multiDriverScatter:before{content:"";position:absolute;left:49.5%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.23)}.multiDriverScatter:after{content:"좌   페어웨이   우";position:absolute;left:0;right:0;bottom:5px;text-align:center;color:#d6e1da;font-size:7px;letter-spacing:.18em}.multiDriverPct{position:absolute;top:7px;z-index:4;padding:4px 7px;border-radius:999px;background:rgba(2,18,13,.80);border:1px solid rgba(255,255,255,.18);color:#f2f7f4;font-size:9px;font-weight:950;line-height:1}.multiDriverPct.left{left:7px}.multiDriverPct.center{left:50%;transform:translateX(-50%);color:#74f39d}.multiDriverPct.right{right:7px}.multiDriverDot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);background:#ff737d;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 5px rgba(0,0,0,.35)}.multiDriverDot.fw{background:#45e587}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
+.multiDashboardKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+.multiDashboardGrid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.multiDashboardGrid .multiVizCard{min-height:300px;padding:14px}
+.multiDashboardGrid .multiVizCard h4{font-size:12px;margin-bottom:12px}
+.multiDashboardGrid .multiUsageRow{grid-template-columns:52px minmax(0,1fr) 48px;gap:8px;margin:9px 0;font-size:10px}
+.multiDashboardGrid .multiUsageRow b{font-size:10px}
+.multiDashboardGrid .multiUsageRow strong{font-size:9px;text-align:right}
+.multiDashboardGrid .multiUsageTrack{height:10px}
+.multiSplitRows{display:grid;gap:9px}.multiSplitRow{padding:10px 10px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07)}.multiSplitHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;margin-bottom:7px}.multiSplitHead b{font-size:10px}.multiSplitHead span{color:#91a49a;font-size:8px}.multiSplitTrack{display:flex;height:11px;border-radius:99px;overflow:hidden;background:#122019}.multiSplitTrack i{display:block;height:100%}.multiSplitTrack .left{background:#f2b94b}.multiSplitTrack .center{background:#45e587}.multiSplitTrack .right{background:#ff737d}.multiSplitLegend{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;color:#a4b5ab;font-size:8px}.multiSplitLegend b{color:#eef6f1}
+.multiDashboardObservation{margin-top:10px;padding:12px;border-radius:15px;border:1px solid rgba(39,233,120,.22);background:rgba(12,48,32,.34)}.multiDashboardObservation>div:first-child{font-size:9px;font-weight:950;color:#79f5a1;letter-spacing:.04em}.multiDashboardObservation .multiPatternList{margin-top:7px}
+.multiDashboardFoot{margin-top:10px;font-size:8px;line-height:1.5;color:#82958a;text-align:right}
+@media(max-width:620px){.multiDashboardKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.multiDashboardGrid{grid-template-columns:1fr}.multiDashboardGrid .multiVizCard{min-height:0}.multiSplitHead{align-items:flex-start}.multiDashboardObservation{padding:10px}}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
 .multiShotDetailIntro{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:rgba(39,233,120,.06);border:1px solid rgba(39,233,120,.18);color:#abc0b4;font-size:9px;line-height:1.5}
 .multiShotRound{margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,20,15,.72);overflow:hidden}
@@ -1148,6 +1339,10 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <div id="clubReadyPanel">
+          <div class="onCourseShotNow">
+            <div><span>NOW</span><strong id="currentShotLabel">SHOT 1</strong></div>
+            <small id="currentShotType">티샷 준비</small>
+          </div>
           <button id="startPositionBtn" class="startPositionStrip" type="button">
             <span class="left">
               <span class="eyebrow">샷 시작 위치</span>
@@ -2763,6 +2958,20 @@ function showTargetSnapshot(target,startRef=null){
   if($('targetMeta'))$('targetMeta').textContent=targetZoneLabel(target.zone)+' · 페어웨이 폭 '+(Number.isFinite(Number(target.fairwayWidthM))?Number(target.fairwayWidthM).toFixed(1)+'m':'—');
   renderJgiCourseView();
 }
+function activeTargetStartReference(){
+  if(round?.pending?.start)return round.pending.start;
+  const start=resolveShotStart();
+  if(start)return start;
+  return targetDistanceReference||rawGpsPoint();
+}
+function targetStartReferenceLabel(ref){
+  const source=String(ref?.source||'').toUpperCase();
+  if(source==='TEE_BOX')return 'TEE BOX';
+  if(source==='MANUAL_DROP')return 'DROP';
+  if(source==='PREVIOUS_END')return 'PREVIOUS SHOT';
+  if(source==='GPS')return 'GPS';
+  return 'START';
+}
 function setTarget(latLng){
   if(!window.google?.maps||round?.pending)return;
   const pos={lat:latLng.lat(),lng:latLng.lng()};
@@ -2770,7 +2979,7 @@ function setTarget(latLng){
   targetZoneSource='PLAYER_SELECTED';
   targetZone=inferZoneForPoint(courseHoleData(),pos,hole()?.par);
   renderTargetZoneControl();
-  targetDistanceReference=gps?{lat:gps.lat,lng:gps.lng}:null;
+  targetDistanceReference=activeTargetStartReference();
   if(!targetMarker){
     targetMarker=new google.maps.Marker({
       map:googleMap,position:pos,draggable:true,title:'Target',zIndex:60,
@@ -2811,11 +3020,12 @@ function updateTargetDistance(){
     renderClubSuggestions();
     return;
   }
-  const ref=round?.pending?.start||targetDistanceReference||(gps?{lat:gps.lat,lng:gps.lng}:null);
+  const ref=activeTargetStartReference();
+  targetDistanceReference=ref||null;
   if(!ref){
     targetDistanceM=null;
     $('targetDistance').textContent='위치 대기';
-    $('targetMeta').textContent=targetZoneLabel(targetZone);
+    $('targetMeta').textContent=targetZoneLabel(targetZone)+' · START 위치 대기';
     renderClubSuggestions();
     return;
   }
@@ -2823,7 +3033,7 @@ function updateTargetDistance(){
   const target={lat:t.lat(),lng:t.lng()};
   targetDistanceM=hav(ref,target);
   $('targetDistance').textContent=Math.round(targetDistanceM)+'m';
-  $('targetMeta').textContent=targetZoneLabel(targetZone)+' · '+(targetManualOverride?'직접 지정':'자동 좌표');
+  $('targetMeta').textContent='START '+targetStartReferenceLabel(ref)+' · '+targetZoneLabel(targetZone)+' · '+(targetManualOverride?'직접 지정':'자동 좌표');
   if(targetLine)targetLine.setPath([ref,target]);
   renderClubSuggestions();
 }
@@ -2915,6 +3125,7 @@ function renderStartPositionControl(){
   }
   $('startPositionHint').textContent=hint;
   btn.classList.toggle('warn',warn);
+  if(targetMarker&&!round?.pending)updateTargetDistance();
 }
 function openStartPositionModal(){
   if(!round)return;
@@ -3013,7 +3224,7 @@ function resetShotResult(existing=null){
 function openShotResult(){
   if(!round?.pending)return;
   resetShotResult(round.pending.result||null);
-  $('shotResultLabel').textContent=round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
+  $('shotResultLabel').textContent='SHOT '+((hole().shots?.length||0)+1)+' · '+round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
   $('shotResultModal').classList.remove('hidden');
 }
 function normalizeCollectionLevel(v){
@@ -5694,6 +5905,165 @@ function mentalImpactSummaryHtml(data,roundCount){
   return html;
 }
 
+
+function multiClubDashboardGroups(rounds){
+  const rows=multiRows(rounds).shots||[],groups={};
+  rows.forEach(x=>{
+    const key=x.s?.club||'미확인';
+    const o=groups[key]||(groups[key]={key,n:0,dist:[],left:0,center:0,right:0,short:0,long:0,sg:[]});
+    o.n++;
+    const d=Number(x.s?.distanceM);if(Number.isFinite(d))o.dist.push(d);
+    const dir=String(x.s?.direction||'').toUpperCase();
+    if(dir==='LEFT')o.left++;if(dir==='CENTER')o.center++;if(dir==='RIGHT')o.right++;
+    const dep=String(x.s?.depth||'').toUpperCase();
+    if(dep==='SHORT')o.short++;if(dep==='LONG')o.long++;
+    const sg=multiShotSg(x);if(Number.isFinite(sg))o.sg.push(sg);
+  });
+  return Object.values(groups).sort((a,b)=>b.n-a.n);
+}
+function multiClubUsageBarsHtml(groups){
+  if(!groups.length)return '<div class="analysisEmpty">클럽 데이터가 없습니다.</div>';
+  const rows=groups.slice(0,8),max=Math.max(1,...rows.map(o=>o.n));
+  return rows.map(o=>'<div class="multiUsageRow"><b>'+safeText(o.key)+'</b><span class="multiUsageTrack"><i style="width:'+Math.max(3,o.n/max*100)+'%"></i></span><strong>'+o.n+'</strong></div>').join('');
+}
+function multiClubDistanceBarsHtml(groups){
+  const rows=groups.filter(o=>o.dist.length).map(o=>({...o,avgDist:avg(o.dist)})).sort((a,b)=>b.avgDist-a.avgDist).slice(0,8);
+  if(!rows.length)return '<div class="analysisEmpty">거리 데이터가 없습니다.</div>';
+  const max=Math.max(1,...rows.map(o=>o.avgDist));
+  return rows.map(o=>'<div class="multiUsageRow"><b>'+safeText(o.key)+'</b><span class="multiUsageTrack"><i style="width:'+Math.max(3,o.avgDist/max*100)+'%"></i></span><strong>'+Math.round(o.avgDist)+'m</strong></div>').join('');
+}
+function multiClubMissSplitHtml(groups){
+  const rows=groups.filter(o=>(o.left+o.center+o.right)>0).slice(0,6);
+  if(!rows.length)return '<div class="analysisEmpty">방향 데이터가 없습니다.</div>';
+  return '<div class="multiSplitRows">'+rows.map(o=>{
+    const n=o.left+o.center+o.right,l=o.left/n*100,c=o.center/n*100,r=o.right/n*100;
+    return '<div class="multiSplitRow"><div class="multiSplitHead"><b>'+safeText(o.key)+'</b><span>N '+n+'</span></div>'+
+      '<div class="multiSplitTrack"><i class="left" style="width:'+l+'%"></i><i class="center" style="width:'+c+'%"></i><i class="right" style="width:'+r+'%"></i></div>'+
+      '<div class="multiSplitLegend"><span><b>L</b> '+o.left+'</span><span><b>C</b> '+o.center+'</span><span><b>R</b> '+o.right+'</span></div></div>';
+  }).join('')+'</div>';
+}
+function multiClubDashboardHtml(rounds){
+  const rows=multiRows(rounds).shots||[],groups=multiClubDashboardGroups(rounds),top=groups[0]||null;
+  const driver=groups.find(o=>['DR','DRIVER','1W'].includes(String(o.key||'').toUpperCase()));
+  const approach=rows.filter(x=>multiApproach5mBucket(multiStartDistance(x)));
+  const left=groups.reduce((a,o)=>a+o.left,0),right=groups.reduce((a,o)=>a+o.right,0),center=groups.reduce((a,o)=>a+o.center,0);
+  const dirN=left+right+center;
+  const topSg=top?.sg?.length?avg(top.sg):null;
+  const patterns=[];
+  if(top)patterns.push('가장 많이 사용한 클럽은 '+top.key+' '+top.n+'회이며, 평균 거리 '+(top.dist.length?Math.round(avg(top.dist))+'m':'—')+'가 기록되었습니다.');
+  if(dirN){
+    const side=right>left?'오른쪽':left>right?'왼쪽':'좌·우 동일';
+    patterns.push('저장된 방향 결과 '+dirN+'개에서 '+side+' 미스가 '+Math.max(left,right)+'회입니다. 중앙 결과는 '+center+'회입니다.');
+  }
+  const sgGroups=groups.filter(o=>o.sg.length).map(o=>({...o,avgSg:avg(o.sg)})).sort((a,b)=>b.avgSg-a.avgSg);
+  if(sgGroups.length){
+    const best=sgGroups[0];
+    patterns.push('현재 Avg SG가 가장 높은 클럽은 '+best.key+' '+multiSigned(best.avgSg)+'이며 표본은 '+best.sg.length+'샷입니다. 표본 수와 함께 확인합니다.');
+  }
+  return '<div class="analysisNote">상세 표보다 먼저 클럽 사용 패턴 · 거리 · 방향 결과를 요약합니다. 모든 수치는 선택한 라운드의 기존 저장 샷에서 계산합니다.</div>'+
+    '<div class="multiTeeKpis multiDashboardKpis">'+
+      multiMetricTile('Most Used Club',top?safeText(top.key):'—',top?top.n+' shots':'0 shots')+
+      multiMetricTile('Top Club Distance',top&&top.dist.length?Math.round(avg(top.dist))+'m':'—',top?safeText(top.key):'')+
+      multiMetricTile('Top Club Avg SG',top?multiSgHtml(topSg):'—',top?(top.sg.length+' SG shots'):'')+
+      multiMetricTile('Driver Distance',driver&&driver.dist.length?Math.round(avg(driver.dist))+'m':'—',driver?driver.n+' shots':'0 shots')+
+      multiMetricTile('Clubs Used',groups.length,(rounds?.length||0)+'R')+
+      multiMetricTile('5–80m Shots',approach.length,'approach context')+
+    '</div>'+
+    '<div class="multiTeeGrid multiDashboardGrid">'+
+      '<div class="multiVizCard"><h4>클럽 사용 빈도</h4>'+multiClubUsageBarsHtml(groups)+'</div>'+
+      '<div class="multiVizCard"><h4>클럽 평균 거리</h4>'+multiClubDistanceBarsHtml(groups)+'</div>'+
+      '<div class="multiVizCard"><h4>클럽별 방향 결과</h4>'+multiClubMissSplitHtml(groups)+'</div>'+
+    '</div>'+
+    '<div class="multiDashboardObservation"><div>JGI 관찰 · CLUB</div><div class="multiPatternList">'+patterns.slice(0,3).map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div>'+
+    '<div class="multiDashboardFoot">전체 클럽별 수치와 5–80m 상세는 「상세 데이터 보기」에서 확인합니다.</div>';
+}
+function multiCourseDashboardRows(rounds){
+  const rows=[];
+  (rounds||[]).forEach(r=>(r.holes||[]).forEach(h=>{
+    const s=h.shots?.[0];if(!s||Number(h.par)<4)return;
+    rows.push({r,h,s,sg:multiShotSg({r,h,s,si:0}),dogleg:multiDoglegData(s)});
+  }));
+  return rows;
+}
+function multiCourseShapeStats(rows){
+  const g={};
+  rows.forEach(x=>{
+    const k=multiDoglegDirectionLabel(x.dogleg?.direction||'STRAIGHT');
+    const o=g[k]||(g[k]={label:k,n:0,fw:0,left:0,right:0,sg:[]});
+    o.n++;if(String(x.s.endLie||'').toUpperCase()==='FAIRWAY')o.fw++;
+    if(String(x.s.direction||'').toUpperCase()==='LEFT')o.left++;
+    if(String(x.s.direction||'').toUpperCase()==='RIGHT')o.right++;
+    if(Number.isFinite(x.sg))o.sg.push(x.sg);
+  });
+  return g;
+}
+function multiCourseWidthStats(rows){
+  const g={};
+  rows.forEach(x=>{
+    const width=x.s.courseContext?.landingZoneWidth?.widthM??x.s.courseContext?.fairwayWidth?.landingWidthM;
+    const k=multiWidthBucket(width);if(!k)return;
+    const o=g[k]||(g[k]={label:k,n:0,fw:0,left:0,right:0,sg:[]});
+    o.n++;if(String(x.s.endLie||'').toUpperCase()==='FAIRWAY')o.fw++;
+    if(String(x.s.direction||'').toUpperCase()==='LEFT')o.left++;
+    if(String(x.s.direction||'').toUpperCase()==='RIGHT')o.right++;
+    if(Number.isFinite(x.sg))o.sg.push(x.sg);
+  });
+  return g;
+}
+function multiCourseShapeResultHtml(shape){
+  const order=['RIGHT','LEFT','STRAIGHT'];
+  const rows=order.filter(k=>shape[k]);
+  if(!rows.length)return '<div class="analysisEmpty">도그렉 데이터가 없습니다.</div>';
+  return '<div class="multiResultBars">'+rows.map(k=>{const o=shape[k],p=o.n?o.fw/o.n*100:0;return '<div class="multiResultBar"><div><b>'+k+'</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(p)+'%"></i></span><strong>'+Math.round(p)+'% FW</strong></div>'}).join('')+'</div>';
+}
+function multiCourseWidthResultHtml(width){
+  const order=['20m 이하','20~25m','25~30m','30m 초과'];
+  const rows=order.filter(k=>width[k]);
+  if(!rows.length)return '<div class="analysisEmpty">착지구역 폭 데이터가 없습니다.</div>';
+  return '<div class="multiResultBars">'+rows.map(k=>{const o=width[k],p=o.n?o.fw/o.n*100:0;return '<div class="multiResultBar"><div><b>'+safeText(k)+'</b>'+multiSampleTag(o.n)+'</div><span><i style="width:'+Math.round(p)+'%"></i></span><strong>'+Math.round(p)+'% FW</strong></div>'}).join('')+'</div>';
+}
+function multiCourseShapeMixHtml(shape,total){
+  const order=['RIGHT','LEFT','STRAIGHT'],groups=order.filter(k=>shape[k]).map(k=>({label:k,n:shape[k].n}));
+  return multiSituationDonutHtml(groups,total,'TEE');
+}
+function multiCourseDashboardHtml(rounds){
+  const rows=multiCourseDashboardRows(rounds),shape=multiCourseShapeStats(rows),width=multiCourseWidthStats(rows);
+  const shapes=Object.values(shape).sort((a,b)=>b.n-a.n),topShape=shapes[0]||null;
+  const doglegN=rows.filter(x=>x.dogleg&&x.dogleg.direction!=='STRAIGHT').length;
+  const narrow=rows.filter(x=>{const w=Number(x.s.courseContext?.landingZoneWidth?.widthM??x.s.courseContext?.fairwayWidth?.landingWidthM);return Number.isFinite(w)&&w<=25;});
+  const risk30=rows.filter(x=>{
+    const cr=x.s.courseContext?.courseRisk||{},l=Number(cr.left?.distanceM),r=Number(cr.right?.distanceM);
+    return (Number.isFinite(l)&&l<=30)||(Number.isFinite(r)&&r<=30);
+  });
+  const targets={};
+  rows.forEach(x=>{const k=multiTargetLabel(x.s.targetZone||x.s.target?.zone);targets[k]=(targets[k]||0)+1});
+  const topTarget=Object.entries(targets).sort((a,b)=>b[1]-a[1])[0];
+  const sgv=rows.map(x=>x.sg).filter(Number.isFinite);
+  const narrowFw=narrow.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const riskFw=risk30.filter(x=>String(x.s.endLie||'').toUpperCase()==='FAIRWAY').length;
+  const patterns=[];
+  if(topShape)patterns.push('가장 많이 플레이한 코스 형태는 '+topShape.label+' '+topShape.n+'회이며 Fairway '+multiPct(topShape.fw,topShape.n)+'가 기록되었습니다.');
+  if(narrow.length)patterns.push('Landing Zone 25m 이하 티샷은 '+narrow.length+'회 · Fairway '+multiPct(narrowFw,narrow.length)+'가 기록되었습니다.');
+  if(risk30.length)patterns.push('착지 예상 지점 기준 좌·우 위험요소 30m 이내 상황은 '+risk30.length+'회 · Fairway '+multiPct(riskFw,risk30.length)+'가 기록되었습니다.');
+  if(topTarget)patterns.push('가장 많이 사용한 Target은 '+topTarget[0]+' '+topTarget[1]+'회입니다.');
+  return '<div class="analysisNote">Course Context와 실제 티샷 결과만 요약합니다. Mental/State는 포함하지 않으며, Dogleg·폭·위험요소 구간은 기존 Course Intelligence 기준을 그대로 사용합니다.</div>'+
+    '<div class="multiTeeKpis multiDashboardKpis">'+
+      multiMetricTile('Course Tee Shots',rows.length,(rounds?.length||0)+'R')+
+      multiMetricTile('Most Played Shape',topShape?topShape.label:'—',topShape?topShape.n+' shots':'0 shots')+
+      multiMetricTile('Dogleg Shots',doglegN,'LEFT + RIGHT')+
+      multiMetricTile('Landing ≤25m',narrow.length,'tee shots')+
+      multiMetricTile('Risk ≤30m',risk30.length,'landing context')+
+      multiMetricTile('Avg SG / Tee',multiSgHtml(avg(sgv)),sgv.length+' SG shots')+
+    '</div>'+
+    '<div class="multiTeeGrid multiDashboardGrid">'+
+      '<div class="multiVizCard"><h4>코스 형태 비율</h4>'+multiCourseShapeMixHtml(shape,rows.length)+'</div>'+
+      '<div class="multiVizCard"><h4>Dogleg · Fairway 결과</h4>'+multiCourseShapeResultHtml(shape)+'</div>'+
+      '<div class="multiVizCard"><h4>Landing Zone 폭 · Fairway 결과</h4>'+multiCourseWidthResultHtml(width)+'</div>'+
+    '</div>'+
+    '<div class="multiDashboardObservation"><div>JGI 관찰 · COURSE</div><div class="multiPatternList">'+patterns.slice(0,3).map((x,i)=>'<div class="multiPatternLine"><b>'+(i+1)+'.</b> '+safeText(x)+'</div>').join('')+'</div></div>'+
+    '<div class="multiDashboardFoot">Hazard · Dogleg Angle · Turn Point · Target · Club 조합의 전체 근거는 「상세 데이터 보기」에서 확인합니다.</div>';
+}
+
 function renderMultiPrimaryDetail(){
   const rounds=multiReviewRounds||[];
   const title=$('multiPrimaryTitle'),sub=$('multiPrimarySub'),host=$('multiPrimaryDetail');if(!host)return;
@@ -5704,8 +6074,8 @@ function renderMultiPrimaryDetail(){
     host.innerHTML=multiPerformanceDetail(rounds,multiPerformanceMode);return;
   }
   if(multiDashboardMode==='CLUB'){
-    title.textContent='클럽 · 거리 분석';sub.textContent='클럽별 성과와 5~80m 거리별 어프로치 데이터를 함께 봅니다.';
-    host.innerHTML='<div class="sectionLabel">클럽별 성능</div>'+($('analysisClub')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">5~80m 어프로치</div>'+($('analysisApproach')?.innerHTML||'');return;
+    title.textContent='클럽 · 거리 분석';sub.textContent='클럽 사용 빈도 → 거리 → 방향 결과 → JGI 관찰 순서로 봅니다.';
+    host.innerHTML=multiClubDashboardHtml(rounds);return;
   }
   if(multiDashboardMode==='MENTAL'){
     title.textContent='멘탈 분석';sub.textContent='멘탈 상태가 드라이버 · 아이언 · 어프로치 · 퍼터 결과와 어떻게 함께 움직였는지 요약하고, 아래에서 근거 데이터를 확인합니다.';
@@ -5714,8 +6084,8 @@ function renderMultiPrimaryDetail(){
       '<div class="mentalImpactDetailLabel">상세 데이터 · 상태 × 실제 결과</div>'+
       ($('analysisState')?.innerHTML||'<div class="analysisEmpty">멘탈 데이터가 없습니다.</div>');return;
   }
-  title.textContent='코스 · 상황 분석';sub.textContent='위험요소 · 도그렉 · 페어웨이 폭 · 타깃 선택과 실제 샷 결과를 함께 봅니다.';
-  host.innerHTML='<div class="sectionLabel">위험요소</div>'+($('analysisRisk')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">DOGLEG PERFORMANCE</div>'+($('analysisDogleg')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">페어웨이 폭 · 착지구역</div>'+($('analysisWidth')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">타깃 선택</div>'+($('analysisDecision')?.innerHTML||'');
+  title.textContent='코스 · 상황 분석';sub.textContent='코스 형태 → Dogleg → Landing Zone → 위험요소의 샷 결과를 먼저 요약합니다.';
+  host.innerHTML=multiCourseDashboardHtml(rounds);
 }
 function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1),chartId){
   const all=series.flatMap(x=>x).filter(Number.isFinite);
@@ -6097,7 +6467,13 @@ function renderRound(){
   refreshGreenDistance();
   $('gpsOverlay').textContent=gps?'GPS ±'+Math.round(gps.accuracy)+'m':'GPS 대기';
   $('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
-  $('liveScore').textContent=(hole().shots.length+(round.pending?1:0))+' 샷';
+  const currentShotNo=(hole().shots?.length||0)+1;
+  $('liveScore').textContent='SHOT '+currentShotNo;
+  if($('currentShotLabel'))$('currentShotLabel').textContent='SHOT '+currentShotNo;
+  if($('currentShotType')){
+    const first=currentShotNo===1;
+    $('currentShotType').textContent=first?(Number(hole().par)===3?'그린 공략':'티샷 준비'):'다음 샷 준비';
+  }
   $('penaltyBtn').textContent=(hole().penalties||0)>0?'페널티 +'+hole().penalties:'페널티';
 
   const pending=round.pending;
@@ -6107,13 +6483,13 @@ function renderRound(){
   if(pending){
     $('pendingClub').textContent=pending.club;
     if(pending.result){
-      $('pendingStatusLabel').textContent='결과 저장됨';
+      $('pendingStatusLabel').textContent='SHOT '+((hole().shots?.length||0)+1)+' · 결과 저장됨';
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · '+pending.result.endLie+' · '+pending.result.direction+' · '+pending.result.depth;
       $('shotResultBtn').textContent='결과 수정';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
       $('changeClubBtn').classList.remove('hidden');
     }else{
-      $('pendingStatusLabel').textContent='샷 준비';
+      $('pendingStatusLabel').textContent='SHOT '+((hole().shots?.length||0)+1)+' · 준비';
       $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
