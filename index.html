@@ -756,6 +756,20 @@ body.round-active .bottomnav{display:none!important}
 .multiDistanceBars{display:flex;align-items:flex-end;gap:6px;height:145px;padding-top:8px}.multiDistanceBar{flex:1;min-width:28px;text-align:center;font-size:7px;color:#9daf9f}.multiDistanceBar i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#4be18a,#219c59);margin-bottom:5px}.multiDistanceBar b{display:block;color:#eef6f1;font-size:8px}
 .multiPatternList{display:grid;gap:7px;margin-top:10px}.multiPatternLine{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:9px;line-height:1.5}.multiPatternLine b{color:#fff}
 .multiAllDetails{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(5,20,15,.55);overflow:hidden}.multiAllDetails>summary{cursor:pointer;padding:13px 15px;font-size:11px;font-weight:950;color:#dff3e7}.multiAllDetailsBody{padding:0 9px 9px}.multiPrimaryCard{margin-top:0}
+.multiShotDetailIntro{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:rgba(39,233,120,.06);border:1px solid rgba(39,233,120,.18);color:#abc0b4;font-size:9px;line-height:1.5}
+.multiShotRound{margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(5,20,15,.72);overflow:hidden}
+.multiShotRound>summary,.multiShotHole>summary{cursor:pointer;list-style:none}.multiShotRound>summary::-webkit-details-marker,.multiShotHole>summary::-webkit-details-marker{display:none}
+.multiShotRound>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 13px}.multiShotRound>summary span{font-size:11px;font-weight:950;color:#f2f7f4}.multiShotRound>summary b{font-size:11px;color:#7cf4a1;white-space:nowrap}
+.multiShotRoundBody{padding:0 8px 8px;display:grid;gap:7px}
+.multiShotHole{border:1px solid rgba(255,255,255,.10);border-radius:13px;background:rgba(255,255,255,.025);overflow:hidden}
+.multiShotHole>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px}.multiShotHole>summary span{font-size:10px;font-weight:950}.multiShotHole>summary b{font-size:9px;color:#a9bbb0;white-space:nowrap}
+.multiShotList{padding:0 8px 8px;display:grid;gap:7px}
+.multiShotCard{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:start;padding:9px;border-radius:12px;background:rgba(4,20,15,.72);border:1px solid rgba(255,255,255,.09)}
+.multiShotSeq{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#ff9430;color:#fff;font-size:10px;font-weight:1000}
+.multiShotTop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.multiShotTop strong{font-size:11px;line-height:1.3}.multiShotTop span{font-size:10px;font-weight:950;white-space:nowrap}
+.multiShotRoute{margin-top:3px;font-size:9px;color:#c4d2ca;font-weight:850}.multiShotMeta{margin-top:3px;font-size:8px;color:#91a59a;line-height:1.45}
+.multiShotSg{font-size:9px;font-weight:1000;white-space:nowrap;padding-top:2px}.multiShotSg.positive{color:#67f29a}.multiShotSg.negative{color:#ff7b7b}.multiShotSg.neutral{color:#d6e1db}.multiShotSg.pending{color:#74847a}
+@media(max-width:620px){.multiShotCard{grid-template-columns:26px minmax(0,1fr)}.multiShotSg{grid-column:2;justify-self:start;padding-top:0}.multiShotTop{align-items:flex-start}}
 @media(max-width:620px){.multiHero{padding:10px}.multiHero .resultsTop{gap:8px}.multiHero .resultsMetric b{font-size:22px}.multiCockpitSummary{grid-template-columns:repeat(2,1fr)!important}.multiPlayerSgCards{grid-template-columns:repeat(2,1fr)}.multiChartsGrid{grid-template-columns:1fr}.multiCoreInsights{grid-template-columns:1fr}.multiRecentWrap{grid-template-columns:1fr}.multiRecentCompare{grid-template-columns:repeat(2,1fr)}.multiDashboardTabs{grid-template-columns:repeat(2,1fr)}.multiTeeKpis{grid-template-columns:repeat(2,1fr)}.multiTeeGrid{grid-template-columns:1fr}.multiDriverScatter{height:180px}}
 
 .sampleStatus{display:inline-flex;padding:4px 6px;border-radius:999px;font-size:8px;font-weight:950;white-space:nowrap}.sampleStatus.low{color:#a8b4ad;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)}.sampleStatus.early{color:#ffd071;border:1px solid rgba(255,193,68,.24);background:rgba(255,193,68,.06)}.sampleStatus.ready{color:#75f29d;border:1px solid rgba(54,239,124,.24);background:rgba(54,239,124,.06)}
@@ -1331,6 +1345,10 @@ body.round-active .bottomnav{display:none!important}
         </div>
 
         <details class="analysisDetail" open>
+          <summary>샷별 상세 · Hole → Shot</summary>
+          <div id="analysisShotDetail" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail" open>
           <summary>1. 라운드 전체 개요</summary>
           <div id="analysisOverall" class="analysisBody"></div>
         </details>
@@ -1347,47 +1365,51 @@ body.round-active .bottomnav{display:none!important}
           <div id="analysisRisk" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>5. 페어웨이 폭 · 착지구역 분석</summary>
+          <summary>5. 도그렉 분석</summary>
+          <div id="analysisDogleg" class="analysisBody"></div>
+        </details>
+        <details class="analysisDetail">
+          <summary>6. 페어웨이 폭 · 착지구역 분석</summary>
           <div id="analysisWidth" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>6. 어프로치 분석</summary>
+          <summary>7. 어프로치 분석</summary>
           <div id="analysisApproach" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>7. 클럽별 성능</summary>
+          <summary>8. 클럽별 성능</summary>
           <div id="analysisClub" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>8. 타깃 선택 분석</summary>
+          <summary>9. 타깃 선택 분석</summary>
           <div id="analysisTarget" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>9. 퍼팅 분석</summary>
+          <summary>10. 퍼팅 분석</summary>
           <div id="analysisPutting" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>10. 벌타 · 큰 손실 분석</summary>
+          <summary>11. 벌타 · 큰 손실 분석</summary>
           <div id="analysisPenalty" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>11. 멘탈 상태 분석</summary>
+          <summary>12. 멘탈 상태 분석</summary>
           <div id="analysisState" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>12. 라운드 진행 구간 분석</summary>
+          <summary>13. 라운드 진행 구간 분석</summary>
           <div id="analysisPhase" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>13. 코스 · 홀별 기록</summary>
+          <summary>14. 코스 · 홀별 기록</summary>
           <div id="analysisCourseHole" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>14. 의사결정 분석 · 클럽 × 타깃 × 위험</summary>
+          <summary>15. 의사결정 분석 · 클럽 × 타깃 × 위험</summary>
           <div id="analysisDecision" class="analysisBody"></div>
         </details>
         <details class="analysisDetail">
-          <summary>15. 수정 전 · 수정 후</summary>
+          <summary>16. 수정 전 · 수정 후</summary>
           <div id="analysisIntervention" class="analysisBody"></div>
         </details>
         <div class="card">
@@ -4037,11 +4059,100 @@ function multiPuttBucket(v){
   const n=Number(v);if(!Number.isFinite(n))return null;
   if(n<=1)return '0~1m';if(n<=2)return '1~2m';if(n<=3)return '2~3m';if(n<=5)return '3~5m';if(n<=8)return '5~8m';return '8m 초과';
 }
+function multiDoglegData(s){
+  const d=s?.courseContext?.courseRisk?.dogleg||s?.courseContext?.dogleg||null;
+  if(!d)return null;
+  const direction=String(d.direction||'STRAIGHT').toUpperCase();
+  const angle=Number(d.angleDeg),turn=Number(d.distanceToTurnM);
+  const landing=Number(s?.courseContext?.landingZoneWidth?.landingDistanceM);
+  return {
+    direction:['LEFT','RIGHT','STRAIGHT'].includes(direction)?direction:'STRAIGHT',
+    angleDeg:Number.isFinite(angle)?angle:null,
+    turnM:Number.isFinite(turn)?turn:null,
+    landingM:Number.isFinite(landing)?landing:null,
+    applicable:d.applicable!==false
+  };
+}
+function multiDoglegDirectionLabel(v){
+  return ({LEFT:'LEFT',RIGHT:'RIGHT',STRAIGHT:'STRAIGHT'})[String(v||'').toUpperCase()]||'미확인';
+}
+function multiDoglegAngleBand(v){
+  const n=Number(v);if(!Number.isFinite(n))return null;
+  if(n<15)return '<15°';
+  if(n<25)return '15–25°';
+  if(n<35)return '25–35°';
+  return '35°+';
+}
+function multiDoglegTurnBand(turnM,landingM){
+  const t=Number(turnM),l=Number(landingM);
+  if(!Number.isFinite(t)||!Number.isFinite(l))return null;
+  const delta=l-t;
+  if(delta<-15)return 'Turn 이전 >15m';
+  if(delta>15)return 'Turn 이후 >15m';
+  return 'Turn ±15m';
+}
 function multiStateValueLabel(key){
   return ({pressure:'압박감',interference:'생각 간섭',tension:'신체 긴장',confidence:'샷 확신',focus:'집중도'})[key]||key;
 }
+function multiShotSgBadge(value){
+  if(!Number.isFinite(value))return '<span class="multiShotSg pending">SG —</span>';
+  const cls=value>0.005?'positive':value<-0.005?'negative':'neutral';
+  return '<span class="multiShotSg '+cls+'">SG '+multiSigned(value)+'</span>';
+}
+function multiShotHoleDetailHtml(r,h,open=false){
+  const shots=h?.shots||[],putts=h?.puttsDetail||[];
+  const score=storedHoleScore(h),par=Number(h?.par),delta=Number.isFinite(score)&&Number.isFinite(par)?score-par:null;
+  const scoreText=Number.isFinite(score)?String(score)+(delta===null?'':(' · '+(delta===0?'E':(delta>0?'+':'')+delta))):'—';
+  const penalty=Number(h?.penalties||0);
+  const cards=[
+    ...shots.map((s,i)=>{
+      const sg=multiShotSg({r,h,s,si:i});
+      const targetRaw=s?.targetZone||s?.target?.zone;
+      const meta=[];
+      if(s?.shotIntent)meta.push(intentLabel(s.shotIntent));
+      if(targetRaw)meta.push('Target '+multiTargetLabel(targetRaw));
+      if(s?.direction)meta.push(dirLabel(s.direction));
+      if(s?.depth)meta.push(depthLabel(s.depth));
+      const remaining=Number(s?.courseContext?.endGreenDistanceM);
+      if(Number.isFinite(remaining))meta.push('남은 거리 '+Math.round(remaining)+'m');
+      return '<div class="multiShotCard"><div class="multiShotSeq">'+(i+1)+'</div><div>'+
+        '<div class="multiShotTop"><strong>'+safeText(playerShotLabel(h,s,i))+' · '+safeText(s?.club||'클럽 미확인')+'</strong><span>'+safeText(distanceLabel(s?.distanceM))+'</span></div>'+
+        '<div class="multiShotRoute">'+safeText(lieDisplayLabel(s?.startLie))+' → '+safeText(lieDisplayLabel(s?.endLie))+'</div>'+
+        (meta.length?'<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>':'')+
+        '</div>'+multiShotSgBadge(sg)+'</div>';
+    }),
+    ...putts.map((p,i)=>{
+      const sg=multiPuttSg({r,h,p,pi:i});
+      const meta=[multiPuttSlopeLabel(p?.slope),multiPuttBreakLabel(p?.break),puttResultLabel(p?.result)].filter(Boolean);
+      const d=Number(p?.distanceM);
+      return '<div class="multiShotCard"><div class="multiShotSeq">'+(shots.length+i+1)+'</div><div>'+
+        '<div class="multiShotTop"><strong>퍼트 '+(i+1)+' · Putter</strong><span>'+(Number.isFinite(d)?d.toFixed(1)+'m':'—')+'</span></div>'+
+        '<div class="multiShotRoute">GREEN → '+safeText(String(p?.result||'').toUpperCase()==='HOLED'?'HOLED':'GREEN')+'</div>'+
+        '<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>'+
+        '</div>'+multiShotSgBadge(sg)+'</div>';
+    })
+  ].join('');
+  return '<details class="multiShotHole" '+(open?'open':'')+'><summary><span>HOLE '+safeText(h?.hole??'—')+(Number.isFinite(par)?' · PAR '+par:'')+'</span><b>'+safeText(scoreText)+' · 샷 '+shots.length+' · 퍼트 '+putts.length+(penalty?' · 벌타 '+penalty:'')+'</b></summary>'+
+    '<div class="multiShotList">'+(cards||'<div class="analysisEmpty">저장된 샷이 없습니다.</div>')+'</div></details>';
+}
+function multiShotRoundDetailHtml(r,open=false){
+  const holes=(r?.holes||[]).filter(h=>(h?.shots||[]).length||(h?.puttsDetail||[]).length||h?.completed);
+  const score=resultScore(r),delta=resultToPar(r);
+  const scoreText=Number.isFinite(score)?('Score '+score+(Number.isFinite(delta)?' · '+(delta===0?'E':(delta>0?'+':'')+delta):'')):'Score —';
+  const course=[r?.course,r?.nine].filter(Boolean).join(' · ');
+  return '<details class="multiShotRound" '+(open?'open':'')+'><summary><span>'+safeText(resultDateLabel(r))+' · '+safeText(course||'코스 미확인')+'</span><b>'+safeText(scoreText)+'</b></summary>'+
+    '<div class="multiShotRoundBody">'+(holes.length?holes.map((h,i)=>multiShotHoleDetailHtml(r,h,i===0)).join(''):'<div class="analysisEmpty">저장된 홀 데이터가 없습니다.</div>')+'</div></details>';
+}
+function multiShotDetailHtml(rounds){
+  const ordered=[...(rounds||[])].sort((a,b)=>Number(b?.startedAt||0)-Number(a?.startedAt||0));
+  if(!ordered.length)return '<div class="analysisEmpty">선택한 라운드가 없습니다.</div>';
+  return '<div class="multiShotDetailIntro"><b>Hole → Shot 순서로 실제 저장 기록을 봅니다.</b><br>클럽 · 거리 · Lie 변화 · Target/결과 · 남은 거리 · SG를 저장된 값이 있을 때만 표시합니다. 기존 분석과 계산은 변경하지 않습니다.</div>'+
+    ordered.map((r,i)=>multiShotRoundDetailHtml(r,i===0)).join('');
+}
+
 function renderFullMultiAnalysis(rounds){
   const data=multiRows(rounds),{shots,putts,holes,states}=data;
+  if($('analysisShotDetail'))$('analysisShotDetail').innerHTML=multiShotDetailHtml(rounds);
   const scoreRows=rounds.map(r=>({score:resultScore(r),par:resultPar(r),delta:resultToPar(r)}));
   const scoreVals=scoreRows.map(x=>x.score).filter(Number.isFinite);
   let birdie=0,par=0,bogey=0,doublePlus=0,frontScore=0,frontPar=0,backScore=0,backPar=0;
@@ -4100,6 +4211,62 @@ function renderFullMultiAnalysis(rounds){
     multiTable(['위험 조건','샷','왼쪽 미스','오른쪽 미스','벌타 발생 홀','평균 획득타수'],Object.entries(riskGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[
       safeText(k),o.n,o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'
     ]));
+
+  const doglegRows=teeRows.map(x=>({...x,dogleg:multiDoglegData(x.s)})).filter(x=>x.dogleg);
+  const doglegDirections={},doglegAngles={},doglegTurns={},doglegClubs={};
+  doglegRows.forEach(x=>{
+    const d=x.dogleg,sg=multiShotSg({r:x.r,h:x.h,s:x.s,si:0});
+    const add=(bucket,key)=>{
+      const o=bucket[key]||(bucket[key]={n:0,fairway:0,left:0,right:0,penHoles:new Set(),sg:[]});
+      o.n++;
+      if(String(x.s.endLie||'').toUpperCase()==='FAIRWAY')o.fairway++;
+      if(String(x.s.direction||'').toUpperCase()==='LEFT')o.left++;
+      if(String(x.s.direction||'').toUpperCase()==='RIGHT')o.right++;
+      if(Number(x.h.penalties)>0)o.penHoles.add(x.r.id+'-'+x.h.hole);
+      if(Number.isFinite(sg))o.sg.push(sg);
+    };
+    add(doglegDirections,multiDoglegDirectionLabel(d.direction));
+    if(d.direction!=='STRAIGHT'){
+      const band=multiDoglegAngleBand(d.angleDeg);if(band)add(doglegAngles,band);
+      const turnBand=multiDoglegTurnBand(d.turnM,d.landingM);if(turnBand)add(doglegTurns,turnBand);
+    }
+    add(doglegClubs,multiDoglegDirectionLabel(d.direction)+' · '+safeText(x.s.club||'미확인'));
+  });
+  const doglegMetricRows=o=>[o.n,multiPct(o.fairway,o.n),o.left,o.right,o.penHoles.size,o.sg.length?multiSigned(o.sg.reduce((a,b)=>a+b,0)/o.sg.length):'—'];
+  const directionOrder=['RIGHT','LEFT','STRAIGHT'],angleOrder=['<15°','15–25°','25–35°','35°+'],turnOrder=['Turn 이전 >15m','Turn ±15m','Turn 이후 >15m'];
+  const doglegDetailRows=doglegRows.map(x=>{
+    const d=x.dogleg,sg=multiShotSg({r:x.r,h:x.h,s:x.s,si:0});
+    const turn=Number.isFinite(d.turnM)?Math.round(d.turnM)+'m':'—';
+    const landing=Number.isFinite(d.landingM)?Math.round(d.landingM)+'m':'—';
+    const delta=Number.isFinite(d.turnM)&&Number.isFinite(d.landingM)?Math.round(d.landingM-d.turnM):null;
+    return [
+      resultDateLabel(x.r),
+      safeText((x.r.course||'골프장')+' · '+(x.h.hole||'—')+'H'),
+      multiDoglegDirectionLabel(d.direction),
+      Number.isFinite(d.angleDeg)?d.angleDeg.toFixed(1)+'°':'—',
+      turn,
+      landing,
+      delta===null?'—':((delta>0?'+':'')+delta+'m'),
+      safeText(x.s.club||'미확인'),
+      safeText(lieDisplayLabel(x.s.endLie)),
+      safeText(dirLabel(x.s.direction)),
+      Number(x.h.penalties)>0?'예':'—',
+      Number.isFinite(sg)?multiSigned(sg):'—'
+    ];
+  });
+  $('analysisDogleg').innerHTML=
+    '<div class="analysisNote">Par 4·5 티샷만 사용합니다. Dogleg Angle과 Turn Point는 JGI Course Intelligence의 Derived Geometry이며, Angle Band는 비교용 구간이지 위험 기준이 아닙니다. 벌타는 현재 홀 단위 기록이라 ‘벌타 발생 홀’로 표시합니다.</div>'+
+    '<div class="sectionLabel">DOGLEG PERFORMANCE · 방향별</div>'+
+    multiTable(['코스 형태','티샷','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','Avg SG'],directionOrder.filter(k=>doglegDirections[k]).map(k=>[k,...doglegMetricRows(doglegDirections[k])]))+
+    '<div class="sectionLabel" style="margin-top:12px">Dogleg Angle · 분석용 구간</div>'+
+    multiTable(['각도','티샷','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','Avg SG'],angleOrder.filter(k=>doglegAngles[k]).map(k=>[k,...doglegMetricRows(doglegAngles[k])]))+
+    '<div class="sectionLabel" style="margin-top:12px">Turn Point vs 예상 Landing</div>'+
+    '<div class="analysisNote">예상 Landing은 샷 시작 시 저장된 Club Carry / Player Target 기반 착지 예상 거리입니다. 실제 Shot Distance와 동일한 값으로 간주하지 않습니다.</div>'+
+    multiTable(['Turn 관계','티샷','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','Avg SG'],turnOrder.filter(k=>doglegTurns[k]).map(k=>[k,...doglegMetricRows(doglegTurns[k])]))+
+    '<div class="sectionLabel" style="margin-top:12px">Dogleg × Club</div>'+
+    multiTable(['조건 · 클럽','티샷','페어웨이','왼쪽 미스','오른쪽 미스','벌타 발생 홀','Avg SG'],Object.entries(doglegClubs).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),...doglegMetricRows(o)]))+
+    '<div class="sectionLabel" style="margin-top:12px">Dogleg Shot Detail</div>'+
+    multiTable(['날짜','코스 · 홀','방향','각도','Turn','예상 Landing','Turn 대비','클럽','결과','Miss','벌타 홀','SG'],doglegDetailRows);
 
   const widthGroups={};
   teeRows.forEach(x=>{
@@ -5547,8 +5714,8 @@ function renderMultiPrimaryDetail(){
       '<div class="mentalImpactDetailLabel">상세 데이터 · 상태 × 실제 결과</div>'+
       ($('analysisState')?.innerHTML||'<div class="analysisEmpty">멘탈 데이터가 없습니다.</div>');return;
   }
-  title.textContent='코스 · 상황 분석';sub.textContent='위험요소 · 페어웨이 폭 · 타깃 선택과 결과를 함께 봅니다.';
-  host.innerHTML='<div class="sectionLabel">위험요소</div>'+($('analysisRisk')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">페어웨이 폭 · 착지구역</div>'+($('analysisWidth')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">타깃 선택</div>'+($('analysisDecision')?.innerHTML||'');
+  title.textContent='코스 · 상황 분석';sub.textContent='위험요소 · 도그렉 · 페어웨이 폭 · 타깃 선택과 실제 샷 결과를 함께 봅니다.';
+  host.innerHTML='<div class="sectionLabel">위험요소</div>'+($('analysisRisk')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">DOGLEG PERFORMANCE</div>'+($('analysisDogleg')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">페어웨이 폭 · 착지구역</div>'+($('analysisWidth')?.innerHTML||'')+'<div class="sectionLabel" style="margin-top:12px">타깃 선택</div>'+($('analysisDecision')?.innerHTML||'');
 }
 function multiSvgSeries(series,colors,labels,formatter=v=>v.toFixed(1),chartId){
   const all=series.flatMap(x=>x).filter(Number.isFinite);
