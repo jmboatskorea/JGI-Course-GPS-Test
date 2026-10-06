@@ -3297,14 +3297,21 @@ function targetZonePointForShot(h,start,clubCarryM,zone='CENTER',holePar=null){
 function inferZoneForPoint(h,point,holePar=null){
   const model=buildCourseIntelligenceModel(h,holePar);
   if(!model||!point)return 'CENTER';
-  const sec=nearestCenterSection(model,point);
-  if(!sec||!Number.isFinite(sec.widthM))return 'CENTER';
+
   const q=model.projector.toXY(point);
-  const c=q.x*model.v.x+q.y*model.v.y;
-  const t=(c-sec.rightC)/Math.max(sec.widthM,0.0001);
-  if(t>=2/3)return 'LEFT';
-  if(t<=1/3)return 'RIGHT';
-  return 'CENTER';
+  const station=q.x*model.u.x+q.y*model.u.y;
+  const cross=q.x*model.v.x+q.y*model.v.y;
+
+  let sec=null;
+  model.sections.forEach(s=>{
+    if(!sec||Math.abs(s.stationM-station)<Math.abs(sec.stationM-station))sec=s;
+  });
+  if(!sec||!Number.isFinite(sec.centerC))return 'CENTER';
+
+  // Visible white corridor is 15m wide: centerline +/-7.5m is CENTER.
+  const offsetM=cross-sec.centerC;
+  if(Math.abs(offsetM)<=7.5)return 'CENTER';
+  return offsetM>0?'LEFT':'RIGHT';
 }
 function showTargetSnapshot(target,startRef=null){
   if(!target?.lat||!target?.lng||!window.google?.maps)return;
