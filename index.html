@@ -1286,10 +1286,6 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstNextShot{min-width:0;height:58px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
 @media(max-width:390px){.mapFirstTop{left:10px;right:10px}.mapFirstShotPill{min-width:118px;height:49px;padding:0 14px;font-size:15px}.mapFirstLivePill{min-width:70px;height:49px;padding:0 12px;font-size:12px}.mapFirstGpsPill{min-width:82px;height:49px;padding:0 10px;font-size:12px}.mapFirstDistanceBubble{right:10px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
 @media(min-width:700px){body.round-active{padding:0!important}.mapFirstCockpit{border-radius:26px 26px 0 0}}
-.bottomnav{display:none!important}
-.app{padding-bottom:0!important}
-.liveHeadActions{display:flex;align-items:flex-start;gap:10px}
-.liveCloseBtn{width:36px;height:36px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(8,31,23,.82);color:#fff;font-size:22px;line-height:1;font-weight:800}
 </style>
 
 </head>
@@ -1842,7 +1838,7 @@ body.round-active #appTopbar{display:none!important}
     <section id="overviewScreen" class="screen hidden">
       <div class="liveHead">
         <div><div id="overviewEyebrow" class="eyebrow">JGI · 실시간 라운드 인텔리전스</div><h2 id="overviewTitle">실시간 라운드 리뷰</h2><div id="overviewCourse" class="sub"></div></div>
-        <div class="liveHeadActions"><div id="liveThrough" class="liveThrough">—번 홀까지</div><button id="liveBackToRound" class="liveCloseBtn" type="button" aria-label="라운드로 돌아가기">×</button></div>
+        <div id="liveThrough" class="liveThrough">—번 홀까지</div>
       </div>
 
       <div class="card"><div id="scoreBig" class="scoreBig">—<small>완료 홀</small></div></div>
@@ -6572,7 +6568,7 @@ function showScreen(name){
   if(name!=='overview'&&reviewSatelliteActive)restoreGoogleMapHome();
   ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
   document.body.classList.toggle('round-active',name==='round');
-  $('bottomnav').classList.add('hidden');
+  if(['setup','round','results'].includes(name))$('bottomnav').classList.add('hidden'); else $('bottomnav').classList.remove('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
   if(name==='results')renderRoundResultsSearch();
@@ -9031,7 +9027,6 @@ function mapFirstNextAction(){
 }
 function closeMapFirstMenus(except=null){['mapFirstShotMenu','mapFirstHoleMenu'].forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')})}
 $('mapFirstLivePill').onclick=()=>showScreen('overview');
-$('liveBackToRound').onclick=()=>{if(historicalViewMode){exitHistoricalRound();return}showScreen('round')};
 $('mapFirstShotPill').onclick=e=>{e.stopPropagation();closeMapFirstMenus('mapFirstShotMenu');$('mapFirstShotMenu').classList.toggle('hidden')};
 $('mapFirstGpsPill').onclick=()=>startGPS();
 $('mapFirstShotMenu').onclick=e=>{
