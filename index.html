@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050807">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06110c">
 <title>JGI · AGI 플레이어 V1</title>
 <script src="runtime-config.js"></script>
 <style>
@@ -1252,11 +1255,12 @@ body.round-active .bottomnav{display:none!important}
 </style>
 
 <style id="mapFirstRoundDirectV1">
-body.round-active{overflow:hidden!important;background:#020906!important}
-body.round-active .app{height:100svh!important;min-height:100svh!important;padding-bottom:0!important;background:#020906!important;overflow:hidden!important}
+html:has(body.round-active),body.round-active{height:100%!important;min-height:100%!important;background:#06110c!important}
+body.round-active{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;overflow:hidden!important;overscroll-behavior:none!important}
+body.round-active .app{position:fixed!important;inset:0!important;width:100%!important;max-width:480px!important;margin:0 auto!important;height:100dvh!important;min-height:100dvh!important;padding:0!important;background:#06110c!important;overflow:hidden!important}
 body.round-active #appTopbar{display:none!important}
-#roundScreen.map-first-round{position:relative!important;width:100%!important;height:100svh!important;min-height:100svh!important;padding:0!important;overflow:hidden!important;background:#06110c!important;color:#fff!important}
-#roundScreen.map-first-round .roundMapStage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#07130e!important}
+#roundScreen.map-first-round{position:absolute!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;padding:0!important;overflow:hidden!important;background:#06110c!important;color:#fff!important}
+#roundScreen.map-first-round .roundMapStage{position:absolute!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#07130e!important}
 #roundScreen.map-first-round .google-map,#roundScreen.map-first-round .jgiCourseMap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
 #roundScreen.map-first-round .targetInfo,#roundScreen.map-first-round .legacyMapControls,#roundScreen.map-first-round .mapBottomStatus{display:none!important}
 #roundScreen .mapFirstLegacy{display:none!important}
