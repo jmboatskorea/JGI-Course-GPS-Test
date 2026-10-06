@@ -8950,7 +8950,7 @@ function syncMapFirstClub(){
     const recs=recommendedClubs(),idx=rows.findIndex(c=>c.name===recs?.[0]?.name);
     if(idx>=0)mapFirstSelectedClubIndex=idx;
   }
-  if(round?.pending?.club){
+  if(round?.pending?.club&&!round.pending.result){
     const idx=rows.findIndex(c=>c.name===round.pending.club);
     if(idx>=0)mapFirstSelectedClubIndex=idx;
   }
