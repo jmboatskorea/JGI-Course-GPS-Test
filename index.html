@@ -1261,6 +1261,7 @@ body.round-active #appTopbar{display:none!important}
 #roundScreen.map-first-round .targetInfo,#roundScreen.map-first-round .legacyMapControls,#roundScreen.map-first-round .mapBottomStatus{display:none!important}
 #roundScreen .mapFirstLegacy{display:none!important}
 .mapFirstTop{position:absolute;z-index:31;top:calc(12px + env(safe-area-inset-top));left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.mapFirstLivePill{position:absolute;left:50%;transform:translateX(-50%);min-width:78px;padding:0 16px;font-size:13px;letter-spacing:.08em;color:#8ff4ac;border-color:rgba(127,243,159,.34)!important}
 .mapFirstPill{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:rgba(2,18,12,.90);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.30);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:1000}
 .mapFirstShotPill{min-width:132px;padding:0 18px;font-size:17px;letter-spacing:.035em}.mapFirstShotPill .chev{font-size:17px;color:#d8e3dc}
 .mapFirstGpsPill{min-width:92px;padding:0 14px;font-size:14px}.gpsDot{width:10px;height:10px;border-radius:50%;background:#14d876;box-shadow:0 0 12px rgba(20,216,118,.45)}.mapFirstGpsPill.warn .gpsDot{background:#ffb844}.mapFirstGpsPill.bad .gpsDot{background:#ff6874}
@@ -1283,9 +1284,12 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstHoleSummary{min-width:0;border:0;background:transparent;color:#fff;text-align:left;padding:2px}.mapFirstHoleSummary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:18px;line-height:1.1;font-weight:1000;letter-spacing:-.03em}.mapFirstHoleSummary span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:#aab7b0;font-size:9px;font-weight:850}
 .mapFirstClubCarousel{display:block;min-width:0}.mapFirstClubArrow{display:none!important}.mapFirstClubTrack{position:relative;height:58px;min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(5,29,20,.88);overflow:hidden;cursor:pointer}.mapFirstClubTrack span{display:none!important}.mapFirstClubTrack strong{width:auto;height:auto;margin:0;padding:0 28px 0 10px;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fff;font-size:20px;line-height:1;font-weight:1000}.mapFirstClubTrack::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#c8d5ce;font-size:18px;font-weight:900}
 .mapFirstNextShot{min-width:0;height:58px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
-.mapFirstNav{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding-top:6px}.mapFirstNav button{height:50px;min-width:0;border:0;border-radius:14px;background:transparent;color:#8e9c94;padding:3px 1px;font-size:8px;font-weight:900}.mapFirstNav button b{display:block;margin-bottom:3px;color:inherit;font-size:18px;line-height:1}.mapFirstNav button.sel{background:rgba(255,168,0,.10);color:#ffae27}
-@media(max-width:390px){.mapFirstTop{left:10px;right:10px}.mapFirstShotPill{min-width:118px;height:49px;padding:0 14px;font-size:15px}.mapFirstGpsPill{min-width:82px;height:49px;padding:0 10px;font-size:12px}.mapFirstDistanceBubble{right:10px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}.mapFirstNav button{height:47px}}
+@media(max-width:390px){.mapFirstTop{left:10px;right:10px}.mapFirstShotPill{min-width:118px;height:49px;padding:0 14px;font-size:15px}.mapFirstLivePill{min-width:70px;height:49px;padding:0 12px;font-size:12px}.mapFirstGpsPill{min-width:82px;height:49px;padding:0 10px;font-size:12px}.mapFirstDistanceBubble{right:10px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
 @media(min-width:700px){body.round-active{padding:0!important}.mapFirstCockpit{border-radius:26px 26px 0 0}}
+.bottomnav{display:none!important}
+.app{padding-bottom:0!important}
+.liveHeadActions{display:flex;align-items:flex-start;gap:10px}
+.liveCloseBtn{width:36px;height:36px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(8,31,23,.82);color:#fff;font-size:22px;line-height:1;font-weight:800}
 </style>
 
 </head>
@@ -1437,6 +1441,7 @@ body.round-active #appTopbar{display:none!important}
         <button id="mapFirstShotPill" class="mapFirstPill mapFirstShotPill" type="button">
           <span id="mapFirstShotLabel">SHOT 1</span><span class="chev">⌄</span>
         </button>
+        <button id="mapFirstLivePill" class="mapFirstPill mapFirstLivePill" type="button">LIVE</button>
         <button id="mapFirstGpsPill" class="mapFirstPill mapFirstGpsPill" type="button">
           <span class="gpsDot"></span><span id="mapFirstGpsText">GPS</span>
         </button>
@@ -1521,13 +1526,6 @@ body.round-active #appTopbar{display:none!important}
           </button>
         </div>
 
-        <nav id="mapFirstNav" class="mapFirstNav" aria-label="JGI 주요 메뉴">
-          <button type="button" data-map-first-screen="round" class="sel"><b>⛳</b><span>라운드</span></button>
-          <button type="button" data-map-first-screen="overview"><b>▦</b><span>요약</span></button>
-          <button type="button" data-map-first-screen="performance"><b>◎</b><span>경기력</span></button>
-          <button type="button" data-map-first-screen="flo"><b>◉</b><span>멘탈</span></button>
-          <button type="button" data-map-first-screen="story"><b>✦</b><span>스토리</span></button>
-        </nav>
       </div>
 
       <div class="mapFirstLegacy" aria-hidden="true">
@@ -1844,7 +1842,7 @@ body.round-active #appTopbar{display:none!important}
     <section id="overviewScreen" class="screen hidden">
       <div class="liveHead">
         <div><div id="overviewEyebrow" class="eyebrow">JGI · 실시간 라운드 인텔리전스</div><h2 id="overviewTitle">실시간 라운드 리뷰</h2><div id="overviewCourse" class="sub"></div></div>
-        <div id="liveThrough" class="liveThrough">—번 홀까지</div>
+        <div class="liveHeadActions"><div id="liveThrough" class="liveThrough">—번 홀까지</div><button id="liveBackToRound" class="liveCloseBtn" type="button" aria-label="라운드로 돌아가기">×</button></div>
       </div>
 
       <div class="card"><div id="scoreBig" class="scoreBig">—<small>완료 홀</small></div></div>
@@ -6574,7 +6572,7 @@ function showScreen(name){
   if(name!=='overview'&&reviewSatelliteActive)restoreGoogleMapHome();
   ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
   document.body.classList.toggle('round-active',name==='round');
-  if(['setup','round','results'].includes(name))$('bottomnav').classList.add('hidden'); else $('bottomnav').classList.remove('hidden');
+  $('bottomnav').classList.add('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
   if(name==='results')renderRoundResultsSearch();
@@ -9032,6 +9030,8 @@ function mapFirstNextAction(){
   startShot(club);syncMapFirstUI();
 }
 function closeMapFirstMenus(except=null){['mapFirstShotMenu','mapFirstHoleMenu'].forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')})}
+$('mapFirstLivePill').onclick=()=>showScreen('overview');
+$('liveBackToRound').onclick=()=>{if(historicalViewMode){exitHistoricalRound();return}showScreen('round')};
 $('mapFirstShotPill').onclick=e=>{e.stopPropagation();closeMapFirstMenus('mapFirstShotMenu');$('mapFirstShotMenu').classList.toggle('hidden')};
 $('mapFirstGpsPill').onclick=()=>startGPS();
 $('mapFirstShotMenu').onclick=e=>{
@@ -9048,7 +9048,6 @@ $('mapFirstCancelShot').onclick=()=>$('cancelShotBtn').click();
 $('mapFirstClubPrev').onclick=()=>moveMapFirstClub(-1);
 $('mapFirstClubNext').onclick=()=>moveMapFirstClub(1);
 $('mapFirstNextShot').onclick=mapFirstNextAction;
-$('mapFirstNav').onclick=e=>{const b=e.target.closest('[data-map-first-screen]');if(b)showScreen(b.dataset.mapFirstScreen)};
 document.addEventListener('click',()=>closeMapFirstMenus());
 $('mapFirstClubTrack').onclick=()=>{
   if(round?.pending&&!round.pending.result)return;
