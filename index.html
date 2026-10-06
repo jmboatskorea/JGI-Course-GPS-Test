@@ -1276,7 +1276,7 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstQuickActions button{min-width:0;height:46px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
 .mapFirstQuickActions button.active{border-color:#25d982;background:rgba(15,103,65,.88);color:#fff;box-shadow:0 0 0 2px rgba(37,217,130,.16)}
-.mapFirstPendingActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.10)}
+.mapFirstPendingActions{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstPendingActions.hidden{display:none!important}
 .mapFirstPendingActions button{height:44px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(8,31,23,.88);color:#fff;font-size:12px;font-weight:950}
 .mapFirstPendingActions button.danger{border-color:rgba(255,104,116,.34);background:rgba(91,24,31,.68);color:#ffc3c9}
@@ -1286,6 +1286,104 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstNextShot{min-width:0;height:58px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
 @media(max-width:390px){.mapFirstTop{left:10px;right:10px}.mapFirstShotPill{min-width:118px;height:49px;padding:0 14px;font-size:15px}.mapFirstLivePill{min-width:70px;height:49px;padding:0 12px;font-size:12px}.mapFirstGpsPill{min-width:82px;height:49px;padding:0 10px;font-size:12px}.mapFirstDistanceBubble{right:10px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
 @media(min-width:700px){body.round-active{padding:0!important}.mapFirstCockpit{border-radius:26px 26px 0 0}}
+
+/* ===== FIELD DAYLIGHT MODE · ROUND INPUT ONLY ===== */
+body.round-active{background:#f4f5f2!important}
+body.round-active #roundScreen.map-first-round{color:#111!important}
+body.round-active .mapFirstPill{
+  background:rgba(255,255,255,.96)!important;color:#111!important;
+  border-color:#bfc5c1!important;box-shadow:0 8px 24px rgba(0,0,0,.18)!important
+}
+body.round-active .mapFirstShotPill .chev{color:#333!important}
+body.round-active .mapFirstLivePill{color:#08783d!important;border-color:#8bbca0!important}
+body.round-active .mapFirstShotMenu,
+body.round-active .mapFirstHoleMenu{
+  background:rgba(255,255,255,.98)!important;border-color:#bfc5c1!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.22)!important
+}
+body.round-active .mapFirstShotMenu button,
+body.round-active .mapFirstHoleMenu button{
+  background:#f6f7f5!important;color:#111!important;border-color:#c9cecb!important
+}
+body.round-active .mapFirstShotMenu button.danger{color:#b51f2d!important;border-color:#db9ca3!important}
+body.round-active .mapFirstHoleMenu button.sel{background:#111!important;color:#fff!important;border-color:#111!important}
+body.round-active .mapFirstDistanceBubble{
+  background:rgba(255,255,255,.96)!important;color:#111!important;border-color:#bfc5c1!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)!important
+}
+body.round-active .mapFirstDistanceBubble span{color:#4b5560!important}
+body.round-active .mapFirstCockpit{
+  background:rgba(255,255,255,.985)!important;border-top-color:#c8cdca!important;
+  box-shadow:0 -14px 38px rgba(0,0,0,.22)!important
+}
+body.round-active .mapFirstQuickActions,
+body.round-active .mapFirstPendingActions,
+body.round-active .mapFirstMainRow{border-color:#d8dcda!important}
+body.round-active .mapFirstQuickActions button,
+body.round-active .mapFirstPendingActions button{
+  background:#f5f6f4!important;color:#111!important;border-color:#c7ccca!important
+}
+body.round-active .mapFirstQuickActions button.active{
+  background:#08783d!important;color:#fff!important;border-color:#08783d!important
+}
+body.round-active .mapFirstPendingActions button.danger{
+  background:#fff4f4!important;color:#b51f2d!important;border-color:#dca1a6!important
+}
+body.round-active .mapFirstHoleSummary{color:#111!important}
+body.round-active .mapFirstHoleSummary span{color:#58615c!important}
+body.round-active .mapFirstClubTrack{
+  background:#fff!important;color:#111!important;border-color:#aeb5b1!important
+}
+body.round-active .mapFirstClubTrack strong{color:#111!important}
+body.round-active .mapFirstClubTrack::after{color:#333!important}
+body.round-active .mapFirstNextShot{
+  background:linear-gradient(90deg,#0b8f49,#0abf62)!important;color:#fff!important;
+  box-shadow:0 8px 20px rgba(11,143,73,.18)!important
+}
+body.round-active .mapFirstNextShot.pending{
+  background:linear-gradient(90deg,#f0a02d,#ffc14f)!important;color:#171006!important
+}
+body.round-active .modal{background:rgba(245,247,244,.78)!important}
+body.round-active .modal .sheet{
+  background:#fff!important;color:#111!important;border-color:#b9bfbc!important;
+  box-shadow:0 -18px 48px rgba(0,0,0,.20)!important
+}
+body.round-active .modal .sheet .sub,
+body.round-active .modal .sheet .helper,
+body.round-active .modal .sheet small,
+body.round-active .modal .sheet .dataNote{color:#555f59!important}
+body.round-active .modal .sheet .x{
+  background:#f3f4f2!important;color:#111!important;border-color:#bfc5c1!important
+}
+body.round-active .modal .sheet .choice button,
+body.round-active .modal .sheet .scale button,
+body.round-active .modal .sheet .positionChoice button,
+body.round-active .modal .sheet .allClubBtn,
+body.round-active .modal .sheet .puttResultChoice button,
+body.round-active .modal .sheet .puttStepBtn{
+  background:#fff!important;color:#111!important;border-color:#aeb5b1!important
+}
+body.round-active .modal .sheet .choice button.sel,
+body.round-active .modal .sheet .scale button.sel,
+body.round-active .modal .sheet .positionChoice button.sel{
+  background:#111!important;color:#fff!important;border-color:#111!important
+}
+body.round-active .modal .sheet input,
+body.round-active .modal .sheet textarea{
+  background:#fff!important;color:#111!important;border-color:#aeb5b1!important
+}
+body.round-active .modal .sheet .btn.ghost{
+  background:#fff!important;color:#111!important;border-color:#9ea6a1!important
+}
+body.round-active .modal .sheet .btn.primary{
+  background:#08783d!important;color:#fff!important;border-color:#08783d!important
+}
+body.round-active .modal .sheet .stateQuestion,
+body.round-active .modal .sheet .stateConditional,
+body.round-active .modal .sheet .positionModeNote,
+body.round-active .modal .sheet .puttHistoryRow{
+  background:#f6f7f5!important;color:#111!important;border-color:#cdd2cf!important
+}
 </style>
 
 </head>
@@ -1499,6 +1597,7 @@ body.round-active #appTopbar{display:none!important}
         <div id="mapFirstPendingActions" class="mapFirstPendingActions hidden">
           <button id="mapFirstChangeClub" type="button">클럽 변경</button>
           <button id="mapFirstCancelShot" class="danger" type="button">샷 취소</button>
+          <button id="mapFirstEditResult" class="hidden" type="button">결과 수정</button>
         </div>
 
         <div class="mapFirstMainRow">
@@ -2087,7 +2186,8 @@ body.round-active #appTopbar{display:none!important}
     <div class="sectionLabel" id="depthSectionLabel">목표 거리 결과</div>
     <div id="depthChoice" class="choice resultChoice three"></div>
 
-    <button id="saveShotResultBtn" class="btn primary full" style="margin-top:14px">샷 결과 저장</button>
+    <button id="shotStateBtn" class="btn ghost full" style="margin-top:14px">멘탈 상태 (선택)</button>
+    <button id="saveShotResultBtn" class="btn primary full" style="margin-top:8px">샷 결과 저장</button>
   </div>
 </div>
 
@@ -2232,7 +2332,7 @@ body.round-active #appTopbar{display:none!important}
         <button data-v="REMAIN_2">↔<span>남음 0.5–2m</span></button><button data-v="REMAIN_LONG">↔<span>남음 2m 이상</span></button>
         <button data-v="LONG">↑<span>OVER</span></button><button data-v="SHORT">↓<span>SHORT</span></button>
       </div>
-      <div class="puttActions"><button id="puttStateBtn" class="btn ghost">메모 / 상태 (선택)</button><button id="savePuttBtn" class="btn primary">퍼트 저장</button></div>
+      <div class="puttActions"><button id="puttStateBtn" class="btn ghost">멘탈 상태 (선택)</button><button id="savePuttBtn" class="btn primary">퍼트 저장</button></div>
     </div>
     <div class="puttActions"><button id="puttBack" class="btn ghost hidden">이전</button><button id="puttNext" class="btn primary">결과 입력</button></div>
     <div id="puttHistory" class="puttHistory"></div>
@@ -3446,6 +3546,7 @@ function openShotResult(){
   if(!round?.pending)return;
   resetShotResult(round.pending.result||null);
   $('shotResultLabel').textContent='SHOT '+((hole().shots?.length||0)+1)+' · '+round.currentHole+'번 홀 · '+round.pending.club+' · '+intentLabel(shotResultDraft.shotIntent);
+  if($('shotStateBtn'))$('shotStateBtn').textContent=round.pending.playerState?'멘탈 상태 ✓':'멘탈 상태 (선택)';
   $('shotResultModal').classList.remove('hidden');
 }
 function normalizeCollectionLevel(v){
@@ -8568,6 +8669,7 @@ $('askJgiQuick').onclick=e=>{
 
 $('shotResultBtn').onclick=openShotResult;
 $('shotResultClose').onclick=()=>{$('shotResultModal').classList.add('hidden')};
+$('shotStateBtn').onclick=()=>openStateCheck('shot',false,'플레이어 선택 입력',null,'MANUAL');
 
 $('shotIntentChoice').onclick=e=>{
   if(!e.target.closest('button')?.dataset.v)return;
@@ -8689,6 +8791,8 @@ $('saveFloBtn').onclick=()=>{
   }else{
     round.stateSamplingEvents.push({id:'se'+Date.now()+Math.random().toString(36).slice(2,6),samplingVersion:STATE_SAMPLING_VERSION,collectionLevel:round.stateCollectionLevel,group:group||'OTHER',hole:round.currentHole,roundPhase:roundPhaseForHole(round.currentHole),type:stateContext.type,promptSource:'MANUAL',reason:stateContext.reason||'플레이어 선택 입력',requested:false,completed:true,completedAt:Date.now(),skipped:false,reallocated:false,metadata:sampling});
   }
+  if(stateContext.type==='putting'&&$('puttStateBtn'))$('puttStateBtn').textContent='멘탈 상태 ✓';
+  if(stateContext.type==='shot'&&$('shotStateBtn'))$('shotStateBtn').textContent='멘탈 상태 ✓';
   save();$('floModal').classList.add('hidden');
   const after=stateContext.after;stateContext={type:'shot',required:false,reason:'',after:null,promptSource:'MANUAL',samplingGroup:null,samplingEventId:null};
   if(after)after();else renderRound();
@@ -8825,6 +8929,7 @@ $('puttNext').onclick=()=>{
 $('puttBack').onclick=()=>showPuttStep('start');
 function resetPuttDraft(){
   puttDraft={distanceM:null,slope:null,break:null,result:null,playerState:null};
+  if($('puttStateBtn'))$('puttStateBtn').textContent='멘탈 상태 (선택)';
   $('puttDistanceInput').value='';
   puttGreenUI={step:'start',pin:{x:180,y:180},ball:null,radiusM:5,rangeMode:'SHORT',relativeSide:null,relativeDepth:null};
   ['puttSlope','puttBreak','puttResult'].forEach(id=>setSelected($(id),'__'));
@@ -8847,6 +8952,7 @@ function openPuttEdit(index){
   puttGreenUI={step:'start',pin:{x:180,y:180},ball:{x:180,y:180+Math.min(140,Number(p.distanceM)/editRadius*140)},radiusM:editRadius,rangeMode:editLong?'LONG':'SHORT',relativeSide:p.relativeSide||'CENTER',relativeDepth:p.relativeDepth||'SHORT'};
   showPuttStep('start');
   $('savePuttBtn').textContent='퍼트 수정 저장';
+  if($('puttStateBtn'))$('puttStateBtn').textContent=puttDraft.playerState?'멘탈 상태 ✓':'멘탈 상태 (선택)';
   $('puttModal').classList.remove('hidden');
   renderPuttHistory();
   $('puttTitle').textContent='퍼트 #'+(index+1)+' 수정';
@@ -9009,9 +9115,15 @@ function syncMapFirstUI(){
   if(gps){$('mapFirstGpsText').textContent='±'+Math.round(gps.accuracy)+'m';if(Number(gps.accuracy)>15)gp.classList.add('warn')}
   else{$('mapFirstGpsText').textContent='GPS';gp.classList.add('bad')}
   const pending=round.pending;
-  $('mapFirstNextShot').classList.toggle('pending',!!pending&&!pending.result);
-  $('mapFirstNextText').textContent=pending&&!pending.result?'샷 완료':'다음 샷으로';
+  const awaitingResult=!!pending&&!pending.result;
+  const resultSaved=!!pending&&!!pending.result;
+  const onGreen=resultSaved&&String(pending.result.endLie||'').toUpperCase()==='GREEN';
+  $('mapFirstNextShot').classList.toggle('pending',awaitingResult);
+  $('mapFirstNextText').textContent=awaitingResult?'샷 완료':(onGreen?'퍼팅 입력':'다음 샷으로');
   $('mapFirstPendingActions')?.classList.toggle('hidden',!pending);
+  $('mapFirstChangeClub')?.classList.toggle('hidden',!awaitingResult);
+  $('mapFirstCancelShot')?.classList.toggle('hidden',!awaitingResult);
+  $('mapFirstEditResult')?.classList.toggle('hidden',!resultSaved);
   $('mapFirstDrop').disabled=false;
   if(!dropMode&&$('mapFirstDrop')){
     $('mapFirstDrop').classList.remove('active');
@@ -9022,6 +9134,7 @@ function syncMapFirstUI(){
 function mapFirstNextAction(){
   const club=mapFirstSelectedClub();
   if(round?.pending&&!round.pending.result){openShotResult();return}
+  if(round?.pending?.result&&String(round.pending.result.endLie||'').toUpperCase()==='GREEN'){openPutt();return}
   if(club==='Putter'){openPutt();return}
   startShot(club);syncMapFirstUI();
 }
@@ -9040,6 +9153,7 @@ $('mapFirstCenter').onclick=()=>recenterMap();
 $('mapFirstDrop').onclick=()=>activateDropForStart();
 $('mapFirstChangeClub').onclick=()=>$('changeClubBtn').click();
 $('mapFirstCancelShot').onclick=()=>$('cancelShotBtn').click();
+$('mapFirstEditResult').onclick=()=>$('shotResultBtn').click();
 $('mapFirstClubPrev').onclick=()=>moveMapFirstClub(-1);
 $('mapFirstClubNext').onclick=()=>moveMapFirstClub(1);
 $('mapFirstNextShot').onclick=mapFirstNextAction;
