@@ -1268,12 +1268,14 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstLivePill{position:static;transform:none;min-width:0;padding:0 8px;font-size:11px;letter-spacing:.07em;color:#8ff4ac;border-color:rgba(127,243,159,.34)!important}
 .mapFirstPill{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:44px;min-width:0;border:1px solid rgba(255,255,255,.18);border-radius:17px;background:rgba(2,18,12,.90);color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.24);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:1000}
 .mapFirstShotPill{min-width:0;padding:0 10px;font-size:15px;letter-spacing:.025em}.mapFirstShotPill .chev{font-size:13px;color:#d8e3dc}
-.mapFirstGpsPill{min-width:0;width:44px;padding:0;font-size:0}.mapFirstGpsPill #mapFirstGpsText{display:none!important}.gpsDot{width:10px;height:10px;border-radius:50%;background:#14d876;box-shadow:0 0 10px rgba(20,216,118,.42)}.mapFirstGpsPill.warn .gpsDot{background:#ffb844}.mapFirstGpsPill.bad .gpsDot{background:#ff6874}
-.mapFirstShotMenu,.mapFirstHoleMenu{position:absolute;z-index:38;pointer-events:auto;border:1px solid rgba(255,255,255,.14);background:rgba(3,18,12,.97);box-shadow:0 18px 42px rgba(0,0,0,.40);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.mapFirstGpsPill{min-width:0;width:44px;padding:0;font-size:0}.mapFirstGpsPill #mapFirstGpsText{display:none!important}.gpsMenuChev{display:block;margin-left:2px;color:#d8e3dc;font-size:11px;font-weight:1000;line-height:1}.gpsDot{width:10px;height:10px;border-radius:50%;background:#14d876;box-shadow:0 0 10px rgba(20,216,118,.42)}.mapFirstGpsPill.warn .gpsDot{background:#ffb844}.mapFirstGpsPill.bad .gpsDot{background:#ff6874}
+.mapFirstShotMenu,.mapFirstHoleMenu,.mapFirstGpsMenu{position:absolute;z-index:38;pointer-events:auto;border:1px solid rgba(255,255,255,.14);background:rgba(3,18,12,.97);box-shadow:0 18px 42px rgba(0,0,0,.40);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .mapFirstShotMenu{top:calc(72px + env(safe-area-inset-top));left:14px;width:214px;padding:8px;border-radius:18px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.mapFirstShotMenu button,.mapFirstHoleMenu button{min-height:42px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#092016;color:#edf5f0;font-size:11px;font-weight:950}.mapFirstShotMenu button.danger{color:#ff9da5;border-color:rgba(255,104,116,.30)}
-.mapFirstHoleMenu{left:14px;right:14px;bottom:204px;padding:9px;border-radius:18px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.mapFirstHoleMenu button.sel{background:#0bad60;border-color:#27da82}
-.mapFirstShotMenu.hidden,.mapFirstHoleMenu.hidden{display:none!important}
+.mapFirstGpsMenu{top:calc(72px + env(safe-area-inset-top));right:10px;width:150px;padding:8px;border-radius:16px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mapFirstShotMenu button,.mapFirstHoleMenu button,.mapFirstGpsMenu button{min-height:42px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#092016;color:#edf5f0;font-size:11px;font-weight:950}.mapFirstShotMenu button.danger{color:#ff9da5;border-color:rgba(255,104,116,.30)}
+.mapFirstGpsMenu button.sel{background:#0bad60;border-color:#27da82}
+.mapFirstHoleMenu{left:14px;right:14px;bottom:204px;padding:9px;border-radius:18px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.mapFirstHoleMenu button.sel{background:#0bad60;border-color:#27da82}.mapFirstHoleMenu button:disabled{opacity:.32}.mapFirstHoleEditAction{grid-column:1/-1!important;border-color:rgba(255,184,68,.45)!important;color:#ffd36e!important}.mapFirstHoleEditHint{grid-column:1/-1;text-align:center;color:#b8c7be;font-size:10px;font-weight:900;padding:3px 0 2px}
+.mapFirstShotMenu.hidden,.mapFirstHoleMenu.hidden,.mapFirstGpsMenu.hidden{display:none!important}
 .mapFirstDistanceBubble{position:static;z-index:auto;transform:none;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.15);border-radius:17px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.24);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
 .mapFirstDistanceBubble.hidden{visibility:hidden!important;display:flex!important}.mapFirstDistanceBubble strong{font-size:18px;line-height:1}.mapFirstDistanceBubble span{margin-left:3px;color:#b3beb7;font-size:9px;font-weight:900}
 .mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:8px 12px calc(5px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
@@ -1301,16 +1303,22 @@ body.round-active .mapFirstPill{
 body.round-active .mapFirstShotPill .chev{color:#333!important}
 body.round-active .mapFirstLivePill{color:#08783d!important;border-color:#8bbca0!important}
 body.round-active .mapFirstShotMenu,
-body.round-active .mapFirstHoleMenu{
+body.round-active .mapFirstHoleMenu,
+body.round-active .mapFirstGpsMenu{
   background:rgba(255,255,255,.98)!important;border-color:#bfc5c1!important;
   box-shadow:0 18px 42px rgba(0,0,0,.22)!important
 }
 body.round-active .mapFirstShotMenu button,
-body.round-active .mapFirstHoleMenu button{
+body.round-active .mapFirstHoleMenu button,
+body.round-active .mapFirstGpsMenu button{
   background:#f6f7f5!important;color:#111!important;border-color:#c9cecb!important
 }
 body.round-active .mapFirstShotMenu button.danger{color:#b51f2d!important;border-color:#db9ca3!important}
-body.round-active .mapFirstHoleMenu button.sel{background:#111!important;color:#fff!important;border-color:#111!important}
+body.round-active .mapFirstHoleMenu button.sel,
+body.round-active .mapFirstGpsMenu button.sel{background:#111!important;color:#fff!important;border-color:#111!important}
+body.round-active .mapFirstHoleEditAction{color:#9a5a00!important;border-color:#d8b16f!important}
+body.round-active .mapFirstHoleEditHint{color:#58615c!important}
+body.round-active .gpsMenuChev{color:#333!important}
 body.round-active .mapFirstDistanceBubble{
   background:rgba(255,255,255,.96)!important;color:#111!important;border-color:#bfc5c1!important;
   box-shadow:0 8px 24px rgba(0,0,0,.18)!important
@@ -1543,17 +1551,19 @@ body.round-active .modal .sheet .puttHistoryRow{
           <strong id="mapFirstDistanceValue">—</strong><span>m</span>
         </div>
         <button id="mapFirstLivePill" class="mapFirstPill mapFirstLivePill" type="button">LIVE</button>
-        <button id="mapFirstGpsPill" class="mapFirstPill mapFirstGpsPill" type="button" aria-label="GPS 상태">
-          <span class="gpsDot"></span><span id="mapFirstGpsText">GPS</span>
+        <button id="mapFirstGpsPill" class="mapFirstPill mapFirstGpsPill" type="button" aria-label="GPS 및 지도 보기">
+          <span class="gpsDot"></span><span id="mapFirstGpsText">GPS</span><span class="gpsMenuChev">⌄</span>
         </button>
       </div>
 
       <div id="mapFirstShotMenu" class="mapFirstShotMenu hidden">
         <button type="button" data-map-first-action="start">시작 위치</button>
-        <button type="button" data-map-first-action="sat">위성</button>
-        <button type="button" data-map-first-action="jgi">JGI</button>
-        <button type="button" data-map-first-action="report">리포트</button>
         <button type="button" data-map-first-action="end" class="danger">라운드 종료</button>
+      </div>
+
+      <div id="mapFirstGpsMenu" class="mapFirstGpsMenu hidden">
+        <button type="button" data-map-view-quick="SAT">위성</button>
+        <button type="button" data-map-view-quick="JGI">JGI</button>
       </div>
 
       <div id="mapFirstHoleMenu" class="mapFirstHoleMenu hidden"></div>
@@ -9230,13 +9240,58 @@ function updateMapFirstGreenMarker(){
     mapFirstGreenMarker=new google.maps.Marker({map:googleMap,position:pos,title:'Green reference',clickable:false,zIndex:58,icon:{url:mapFirstGreenIcon(),scaledSize:new google.maps.Size(44,54),anchor:new google.maps.Point(22,52)}});
   }else{mapFirstGreenMarker.setMap(googleMap);mapFirstGreenMarker.setPosition(pos)}
 }
+let mapFirstHoleEditMode=false;
+function editLastInputForHole(holeNo){
+  if(!round)return false;
+  if(round.pending){alert('현재 진행 중인 샷을 먼저 완료하세요.');return false}
+  const target=round.holes?.[Number(holeNo)-1];
+  const hasInput=!!target&&((target.shots||[]).length||(target.puttsDetail||[]).length||(target.penaltyEvents||[]).length);
+  if(!hasInput){alert('이 홀에는 수정할 입력이 없습니다.');return false}
+  const returnHole=Number(round.currentHole);
+  round.currentHole=Number(holeNo);currentLie='Unknown';startPositionOverride=null;clearManualPosition();clearTarget();
+  undoReturnHole=returnHole!==Number(holeNo)?returnHole:null;
+  save();renderRound();renderCourseHole();
+
+  if((target.puttsDetail||[]).length){
+    openPuttEdit(target.puttsDetail.length-1);
+    return true;
+  }
+  if((target.shots||[]).length){
+    const shot=target.shots.pop();
+    restoreFinalizedShotAsPending(shot);
+    return true;
+  }
+  if((target.penaltyEvents||[]).length){
+    const p=target.penaltyEvents.pop();
+    target.penalties=Math.max(0,(target.penalties||0)-(p.strokes||1));
+    target.completed=false;target.completedAt=null;target.review=null;target.achievement=null;
+    save();renderRound();
+    alert('마지막 페널티 입력을 취소했습니다. 필요하면 페널티 추가에서 다시 입력하세요.');
+    if(Number.isFinite(returnHole)&&returnHole!==Number(holeNo)){round.currentHole=returnHole;currentLie='Unknown';save();renderRound();renderCourseHole()}
+    return true;
+  }
+  return false;
+}
 function buildMapFirstHoleMenu(){
   const menu=$('mapFirstHoleMenu');if(!menu||!round)return;menu.innerHTML='';
+  if(mapFirstHoleEditMode){
+    const hint=document.createElement('div');hint.className='mapFirstHoleEditHint';hint.textContent='수정할 홀을 선택하세요';menu.appendChild(hint);
+  }
   for(let i=1;i<=18;i++){
+    const h=round.holes?.[i-1];
+    const hasInput=!!h&&((h.shots||[]).length||(h.puttsDetail||[]).length||(h.penaltyEvents||[]).length);
     const b=document.createElement('button');b.type='button';b.textContent=String(i);b.dataset.hole=String(i);b.classList.toggle('sel',i===Number(round.currentHole));
-    b.onclick=()=>{const src=document.querySelector('#holebar [data-hole="'+i+'"]');if(src)src.click();menu.classList.add('hidden')};
+    if(mapFirstHoleEditMode){
+      b.disabled=!hasInput;
+      b.onclick=()=>{mapFirstHoleEditMode=false;menu.classList.add('hidden');editLastInputForHole(i)};
+    }else{
+      b.onclick=()=>{const src=document.querySelector('#holebar [data-hole="'+i+'"]');if(src)src.click();menu.classList.add('hidden')};
+    }
     menu.appendChild(b);
   }
+  const edit=document.createElement('button');edit.type='button';edit.className='mapFirstHoleEditAction';edit.textContent=mapFirstHoleEditMode?'수정 취소':'홀 수정';
+  edit.onclick=e=>{e.stopPropagation();if(round.pending){alert('현재 진행 중인 샷을 먼저 완료하세요.');return}mapFirstHoleEditMode=!mapFirstHoleEditMode;buildMapFirstHoleMenu()};
+  menu.appendChild(edit);
 }
 function syncMapFirstUI(){
   if(!$('mapFirstShotLabel')||!round)return;
@@ -9272,16 +9327,21 @@ function mapFirstNextAction(){
   if(club==='Putter'){openPutt();return}
   startShot(club);syncMapFirstUI();
 }
-function closeMapFirstMenus(except=null){['mapFirstShotMenu','mapFirstHoleMenu'].forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')})}
+function closeMapFirstMenus(except=null){['mapFirstShotMenu','mapFirstHoleMenu','mapFirstGpsMenu'].forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')})}
 $('mapFirstLivePill').onclick=()=>showScreen('overview');
 $('mapFirstShotPill').onclick=e=>{e.stopPropagation();closeMapFirstMenus('mapFirstShotMenu');$('mapFirstShotMenu').classList.toggle('hidden')};
-$('mapFirstGpsPill').onclick=()=>startGPS();
+$('mapFirstGpsPill').onclick=e=>{e.stopPropagation();if(!gps)startGPS();closeMapFirstMenus('mapFirstGpsMenu');$('mapFirstGpsMenu').classList.toggle('hidden');$('mapFirstGpsMenu').querySelectorAll('[data-map-view-quick]').forEach(b=>b.classList.toggle('sel',b.dataset.mapViewQuick===mapViewMode))};
+$('mapFirstGpsMenu').onclick=e=>{
+  const b=e.target.closest('[data-map-view-quick]');if(!b)return;
+  setMapView(b.dataset.mapViewQuick);
+  $('mapFirstGpsMenu').classList.add('hidden');
+};
 $('mapFirstShotMenu').onclick=e=>{
   const b=e.target.closest('[data-map-first-action]');if(!b)return;const a=b.dataset.mapFirstAction;
-  if(a==='start')openStartPositionModal();if(a==='sat')setMapView('SAT');if(a==='jgi')setMapView('JGI');if(a==='report')$('reportBtn').click();if(a==='end')$('endRoundBtn').click();
+  if(a==='start')openStartPositionModal();if(a==='end')$('endRoundBtn').click();
   $('mapFirstShotMenu').classList.add('hidden');
 };
-$('mapFirstHoleSummary').onclick=e=>{e.stopPropagation();closeMapFirstMenus('mapFirstHoleMenu');buildMapFirstHoleMenu();$('mapFirstHoleMenu').classList.toggle('hidden')};
+$('mapFirstHoleSummary').onclick=e=>{e.stopPropagation();mapFirstHoleEditMode=false;closeMapFirstMenus('mapFirstHoleMenu');buildMapFirstHoleMenu();$('mapFirstHoleMenu').classList.toggle('hidden')};
 $('mapFirstPenalty').onclick=()=>$('penaltyBtn').click();
 $('mapFirstCenter').onclick=()=>recenterMap();
 $('mapFirstDrop').onclick=()=>activateDropForStart();
