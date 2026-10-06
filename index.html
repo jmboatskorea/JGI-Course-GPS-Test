@@ -2803,7 +2803,7 @@ function fitCurrentHole(useHeading=true){
     const center=(h.t&&h.g)
       ? {lat:(h.t[0]+h.g[0])/2,lng:(h.t[1]+h.g[1])/2}
       : bounds.getCenter();
-    const focusZoom=Math.min(19,baseZoom+0.45);
+    const focusZoom=Math.min(19,baseZoom+0.25);
     try{
       if(typeof googleMap.moveCamera==='function'){
         googleMap.moveCamera({center,zoom:focusZoom,heading,tilt:0});
