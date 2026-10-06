@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050807">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06110c">
 <title>JGI · AGI 플레이어 V1</title>
 <script src="runtime-config.js"></script>
 <style>
@@ -1252,11 +1255,12 @@ body.round-active .bottomnav{display:none!important}
 </style>
 
 <style id="mapFirstRoundDirectV1">
-body.round-active{overflow:hidden!important;background:#020906!important}
-body.round-active .app{height:100svh!important;min-height:100svh!important;padding-bottom:0!important;background:#020906!important;overflow:hidden!important}
+html:has(body.round-active),body.round-active{height:100%!important;min-height:100%!important;background:#06110c!important}
+body.round-active{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;overflow:hidden!important;overscroll-behavior:none!important}
+body.round-active .app{position:fixed!important;inset:0!important;width:100%!important;max-width:480px!important;margin:0 auto!important;height:100dvh!important;min-height:100dvh!important;padding:0!important;background:#06110c!important;overflow:hidden!important}
 body.round-active #appTopbar{display:none!important}
-#roundScreen.map-first-round{position:relative!important;width:100%!important;height:100svh!important;min-height:100svh!important;padding:0!important;overflow:hidden!important;background:#06110c!important;color:#fff!important}
-#roundScreen.map-first-round .roundMapStage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#07130e!important}
+#roundScreen.map-first-round{position:absolute!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;padding:0!important;overflow:hidden!important;background:#06110c!important;color:#fff!important}
+#roundScreen.map-first-round .roundMapStage{position:absolute!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#07130e!important}
 #roundScreen.map-first-round .google-map,#roundScreen.map-first-round .jgiCourseMap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
 #roundScreen.map-first-round .targetInfo,#roundScreen.map-first-round .legacyMapControls,#roundScreen.map-first-round .mapBottomStatus{display:none!important}
 #roundScreen .mapFirstLegacy{display:none!important}
@@ -1272,19 +1276,19 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstShotMenu.hidden,.mapFirstHoleMenu.hidden{display:none!important}
 .mapFirstDistanceBubble{position:static;z-index:auto;transform:none;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.15);border-radius:17px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.24);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
 .mapFirstDistanceBubble.hidden{visibility:hidden!important;display:flex!important}.mapFirstDistanceBubble strong{font-size:18px;line-height:1}.mapFirstDistanceBubble span{margin-left:3px;color:#b3beb7;font-size:9px;font-weight:900}
-.mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:10px 12px calc(7px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
-.mapFirstQuickActions button{min-width:0;height:46px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
+.mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:8px 12px calc(5px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.10)}
+.mapFirstQuickActions button{min-width:0;height:42px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
 .mapFirstQuickActions button.active{border-color:#25d982;background:rgba(15,103,65,.88);color:#fff;box-shadow:0 0 0 2px rgba(37,217,130,.16)}
 .mapFirstPendingActions{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstPendingActions.hidden{display:none!important}
 .mapFirstPendingActions button{height:44px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(8,31,23,.88);color:#fff;font-size:12px;font-weight:950}
 .mapFirstPendingActions button.danger{border-color:rgba(255,104,116,.34);background:rgba(91,24,31,.68);color:#ffc3c9}
-.mapFirstMainRow{display:grid;grid-template-columns:.78fr 1.28fr 1.22fr;gap:7px;align-items:center;min-height:68px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09)}
+.mapFirstMainRow{display:grid;grid-template-columns:.78fr 1.28fr 1.22fr;gap:7px;align-items:center;min-height:62px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.09)}
 .mapFirstHoleSummary{min-width:0;border:0;background:transparent;color:#fff;text-align:left;padding:2px}.mapFirstHoleSummary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:18px;line-height:1.1;font-weight:1000;letter-spacing:-.03em}.mapFirstHoleSummary span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:#aab7b0;font-size:9px;font-weight:850}
-.mapFirstClubCarousel{display:block;min-width:0}.mapFirstClubArrow{display:none!important}.mapFirstClubTrack{position:relative;height:58px;min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(5,29,20,.88);overflow:hidden;cursor:pointer}.mapFirstClubTrack span{display:none!important}.mapFirstClubTrack strong{width:auto;height:auto;margin:0;padding:0 28px 0 10px;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fff;font-size:20px;line-height:1;font-weight:1000}.mapFirstClubTrack::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#c8d5ce;font-size:18px;font-weight:900}
-.mapFirstNextShot{min-width:0;height:58px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
-@media(max-width:390px){.mapFirstTop{left:7px;right:7px;gap:4px;grid-template-columns:minmax(0,1.35fr) minmax(0,.78fr) minmax(0,.72fr) 40px}.mapFirstPill{height:40px;border-radius:15px}.mapFirstShotPill{padding:0 7px;font-size:13px}.mapFirstLivePill{padding:0 5px;font-size:10px}.mapFirstGpsPill{width:40px;padding:0}.mapFirstDistanceBubble{height:40px;border-radius:15px;padding:0 4px}.mapFirstDistanceBubble strong{font-size:16px}.mapFirstDistanceBubble span{font-size:8px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
+.mapFirstClubCarousel{display:block;min-width:0}.mapFirstClubArrow{display:none!important}.mapFirstClubTrack{position:relative;height:52px;min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(5,29,20,.88);overflow:hidden;cursor:pointer}.mapFirstClubTrack span{display:none!important}.mapFirstClubTrack strong{width:auto;height:auto;margin:0;padding:0 28px 0 10px;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fff;font-size:20px;line-height:1;font-weight:1000}.mapFirstClubTrack::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#c8d5ce;font-size:18px;font-weight:900}
+.mapFirstNextShot{min-width:0;height:52px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
+@media(max-width:390px){.mapFirstTop{left:7px;right:7px;gap:4px;grid-template-columns:minmax(0,1.35fr) minmax(0,.78fr) minmax(0,.72fr) 40px}.mapFirstPill{height:40px;border-radius:15px}.mapFirstShotPill{padding:0 7px;font-size:13px}.mapFirstLivePill{padding:0 5px;font-size:10px}.mapFirstGpsPill{width:40px;padding:0}.mapFirstDistanceBubble{height:40px;border-radius:15px;padding:0 4px}.mapFirstDistanceBubble strong{font-size:16px}.mapFirstDistanceBubble span{font-size:8px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:40px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:50px}.mapFirstNextShot{height:50px;font-size:12px}}
 @media(min-width:700px){body.round-active{padding:0!important}.mapFirstCockpit{border-radius:26px 26px 0 0}}
 
 /* ===== FIELD DAYLIGHT MODE · ROUND INPUT ONLY ===== */
@@ -2787,21 +2791,25 @@ function fitCurrentHole(useHeading=true){
   const source=boundary.length?boundary:shapes;
   const bounds=new google.maps.LatLngBounds();
   source.forEach(s=>s.path.forEach(p=>bounds.extend(p)));
+  if(h.t)bounds.extend({lat:h.t[0],lng:h.t[1]});
+  if(h.g)bounds.extend({lat:h.g[0],lng:h.g[1]});
   if(bounds.isEmpty())return;
 
-  googleMap.fitBounds(bounds,{top:54,right:24,bottom:88,left:24});
+  // Preview test: let the active hole occupy more of the screen, closer to a dedicated hole view.
+  googleMap.fitBounds(bounds,{top:34,right:12,bottom:54,left:12});
   google.maps.event.addListenerOnce(googleMap,'idle',()=>{
     const heading=courseAutoHeading&&useHeading?holeViewBearing(h):0;
     const baseZoom=googleMap.getZoom()||17;
     const center=(h.t&&h.g)
       ? {lat:(h.t[0]+h.g[0])/2,lng:(h.t[1]+h.g[1])/2}
       : bounds.getCenter();
+    const focusZoom=Math.min(19,baseZoom+0.25);
     try{
       if(typeof googleMap.moveCamera==='function'){
-        googleMap.moveCamera({center,zoom:Math.min(19,baseZoom+0.45),heading,tilt:0});
+        googleMap.moveCamera({center,zoom:focusZoom,heading,tilt:0});
       }else{
         googleMap.setCenter(center);
-        googleMap.setZoom(Math.min(19,baseZoom+0.45));
+        googleMap.setZoom(focusZoom);
         googleMap.setHeading(heading);
         googleMap.setTilt(0);
       }
@@ -3110,15 +3118,66 @@ function renderCenterCorridorOverlay(h){
   courseOverlays.push(band,centerLine);
 }
 
+function ringAreaLatLng(path){
+  if(!path?.length)return 0;
+  let area=0;
+  for(let i=0,j=path.length-1;i<path.length;j=i++){
+    const a=path[j],b=path[i];
+    area+=(Number(a.lng)||0)*(Number(b.lat)||0)-(Number(b.lng)||0)*(Number(a.lat)||0);
+  }
+  return area/2;
+}
+function orientRing(path,clockwise){
+  const ring=(path||[]).map(p=>({lat:Number(p.lat),lng:Number(p.lng)}))
+    .filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+  if(ring.length<3)return ring;
+  const isClockwise=ringAreaLatLng(ring)<0;
+  return isClockwise===clockwise?ring:ring.slice().reverse();
+}
+function renderCurrentHoleFocusMask(h){
+  if(!googleMap||!window.google?.maps||!h)return;
+  const boundaries=courseShapes(h).filter(s=>s.type==='HOLE_BOUNDARY'&&s.path?.length>=3);
+  if(!boundaries.length)return;
+
+  const boundary=boundaries.slice().sort((a,b)=>b.path.length-a.path.length)[0].path;
+  const bounds=new google.maps.LatLngBounds();
+  boundary.forEach(p=>bounds.extend(p));
+  if(bounds.isEmpty())return;
+
+  const ne=bounds.getNorthEast(),sw=bounds.getSouthWest();
+  const latPad=Math.max(.012,(ne.lat()-sw.lat())*1.8);
+  const lngPad=Math.max(.012,(ne.lng()-sw.lng())*1.8);
+  const outer=[
+    {lat:sw.lat()-latPad,lng:sw.lng()-lngPad},
+    {lat:ne.lat()+latPad,lng:sw.lng()-lngPad},
+    {lat:ne.lat()+latPad,lng:ne.lng()+lngPad},
+    {lat:sw.lat()-latPad,lng:ne.lng()+lngPad}
+  ];
+
+  const mask=new google.maps.Polygon({
+    map:googleMap,
+    paths:[orientRing(outer,true),orientRing(boundary,false)],
+    clickable:false,
+    geodesic:false,
+    fillColor:'#07110d',
+    fillOpacity:.40,
+    strokeOpacity:0,
+    strokeWeight:0,
+    zIndex:2
+  });
+  courseOverlays.push(mask);
+}
+
 function renderCourseHole(){
   const h=courseHoleData();
   if(!h)return;
   renderJgiCourseView();
   if(!googleMap||!window.google?.maps)return;
   clearCourseOverlays();
+  renderCurrentHoleFocusMask(h);
   renderCenterCorridorOverlay(h);
 
-  // Keep course geometry internal, with only the 15m center corridor visible on Satellite.
+  // Keep course geometry internal; Satellite only shows the current-hole focus and 15m center corridor.
   refreshGreenDistance();
   fitCurrentHole(true);
   if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
