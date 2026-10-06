@@ -1260,18 +1260,18 @@ body.round-active #appTopbar{display:none!important}
 #roundScreen.map-first-round .google-map,#roundScreen.map-first-round .jgiCourseMap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
 #roundScreen.map-first-round .targetInfo,#roundScreen.map-first-round .legacyMapControls,#roundScreen.map-first-round .mapBottomStatus{display:none!important}
 #roundScreen .mapFirstLegacy{display:none!important}
-.mapFirstTop{position:absolute;z-index:31;top:calc(12px + env(safe-area-inset-top));left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.mapFirstLivePill{position:absolute;left:50%;transform:translateX(-50%);min-width:78px;padding:0 16px;font-size:13px;letter-spacing:.08em;color:#8ff4ac;border-color:rgba(127,243,159,.34)!important}
-.mapFirstPill{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:rgba(2,18,12,.90);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.30);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:1000}
-.mapFirstShotPill{min-width:132px;padding:0 18px;font-size:17px;letter-spacing:.035em}.mapFirstShotPill .chev{font-size:17px;color:#d8e3dc}
-.mapFirstGpsPill{min-width:92px;padding:0 14px;font-size:14px}.gpsDot{width:10px;height:10px;border-radius:50%;background:#14d876;box-shadow:0 0 12px rgba(20,216,118,.45)}.mapFirstGpsPill.warn .gpsDot{background:#ffb844}.mapFirstGpsPill.bad .gpsDot{background:#ff6874}
+.mapFirstTop{position:absolute;z-index:31;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.72fr) minmax(0,1fr) minmax(0,.72fr);gap:6px;align-items:center;pointer-events:none}
+.mapFirstLivePill{position:static;transform:none;min-width:0;padding:0 8px;font-size:11px;letter-spacing:.07em;color:#8ff4ac;border-color:rgba(127,243,159,.34)!important}
+.mapFirstPill{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:44px;min-width:0;border:1px solid rgba(255,255,255,.18);border-radius:17px;background:rgba(2,18,12,.90);color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.24);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:1000}
+.mapFirstShotPill{min-width:0;padding:0 10px;font-size:15px;letter-spacing:.025em}.mapFirstShotPill .chev{font-size:13px;color:#d8e3dc}
+.mapFirstGpsPill{min-width:0;padding:0 8px;font-size:12px}.gpsDot{width:8px;height:8px;border-radius:50%;background:#14d876;box-shadow:0 0 10px rgba(20,216,118,.42)}.mapFirstGpsPill.warn .gpsDot{background:#ffb844}.mapFirstGpsPill.bad .gpsDot{background:#ff6874}
 .mapFirstShotMenu,.mapFirstHoleMenu{position:absolute;z-index:38;pointer-events:auto;border:1px solid rgba(255,255,255,.14);background:rgba(3,18,12,.97);box-shadow:0 18px 42px rgba(0,0,0,.40);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .mapFirstShotMenu{top:calc(72px + env(safe-area-inset-top));left:14px;width:214px;padding:8px;border-radius:18px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .mapFirstShotMenu button,.mapFirstHoleMenu button{min-height:42px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#092016;color:#edf5f0;font-size:11px;font-weight:950}.mapFirstShotMenu button.danger{color:#ff9da5;border-color:rgba(255,104,116,.30)}
 .mapFirstHoleMenu{left:14px;right:14px;bottom:204px;padding:9px;border-radius:18px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.mapFirstHoleMenu button.sel{background:#0bad60;border-color:#27da82}
 .mapFirstShotMenu.hidden,.mapFirstHoleMenu.hidden{display:none!important}
-.mapFirstDistanceBubble{position:absolute;z-index:24;left:auto;right:14px;top:calc(76px + env(safe-area-inset-top));transform:none;min-width:80px;padding:9px 12px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.30);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
-.mapFirstDistanceBubble.hidden{display:none!important}.mapFirstDistanceBubble strong{font-size:23px;line-height:1}.mapFirstDistanceBubble span{margin-left:4px;color:#b3beb7;font-size:10px;font-weight:900}
+.mapFirstDistanceBubble{position:static;z-index:auto;transform:none;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.15);border-radius:17px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.24);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
+.mapFirstDistanceBubble.hidden{visibility:hidden!important;display:flex!important}.mapFirstDistanceBubble strong{font-size:18px;line-height:1}.mapFirstDistanceBubble span{margin-left:3px;color:#b3beb7;font-size:9px;font-weight:900}
 .mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:10px 12px calc(7px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstQuickActions button{min-width:0;height:46px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
@@ -1284,7 +1284,7 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstHoleSummary{min-width:0;border:0;background:transparent;color:#fff;text-align:left;padding:2px}.mapFirstHoleSummary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:18px;line-height:1.1;font-weight:1000;letter-spacing:-.03em}.mapFirstHoleSummary span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:#aab7b0;font-size:9px;font-weight:850}
 .mapFirstClubCarousel{display:block;min-width:0}.mapFirstClubArrow{display:none!important}.mapFirstClubTrack{position:relative;height:58px;min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(5,29,20,.88);overflow:hidden;cursor:pointer}.mapFirstClubTrack span{display:none!important}.mapFirstClubTrack strong{width:auto;height:auto;margin:0;padding:0 28px 0 10px;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fff;font-size:20px;line-height:1;font-weight:1000}.mapFirstClubTrack::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#c8d5ce;font-size:18px;font-weight:900}
 .mapFirstNextShot{min-width:0;height:58px;border:0;border-radius:18px;background:linear-gradient(90deg,#11b85f,#05e875);color:#fff;box-shadow:0 10px 24px rgba(5,218,110,.21);padding:5px 7px;font-size:14px;font-weight:1000;line-height:1.1}.mapFirstNextShot b{margin-left:4px;font-size:25px;vertical-align:-2px}.mapFirstNextShot.pending{background:linear-gradient(90deg,#f0a02d,#ffc14f);color:#171006}
-@media(max-width:390px){.mapFirstTop{left:10px;right:10px}.mapFirstShotPill{min-width:118px;height:49px;padding:0 14px;font-size:15px}.mapFirstLivePill{min-width:70px;height:49px;padding:0 12px;font-size:12px}.mapFirstGpsPill{min-width:82px;height:49px;padding:0 10px;font-size:12px}.mapFirstDistanceBubble{right:10px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
+@media(max-width:390px){.mapFirstTop{left:7px;right:7px;gap:4px}.mapFirstPill{height:40px;border-radius:15px}.mapFirstShotPill{padding:0 7px;font-size:13px}.mapFirstLivePill{padding:0 5px;font-size:10px}.mapFirstGpsPill{padding:0 5px;font-size:10px}.mapFirstDistanceBubble{height:40px;border-radius:15px;padding:0 4px}.mapFirstDistanceBubble strong{font-size:16px}.mapFirstDistanceBubble span{font-size:8px}.mapFirstCockpit{padding-left:9px;padding-right:9px}.mapFirstQuickActions{gap:5px}.mapFirstQuickActions button{height:44px;font-size:9px}.mapFirstMainRow{grid-template-columns:.75fr 1.25fr 1.18fr;gap:5px}.mapFirstHoleSummary strong{font-size:16px}.mapFirstClubTrack strong{width:auto;height:auto;font-size:18px}.mapFirstClubTrack{height:54px}.mapFirstNextShot{height:54px;font-size:12px}}
 @media(min-width:700px){body.round-active{padding:0!important}.mapFirstCockpit{border-radius:26px 26px 0 0}}
 
 /* ===== FIELD DAYLIGHT MODE · ROUND INPUT ONLY ===== */
@@ -1539,6 +1539,9 @@ body.round-active .modal .sheet .puttHistoryRow{
         <button id="mapFirstGpsPill" class="mapFirstPill mapFirstGpsPill" type="button">
           <span class="gpsDot"></span><span id="mapFirstGpsText">GPS</span>
         </button>
+        <div id="mapFirstDistanceBubble" class="mapFirstDistanceBubble hidden">
+          <strong id="mapFirstDistanceValue">—</strong><span>m</span>
+        </div>
       </div>
 
       <div id="mapFirstShotMenu" class="mapFirstShotMenu hidden">
@@ -1562,10 +1565,6 @@ body.round-active .modal .sheet .puttHistoryRow{
           <div class="mapIcon">⌖</div>
           <strong>Google Satellite</strong>
           <span>Jagorawi Old Course 지도를 불러오는 중...</span>
-        </div>
-
-        <div id="mapFirstDistanceBubble" class="mapFirstDistanceBubble hidden">
-          <strong id="mapFirstDistanceValue">—</strong><span>m</span>
         </div>
 
         <div class="mapRightControls legacyMapControls">
