@@ -2787,21 +2787,25 @@ function fitCurrentHole(useHeading=true){
   const source=boundary.length?boundary:shapes;
   const bounds=new google.maps.LatLngBounds();
   source.forEach(s=>s.path.forEach(p=>bounds.extend(p)));
+  if(h.t)bounds.extend({lat:h.t[0],lng:h.t[1]});
+  if(h.g)bounds.extend({lat:h.g[0],lng:h.g[1]});
   if(bounds.isEmpty())return;
 
-  googleMap.fitBounds(bounds,{top:54,right:24,bottom:88,left:24});
+  // Preview test: let the active hole occupy more of the screen, closer to a dedicated hole view.
+  googleMap.fitBounds(bounds,{top:34,right:12,bottom:54,left:12});
   google.maps.event.addListenerOnce(googleMap,'idle',()=>{
     const heading=courseAutoHeading&&useHeading?holeViewBearing(h):0;
     const baseZoom=googleMap.getZoom()||17;
     const center=(h.t&&h.g)
       ? {lat:(h.t[0]+h.g[0])/2,lng:(h.t[1]+h.g[1])/2}
       : bounds.getCenter();
+    const focusZoom=Math.min(19,baseZoom+0.72);
     try{
       if(typeof googleMap.moveCamera==='function'){
-        googleMap.moveCamera({center,zoom:Math.min(19,baseZoom+0.45),heading,tilt:0});
+        googleMap.moveCamera({center,zoom:focusZoom,heading,tilt:0});
       }else{
         googleMap.setCenter(center);
-        googleMap.setZoom(Math.min(19,baseZoom+0.45));
+        googleMap.setZoom(focusZoom);
         googleMap.setHeading(heading);
         googleMap.setTilt(0);
       }
@@ -3110,15 +3114,66 @@ function renderCenterCorridorOverlay(h){
   courseOverlays.push(band,centerLine);
 }
 
+function ringAreaLatLng(path){
+  if(!path?.length)return 0;
+  let area=0;
+  for(let i=0,j=path.length-1;i<path.length;j=i++){
+    const a=path[j],b=path[i];
+    area+=(Number(a.lng)||0)*(Number(b.lat)||0)-(Number(b.lng)||0)*(Number(a.lat)||0);
+  }
+  return area/2;
+}
+function orientRing(path,clockwise){
+  const ring=(path||[]).map(p=>({lat:Number(p.lat),lng:Number(p.lng)}))
+    .filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+  if(ring.length<3)return ring;
+  const isClockwise=ringAreaLatLng(ring)<0;
+  return isClockwise===clockwise?ring:ring.slice().reverse();
+}
+function renderCurrentHoleFocusMask(h){
+  if(!googleMap||!window.google?.maps||!h)return;
+  const boundaries=courseShapes(h).filter(s=>s.type==='HOLE_BOUNDARY'&&s.path?.length>=3);
+  if(!boundaries.length)return;
+
+  const boundary=boundaries.slice().sort((a,b)=>b.path.length-a.path.length)[0].path;
+  const bounds=new google.maps.LatLngBounds();
+  boundary.forEach(p=>bounds.extend(p));
+  if(bounds.isEmpty())return;
+
+  const ne=bounds.getNorthEast(),sw=bounds.getSouthWest();
+  const latPad=Math.max(.012,(ne.lat()-sw.lat())*1.8);
+  const lngPad=Math.max(.012,(ne.lng()-sw.lng())*1.8);
+  const outer=[
+    {lat:sw.lat()-latPad,lng:sw.lng()-lngPad},
+    {lat:ne.lat()+latPad,lng:sw.lng()-lngPad},
+    {lat:ne.lat()+latPad,lng:ne.lng()+lngPad},
+    {lat:sw.lat()-latPad,lng:ne.lng()+lngPad}
+  ];
+
+  const mask=new google.maps.Polygon({
+    map:googleMap,
+    paths:[orientRing(outer,true),orientRing(boundary,false)],
+    clickable:false,
+    geodesic:false,
+    fillColor:'#07110d',
+    fillOpacity:.30,
+    strokeOpacity:0,
+    strokeWeight:0,
+    zIndex:2
+  });
+  courseOverlays.push(mask);
+}
+
 function renderCourseHole(){
   const h=courseHoleData();
   if(!h)return;
   renderJgiCourseView();
   if(!googleMap||!window.google?.maps)return;
   clearCourseOverlays();
+  renderCurrentHoleFocusMask(h);
   renderCenterCorridorOverlay(h);
 
-  // Keep course geometry internal, with only the 15m center corridor visible on Satellite.
+  // Keep course geometry internal; Satellite only shows the current-hole focus and 15m center corridor.
   refreshGreenDistance();
   fitCurrentHole(true);
   if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
