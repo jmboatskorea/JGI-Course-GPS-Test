@@ -3042,14 +3042,83 @@ function setMapView(mode){
     setTimeout(()=>{google.maps.event.trigger(googleMap,'resize');renderCourseHole()},30);
   }
 }
+function buildCenterCorridorGeometry(h,widthM=15,holePar=null){
+  if(!h)return null;
+  const half=Math.max(1,Number(widthM)||15)/2;
+  let projector=null;
+  let points=[];
+
+  const model=buildCourseIntelligenceModel(h,holePar);
+  if(model?.sections?.length>=2){
+    projector=model.projector;
+    points=model.sections.map(sec=>({x:sec.x,y:sec.y}));
+  }else if(h?.t&&h?.g){
+    const teePoint={lat:Number(h.t[0]),lng:Number(h.t[1])};
+    const greenPoint={lat:Number(h.g[0]),lng:Number(h.g[1])};
+    if(![teePoint.lat,teePoint.lng,greenPoint.lat,greenPoint.lng].every(Number.isFinite))return null;
+    projector=courseLocalProjector(teePoint);
+    points=[projector.toXY(teePoint),projector.toXY(greenPoint)];
+  }
+  if(!projector||points.length<2)return null;
+
+  const center=points.length>3?smoothCenterlinePoints(points,1):points;
+  const left=[],right=[];
+  center.forEach((p,i)=>{
+    const prev=center[Math.max(0,i-1)];
+    const next=center[Math.min(center.length-1,i+1)];
+    const dx=next.x-prev.x,dy=next.y-prev.y;
+    const len=Math.hypot(dx,dy)||1;
+    const nx=-dy/len,ny=dx/len;
+    left.push(projector.toLatLng({x:p.x+nx*half,y:p.y+ny*half}));
+    right.push(projector.toLatLng({x:p.x-nx*half,y:p.y-ny*half}));
+  });
+  return {
+    widthM:half*2,
+    centerPath:center.map(p=>projector.toLatLng(p)),
+    corridorPath:left.concat(right.reverse())
+  };
+}
+
+function renderCenterCorridorOverlay(h){
+  if(!googleMap||!window.google?.maps||!h)return;
+  const currentPar=hole()?.par??scorecardHoleData(round?.currentHole||1,round?.tee||tee)?.par??null;
+  const geometry=buildCenterCorridorGeometry(h,15,currentPar);
+  if(!geometry?.corridorPath?.length)return;
+
+  const band=new google.maps.Polygon({
+    map:googleMap,
+    paths:geometry.corridorPath,
+    clickable:false,
+    geodesic:false,
+    fillColor:'#ffffff',
+    fillOpacity:.13,
+    strokeColor:'#ffffff',
+    strokeOpacity:.18,
+    strokeWeight:1,
+    zIndex:5
+  });
+  const centerLine=new google.maps.Polyline({
+    map:googleMap,
+    path:geometry.centerPath,
+    clickable:false,
+    geodesic:false,
+    strokeColor:'#ffffff',
+    strokeOpacity:.40,
+    strokeWeight:1.5,
+    zIndex:6
+  });
+  courseOverlays.push(band,centerLine);
+}
+
 function renderCourseHole(){
   const h=courseHoleData();
   if(!h)return;
   renderJgiCourseView();
   if(!googleMap||!window.google?.maps)return;
   clearCourseOverlays();
+  renderCenterCorridorOverlay(h);
 
-  // GI geometry stays loaded for JGI recognition/logic. It is drawn only in JGI Course View.
+  // Keep course geometry internal, with only the 15m center corridor visible on Satellite.
   refreshGreenDistance();
   fitCurrentHole(true);
   if($('greenOverlay'))$('greenOverlay').textContent=greenDistanceM?'그린 '+Math.round(greenDistanceM)+'m':'그린 거리 대기';
