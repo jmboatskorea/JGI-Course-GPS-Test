@@ -1274,6 +1274,7 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:10px 12px calc(7px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstQuickActions button{min-width:0;height:46px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
+.mapFirstQuickActions button.active{border-color:#25d982;background:rgba(15,103,65,.88);color:#fff;box-shadow:0 0 0 2px rgba(37,217,130,.16)}
 .mapFirstMainRow{display:grid;grid-template-columns:.78fr 1.28fr 1.22fr;gap:7px;align-items:center;min-height:68px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09)}
 .mapFirstHoleSummary{min-width:0;border:0;background:transparent;color:#fff;text-align:left;padding:2px}.mapFirstHoleSummary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:18px;line-height:1.1;font-weight:1000;letter-spacing:-.03em}.mapFirstHoleSummary span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:#aab7b0;font-size:9px;font-weight:850}
 .mapFirstClubCarousel{display:grid;grid-template-columns:18px minmax(0,1fr) 18px;gap:3px;align-items:center;min-width:0}.mapFirstClubArrow{width:18px;height:52px;padding:0;border:0;background:transparent;color:#d8e2dc;font-size:28px;line-height:1}
@@ -1488,7 +1489,7 @@ body.round-active #appTopbar{display:none!important}
         <div class="mapFirstQuickActions">
           <button id="mapFirstPenalty" type="button"><span class="actionIcon penaltyIcon">⚑</span><span>페널티 추가</span></button>
           <button id="mapFirstCenter" type="button"><span class="actionIcon">◎</span><span>중앙으로</span></button>
-          <button id="mapFirstDrop" type="button"><span class="actionIcon">◉</span><span>무벌타 드롭</span></button>
+          <button id="mapFirstDrop" type="button"><span class="actionIcon">◉</span><span id="mapFirstDropText">공 위치</span></button>
         </div>
 
         <div class="mapFirstMainRow">
@@ -3366,6 +3367,10 @@ function activateDropForStart(){
   $('dropBallBtn')?.classList.remove('hidden');
   $('dropBallBtn')?.classList.add('active');
   if($('dropBallBtn'))$('dropBallBtn').textContent='공 위치 완료';
+  if($('mapFirstDrop')){
+    $('mapFirstDrop').classList.add('active');
+    if($('mapFirstDropText'))$('mapFirstDropText').textContent='지도에서 공 위치 탭';
+  }
   if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 공 위치 1회 탭 → 자동 LOCK';
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
@@ -6523,6 +6528,10 @@ function setManualPosition(latLng){
     $('dropBallBtn').classList.add('hidden');
     $('dropBallBtn').textContent='공 위치 완료';
   }
+  if($('mapFirstDrop')){
+    $('mapFirstDrop').classList.remove('active');
+    if($('mapFirstDropText'))$('mapFirstDropText').textContent='공 위치 ✓';
+  }
   if($('gpsOverlay'))$('gpsOverlay').textContent='START · DROP';
   renderStartPositionControl();
   if(targetMarker&&!round?.pending)updateTargetDistance();
@@ -6533,6 +6542,10 @@ function clearManualPosition(){
   if(manualPositionMarker)manualPositionMarker.setMap(null);
   dropMode=false;
   if($('dropBallBtn')){$('dropBallBtn').classList.remove('active');$('dropBallBtn').classList.add('hidden');$('dropBallBtn').textContent='공 위치 완료'}
+  if($('mapFirstDrop')){
+    $('mapFirstDrop').classList.remove('active');
+    if($('mapFirstDropText'))$('mapFirstDropText').textContent='공 위치';
+  }
   renderStartPositionControl();
 }
 function startGPS(){
@@ -8990,6 +9003,10 @@ function syncMapFirstUI(){
   $('mapFirstNextShot').classList.toggle('pending',!!pending&&!pending.result);
   $('mapFirstNextText').textContent=pending&&!pending.result?'샷 완료':'다음 샷으로';
   $('mapFirstDrop').disabled=!!pending&&!pending.result;
+  if(!dropMode&&$('mapFirstDrop')){
+    $('mapFirstDrop').classList.remove('active');
+    if($('mapFirstDropText'))$('mapFirstDropText').textContent=manualPosition?'공 위치 ✓':'공 위치';
+  }
   syncMapFirstClub();syncMapFirstDistance();updateMapFirstGreenMarker();
 }
 function mapFirstNextAction(){
