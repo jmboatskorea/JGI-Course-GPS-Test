@@ -1275,6 +1275,10 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
 .mapFirstQuickActions button{min-width:0;height:46px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,30,20,.76);color:#f6f8f7;padding:4px 3px;font-size:10px;font-weight:950;white-space:nowrap}.mapFirstQuickActions .actionIcon{display:inline-grid;place-items:center;margin-right:4px;font-size:18px;vertical-align:-1px}.mapFirstQuickActions .penaltyIcon{color:#ff5964}
 .mapFirstQuickActions button.active{border-color:#25d982;background:rgba(15,103,65,.88);color:#fff;box-shadow:0 0 0 2px rgba(37,217,130,.16)}
+.mapFirstPendingActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.10)}
+.mapFirstPendingActions.hidden{display:none!important}
+.mapFirstPendingActions button{height:44px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(8,31,23,.88);color:#fff;font-size:12px;font-weight:950}
+.mapFirstPendingActions button.danger{border-color:rgba(255,104,116,.34);background:rgba(91,24,31,.68);color:#ffc3c9}
 .mapFirstMainRow{display:grid;grid-template-columns:.78fr 1.28fr 1.22fr;gap:7px;align-items:center;min-height:68px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09)}
 .mapFirstHoleSummary{min-width:0;border:0;background:transparent;color:#fff;text-align:left;padding:2px}.mapFirstHoleSummary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:18px;line-height:1.1;font-weight:1000;letter-spacing:-.03em}.mapFirstHoleSummary span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:#aab7b0;font-size:9px;font-weight:850}
 .mapFirstClubCarousel{display:block;min-width:0}.mapFirstClubArrow{display:none!important}.mapFirstClubTrack{position:relative;height:58px;min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(5,29,20,.88);overflow:hidden;cursor:pointer}.mapFirstClubTrack span{display:none!important}.mapFirstClubTrack strong{width:auto;height:auto;margin:0;padding:0 28px 0 10px;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fff;font-size:20px;line-height:1;font-weight:1000}.mapFirstClubTrack::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#c8d5ce;font-size:18px;font-weight:900}
@@ -1489,6 +1493,11 @@ body.round-active #appTopbar{display:none!important}
           <button id="mapFirstPenalty" type="button"><span class="actionIcon penaltyIcon">⚑</span><span>페널티 추가</span></button>
           <button id="mapFirstCenter" type="button"><span class="actionIcon">◎</span><span>중앙으로</span></button>
           <button id="mapFirstDrop" type="button"><span class="actionIcon">◉</span><span id="mapFirstDropText">공 위치</span></button>
+        </div>
+
+        <div id="mapFirstPendingActions" class="mapFirstPendingActions hidden">
+          <button id="mapFirstChangeClub" type="button">클럽 변경</button>
+          <button id="mapFirstCancelShot" class="danger" type="button">샷 취소</button>
         </div>
 
         <div class="mapFirstMainRow">
@@ -9008,6 +9017,7 @@ function syncMapFirstUI(){
   const pending=round.pending;
   $('mapFirstNextShot').classList.toggle('pending',!!pending&&!pending.result);
   $('mapFirstNextText').textContent=pending&&!pending.result?'샷 완료':'다음 샷으로';
+  $('mapFirstPendingActions')?.classList.toggle('hidden',!pending);
   $('mapFirstDrop').disabled=false;
   if(!dropMode&&$('mapFirstDrop')){
     $('mapFirstDrop').classList.remove('active');
@@ -9033,6 +9043,8 @@ $('mapFirstHoleSummary').onclick=e=>{e.stopPropagation();closeMapFirstMenus('map
 $('mapFirstPenalty').onclick=()=>$('penaltyBtn').click();
 $('mapFirstCenter').onclick=()=>recenterMap();
 $('mapFirstDrop').onclick=()=>activateDropForStart();
+$('mapFirstChangeClub').onclick=()=>$('changeClubBtn').click();
+$('mapFirstCancelShot').onclick=()=>$('cancelShotBtn').click();
 $('mapFirstClubPrev').onclick=()=>moveMapFirstClub(-1);
 $('mapFirstClubNext').onclick=()=>moveMapFirstClub(1);
 $('mapFirstNextShot').onclick=mapFirstNextAction;
