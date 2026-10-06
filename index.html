@@ -1269,7 +1269,7 @@ body.round-active #appTopbar{display:none!important}
 .mapFirstShotMenu button,.mapFirstHoleMenu button{min-height:42px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#092016;color:#edf5f0;font-size:11px;font-weight:950}.mapFirstShotMenu button.danger{color:#ff9da5;border-color:rgba(255,104,116,.30)}
 .mapFirstHoleMenu{left:14px;right:14px;bottom:204px;padding:9px;border-radius:18px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.mapFirstHoleMenu button.sel{background:#0bad60;border-color:#27da82}
 .mapFirstShotMenu.hidden,.mapFirstHoleMenu.hidden{display:none!important}
-.mapFirstDistanceBubble{position:absolute;z-index:24;left:50%;top:44%;transform:translate(-50%,-50%);min-width:80px;padding:9px 12px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.30);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
+.mapFirstDistanceBubble{position:absolute;z-index:24;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translateX(-50%);min-width:80px;padding:9px 12px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(3,17,12,.86);color:#fff;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.30);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
 .mapFirstDistanceBubble.hidden{display:none!important}.mapFirstDistanceBubble strong{font-size:23px;line-height:1}.mapFirstDistanceBubble span{margin-left:4px;color:#b3beb7;font-size:10px;font-weight:900}
 .mapFirstCockpit{position:absolute;z-index:32;left:0;right:0;bottom:0;padding:10px 12px calc(7px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(3,24,16,.94),rgba(1,12,8,.985));box-shadow:0 -16px 48px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .mapFirstQuickActions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.10)}
@@ -3362,7 +3362,7 @@ function openStartPositionModal(){
   $('startPositionModal').classList.remove('hidden');
 }
 function activateDropForStart(){
-  startPositionOverride='DROP';
+  if(!round?.pending)startPositionOverride='DROP';
   dropMode=true;
   $('dropBallBtn')?.classList.remove('hidden');
   $('dropBallBtn')?.classList.add('active');
@@ -3371,7 +3371,7 @@ function activateDropForStart(){
     $('mapFirstDrop').classList.add('active');
     if($('mapFirstDropText'))$('mapFirstDropText').textContent='지도에서 공 위치 탭';
   }
-  if($('gpsOverlay'))$('gpsOverlay').textContent='DROP · 공 위치 1회 탭 → 자동 LOCK';
+  if($('gpsOverlay'))$('gpsOverlay').textContent=round?.pending?'SHOT END · 지도에서 실제 공 위치 1회 탭 → 자동 LOCK':'DROP · 공 위치 1회 탭 → 자동 LOCK';
   $('startPositionModal').classList.add('hidden');
   renderStartPositionControl();
 }
@@ -8475,6 +8475,13 @@ $('allClubList').addEventListener('click',e=>{
     if(club==='Putter'){alert('진행 중인 일반 Shot은 Putter로 변경할 수 없습니다.');return}
     updatePendingClub(club);return;
   }
+  if(clubModalMode==='MAP_FIRST'){
+    clubModalMode='START';
+    const rows=mapFirstClubs();
+    const idx=rows.findIndex(c=>c.name===club);
+    if(idx>=0){mapFirstSelectedClubIndex=idx;mapFirstSelectedByPlayer=true;syncMapFirstClub()}
+    return;
+  }
   clubModalMode='START';
   if(club==='Putter'){openPutt();return}
   startShot(club);
@@ -9002,7 +9009,7 @@ function syncMapFirstUI(){
   const pending=round.pending;
   $('mapFirstNextShot').classList.toggle('pending',!!pending&&!pending.result);
   $('mapFirstNextText').textContent=pending&&!pending.result?'샷 완료':'다음 샷으로';
-  $('mapFirstDrop').disabled=!!pending&&!pending.result;
+  $('mapFirstDrop').disabled=false;
   if(!dropMode&&$('mapFirstDrop')){
     $('mapFirstDrop').classList.remove('active');
     if($('mapFirstDropText'))$('mapFirstDropText').textContent=manualPosition?'공 위치 ✓':'공 위치';
@@ -9026,13 +9033,17 @@ $('mapFirstShotMenu').onclick=e=>{
 $('mapFirstHoleSummary').onclick=e=>{e.stopPropagation();closeMapFirstMenus('mapFirstHoleMenu');buildMapFirstHoleMenu();$('mapFirstHoleMenu').classList.toggle('hidden')};
 $('mapFirstPenalty').onclick=()=>$('penaltyBtn').click();
 $('mapFirstCenter').onclick=()=>recenterMap();
-$('mapFirstDrop').onclick=()=>{if(!round?.pending)activateDropForStart()};
+$('mapFirstDrop').onclick=()=>activateDropForStart();
 $('mapFirstClubPrev').onclick=()=>moveMapFirstClub(-1);
 $('mapFirstClubNext').onclick=()=>moveMapFirstClub(1);
 $('mapFirstNextShot').onclick=mapFirstNextAction;
 $('mapFirstNav').onclick=e=>{const b=e.target.closest('[data-map-first-screen]');if(b)showScreen(b.dataset.mapFirstScreen)};
 document.addEventListener('click',()=>closeMapFirstMenus());
 let mapFirstSwipeX=null;
+$('mapFirstClubTrack').onclick=()=>{
+  if(round?.pending&&!round.pending.result)return;
+  clubModalMode='MAP_FIRST';renderAllClubs();$('clubModal').classList.remove('hidden');
+};
 $('mapFirstClubTrack').addEventListener('pointerdown',e=>{mapFirstSwipeX=e.clientX});
 $('mapFirstClubTrack').addEventListener('pointerup',e=>{if(mapFirstSwipeX===null)return;const dx=e.clientX-mapFirstSwipeX;mapFirstSwipeX=null;if(Math.abs(dx)>22)moveMapFirstClub(dx<0?1:-1)});
 if($('targetDistance'))new MutationObserver(syncMapFirstDistance).observe($('targetDistance'),{childList:true,subtree:true,characterData:true});
