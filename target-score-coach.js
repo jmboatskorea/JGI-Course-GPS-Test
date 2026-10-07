@@ -7,7 +7,7 @@
   const byId=id=>document.getElementById(id);
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
   let agentHistoryMode='HOLE';
-  let agentHistoryHole=1;
+  let agentHistoryHole=null;
 
   function safeRound(){
     return (typeof round!=='undefined'&&round)?round:null;
