@@ -4109,7 +4109,17 @@ function emptyRound(course,nine){
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }
-function save(){if(round&&!historicalViewMode)localStorage.setItem(STORAGE,JSON.stringify(round))}
+function save(){
+  if(!round||historicalViewMode)return false;
+  try{
+    const payload=JSON.stringify(round);
+    localStorage.setItem(STORAGE,payload);
+    return localStorage.getItem(STORAGE)===payload;
+  }catch(e){
+    console.warn('Active round save failed',e);
+    return false;
+  }
+}
 function loadCompletedRounds(){
   try{
     const x=JSON.parse(localStorage.getItem(COMPLETED_ROUNDS_KEY)||'[]');
@@ -4119,7 +4129,13 @@ function loadCompletedRounds(){
 function saveCompletedRounds(items){
   const arr=Array.isArray(items)?items:[];
   try{
-    localStorage.setItem(COMPLETED_ROUNDS_KEY,JSON.stringify(arr.slice(-COMPLETED_ROUNDS_LIMIT)));
+    const payload=JSON.stringify(arr.slice(-COMPLETED_ROUNDS_LIMIT));
+    localStorage.setItem(COMPLETED_ROUNDS_KEY,payload);
+    const stored=localStorage.getItem(COMPLETED_ROUNDS_KEY);
+    if(stored!==payload){
+      console.warn('Completed round history verification failed');
+      return false;
+    }
     return true;
   }catch(e){
     console.warn('Completed round history save failed',e);
@@ -9426,9 +9442,17 @@ $('bottomnav').addEventListener('click',e=>{
 });
 $('endRoundBtn').onclick=()=>{
   if(!confirm('현재 라운드를 종료하고 Overview를 볼까요?'))return;
+  const previousCompletedAt=round.completedAt||null;
+  const full=roundIsFull(round);
   round.completedAt=Date.now();
-  if(roundIsFull(round))recordCompletedSamplingRound(round);
-  archiveRound(round,roundIsFull(round)?'FULL':'PARTIAL');
+  const archived=archiveRound(round,full?'FULL':'PARTIAL');
+  if(!archived){
+    round.completedAt=previousCompletedAt;
+    save();
+    alert('라운드 저장에 실패했습니다. 이 화면을 닫지 말고 다시 시도해 주세요. 저장이 확인되기 전에는 기록을 완료 처리하지 않습니다.');
+    return;
+  }
+  if(full)recordCompletedSamplingRound(round);
   save();
   showScreen('overview');
 };
