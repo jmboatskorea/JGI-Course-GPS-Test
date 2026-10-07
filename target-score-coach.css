@@ -427,7 +427,7 @@ body.round-active .mapFirstNextShot b{
 }
 
 
-/* JGI Agent decision detail · Course Strategy V1 */
+/* JGI Agent decision popup · Course Strategy V1 */
 .mapFirstCoachBar{
   cursor:pointer;
   position:relative;
@@ -438,66 +438,189 @@ body.round-active .mapFirstNextShot b{
 }
 .coachWhyHint{
   display:inline-block;
-  margin-top:3px;
-  font-size:8px;
-  font-weight:950;
-  color:#7fdba0;
-  letter-spacing:.02em;
+  margin-top:4px;
+  font-size:8.5px;
+  font-weight:1000;
+  color:#18a653;
+  letter-spacing:.01em;
 }
-.mapFirstCoachDetail{
-  grid-column:1/-1;
-  min-width:0;
-  margin-top:3px;
-  padding:10px 11px;
-  border-radius:13px;
-  background:rgba(4,20,15,.62);
-  border:1px solid rgba(87,221,134,.20);
-}
-.mapFirstCoachDetail[hidden]{display:none!important}
-.coachDetailHead{
+body.jgiCoachModalOpen{overflow:hidden!important}
+
+.jgiCoachModal{
+  position:fixed;
+  inset:0;
+  z-index:180;
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding-bottom:7px;
-  border-bottom:1px solid rgba(255,255,255,.10);
+  justify-content:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));
+  background:rgba(0,0,0,.68);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
 }
-.coachDetailHead b{font-size:11px;color:#82f3a3}
-.coachDetailHead span{font-size:7px;color:#879a8f;font-weight:850}
-.coachDetailGrid{display:grid;gap:0}
-.coachDetailRow{
+.jgiCoachModal[hidden]{display:none!important}
+.jgiCoachModalPanel{
+  width:min(440px,100%);
+  max-height:min(84dvh,760px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border-radius:26px;
+  background:#f8faf9;
+  color:#1a241e;
+  border:1px solid rgba(255,255,255,.82);
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+}
+.jgiCoachModalHead{
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:20px 20px 15px;
+  border-bottom:1px solid #dfe6e2;
+  background:#fff;
+}
+.jgiCoachModalHead span{
+  display:block;
+  color:#078044;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.16em;
+}
+.jgiCoachModalHead h3{
+  margin:5px 0 0;
+  font-size:22px;
+  line-height:1.12;
+  letter-spacing:-.035em;
+  color:#152019;
+}
+.jgiCoachModalHead p{
+  margin:6px 0 0;
+  font-size:12px;
+  font-weight:850;
+  color:#69756e;
+}
+.jgiCoachModalX{
+  flex:0 0 auto;
+  width:42px;
+  height:42px;
   display:grid;
-  grid-template-columns:82px minmax(0,1fr);
-  gap:8px;
-  padding:6px 0;
-  border-bottom:1px solid rgba(255,255,255,.07);
-  font-size:9px;
-  line-height:1.35;
+  place-items:center;
+  padding:0;
+  border-radius:50%;
+  border:1px solid #d3dcd7;
+  background:#f3f6f4;
+  color:#27342d;
+  font-size:27px;
+  font-weight:500;
+  line-height:1;
+}
+.jgiCoachModalBody{
+  min-height:0;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:16px 18px 8px;
+}
+.coachModalHero{
+  padding:18px;
+  border-radius:19px;
+  background:#eaf7ef;
+  border:1px solid #bfe5ce;
+}
+.coachModalHero span{
+  display:block;
+  color:#087d42;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.12em;
+}
+.coachModalHero strong{
+  display:block;
+  margin-top:6px;
+  color:#086b39;
+  font-size:24px;
+  line-height:1.14;
+  letter-spacing:-.04em;
+}
+.coachModalHero p{
+  margin:8px 0 0;
+  color:#3f5147;
+  font-size:14px;
+  line-height:1.48;
+  font-weight:800;
+}
+.coachDetailGrid{
+  margin-top:14px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid #dfe6e2;
+  background:#fff;
+}
+.coachDetailRow{
+  display:block;
+  padding:13px 15px;
+  border-bottom:1px solid #e8ecea;
 }
 .coachDetailRow:last-child{border-bottom:0}
-.coachDetailRow span{color:#91a59a;font-weight:850}
-.coachDetailRow b{color:#e9f1ec;font-weight:900}
-.coachDetailEmpty{font-size:9px;color:#91a59a}
-
-body.round-active .mapFirstCoachBar.expanded{
-  padding-bottom:9px!important;
+.coachDetailRow span{
+  display:block;
+  margin-bottom:4px;
+  color:#728078;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:1000;
+  letter-spacing:.04em;
+}
+.coachDetailRow b{
+  display:block;
+  color:#26342c;
+  font-size:14px;
+  line-height:1.46;
+  font-weight:900;
+}
+.coachDetailVersion{
+  padding:10px 3px 4px;
+  color:#98a39d;
+  font-size:8px;
+  font-weight:800;
+  text-align:right;
+}
+.coachDetailEmpty{
+  padding:28px 10px;
+  text-align:center;
+  color:#6f7b74;
+  font-size:14px;
+  font-weight:800;
+}
+.jgiCoachModalFoot{
+  flex:0 0 auto;
+  padding:12px 18px max(14px,env(safe-area-inset-bottom));
+  border-top:1px solid #dfe6e2;
+  background:#fff;
+}
+.jgiCoachModalFoot button{
+  width:100%;
+  min-height:48px;
+  border:0;
+  border-radius:15px;
+  background:#087d42;
+  color:#fff;
+  font-size:15px;
+  font-weight:1000;
 }
 body.round-active .coachWhyHint{color:#08783d!important}
-body.round-active .mapFirstCoachDetail{
-  background:#f5f7f6;
-  border-color:#d6dfda;
-  color:#26332c;
-}
-body.round-active .coachDetailHead{
-  border-bottom-color:#dce3df;
-}
-body.round-active .coachDetailHead b{color:#08783d}
-body.round-active .coachDetailHead span{color:#77827c}
-body.round-active .coachDetailRow{border-bottom-color:#e1e6e3}
-body.round-active .coachDetailRow span{color:#6f7b74}
-body.round-active .coachDetailRow b{color:#26332c}
 
 @media(max-width:390px){
-  .coachDetailRow{grid-template-columns:74px minmax(0,1fr);gap:6px;font-size:8.5px}
-  .mapFirstCoachDetail{padding:9px 10px}
+  .jgiCoachModal{padding-left:10px;padding-right:10px}
+  .jgiCoachModalPanel{max-height:86dvh;border-radius:23px}
+  .jgiCoachModalHead{padding:18px 17px 14px}
+  .jgiCoachModalHead h3{font-size:20px}
+  .jgiCoachModalBody{padding:14px 14px 7px}
+  .coachModalHero{padding:16px}
+  .coachModalHero strong{font-size:22px}
+  .coachModalHero p{font-size:13px}
+  .coachDetailRow{padding:12px 13px}
+  .coachDetailRow b{font-size:13.5px}
+  .jgiCoachModalFoot{padding-left:14px;padding-right:14px}
 }
