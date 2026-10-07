@@ -1,0 +1,109 @@
+.mapFirstCoachBar{
+  display:grid;
+  grid-template-columns:70px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  min-height:42px;
+  padding:5px 0 6px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.mapFirstCoachBadge{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.mapFirstCoachBadge span{
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.12em;
+  color:#7ff3a2;
+}
+.mapFirstCoachBadge b{
+  font-size:10px;
+  line-height:1.15;
+  color:#fff;
+  white-space:nowrap;
+}
+.mapFirstCoachText{
+  min-width:0;
+  font-size:10px;
+  line-height:1.3;
+  font-weight:850;
+  color:#d7e3dc;
+}
+.mapFirstCoachText strong{color:#82f3a3}
+.mapFirstCoachText .warn{color:#ffb45d}
+.mapFirstCoachText .bad{color:#ff7e89}
+.targetCoachOverview{
+  border-color:rgba(98,236,145,.28);
+}
+.targetCoachOverviewTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.targetCoachOverviewTop strong{font-size:20px}
+.targetCoachStatus{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:rgba(35,186,96,.13);
+  border:1px solid rgba(73,225,126,.25);
+  font-size:10px;
+  font-weight:950;
+}
+.targetCoachStatus.behind{
+  background:rgba(255,158,48,.12);
+  border-color:rgba(255,166,72,.30);
+  color:#ffba74;
+}
+.targetCoachStatus.ahead{color:#79eda1}
+.targetCoachGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:10px;
+}
+.targetCoachMetric{
+  padding:9px 8px;
+  border-radius:12px;
+  background:rgba(4,20,15,.62);
+  border:1px solid rgba(255,255,255,.10);
+}
+.targetCoachMetric span{display:block;font-size:8px;color:#9fb0a6;font-weight:900}
+.targetCoachMetric b{display:block;margin-top:3px;font-size:14px}
+.targetCoachNext{
+  margin-top:9px;
+  padding:9px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.035);
+  font-size:11px;
+  line-height:1.45;
+}
+.targetCoachHoleReview{
+  margin:10px 0 0;
+  padding:10px 11px;
+  border-radius:13px;
+  background:rgba(36,167,87,.08);
+  border:1px solid rgba(56,209,109,.20);
+  font-size:11px;
+  line-height:1.5;
+}
+.targetCoachHoleReview b{color:#7ef2a2}
+body.round-active .mapFirstCoachBar{border-color:#d8dcda!important}
+body.round-active .mapFirstCoachBadge span{color:#08783d!important}
+body.round-active .mapFirstCoachBadge b{color:#111!important}
+body.round-active .mapFirstCoachText{color:#3f4943!important}
+body.round-active .mapFirstCoachText strong{color:#08783d!important}
+body.round-active .mapFirstCoachText .warn{color:#a85e00!important}
+body.round-active .mapFirstCoachText .bad{color:#b51f2d!important}
+@media(max-width:390px){
+  .mapFirstCoachBar{grid-template-columns:62px minmax(0,1fr);gap:5px;min-height:39px}
+  .mapFirstCoachText{font-size:9px}
+  .targetCoachGrid{gap:5px}
+}
