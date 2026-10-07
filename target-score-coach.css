@@ -25,6 +25,7 @@
   color:#fff;
   white-space:nowrap;
 }
+.mapFirstCoachBadge b.coachPlanNegative{color:#d61f2c!important}
 .mapFirstCoachText{
   min-width:0;
   font-size:10px;

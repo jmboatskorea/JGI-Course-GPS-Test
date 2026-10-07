@@ -574,7 +574,10 @@
     const holeNo=Number(r.currentHole)||1;
     const badge=byId('mapFirstCoachPlan');
     const text=byId('mapFirstCoachText');
-    if(badge)badge.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
+    if(badge){
+      badge.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
+      badge.classList.toggle('coachPlanNegative',Boolean(p&&Number(p.delta)<0));
+    }
     renderCoachModal(ctx);
     if(!text)return;
 
