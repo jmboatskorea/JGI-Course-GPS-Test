@@ -2,7 +2,8 @@
 (function(){
   'use strict';
 
-  const VERSION='JGI_TARGET_SCORE_COACH_V0_1';
+  const VERSION='JGI_TARGET_SCORE_COACH_V0_2';
+  const COURSE_STRATEGY_VERSION='JGI_COURSE_STRATEGY_V1';
   const byId=id=>document.getElementById(id);
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
 
@@ -156,12 +157,123 @@
       .replaceAll('Landing Zone','랜딩 구역');
   }
 
-  function isLeftMissClub(r,club){
+  function fairwayWidthBand(widthM){
+    const w=num(widthM);
+    if(w===null||w<0)return {key:'UNKNOWN',label:'데이터 없음'};
+    if(w<=19)return {key:'NARROW',label:'좁음'};
+    if(w<=28)return {key:'NORMAL',label:'보통'};
+    return {key:'WIDE',label:'넓음'};
+  }
+
+  function riskDistanceBand(distanceM){
+    const d=num(distanceM);
+    if(d===null||d<0)return {key:'UNKNOWN',label:'데이터 없음',urgency:0};
+    if(d<=5)return {key:'DANGER_NEAR',label:'위험 가까움',urgency:3};
+    if(d<=10)return {key:'CAUTION',label:'주의',urgency:2};
+    if(d<=15)return {key:'SPACE',label:'여유 있음',urgency:1};
+    return {key:'OUTSIDE_15',label:'15m 초과',urgency:0};
+  }
+
+  function riskSeverity(type){
+    const t=String(type||'').toUpperCase();
+    if(t==='OB')return {key:'HIGH',label:'높음',rank:3};
+    if(['WATER','HAZARD','PENALTY_AREA','PENALTY AREA'].includes(t))return {key:'MEDIUM',label:'보통',rank:2};
+    if(['BUNKER','SAND'].includes(t))return {key:'LOW',label:'낮음',rank:1};
+    return {key:'UNKNOWN',label:'확인 필요',rank:0};
+  }
+
+  function riskTypeLabel(type){
+    const t=String(type||'').toUpperCase();
+    if(t==='OB')return 'OB';
+    if(['WATER','HAZARD','PENALTY_AREA','PENALTY AREA'].includes(t))return 'Water/Hazard';
+    if(['BUNKER','SAND'].includes(t))return 'Bunker';
+    return t||'위험요소';
+  }
+
+  function riskMeta(raw){
+    const distanceM=num(raw?.distanceM);
+    const distance=riskDistanceBand(distanceM);
+    const severity=riskSeverity(raw?.type);
+    return {
+      type:String(raw?.type||'').toUpperCase()||null,
+      distanceM,
+      distanceKey:distance.key,
+      distanceLabel:distance.label,
+      urgency:distance.urgency,
+      severityKey:severity.key,
+      severityLabel:severity.label,
+      severityRank:severity.rank,
+      active:distanceM!==null&&distanceM>=0&&distanceM<=15
+    };
+  }
+
+  function compareRiskMeta(a,b){
+    const ar=a?.active?1:0,br=b?.active?1:0;
+    if(ar!==br)return ar-br;
+    if(!ar&&!br)return 0;
+    if((a?.urgency||0)!==(b?.urgency||0))return (a?.urgency||0)-(b?.urgency||0);
+    if((a?.severityRank||0)!==(b?.severityRank||0))return (a?.severityRank||0)-(b?.severityRank||0);
+    const ad=num(a?.distanceM),bd=num(b?.distanceM);
+    if(ad!==null&&bd!==null&&ad!==bd)return bd-ad;
+    return 0;
+  }
+
+  function courseMetrics(context){
+    const widthM=num(context?.landingZoneWidth?.widthM??context?.courseRisk?.narrowness?.landingZoneWidthM);
+    return {
+      widthM,
+      width:fairwayWidthBand(widthM),
+      left:riskMeta(context?.courseRisk?.left),
+      right:riskMeta(context?.courseRisk?.right)
+    };
+  }
+
+  function worstRisk(metrics){
+    if(!metrics)return riskMeta(null);
+    return compareRiskMeta(metrics.left,metrics.right)>=0?metrics.left:metrics.right;
+  }
+
+  function clubMissDirection(r,club){
     const c=String(club||'').toUpperCase();
     const miss=r?.missProfile||{};
-    if(c==='DR'&&String(miss.driver||'').toUpperCase()==='LEFT')return true;
-    if(['5I','6I'].includes(c)&&String(miss.longIron||'').toUpperCase()==='LEFT')return true;
+    let value=null;
+    if(c==='DR')value=miss.driver;
+    else if(['5I','6I'].includes(c))value=miss.longIron;
+    const dir=String(value||'').toUpperCase();
+    return ['LEFT','RIGHT'].includes(dir)?dir:null;
+  }
+
+  function isLeftMissClub(r,club){
+    return clubMissDirection(r,club)==='LEFT';
+  }
+
+  function contextForZone(ch,start,carry,zone,holePar){
+    if(!ch||!start||!Number.isFinite(carry)||typeof targetZonePointForShot!=='function'||typeof deriveCourseIntelligence!=='function')return null;
+    const target=targetZonePointForShot(ch,start,carry,zone,holePar);
+    return target?deriveCourseIntelligence(ch,start,carry,target,holePar):null;
+  }
+
+  function targetSourceValue(r=safeRound()){
+    const p=r?.pending;
+    if(p?.target?.basis==='MAP_OVERRIDE')return 'MAP_OVERRIDE';
+    if(p?.targetSource)return String(p.targetSource);
+    try{
+      if(typeof targetZoneSource!=='undefined'&&targetZoneSource)return String(targetZoneSource);
+    }catch{}
+    return 'SYSTEM_DEFAULT';
+  }
+
+  function hasMapOverride(r=safeRound()){
+    if(r?.pending?.target?.basis==='MAP_OVERRIDE')return true;
+    try{
+      return typeof targetManualOverride!=='undefined'&&targetManualOverride===true;
+    }catch{}
     return false;
+  }
+
+  function normalizeTargetZone(value){
+    const z=String(value||'CENTER').toUpperCase();
+    return ['LEFT','CENTER','RIGHT'].includes(z)?z:'CENTER';
   }
 
   function coachStartLie(){
@@ -171,43 +283,85 @@
     return String(typeof currentLie!=='undefined'?currentLie:'UNKNOWN').toUpperCase();
   }
 
-  function recommendationFor(r,club,start){
+  function recommendationFor(r,club,start,selectedTarget='CENTER'){
     const h=typeof hole==='function'?hole():null;
     const ch=typeof courseHoleData==='function'?courseHoleData():null;
     const master=(typeof masterClubs!=='undefined'?masterClubs:[]).find(c=>c.name===club);
     const carry=num(master?.carry);
-    let context=null;
-    let centerTarget=null;
+    const chosenByPlayer=normalizeTargetZone(selectedTarget);
+    const manualTarget=hasMapOverride(r);
 
-    if(ch&&start&&Number.isFinite(carry)&&typeof targetZonePointForShot==='function'&&typeof deriveCourseIntelligence==='function'){
-      centerTarget=targetZonePointForShot(ch,start,carry,'CENTER',h?.par);
-      context=deriveCourseIntelligence(ch,start,carry,centerTarget,h?.par);
+    let centerContext=null;
+    if(ch&&start&&Number.isFinite(carry)){
+      centerContext=contextForZone(ch,start,carry,'CENTER',h?.par);
     }
 
-    const leftM=num(context?.courseRisk?.left?.distanceM);
-    const rightM=num(context?.courseRisk?.right?.distanceM);
-    const widthM=num(context?.landingZoneWidth?.widthM??context?.courseRisk?.narrowness?.landingZoneWidthM);
-    const missLeft=isLeftMissClub(r,club);
+    const baseContext=(manualTarget&&r?.pending?.courseContext)?r.pending.courseContext:centerContext;
+    const base=courseMetrics(baseContext);
+    const missDirection=clubMissDirection(r,club);
+    const targetSource=targetSourceValue(r);
 
-    let target='CENTER';
-    let reason='리스크 균형 · CENTER 기준';
+    let target=manualTarget?chosenByPlayer:'CENTER';
+    let reason=manualTarget?'Player 지정 Target 우선 · 현재 Target 기준 위험 재확인':'리스크 균형 · CENTER 기준';
+    let targetCheck={
+      required:false,
+      candidate:null,
+      outcome:manualTarget?'MANUAL_TARGET_PRIORITY':'NOT_NEEDED',
+      candidateRisk:null,
+      centerRisk:worstRisk(base)
+    };
 
-    const bothTight=leftM!==null&&rightM!==null&&leftM<18&&rightM<18;
-    if((widthM!==null&&widthM<18)||bothTight){
-      target='CENTER';
-      reason='Landing Zone이 좁거나 양쪽 위험이 가까움';
-    }else if(missLeft&&leftM!==null&&leftM<30&&(rightM===null||rightM>leftM+5)){
-      target='RIGHT';
-      reason='LEFT miss 성향 + 좌측 위험';
-    }else if(leftM!==null&&leftM<16&&(rightM===null||rightM>leftM+5)){
-      target='RIGHT';
-      reason='좌측 위험 회피';
-    }else if(rightM!==null&&rightM<16&&(leftM===null||leftM>rightM+5)){
-      target='LEFT';
-      reason='우측 위험 회피';
-    }else if(missLeft){
-      target='CENTER';
-      reason='LEFT miss 성향 고려 · CENTER 기준';
+    const recheckCandidate=(candidate,why)=>{
+      const candidateContext=contextForZone(ch,start,carry,candidate,h?.par);
+      const candidateMetrics=courseMetrics(candidateContext);
+      const centerMetrics=courseMetrics(centerContext);
+      const candidateWorst=worstRisk(candidateMetrics);
+      const centerWorst=worstRisk(centerMetrics);
+      targetCheck={
+        required:true,
+        candidate,
+        outcome:'CANDIDATE_OK',
+        candidateRisk:candidateWorst,
+        centerRisk:centerWorst
+      };
+      if(candidateContext&&centerContext&&compareRiskMeta(candidateWorst,centerWorst)>0){
+        target='CENTER';
+        targetCheck.outcome='CENTER_SAFER';
+        reason=why+' · 반대쪽 후보 재계산에서 더 큰 위험 → 중앙 조정';
+      }else{
+        target=candidate;
+        reason=why+' · 반대쪽 후보 위험 재확인 완료';
+      }
+    };
+
+    if(!manualTarget){
+      const left=base.left,right=base.right;
+      const missRisk=missDirection==='LEFT'?left:missDirection==='RIGHT'?right:null;
+
+      if(missDirection&&missRisk?.active){
+        const candidate=missDirection==='LEFT'?'RIGHT':'LEFT';
+        const side=missDirection==='LEFT'?'좌측':'우측';
+        recheckCandidate(candidate,side+' 미스 경향 · 같은 쪽 '+riskTypeLabel(missRisk.type)+' '+missRisk.distanceLabel);
+      }else if(left.active||right.active){
+        const cmp=compareRiskMeta(left,right);
+        if(cmp>0){
+          recheckCandidate('RIGHT','좌측 '+riskTypeLabel(left.type)+' '+left.distanceLabel+' · 반대쪽 공략 검토');
+        }else if(cmp<0){
+          recheckCandidate('LEFT','우측 '+riskTypeLabel(right.type)+' '+right.distanceLabel+' · 반대쪽 공략 검토');
+        }else if(base.width.key==='NARROW'){
+          target='CENTER';
+          reason='Landing Zone이 좁음 · 양쪽 위험 주의';
+        }else{
+          target='CENTER';
+          reason='양쪽 위험 균형 · 중앙 공략';
+        }
+      }else if(base.width.key==='NARROW'){
+        target='CENTER';
+        reason='Landing Zone이 좁음 · 중앙 공략';
+      }else if(missDirection){
+        target='CENTER';
+        reason=(missDirection==='LEFT'?'왼쪽':'오른쪽')+' 미스 경향 · 15m 이내 같은 쪽 위험 없음';
+      }
     }
 
     const p=progress(r);
@@ -215,13 +369,15 @@
     const currentPar=num(h?.par);
     const lie=coachStartLie();
     const greenD=(start&&ch?.g&&typeof hav==='function')?hav(start,{lat:ch.g[0],lng:ch.g[1]}):null;
-    const closeRisk=[leftM,rightM].filter(Number.isFinite).sort((a,b)=>a-b)[0]??null;
+    const closeRisk=[base.left.distanceM,base.right.distanceM].filter(Number.isFinite).sort((a,b)=>a-b)[0]??null;
+    const dangerNear=[base.left,base.right].some(x=>x.active&&x.urgency===3);
+    const cautionOrCloser=[base.left,base.right].some(x=>x.active&&x.urgency>=2);
     const difficultLie=['RECOVERY','BUNKER','SAND','ROUGH','B CUT'].includes(lie);
 
     let mode='NEUTRAL';
-    if(difficultLie||(closeRisk!==null&&closeRisk<13)||(widthM!==null&&widthM<18)||(Number.isFinite(thisTarget)&&Number.isFinite(currentPar)&&thisTarget>currentPar)||(p&&p.delta<0)){
+    if(difficultLie||dangerNear||base.width.key==='NARROW'||(Number.isFinite(thisTarget)&&Number.isFinite(currentPar)&&thisTarget>currentPar)||(p&&p.delta<0)){
       mode='DEFEND';
-    }else if(p&&p.delta>0&&Number.isFinite(greenD)&&greenD<=100&&['FAIRWAY','A CUT','FRINGE'].includes(lie)&&(closeRisk===null||closeRisk>=20)){
+    }else if(p&&p.delta>0&&Number.isFinite(greenD)&&greenD<=100&&['FAIRWAY','A CUT','FRINGE'].includes(lie)&&!cautionOrCloser){
       mode='ATTACK';
     }
 
@@ -229,14 +385,24 @@
     if(mode==='DEFEND')action=target+' · 큰 미스 없이 다음 플레이 위치 확보';
     if(mode==='ATTACK')action=target+' · 좋은 Lie면 스코어 기회 사용';
 
-    return {target,reason,mode,action,leftM,rightM,widthM,greenD,lie};
+    return {
+      target,reason,mode,action,
+      leftM:base.left.distanceM,rightM:base.right.distanceM,widthM:base.widthM,
+      greenD,lie,carry,missDirection,targetSource,manualTarget,
+      metrics:base,targetCheck,
+      dogleg:baseContext?.dogleg||baseContext?.courseRisk?.dogleg||null,
+      strategyVersion:COURSE_STRATEGY_VERSION,
+      closeRisk
+    };
   }
 
   function buildShotContext(r,club,start,selectedTarget){
-    const rec=recommendationFor(r,club,start);
+    const selected=normalizeTargetZone(selectedTarget);
+    const rec=recommendationFor(r,club,start,selected);
     const p=progress(r);
     return {
       version:VERSION,
+      strategyVersion:rec.strategyVersion,
       generatedAt:Date.now(),
       targetScore:num(r?.targetScore),
       holeNumber:Number(r?.currentHole)||null,
@@ -244,24 +410,103 @@
       planStatusBefore:p?progressLabel(p.delta):'—',
       planDeltaBefore:p?.delta??null,
       club:club||null,
+      clubCarryM:rec.carry,
       startLie:rec.lie,
-      selectedTarget:selectedTarget||'CENTER',
+      selectedTarget:selected,
       recommendedTarget:rec.target,
+      targetSource:rec.targetSource,
+      manualTarget:rec.manualTarget,
+      missDirection:rec.missDirection,
       mode:rec.mode,
       reason:rec.reason,
       action:rec.action,
-      risk:{leftM:rec.leftM,rightM:rec.rightM,widthM:rec.widthM},
+      risk:{
+        leftM:rec.leftM,
+        rightM:rec.rightM,
+        widthM:rec.widthM,
+        left:rec.metrics.left,
+        right:rec.metrics.right,
+        width:rec.metrics.width
+      },
+      targetCheck:rec.targetCheck,
+      dogleg:rec.dogleg,
       distanceToGreenM:rec.greenD
     };
   }
 
   function currentPreviewContext(){
     const r=safeRound();if(!r)return null;
-    if(r.pending?.targetScoreCoach)return r.pending.targetScoreCoach;
+    if(r.pending?.targetScoreCoach?.version===VERSION)return r.pending.targetScoreCoach;
     let club=null;
     try{club=typeof mapFirstSelectedClub==='function'?mapFirstSelectedClub():null}catch{}
     const start=(typeof resolveShotStart==='function'?resolveShotStart():null)||(typeof teeBoxPoint==='function'?teeBoxPoint():null);
     return buildShotContext(r,club,start,(typeof targetZone!=='undefined'?targetZone:'CENTER'));
+  }
+
+  function htmlEscape(value){
+    return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function oneDecimalM(value){
+    const n=num(value);
+    return n===null?'데이터 없음':n.toFixed(1)+'m';
+  }
+
+  function targetSourceDisplay(ctx){
+    if(ctx?.manualTarget)return '지도에서 Player가 직접 지정';
+    const s=String(ctx?.targetSource||'').toUpperCase();
+    if(s==='PLAYER_SELECTED')return 'Player 선택';
+    if(s==='JGI_RECOMMENDED')return 'JGI 추천';
+    if(s==='SYSTEM_DEFAULT')return 'System 기본 Target';
+    return s||'확인 필요';
+  }
+
+  function detailRiskLine(sideLabel,risk){
+    if(!risk||num(risk.distanceM)===null)return sideLabel+' · 위험 데이터 없음';
+    return sideLabel+' · '+riskTypeLabel(risk.type)+' '+oneDecimalM(risk.distanceM)+' · '+(risk.distanceLabel||riskDistanceBand(risk.distanceM).label)+' · 위험도 '+(risk.severityLabel||riskSeverity(risk.type).label);
+  }
+
+  function targetCheckDisplay(ctx){
+    const check=ctx?.targetCheck;
+    if(ctx?.manualTarget)return 'Player 수동 Target 우선 · 자동 반대 Target 비교 안 함';
+    if(!check?.required)return '반대 Target 재검증 · 필요 없음';
+    const candidate=targetDirectionDisplay(check.candidate);
+    if(check.outcome==='CENTER_SAFER')return candidate+' 후보 재계산 · 후보 쪽 위험이 더 커 중앙으로 조정';
+    return candidate+' 후보 재계산 · 더 큰 위험 없음, 후보 유지';
+  }
+
+  function doglegDisplay(dogleg){
+    if(!dogleg?.applicable)return '해당 없음 또는 데이터 없음';
+    const dir=dogleg.direction==='LEFT'?'좌':dogleg.direction==='RIGHT'?'우':String(dogleg.direction||'');
+    const angle=num(dogleg.angleDeg);
+    const turn=num(dogleg.distanceToTurnM);
+    return dir+' 도그레그'+(angle!==null?' · '+angle.toFixed(1)+'°':'')+(turn!==null?' · 코너 약 '+turn.toFixed(0)+'m':'');
+  }
+
+  function coachDetailHtml(ctx){
+    if(!ctx)return '<div class="coachDetailEmpty">현재 판단 데이터가 없습니다.</div>';
+    const risk=ctx.risk||{};
+    const widthM=num(risk.widthM);
+    const widthLabel=risk.width?.label||fairwayWidthBand(widthM).label;
+    const miss=ctx.missDirection?targetDirectionDisplay(ctx.missDirection)+' 미스 경향':'등록된 미스 방향 데이터 없음';
+    const carry=num(ctx.clubCarryM);
+    const rows=[
+      ['판단',ctx.reason||'현재 상황 기준'],
+      ['랜딩 구역',widthM===null?'폭 데이터 없음':widthM.toFixed(1)+'m · '+widthLabel],
+      ['좌측 위험',detailRiskLine('좌측',risk.left)],
+      ['우측 위험',detailRiskLine('우측',risk.right)],
+      ['Player 패턴',miss],
+      ['클럽 / 기준',(ctx.club||'클럽 데이터 없음')+' · Carry '+(carry===null?'데이터 없음':carry.toFixed(0)+'m')+' · '+targetSourceDisplay(ctx)],
+      ['반대 Target 확인',targetCheckDisplay(ctx)],
+      ['도그레그',doglegDisplay(ctx.dogleg)],
+      ['최종 추천',recommendationDisplay(ctx,ctx.recommendedTarget)]
+    ];
+    return '<div class="coachDetailHead"><b>왜 이렇게 판단했나요?</b><span>'+htmlEscape(ctx.strategyVersion||COURSE_STRATEGY_VERSION)+'</span></div>'+
+      '<div class="coachDetailGrid">'+rows.map(([k,v])=>'<div class="coachDetailRow"><span>'+htmlEscape(k)+'</span><b>'+htmlEscape(v)+'</b></div>').join('')+'</div>';
+  }
+
+  function coachWhyHint(expanded){
+    return '<span class="coachWhyHint">'+(expanded?'근거 닫기 ▴':'판단 근거 ›')+'</span>';
   }
 
   function resultCoachText(ctx,result){
@@ -296,11 +541,15 @@
     const holeNo=Number(r.currentHole)||1;
     const badge=byId('mapFirstCoachPlan');
     const text=byId('mapFirstCoachText');
+    const detail=byId('mapFirstCoachDetail');
+    const expanded=host.classList.contains('expanded');
     if(badge)badge.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
+    if(detail)detail.innerHTML=coachDetailHtml(ctx);
+    host.setAttribute('aria-expanded',expanded?'true':'false');
     if(!text)return;
 
     if(r.pending?.result){
-      text.innerHTML=resultCoachText(ctx,r.pending.result);
+      text.innerHTML=resultCoachText(ctx,r.pending.result)+coachWhyHint(expanded);
       return;
     }
 
@@ -309,7 +558,7 @@
     const mismatch=selected!==rec
       ? '현재 선택 · '+targetSurfaceDisplay(ctx)+' '+targetDirectionDisplay(selected)+' · '
       : '';
-    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>';
+    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>'+coachWhyHint(expanded);
   }
 
   function holeLossPoint(h){
@@ -684,9 +933,45 @@
       const bar=document.createElement('div');
       bar.id='mapFirstCoachBar';
       bar.className='mapFirstCoachBar';
-      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI 에이전트</span><b id="mapFirstCoachPlan">목표 기준</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">JGI 에이전트 준비 중</div>';
+      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI 에이전트</span><b id="mapFirstCoachPlan">목표 기준</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">JGI 에이전트 준비 중</div><div id="mapFirstCoachDetail" class="mapFirstCoachDetail" hidden></div>';
       targetRow.insertAdjacentElement('afterend',bar);
     }
+
+    const coachBar=byId('mapFirstCoachBar');
+    if(coachBar&&!byId('mapFirstCoachDetail')){
+      const detail=document.createElement('div');
+      detail.id='mapFirstCoachDetail';
+      detail.className='mapFirstCoachDetail';
+      detail.hidden=true;
+      coachBar.appendChild(detail);
+    }
+    if(coachBar&&!coachBar.__jgiDetailBound){
+      coachBar.__jgiDetailBound=true;
+      coachBar.setAttribute('role','button');
+      coachBar.setAttribute('tabindex','0');
+      coachBar.setAttribute('aria-label','JGI 추천 공략 판단 근거 보기');
+      coachBar.setAttribute('aria-expanded','false');
+      const toggle=()=>{
+        const detail=byId('mapFirstCoachDetail');
+        if(!detail)return;
+        const open=!coachBar.classList.contains('expanded');
+        coachBar.classList.toggle('expanded',open);
+        detail.hidden=!open;
+        coachBar.setAttribute('aria-expanded',open?'true':'false');
+        renderBar();
+      };
+      coachBar.addEventListener('click',e=>{
+        if(e.target?.closest?.('button,a,input,select,textarea'))return;
+        toggle();
+      });
+      coachBar.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){
+          e.preventDefault();
+          toggle();
+        }
+      });
+    }
+
     const overview=document.querySelector('#overviewScreen .card');
     if(overview&&!byId('targetScoreCoachOverviewBody')){
       const card=document.createElement('div');
