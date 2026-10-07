@@ -731,3 +731,243 @@ body.round-active .coachStrategyBadge.neutral{color:#59645e!important}
   .coachStrategyCard>strong{font-size:26px}
   .coachStrategyCard>p,.coachStrategyAction em{font-size:13px}
 }
+
+
+/* JGI Agent History · Hole / 18H */
+.bottomnav{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+.bottomnav button{min-width:0!important}
+@media(max-width:390px){
+  .bottomnav button{font-size:8px!important;padding-left:0!important;padding-right:0!important}
+  .bottomnav button b{font-size:15px!important}
+}
+
+.agentHistoryScreen{padding-bottom:96px}
+.agentHistoryHead{margin-bottom:12px}
+.agentHistoryModeTabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  padding:5px;
+  border-radius:15px;
+  background:rgba(4,20,15,.72);
+  border:1px solid rgba(255,255,255,.12);
+}
+.agentHistoryModeTabs button{
+  min-height:42px;
+  border:0;
+  border-radius:11px;
+  background:transparent;
+  color:#9fb0a6;
+  font-size:12px;
+  font-weight:1000;
+}
+.agentHistoryModeTabs button.sel{
+  background:linear-gradient(180deg,#ff9b32,#f16d00);
+  color:#fff;
+}
+.agentHistoryHoleTabs{
+  display:flex;
+  gap:6px;
+  overflow:auto;
+  padding:11px 1px 9px;
+  scrollbar-width:none;
+}
+.agentHistoryHoleTabs::-webkit-scrollbar{display:none}
+.agentHistoryHoleTabs button{
+  flex:0 0 38px;
+  height:38px;
+  border-radius:11px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(4,20,15,.65);
+  color:#a8b8ae;
+  font-size:11px;
+  font-weight:1000;
+}
+.agentHistoryHoleTabs button.has-data:after{
+  content:'';
+  display:block;
+  width:4px;
+  height:4px;
+  margin:2px auto 0;
+  border-radius:50%;
+  background:#67e795;
+}
+.agentHistoryHoleTabs button.sel{
+  background:#0e713f;
+  border-color:#35b36d;
+  color:#fff;
+}
+
+.agentHistoryCompact{display:grid;gap:9px}
+.agentHistoryCompactTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.agentHistoryCompactTop b{color:#7ef2a2;font-size:12px}
+.agentHistoryCompactTop span{font-size:10px;font-weight:1000;color:#a9b9b0}
+.agentHistoryScoreLine{display:flex;gap:8px}
+.agentHistoryScoreLine span{
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.05);
+  font-size:9px;
+  font-weight:900;
+}
+.agentHistoryFlow{display:grid;gap:5px}
+.agentHistoryFlow small{font-size:9px;color:#8fa197;font-weight:1000}
+.agentHistoryFlow>div{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.agentHistoryFlow.large small{font-size:10px}
+.agentHistoryStrategy{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:1000;
+}
+.agentHistoryStrategy.attack{background:#fff0dd;color:#b65b00;border:1px solid #e9aa62}
+.agentHistoryStrategy.defend{background:#e5f0ff;color:#1767b5;border:1px solid #91bde9}
+.agentHistoryStrategy.neutral{background:#eef1ef;color:#5d6a62;border:1px solid #cad3cd}
+.agentHistoryStrategy.unknown{background:#272f2b;color:#adb8b1;border:1px solid #4a5750}
+.agentHistoryArrow{font-size:10px;color:#8b9b91;font-weight:1000}
+.agentHistoryNoData{font-size:10px;color:#82948a}
+.agentHistoryCompactGrid{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:5px 9px;
+  padding:9px 10px;
+  border-radius:11px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+  font-size:9px;
+}
+.agentHistoryCompactGrid span{color:#8fa197}
+.agentHistoryCompactGrid b{color:#d9e4dd;text-align:right}
+
+.agentHistoryHoleHero{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:14px;
+  align-items:center;
+  margin-top:10px;
+  padding:15px;
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(12,91,51,.25),rgba(4,20,15,.72));
+  border:1px solid rgba(89,222,135,.25);
+}
+.agentHistoryHoleHero>div:first-child span{display:block;font-size:9px;color:#8fd9aa;font-weight:1000}
+.agentHistoryHoleHero>div:first-child strong{display:block;margin-top:2px;font-size:32px;line-height:1}
+.agentHistoryHoleHero>div:first-child small{display:block;margin-top:5px;color:#9fb0a6;font-size:9px}
+.agentHistoryMiniStats,
+.agentHistoryRoundStats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:9px;
+}
+.agentHistoryMiniStats>div,
+.agentHistoryRoundStats>div{
+  padding:10px 8px;
+  border-radius:12px;
+  background:rgba(4,20,15,.62);
+  border:1px solid rgba(255,255,255,.09);
+}
+.agentHistoryMiniStats span,
+.agentHistoryRoundStats span{display:block;font-size:8px;color:#91a398;font-weight:900}
+.agentHistoryMiniStats b,
+.agentHistoryRoundStats b{display:block;margin-top:4px;font-size:15px}
+.agentHistoryRoundStats .attack b{color:#ffad61}
+.agentHistoryRoundStats .defend b{color:#6fb3ff}
+.agentHistoryRoundStats .neutral b{color:#b8c4bd}
+.agentHistoryLoss{
+  margin-top:9px;
+  padding:10px 11px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.035);
+}
+.agentHistoryLoss span{display:block;font-size:8px;color:#91a398;font-weight:900}
+.agentHistoryLoss b{display:block;margin-top:4px;font-size:11px}
+
+.agentHistoryTimeline{display:grid;gap:8px;margin-top:11px}
+.agentHistoryShot{
+  padding:12px;
+  border-radius:15px;
+  background:rgba(4,20,15,.65);
+  border:1px solid rgba(255,255,255,.10);
+}
+.agentHistoryShot.mismatch{border-color:rgba(255,161,73,.35)}
+.agentHistoryShotTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.agentHistoryShotTop>div span{display:block;font-size:8px;color:#85978c;font-weight:1000}
+.agentHistoryShotTop>div b{display:block;margin-top:2px;font-size:13px}
+.agentHistoryDecision{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:5px 8px;
+  margin-top:9px;
+  padding:8px 9px;
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  font-size:9px;
+}
+.agentHistoryDecision b{color:#8fa197}
+.agentHistoryDecision span{text-align:right;font-weight:1000}
+.agentHistoryDecision span.different{color:#ffad61}
+.agentHistoryReason{margin-top:7px;color:#bac8bf;font-size:9px;line-height:1.45}
+.agentHistoryResult{display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07);font-size:9px}
+.agentHistoryResult b{color:#8fa197}
+.agentHistoryResult span{text-align:right;font-weight:1000}
+.agentHistoryEmpty{
+  margin-top:10px;
+  padding:20px 14px;
+  border-radius:14px;
+  text-align:center;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+  color:#8fa197;
+  font-size:10px;
+  line-height:1.55;
+}
+.agentHistoryCaution{
+  margin-top:11px;
+  color:#81938a;
+  font-size:9px;
+  line-height:1.5;
+}
+
+.agentHistoryRoundHero{
+  margin-top:10px;
+  padding:16px;
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(16,92,53,.26),rgba(4,20,15,.72));
+  border:1px solid rgba(90,221,136,.24);
+}
+.agentHistoryRoundHero span{display:block;color:#7fe2a0;font-size:9px;font-weight:1000}
+.agentHistoryRoundHero strong{display:block;margin-top:4px;font-size:21px}
+.agentHistoryRoundHero p{margin:7px 0 0;color:#afc0b6;font-size:10px;line-height:1.5}
+.agentHistorySectionTitle{margin:15px 0 8px;font-size:11px;font-weight:1000;color:#dce7e0}
+.agentHistoryRoundList{display:grid;gap:7px}
+.agentHistoryRoundHole{
+  display:grid;
+  grid-template-columns:84px minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  padding:10px;
+  border-radius:13px;
+  background:rgba(4,20,15,.62);
+  border:1px solid rgba(255,255,255,.08);
+}
+.agentHistoryRoundHoleNo b{display:block;font-size:12px}
+.agentHistoryRoundHoleNo span{display:block;margin-top:2px;font-size:7px;color:#8fa197}
+.agentHistoryRoundFlow{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.agentHistoryRoundMismatch{font-size:8px;color:#93a49a;text-align:right}
+@media(max-width:390px){
+  .agentHistoryHoleHero{grid-template-columns:72px minmax(0,1fr);gap:10px;padding:13px}
+  .agentHistoryMiniStats,.agentHistoryRoundStats{gap:5px}
+  .agentHistoryRoundHole{grid-template-columns:70px minmax(0,1fr)}
+  .agentHistoryRoundMismatch{grid-column:2;text-align:left}
+  .agentHistoryStrategy{font-size:8px;padding:4px 7px}
+}
