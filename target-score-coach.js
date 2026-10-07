@@ -491,22 +491,55 @@
     const miss=ctx.missDirection?targetDirectionDisplay(ctx.missDirection)+' 미스 경향':'등록된 미스 방향 데이터 없음';
     const carry=num(ctx.clubCarryM);
     const rows=[
-      ['판단',ctx.reason||'현재 상황 기준'],
       ['랜딩 구역',widthM===null?'폭 데이터 없음':widthM.toFixed(1)+'m · '+widthLabel],
       ['좌측 위험',detailRiskLine('좌측',risk.left)],
       ['우측 위험',detailRiskLine('우측',risk.right)],
       ['Player 패턴',miss],
-      ['클럽 / 기준',(ctx.club||'클럽 데이터 없음')+' · Carry '+(carry===null?'데이터 없음':carry.toFixed(0)+'m')+' · '+targetSourceDisplay(ctx)],
+      ['클럽 / Target',(ctx.club||'클럽 데이터 없음')+' · Carry '+(carry===null?'데이터 없음':carry.toFixed(0)+'m')+' · '+targetSourceDisplay(ctx)],
       ['반대 Target 확인',targetCheckDisplay(ctx)],
-      ['도그레그',doglegDisplay(ctx.dogleg)],
-      ['최종 추천',recommendationDisplay(ctx,ctx.recommendedTarget)]
+      ['도그레그',doglegDisplay(ctx.dogleg)]
     ];
-    return '<div class="coachDetailHead"><b>왜 이렇게 판단했나요?</b><span>'+htmlEscape(ctx.strategyVersion||COURSE_STRATEGY_VERSION)+'</span></div>'+
-      '<div class="coachDetailGrid">'+rows.map(([k,v])=>'<div class="coachDetailRow"><span>'+htmlEscape(k)+'</span><b>'+htmlEscape(v)+'</b></div>').join('')+'</div>';
+    return '<div class="coachModalHero">'+
+      '<span>JGI 추천 공략</span>'+
+      '<strong>'+htmlEscape(recommendationDisplay(ctx,ctx.recommendedTarget))+'</strong>'+
+      '<p>'+htmlEscape(ctx.reason||'현재 상황 기준 추천')+'</p>'+
+      '</div>'+
+      '<div class="coachDetailGrid">'+rows.map(([k,v])=>'<div class="coachDetailRow"><span>'+htmlEscape(k)+'</span><b>'+htmlEscape(v)+'</b></div>').join('')+'</div>'+
+      '<div class="coachDetailVersion">'+htmlEscape(ctx.strategyVersion||COURSE_STRATEGY_VERSION)+'</div>';
   }
 
-  function coachWhyHint(expanded){
-    return '<span class="coachWhyHint">'+(expanded?'근거 닫기 ▴':'판단 근거 ›')+'</span>';
+  function coachWhyHint(){
+    return '<span class="coachWhyHint">왜? 자세히 보기 ›</span>';
+  }
+
+  function renderCoachModal(ctx=currentPreviewContext()){
+    const modal=byId('jgiCoachModal');
+    if(!modal||modal.hidden)return;
+    const body=byId('jgiCoachModalBody');
+    const meta=byId('jgiCoachModalMeta');
+    if(body)body.innerHTML=coachDetailHtml(ctx);
+    const r=safeRound();
+    const holeNo=Number(r?.currentHole)||1;
+    const p=progress(r);
+    if(meta)meta.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
+  }
+
+  function openCoachModal(){
+    const modal=byId('jgiCoachModal');
+    if(!modal)return;
+    modal.hidden=false;
+    document.body.classList.add('jgiCoachModalOpen');
+    renderCoachModal();
+    const close=byId('jgiCoachModalClose');
+    setTimeout(()=>close?.focus(),0);
+  }
+
+  function closeCoachModal(){
+    const modal=byId('jgiCoachModal');
+    if(!modal)return;
+    modal.hidden=true;
+    document.body.classList.remove('jgiCoachModalOpen');
+    byId('mapFirstCoachBar')?.focus();
   }
 
   function resultCoachText(ctx,result){
@@ -541,15 +574,12 @@
     const holeNo=Number(r.currentHole)||1;
     const badge=byId('mapFirstCoachPlan');
     const text=byId('mapFirstCoachText');
-    const detail=byId('mapFirstCoachDetail');
-    const expanded=host.classList.contains('expanded');
     if(badge)badge.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
-    if(detail)detail.innerHTML=coachDetailHtml(ctx);
-    host.setAttribute('aria-expanded',expanded?'true':'false');
+    renderCoachModal(ctx);
     if(!text)return;
 
     if(r.pending?.result){
-      text.innerHTML=resultCoachText(ctx,r.pending.result)+coachWhyHint(expanded);
+      text.innerHTML=resultCoachText(ctx,r.pending.result)+coachWhyHint();
       return;
     }
 
@@ -558,7 +588,7 @@
     const mismatch=selected!==rec
       ? '현재 선택 · '+targetSurfaceDisplay(ctx)+' '+targetDirectionDisplay(selected)+' · '
       : '';
-    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>'+coachWhyHint(expanded);
+    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>'+coachWhyHint();
   }
 
   function holeLossPoint(h){
@@ -933,42 +963,57 @@
       const bar=document.createElement('div');
       bar.id='mapFirstCoachBar';
       bar.className='mapFirstCoachBar';
-      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI 에이전트</span><b id="mapFirstCoachPlan">목표 기준</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">JGI 에이전트 준비 중</div><div id="mapFirstCoachDetail" class="mapFirstCoachDetail" hidden></div>';
+      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI 에이전트</span><b id="mapFirstCoachPlan">목표 기준</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">JGI 에이전트 준비 중</div>';
       targetRow.insertAdjacentElement('afterend',bar);
     }
 
+    const oldInline=byId('mapFirstCoachDetail');
+    if(oldInline)oldInline.remove();
+
     const coachBar=byId('mapFirstCoachBar');
-    if(coachBar&&!byId('mapFirstCoachDetail')){
-      const detail=document.createElement('div');
-      detail.id='mapFirstCoachDetail';
-      detail.className='mapFirstCoachDetail';
-      detail.hidden=true;
-      coachBar.appendChild(detail);
-    }
     if(coachBar&&!coachBar.__jgiDetailBound){
       coachBar.__jgiDetailBound=true;
       coachBar.setAttribute('role','button');
       coachBar.setAttribute('tabindex','0');
       coachBar.setAttribute('aria-label','JGI 추천 공략 판단 근거 보기');
-      coachBar.setAttribute('aria-expanded','false');
-      const toggle=()=>{
-        const detail=byId('mapFirstCoachDetail');
-        if(!detail)return;
-        const open=!coachBar.classList.contains('expanded');
-        coachBar.classList.toggle('expanded',open);
-        detail.hidden=!open;
-        coachBar.setAttribute('aria-expanded',open?'true':'false');
-        renderBar();
-      };
+      coachBar.setAttribute('aria-haspopup','dialog');
       coachBar.addEventListener('click',e=>{
         if(e.target?.closest?.('button,a,input,select,textarea'))return;
-        toggle();
+        openCoachModal();
       });
       coachBar.addEventListener('keydown',e=>{
         if(e.key==='Enter'||e.key===' '){
           e.preventDefault();
-          toggle();
+          openCoachModal();
         }
+      });
+    }
+
+    if(!byId('jgiCoachModal')){
+      const modal=document.createElement('div');
+      modal.id='jgiCoachModal';
+      modal.className='jgiCoachModal';
+      modal.hidden=true;
+      modal.setAttribute('role','dialog');
+      modal.setAttribute('aria-modal','true');
+      modal.setAttribute('aria-labelledby','jgiCoachModalTitle');
+      modal.innerHTML=
+        '<div class="jgiCoachModalPanel">'+
+          '<div class="jgiCoachModalHead">'+
+            '<div><span>JGI AGENT</span><h3 id="jgiCoachModalTitle">왜 이렇게 판단했나요?</h3><p id="jgiCoachModalMeta">현재 홀 · 목표 기준</p></div>'+
+            '<button id="jgiCoachModalClose" class="jgiCoachModalX" type="button" aria-label="닫기">×</button>'+
+          '</div>'+
+          '<div id="jgiCoachModalBody" class="jgiCoachModalBody"></div>'+
+          '<div class="jgiCoachModalFoot"><button id="jgiCoachModalDone" type="button">닫기</button></div>'+
+        '</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',e=>{
+        if(e.target===modal)closeCoachModal();
+      });
+      byId('jgiCoachModalClose')?.addEventListener('click',closeCoachModal);
+      byId('jgiCoachModalDone')?.addEventListener('click',closeCoachModal);
+      document.addEventListener('keydown',e=>{
+        if(e.key==='Escape'&&!modal.hidden)closeCoachModal();
       });
     }
 
