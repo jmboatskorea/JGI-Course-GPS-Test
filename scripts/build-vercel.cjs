@@ -9,7 +9,7 @@ if (!key) {
   process.exit(1);
 }
 const files = [
-  'index.html', 'cumulative-report.css',
+  'index.html', 'cumulative-report.css', 'whoop-pilot.js', 'whoop-pilot.css', 'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
   'jgi-strokes-gained-data.js'
 ];

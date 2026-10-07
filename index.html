@@ -1398,6 +1398,7 @@ body.round-active .modal .sheet .puttHistoryRow{
 }
 </style>
 
+<link rel="stylesheet" href="whoop-pilot.css">
 </head>
 <body>
 <div class="app">
@@ -1550,7 +1551,7 @@ body.round-active .modal .sheet .puttHistoryRow{
         <div id="mapFirstDistanceBubble" class="mapFirstDistanceBubble hidden">
           <strong id="mapFirstDistanceValue">—</strong><span>m</span>
         </div>
-        <button id="mapFirstLivePill" class="mapFirstPill mapFirstLivePill" type="button">LIVE</button>
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><button id="whoopLiveEntry" class="mapFirstPill" style="height:28px" type="button" aria-label="BODY Live HR 열기">♥ —</button><button id="mapFirstLivePill" class="mapFirstPill mapFirstLivePill" style="height:18px;font-size:9px" type="button">LIVE</button></div>
         <button id="mapFirstGpsPill" class="mapFirstPill mapFirstGpsPill" type="button" aria-label="GPS 및 지도 보기">
           <span class="gpsDot"></span><span id="mapFirstGpsText">GPS</span><span class="gpsMenuChev">⌄</span>
         </button>
@@ -2108,6 +2109,46 @@ body.round-active .modal .sheet .puttHistoryRow{
       </div>
       <div class="dataNote" style="text-align:center;margin-top:10px">관찰된 데이터 관계를 요약하며, 멘탈 상태나 코스 상황을 결과의 원인으로 단정하지 않습니다.</div>
     </section>
+
+    <section id="conditionScreen" class="screen hidden whoopScreen">
+      <div class="whoopEy">PRE-ROUND · WHOOP PILOT</div><h1>TODAY CONDITION</h1>
+
+      <div class="card">
+        <strong data-whoop-status>WHOOP · 확인 중</strong>
+        <div class="whoopMetrics" data-whoop-metrics></div>
+        <div class="dataNote" data-whoop-date></div>
+        <div class="whoopActions"><button type="button" class="btn" data-whoop-refresh>새로고침</button><button type="button" class="btn" data-whoop-disconnect>연결 해제</button></div>
+        <label><input type="checkbox" data-whoop-consent> WHOOP Recovery, Sleep, HRV, Resting HR, Day Strain을 라운드 상태 참고용으로 사용하는 데 동의합니다.</label>
+        <form method="post" action="/api/whoop/connect" data-whoop-form><button type="submit" class="btn" data-whoop-connect disabled>WHOOP 연결</button></form>
+        <a href="privacy.html" target="_blank" rel="noopener">개인정보 및 데이터 사용 안내</a>
+      </div>
+      <div class="card"><div class="whoopEy">JGI CONDITION</div><p data-whoop-condition>데이터 확인 중</p><div class="whoopEy">TODAY PLAY</div><p data-whoop-advice>첫 홀에서는 평소의 준비 루틴을 유지하세요.</p></div>
+      <button id="whoopStartRound" type="button" class="btn primary full">START ROUND</button>
+      <button id="whoopBackSetup" type="button" class="btn full" style="margin-top:8px">설정으로 돌아가기</button>
+      <p class="dataNote">WHOOP 연결 없이도 라운드를 시작할 수 있습니다.</p>
+    </section>
+    <section id="bodyScreen" class="screen hidden whoopScreen">
+      <div class="whoopEy">BODY · WHOOP PILOT</div><h1>BODY</h1>
+      <button id="whoopBackRound" class="btn full" type="button">라운드로 돌아가기</button>
+      <div class="card" style="margin-top:12px"><div class="whoopEy">PRE-ROUND METRICS</div><div class="whoopMetrics" id="whoopPreRound"></div><div class="dataNote" id="whoopPreRoundDate"></div></div>
+
+      <div class="card">
+        <strong data-whoop-status>WHOOP · 확인 중</strong>
+        <div class="whoopMetrics" data-whoop-metrics></div>
+        <div class="dataNote" data-whoop-date></div>
+        <div class="whoopActions"><button type="button" class="btn" data-whoop-refresh>새로고침</button><button type="button" class="btn" data-whoop-disconnect>연결 해제</button></div>
+        <label><input type="checkbox" data-whoop-consent> WHOOP Recovery, Sleep, HRV, Resting HR, Day Strain을 라운드 상태 참고용으로 사용하는 데 동의합니다.</label>
+        <form method="post" action="/api/whoop/connect" data-whoop-form><button type="submit" class="btn" data-whoop-connect disabled>WHOOP 연결</button></form>
+        <a href="privacy.html" target="_blank" rel="noopener">개인정보 및 데이터 사용 안내</a>
+      </div>
+      <div class="card"><div class="whoopEy">JGI CONDITION</div><p data-whoop-condition>데이터 확인 중</p><div class="whoopEy">TODAY PLAY</div><p data-whoop-advice>첫 홀에서는 평소의 준비 루틴을 유지하세요.</p></div>
+      <div class="card"><div class="whoopEy">LIVE HR · PHYSIOLOGICAL LOAD</div><p class="whoopLiveValue" id="whoopHR">♥ — <small>bpm</small></p><strong id="whoopLoad">Load · —</strong><p id="whoopBleStatus" class="dataNote">BLE 연결 전</p>
+        <svg class="whoopTrend" viewBox="0 0 300 75" role="img" aria-label="최근 5분 심박 추이"><polyline id="whoopTrendLine" points=""></polyline></svg><p id="whoopTrendText" class="dataNote">5-minute trend · —</p>
+        <div class="whoopActions"><button id="whoopBleConnect" class="btn" type="button">Live HR 연결</button><button id="whoopBleDisconnect" class="btn" type="button">Live HR 해제</button></div>
+        <p class="dataNote">Android Chrome / iPhone Bluefy에서 사용하세요. WHOOP의 HR Broadcast를 켠 뒤 기기를 선택하세요. 표준 Heart Rate Service를 지원하는 기기가 필요합니다.</p>
+        <p class="dataNote">Load는 최근 5분 내 심박 변화 참고값입니다. 개인 기준이 없으므로 피로·과부하 또는 건강 상태를 판정하지 않습니다. Live HR는 이 화면을 열어 둔 동안 메모리에서만 유지됩니다.</p>
+      </div>
+    </section>
   </main>
 
   <nav id="bottomnav" class="bottomnav hidden">
@@ -2116,6 +2157,7 @@ body.round-active .modal .sheet .puttHistoryRow{
     <button data-screen="performance"><b>◎</b>경기력</button>
     <button data-screen="flo"><b>◉</b>멘탈</button>
     <button data-screen="story"><b>✦</b>스토리</button>
+    <button data-screen="body"><b>♥</b>BODY</button>
   </nav>
 </div>
 
@@ -4557,7 +4599,7 @@ function returnToJgiHome(){
   document.body.classList.remove('multi-review-open');
   if(reviewSatelliteActive)restoreGoogleMapHome();
   historicalViewMode=false;historicalRoundBackup=null;multiReviewRounds=[];
-  ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen')?.classList.add('hidden'));
+  ['setup','round','results','overview','performance','flo','story','condition','body'].forEach(s=>$(s+'Screen')?.classList.add('hidden'));
   $('historyViewBar')?.classList.add('hidden');$('bottomnav').classList.add('hidden');$('appTopbar').classList.add('hidden');$('introScreen').classList.remove('hidden');
   document.body.classList.remove('round-active');window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -6811,9 +6853,9 @@ function startGPS(){
 function hole(){return round?.holes[round.currentHole-1]}
 function showScreen(name){
   if(name!=='overview'&&reviewSatelliteActive)restoreGoogleMapHome();
-  ['setup','round','results','overview','performance','flo','story'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
+  ['setup','round','results','overview','performance','flo','story','condition','body'].forEach(s=>$(s+'Screen').classList.toggle('hidden',s!==name));
   document.body.classList.toggle('round-active',name==='round');
-  if(['setup','round','results'].includes(name))$('bottomnav').classList.add('hidden'); else $('bottomnav').classList.remove('hidden');
+  if(['setup','round','results','condition'].includes(name))$('bottomnav').classList.add('hidden'); else $('bottomnav').classList.remove('hidden');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('sel',b.dataset.screen===name));
   if(name==='round'){renderRound();setTimeout(()=>{if(googleMap&&window.google?.maps){google.maps.event.trigger(googleMap,'resize');renderCourseHole()}},80)}
   if(name==='results')renderRoundResultsSearch();
@@ -6821,6 +6863,7 @@ function showScreen(name){
   if(name==='performance')render퍼포먼스();
   if(name==='flo')renderFlo();
   if(name==='story')renderStory();
+  if(name==='body')window.JGI_WHOOP?.render();
 }
 function initScales(){
   ['pressureScale','interferenceScale','tensionScale','confidenceScale','focusScale','resetScale'].forEach(id=>{
@@ -8646,7 +8689,7 @@ $('resetTestDataBtn').onclick=()=>{
   const n=resetSyntheticTestData();
   alert('테스트 데이터 '+n+'라운드를 삭제했습니다.');
 };
-$('startRoundBtn').onclick=()=>{
+function startRoundWithCondition(){
   tee=normalizeTeeName(tee);
   if(!sgBenchmarkMode){
     alert('획득타수(SG) 비교 기준을 먼저 선택해 주세요.\n\n투어 / 스크래치 / 핸디 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
@@ -8661,7 +8704,11 @@ $('startRoundBtn').onclick=()=>{
   startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
   round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
   round.tee=tee;round.stateCollectionLevel=stateCollectionLevel;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
-  hydrateRoundCourseTruth(round);save();renderRoundHistoryStatus();showScreen('round')
+  hydrateRoundCourseTruth(round);window.JGI_WHOOP?.capture(round);save();renderRoundHistoryStatus();showScreen('round')
+};
+$('startRoundBtn').onclick=()=>{
+  if(!sgBenchmarkMode){startRoundWithCondition();return}
+  showScreen('condition');window.JGI_WHOOP?.refresh();
 };
 $('resumeRoundBtn').onclick=()=>{
   round=load();startPositionOverride=null;
@@ -9375,5 +9422,6 @@ $('endRoundBtn').onclick=()=>{
 };
 $('gpsTop').onclick=startGPS;
 </script>
+<script src="whoop-pilot.js"></script>
 </body>
 </html>
