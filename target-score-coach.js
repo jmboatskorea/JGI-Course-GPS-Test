@@ -489,6 +489,138 @@
       '<div class="finalReportSection finalReportNext"><h4>NEXT ROUND · ACTIONS</h4>'+actionHtml+'</div>';
   }
 
+  function pendingTargetPoint(latLng){
+    if(!latLng)return null;
+    const lat=typeof latLng.lat==='function'?Number(latLng.lat()):Number(latLng.lat);
+    const lng=typeof latLng.lng==='function'?Number(latLng.lng()):Number(latLng.lng);
+    return Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null;
+  }
+
+  function applyPendingTargetPoint(latLng){
+    const r=safeRound(),p=r?.pending;
+    if(!p||p.result||typeof googleMap==='undefined'||!googleMap||!window.google?.maps)return false;
+    const point=pendingTargetPoint(latLng);if(!point)return false;
+    const h=typeof hole==='function'?hole():null;
+    const ch=typeof courseHoleData==='function'?courseHoleData():null;
+    const start=p.start||(typeof activeTargetStartReference==='function'?activeTargetStartReference():null);
+    if(!h||!ch||!start)return false;
+
+    const zone=typeof inferZoneForPoint==='function'?inferZoneForPoint(ch,point,h.par):'CENTER';
+    const model=typeof buildCourseIntelligenceModel==='function'?buildCourseIntelligenceModel(ch,h.par):null;
+    const sec=model&&typeof nearestCenterSection==='function'?nearestCenterSection(model,point):null;
+    const distanceM=typeof hav==='function'?hav(start,point):null;
+    const target={
+      zone,
+      source:'PLAYER_SELECTED',
+      lat:point.lat,
+      lng:point.lng,
+      distanceM:Number.isFinite(Number(distanceM))?Number(distanceM):null,
+      fairwayWidthM:Number.isFinite(Number(sec?.widthM))?Number(sec.widthM):null,
+      basis:'MAP_OVERRIDE'
+    };
+
+    targetZone=zone;
+    targetZoneSource='PLAYER_SELECTED';
+    targetManualOverride=true;
+    targetDistanceReference=start;
+
+    p.target=target;
+    p.targetZone=zone;
+    p.targetSource='PLAYER_SELECTED';
+    p.targetLat=point.lat;
+    p.targetLng=point.lng;
+    p.targetFairwayWidthM=target.fairwayWidthM;
+
+    const master=(typeof masterClubs!=='undefined'?masterClubs:[]).find(c=>c?.name===p.club);
+    if(typeof deriveCourseIntelligence==='function'){
+      p.courseContext={
+        ...(p.courseContext||{}),
+        ...deriveCourseIntelligence(ch,start,master?.carry??null,target,h.par)
+      };
+    }
+    if(typeof inferShotIntent==='function'){
+      p.shotIntent=inferShotIntent(p.courseContext?.startGreenDistanceM,target);
+    }
+    p.targetScoreCoach=buildShotContext(r,p.club,start,zone);
+
+    if(typeof targetMarker!=='undefined'){
+      if(!targetMarker){
+        targetMarker=new google.maps.Marker({
+          map:googleMap,position:point,draggable:true,title:'Target',zIndex:60,
+          icon:{path:google.maps.SymbolPath.CIRCLE,scale:9,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3}
+        });
+      }else{
+        targetMarker.setPosition(point);
+        targetMarker.setMap(googleMap);
+        targetMarker.setDraggable(true);
+      }
+    }
+    if(typeof targetLine!=='undefined'){
+      if(!targetLine){
+        targetLine=new google.maps.Polyline({
+          map:googleMap,strokeColor:'#ffffff',strokeOpacity:.9,strokeWeight:2,
+          icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:2},offset:'0',repeat:'12px'}]
+        });
+      }
+      if(targetLine)targetLine.setPath([start,point]);
+    }
+
+    if(typeof updateTargetDistance==='function')updateTargetDistance();
+    if(typeof renderTargetZoneControl==='function')renderTargetZoneControl();
+    if(typeof syncMapFirstDistance==='function')syncMapFirstDistance();
+    if(typeof renderJgiCourseView==='function')renderJgiCourseView();
+    if(typeof save==='function')save();
+    renderBar();
+    return true;
+  }
+
+  function enablePendingTargetEditing(){
+    const r=safeRound(),p=r?.pending;
+    if(typeof targetMarker==='undefined'||!targetMarker)return;
+    if(!p||p.result){
+      try{targetMarker.setDraggable(false)}catch{}
+      return;
+    }
+    try{targetMarker.setDraggable(true)}catch{}
+    if(targetMarker.__jgiPendingTargetBound)return;
+    targetMarker.__jgiPendingTargetBound=true;
+    targetMarker.addListener('drag',()=>{
+      if(safeRound()?.pending&&!safeRound().pending.result&&typeof updateTargetDistance==='function')updateTargetDistance();
+    });
+    targetMarker.addListener('dragend',()=>{
+      const current=safeRound()?.pending;
+      if(!current||current.result)return;
+      const pos=targetMarker.getPosition();
+      applyPendingTargetPoint(pos);
+    });
+  }
+
+  function installPendingTargetMapHook(){
+    const attach=()=>{
+      if(typeof googleMap==='undefined'||!googleMap||googleMap.__jgiPendingTargetHook)return;
+      googleMap.__jgiPendingTargetHook=true;
+      googleMap.addListener('click',e=>{
+        const r=safeRound();
+        if(!r?.pending||r.pending.result)return;
+        if(typeof reviewSatelliteActive!=='undefined'&&reviewSatelliteActive)return;
+        if(typeof dropMode!=='undefined'&&dropMode)return;
+        applyPendingTargetPoint(e.latLng);
+      });
+    };
+
+    const base=window.initGoogleMap;
+    if(typeof base==='function'&&!base.__jgiPendingTargetWrapped){
+      const wrapped=function(){
+        const out=base.apply(this,arguments);
+        attach();
+        return out;
+      };
+      wrapped.__jgiPendingTargetWrapped=true;
+      window.initGoogleMap=wrapped;
+    }
+    attach();
+  }
+
   function installUi(){
     const cockpit=document.querySelector('.mapFirstCockpit');
     const targetRow=cockpit?.querySelector('.mapFirstTargetRow');
@@ -540,6 +672,7 @@
     if(ok&&r?.pending){
       r.pending.targetScoreCoach=buildShotContext(r,r.pending.club,r.pending.start,r.pending.targetZone||r.pending.target?.zone||'CENTER');
       if(typeof save==='function')save();
+      enablePendingTargetEditing();
       renderBar();
     }
   });
@@ -549,6 +682,7 @@
     if(ok&&r?.pending){
       r.pending.targetScoreCoach=buildShotContext(r,r.pending.club,r.pending.start,r.pending.targetZone||r.pending.target?.zone||'CENTER');
       if(typeof save==='function')save();
+      enablePendingTargetEditing();
       renderBar();
     }
   });
@@ -571,8 +705,8 @@
     renderBar();
   });
 
-  wrap('renderRound',function(){renderBar()});
-  wrap('syncMapFirstUI',function(){renderBar()});
+  wrap('renderRound',function(){enablePendingTargetEditing();renderBar()});
+  wrap('syncMapFirstUI',function(){enablePendingTargetEditing();renderBar()});
   wrap('renderOverview',function(){renderOverviewCoach();renderFinalReport()});
   wrap('renderHoleReview',function(out,pre,holeNo){appendHoleReview(holeNo)});
 
@@ -587,7 +721,9 @@
   const resultSave=byId('saveShotResultBtn');
   if(resultSave)resultSave.addEventListener('click',()=>setTimeout(renderBar,0));
 
+  installPendingTargetMapHook();
   const r=safeRound();
   if(r){r.targetScoreCoachVersion=VERSION;ensurePlan(r);if(typeof save==='function')save()}
+  enablePendingTargetEditing();
   renderBar();
 })();
