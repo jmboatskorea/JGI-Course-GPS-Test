@@ -425,3 +425,79 @@ body.round-active .mapFirstNextShot b{
   body.round-active .mapFirstClubTrack strong{font-size:22px!important}
   body.round-active .mapFirstNextShot{height:55px!important;font-size:14px!important}
 }
+
+
+/* JGI Agent decision detail · Course Strategy V1 */
+.mapFirstCoachBar{
+  cursor:pointer;
+  position:relative;
+}
+.mapFirstCoachBar:focus-visible{
+  outline:2px solid #56d98a;
+  outline-offset:3px;
+}
+.coachWhyHint{
+  display:inline-block;
+  margin-top:3px;
+  font-size:8px;
+  font-weight:950;
+  color:#7fdba0;
+  letter-spacing:.02em;
+}
+.mapFirstCoachDetail{
+  grid-column:1/-1;
+  min-width:0;
+  margin-top:3px;
+  padding:10px 11px;
+  border-radius:13px;
+  background:rgba(4,20,15,.62);
+  border:1px solid rgba(87,221,134,.20);
+}
+.mapFirstCoachDetail[hidden]{display:none!important}
+.coachDetailHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-bottom:7px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.coachDetailHead b{font-size:11px;color:#82f3a3}
+.coachDetailHead span{font-size:7px;color:#879a8f;font-weight:850}
+.coachDetailGrid{display:grid;gap:0}
+.coachDetailRow{
+  display:grid;
+  grid-template-columns:82px minmax(0,1fr);
+  gap:8px;
+  padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:9px;
+  line-height:1.35;
+}
+.coachDetailRow:last-child{border-bottom:0}
+.coachDetailRow span{color:#91a59a;font-weight:850}
+.coachDetailRow b{color:#e9f1ec;font-weight:900}
+.coachDetailEmpty{font-size:9px;color:#91a59a}
+
+body.round-active .mapFirstCoachBar.expanded{
+  padding-bottom:9px!important;
+}
+body.round-active .coachWhyHint{color:#08783d!important}
+body.round-active .mapFirstCoachDetail{
+  background:#f5f7f6;
+  border-color:#d6dfda;
+  color:#26332c;
+}
+body.round-active .coachDetailHead{
+  border-bottom-color:#dce3df;
+}
+body.round-active .coachDetailHead b{color:#08783d}
+body.round-active .coachDetailHead span{color:#77827c}
+body.round-active .coachDetailRow{border-bottom-color:#e1e6e3}
+body.round-active .coachDetailRow span{color:#6f7b74}
+body.round-active .coachDetailRow b{color:#26332c}
+
+@media(max-width:390px){
+  .coachDetailRow{grid-template-columns:74px minmax(0,1fr);gap:6px;font-size:8.5px}
+  .mapFirstCoachDetail{padding:9px 10px}
+}
