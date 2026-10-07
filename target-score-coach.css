@@ -1,6 +1,6 @@
 .mapFirstCoachBar{
   display:grid;
-  grid-template-columns:70px minmax(0,1fr);
+  grid-template-columns:90px minmax(0,1fr);
   align-items:center;
   gap:7px;
   min-height:42px;
@@ -32,7 +32,8 @@
   font-weight:850;
   color:#d7e3dc;
 }
-.mapFirstCoachText strong{color:#82f3a3}
+.mapFirstCoachText strong{display:block;color:#82f3a3}
+.mapFirstCoachText .coachReason{display:block;margin-top:2px}
 .mapFirstCoachText .warn{color:#ffb45d}
 .mapFirstCoachText .bad{color:#ff7e89}
 .targetCoachOverview{
@@ -103,7 +104,7 @@ body.round-active .mapFirstCoachText strong{color:#08783d!important}
 body.round-active .mapFirstCoachText .warn{color:#a85e00!important}
 body.round-active .mapFirstCoachText .bad{color:#b51f2d!important}
 @media(max-width:390px){
-  .mapFirstCoachBar{grid-template-columns:62px minmax(0,1fr);gap:5px;min-height:39px}
+  .mapFirstCoachBar{grid-template-columns:84px minmax(0,1fr);gap:5px;min-height:44px}
   .mapFirstCoachText{font-size:9px}
   .targetCoachGrid{gap:5px}
 }

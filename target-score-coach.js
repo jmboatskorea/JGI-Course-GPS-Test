@@ -99,6 +99,63 @@
     return d===0?'PAR':d===1?'BOGEY OK':d<0?'BIRDIE':'+'+d;
   }
 
+  function targetProgressDisplay(delta){
+    const d=Number(delta);
+    if(!Number.isFinite(d)||d===0)return '목표대로';
+    return '목표보다 '+(d>0?'+':'')+d;
+  }
+
+  function targetDirectionDisplay(target){
+    return ({LEFT:'좌측',CENTER:'중앙',RIGHT:'우측'})[String(target||'CENTER').toUpperCase()]||'중앙';
+  }
+
+  function targetSurfaceDisplay(ctx){
+    const r=safeRound();
+    const intent=String(r?.pending?.shotIntent||'').toUpperCase();
+    if(intent==='RECOVERY')return '탈출 지점';
+    if(intent==='GREEN_ATTACK')return '그린';
+    if(intent==='LAYUP'||intent==='TEE_POSITION')return '페어웨이';
+
+    const h=r?.holes?.[(Number(r?.currentHole)||1)-1];
+    if((h?.shots||[]).length===0)return Number(h?.par)===3?'그린':'페어웨이';
+
+    const master=(typeof masterClubs!=='undefined'?masterClubs:[]).find(c=>c?.name===ctx?.club);
+    const carry=num(master?.carry);
+    if(Number.isFinite(Number(ctx?.distanceToGreenM))&&Number.isFinite(carry)&&Number(ctx.distanceToGreenM)<=carry+10)return '그린';
+    return '페어웨이';
+  }
+
+  function recommendationDisplay(ctx,target){
+    const surface=targetSurfaceDisplay(ctx);
+    if(surface==='탈출 지점')return '추천 공략 · 탈출 우선';
+    return '추천 공략 · '+surface+' '+targetDirectionDisplay(target);
+  }
+
+  function riskTypeDisplay(side){
+    const risk=safeRound()?.pending?.courseContext?.courseRisk?.[side]||null;
+    const type=String(risk?.type||'').toUpperCase();
+    if(type==='WATER')return (side==='left'?'좌측':'우측')+' 해저드 주의';
+    if(type==='BUNKER')return (side==='left'?'좌측':'우측')+' 벙커 주의';
+    if(type==='OB')return (side==='left'?'좌측':'우측')+' OB 주의';
+    return (side==='left'?'좌측':'우측')+' 위험 주의';
+  }
+
+  function reasonDisplay(ctx){
+    const reason=String(ctx?.reason||'');
+    if(reason.includes('LEFT miss')&&reason.includes('좌측 위험'))return '왼쪽 미스 경향 · '+riskTypeDisplay('left');
+    if(reason.includes('LEFT miss'))return '왼쪽 미스 경향 · 중앙 공략 우선';
+    if(reason.includes('Landing Zone'))return '랜딩 구역이 좁음 · 양쪽 위험 주의';
+    if(reason.includes('좌측 위험'))return riskTypeDisplay('left');
+    if(reason.includes('우측 위험'))return riskTypeDisplay('right');
+    if(reason.includes('리스크 균형'))return '좌우 위험 균형 · 중앙 공략';
+    return reason
+      .replaceAll('CENTER','중앙')
+      .replaceAll('LEFT','좌측')
+      .replaceAll('RIGHT','우측')
+      .replaceAll('miss','미스')
+      .replaceAll('Landing Zone','랜딩 구역');
+  }
+
   function isLeftMissClub(r,club){
     const c=String(club||'').toUpperCase();
     const miss=r?.missProfile||{};
@@ -215,18 +272,19 @@
     const recommended=ctx.recommendedTarget||'CENTER';
 
     if(endLie==='GREEN'||endLie==='HOLED'){
-      return '<strong>그린 도달</strong> · 목표 계획 유지 · 다음은 퍼팅/홀 마무리';
+      return '<strong>그린 도달</strong><span class="coachReason">다음은 퍼팅 또는 홀 마무리</span>';
     }
     if(direction==='LEFT'&&isLeftMissClub(safeRound(),ctx.club)){
-      return '<span class="warn">LEFT miss 관찰</span> · 다음 위치에서는 CENTER/안전구역 우선';
+      return '<strong>왼쪽 미스 확인</strong><span class="coachReason">다음 위치에서는 중앙 또는 안전 구역 우선</span>';
     }
     if(['RECOVERY','BUNKER','SAND'].includes(endLie)){
-      return '<span class="warn">'+endLie+'</span> · 다음 샷은 DEFEND · 안전한 플레이 위치 우선';
+      const lieText=endLie==='BUNKER'||endLie==='SAND'?'벙커':'트러블';
+      return '<strong>'+lieText+'에서 다음 샷</strong><span class="coachReason">안전 공략 · 다음 플레이 위치 확보</span>';
     }
     if(selected!==recommended){
-      return 'Player '+selected+' / JGI '+recommended+' · 결과 저장 · 다음 위치에서 계획 재계산';
+      return '<strong>'+recommendationDisplay(ctx,recommended)+'</strong><span class="coachReason">현재 선택 · '+targetDirectionDisplay(selected)+' · 다음 위치에서 다시 계산</span>';
     }
-    return '결과 저장 · 다음 위치에서 Target Score Plan 재계산';
+    return '<strong>결과 저장 완료</strong><span class="coachReason">다음 위치에서 목표 스코어 기준으로 다시 계산</span>';
   }
 
   function renderBar(){
@@ -236,11 +294,9 @@
     const p=progress(r);
     const ctx=currentPreviewContext();
     const holeNo=Number(r.currentHole)||1;
-    const holePlan=holePlanLabel(holeNo,r);
-    const status=p?progressLabel(p.delta):'—';
     const badge=byId('mapFirstCoachPlan');
     const text=byId('mapFirstCoachText');
-    if(badge)badge.textContent='H'+holeNo+' '+holePlan+' · '+status;
+    if(badge)badge.textContent=holeNo+'번 홀 · '+(p?targetProgressDisplay(p.delta):'목표 기준');
     if(!text)return;
 
     if(r.pending?.result){
@@ -250,10 +306,10 @@
 
     const selected=ctx?.selectedTarget||'CENTER';
     const rec=ctx?.recommendedTarget||'CENTER';
-    const mode=ctx?.mode||'NEUTRAL';
-    const modeLabel=mode==='DEFEND'?'DEFEND':mode==='ATTACK'?'ATTACK':'NEUTRAL';
-    const mismatch=selected!==rec?' · 현재 '+selected:'';
-    text.innerHTML='<strong>JGI '+rec+'</strong>'+mismatch+' · '+modeLabel+' · '+(ctx?.reason||'Target Score Plan');
+    const mismatch=selected!==rec
+      ? '현재 선택 · '+targetSurfaceDisplay(ctx)+' '+targetDirectionDisplay(selected)+' · '
+      : '';
+    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>';
   }
 
   function holeLossPoint(h){
@@ -300,14 +356,14 @@
     const r=safeRound(),host=byId('targetScoreCoachOverviewBody');
     if(!r||!host)return;
     const p=progress(r),plan=ensurePlan(r);
-    if(!p||!plan){host.innerHTML='Target Score Plan 준비 중';return}
-    const status=progressLabel(p.delta);
+    if(!p||!plan){host.innerHTML='목표 스코어 계획 준비 중';return}
+    const status=targetProgressDisplay(p.delta);
     const statusClass=p.delta>0?'behind':p.delta<0?'ahead':'';
     const nextHole=(r.holes||[]).find(h=>!h.completed)?.hole||r.currentHole||18;
     const nextTarget=holeTarget(nextHole,r);
     const last=[...(r.holes||[])].filter(h=>h.completed).sort((a,b)=>b.hole-a.hole)[0]||null;
     host.innerHTML=
-      '<div class="targetCoachOverviewTop"><div><span class="dataNote">TARGET SCORE</span><strong>'+plan.targetScore+'</strong></div><span class="targetCoachStatus '+statusClass+'">'+status+'</span></div>'+
+      '<div class="targetCoachOverviewTop"><div><span class="dataNote">목표 스코어</span><strong>'+plan.targetScore+'</strong></div><span class="targetCoachStatus '+statusClass+'">'+status+'</span></div>'+
       '<div class="targetCoachGrid">'+
         '<div class="targetCoachMetric"><span>현재 합계</span><b>'+p.actual+'</b></div>'+
         '<div class="targetCoachMetric"><span>계획 합계</span><b>'+p.planned+'</b></div>'+
@@ -324,7 +380,7 @@
     host.querySelectorAll('.targetCoachHoleReview').forEach(x=>x.remove());
     const box=document.createElement('div');
     box.className='targetCoachHoleReview';
-    box.innerHTML='<b>JGI TARGET SCORE COACH</b><br>'+holeSummary(h);
+    box.innerHTML='<b>JGI 목표 스코어 에이전트</b><br>'+holeSummary(h);
     host.appendChild(box);
   }
 
@@ -628,14 +684,14 @@
       const bar=document.createElement('div');
       bar.id='mapFirstCoachBar';
       bar.className='mapFirstCoachBar';
-      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI COACH</span><b id="mapFirstCoachPlan">TARGET PLAN</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">Target Score Coach 준비 중</div>';
+      bar.innerHTML='<div class="mapFirstCoachBadge"><span>JGI 에이전트</span><b id="mapFirstCoachPlan">목표 기준</b></div><div id="mapFirstCoachText" class="mapFirstCoachText">JGI 에이전트 준비 중</div>';
       targetRow.insertAdjacentElement('afterend',bar);
     }
     const overview=document.querySelector('#overviewScreen .card');
     if(overview&&!byId('targetScoreCoachOverviewBody')){
       const card=document.createElement('div');
       card.className='card targetCoachOverview';
-      card.innerHTML='<div class="title">JGI TARGET SCORE COACH</div><div class="sub">목표 스코어 계획과 실제 플레이를 샷 단위로 비교합니다.</div><div id="targetScoreCoachOverviewBody" style="margin-top:10px"></div>';
+      card.innerHTML='<div class="title">JGI 목표 스코어 에이전트</div><div class="sub">목표 스코어 계획과 실제 플레이를 샷 단위로 비교합니다.</div><div id="targetScoreCoachOverviewBody" style="margin-top:10px"></div>';
       overview.insertAdjacentElement('afterend',card);
     }
     const coachCard=byId('targetScoreCoachOverviewBody')?.closest('.targetCoachOverview');
