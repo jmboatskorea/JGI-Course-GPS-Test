@@ -1443,6 +1443,7 @@ body.round-active .modal .sheet .puttHistoryRow{
 </style>
 
 <link rel="stylesheet" href="whoop-pilot.css">
+<link rel="stylesheet" href="target-score-coach.css">
 </head>
 <body>
 <div class="app">
@@ -1511,6 +1512,27 @@ body.round-active .modal .sheet .puttHistoryRow{
         <h1>라운드 시작</h1>
         <p>플레이 · 기록 · 이해 · 개선</p>
       </div>
+      <div class="card" id="testPlayerProfileCard">
+        <div class="row between">
+          <div>
+            <div class="title">TEST PLAYER</div>
+            <div class="sub"><b>Park Jieun</b> · Female · HCP 5</div>
+          </div>
+          <span class="pill">TARGET 73</span>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="metric"><div class="k">TEE</div><div class="v">RED</div><div class="s">Jagorawi Old</div></div>
+          <div class="metric"><div class="k">SG</div><div class="v" style="font-size:15px">FEMALE</div><div class="s">Scratch V0.1</div></div>
+        </div>
+        <div class="field">
+          <label>목표 스코어</label>
+          <input id="targetScoreInput" type="number" min="60" max="140" step="1" value="73">
+        </div>
+        <div class="sgStatus" style="margin-top:10px">
+          <b>대표 Miss</b> · Driver LEFT · Long Iron LEFT<br>
+          <span class="dataNote">Player Level은 HCP 5, SG 계산은 Female Scratch V0.1을 사용합니다. 클럽 Carry 범위도 Park Jieun 프로필로 적용됩니다.</span>
+        </div>
+      </div>
       <div class="card">
         <div class="field">
           <label>골프장</label>
@@ -1526,7 +1548,7 @@ body.round-active .modal .sheet .puttHistoryRow{
         <div class="field">
           <label>티</label>
           <div class="segment" id="teeSegment">
-            <button data-v="Blue">블루</button><button class="sel" data-v="White">화이트</button><button data-v="Red">레드</button>
+            <button data-v="Blue">블루</button><button data-v="White">화이트</button><button class="sel" data-v="Red">레드</button>
           </div>
         </div>
       </div>
@@ -1556,35 +1578,27 @@ body.round-active .modal .sheet .puttHistoryRow{
         </div>
       </div>
       <div class="card sgSetupCard">
-        <div class="title">획득타수(SG) 기준 선택</div>
-        <div class="sub">테스트 라운드에서 비교할 기준을 시작 전에 직접 선택하세요.</div>
+        <div class="title">획득타수(SG) 기준</div>
+        <div class="sub">Park Jieun 여성 테스트 프로필은 Female Scratch V0.1 기준으로 고정합니다.</div>
         <div class="field">
-          <label>비교 기준 · 필수</label>
+          <label>비교 기준</label>
           <div class="segment sgBenchmarkSegment" id="sgBenchmarkSegment">
-            <button data-v="TOUR">투어</button>
-            <button data-v="SCRATCH">스크래치</button>
-            <button data-v="HCP_5">핸디 5</button>
-            <button data-v="HCP_10">핸디 10</button>
-            <button data-v="HCP_15">핸디 15</button>
-            <button data-v="HCP_20">핸디 20</button>
-            <button data-v="HCP_25">핸디 25</button>
+            <button class="sel" data-v="FEMALE_SCRATCH">여자 Scratch</button>
+            <button data-v="TOUR" disabled>투어</button>
+            <button data-v="SCRATCH" disabled>스크래치</button>
+            <button data-v="HCP_5" disabled>핸디 5</button>
+            <button data-v="HCP_10" disabled>핸디 10</button>
+            <button data-v="HCP_15" disabled>핸디 15</button>
+            <button data-v="HCP_20" disabled>핸디 20</button>
+            <button data-v="HCP_25" disabled>핸디 25</button>
           </div>
-          <div id="sgSetupHint" class="sgStatus">라운드를 시작하려면 SG 비교 기준을 하나 선택하세요.</div>
+          <div id="sgSetupHint" class="sgStatus"><b>여자 Scratch · V0.1</b> · Public-calibrated 테스트 Benchmark</div>
         </div>
       </div>
       <button id="startRoundBtn" class="btn primary full">라운드 시작</button>
       <button id="resumeRoundBtn" class="btn ghost full hidden" style="margin-top:8px">저장된 라운드 이어하기</button>
       <div id="roundHistoryStatus" class="sgStatus" style="margin-top:8px">저장된 완료 라운드 0개</div>
 
-      <div class="card" style="margin-top:10px">
-        <div class="title">테스트 데이터 · 핸디 5</div>
-        <div class="sub">JGI 누적 분석 테스트용 가상 27라운드 · HCP 5 기준입니다. 실제 라운드와 구분되어 저장됩니다.</div>
-        <div class="grid2" style="margin-top:10px">
-          <button id="seedTestDataBtn" class="btn ghost">27라운드 테스트 데이터 생성</button>
-          <button id="resetTestDataBtn" class="btn ghost" style="border-color:#7a3940;color:#ffc1c8">테스트 데이터 초기화</button>
-        </div>
-        <div id="testDataPreview" class="sgStatus" style="margin-top:10px"></div>
-      </div>
     </section>
 
     <section id="roundScreen" class="screen hidden round-map-screen map-first-round">
@@ -2451,6 +2465,37 @@ const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
 const COMPLETED_ROUNDS_LIMIT=40;
 const TEST_DATA_SEED_KEY='jgi_test_data_seed_v1';
 const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_HCP5_MENTAL5_V3';
+const ACTIVE_TEST_PROFILE_KEY='jgi_active_test_profile_v1';
+const PARK_JIEUN_PROFILE_VERSION='JGI_PARK_JIEUN_TEST_V1_2026-10-08';
+const PARK_JIEUN_PROFILE={
+  id:'PARK_JIEUN_TEST_V1',
+  version:PARK_JIEUN_PROFILE_VERSION,
+  name:'Park Jieun',
+  sex:'FEMALE',
+  handicap:5,
+  targetScore:73,
+  tee:'Red',
+  course:'Jagorawi Golf & Country Club',
+  nine:'Old Course',
+  sgBenchmarkMode:'FEMALE_SCRATCH',
+  missProfile:{driver:'LEFT',longIron:'LEFT'},
+  clubs:[
+    {name:'DR',carry:180,carryMin:170,carryMax:190,centerWidth:null},
+    {name:'3W',carry:160,carryMin:150,carryMax:170,centerWidth:null},
+    {name:'7W',carry:147.5,carryMin:140,carryMax:155,centerWidth:null},
+    {name:'9W',carry:142.5,carryMin:135,carryMax:150,centerWidth:null},
+    {name:'5I',carry:130,carryMin:125,carryMax:135,centerWidth:null},
+    {name:'6I',carry:125,carryMin:120,carryMax:130,centerWidth:null},
+    {name:'7I',carry:115,carryMin:110,carryMax:120,centerWidth:null},
+    {name:'8I',carry:105,carryMin:100,carryMax:110,centerWidth:null},
+    {name:'9I',carry:95,carryMin:90,carryMax:100,centerWidth:null},
+    {name:'PW',carry:85,carryMin:80,carryMax:90,centerWidth:null},
+    {name:'48°',carry:75,carryMin:70,carryMax:80,centerWidth:null},
+    {name:'52°',carry:65,carryMin:60,carryMax:70,centerWidth:null},
+    {name:'56°',carry:65,carryMin:null,carryMax:65,centerWidth:null},
+    {name:'Putter',carry:0,carryMin:0,carryMax:0,centerWidth:null}
+  ]
+};
 const DEFAULT_MASTER_CLUBS=[
   {name:'DR',carry:235,centerWidth:14},{name:'3W',carry:215,centerWidth:12},{name:'5W',carry:200,centerWidth:11},
   {name:'3I',carry:190,centerWidth:10},{name:'4I',carry:180,centerWidth:9},{name:'5I',carry:170,centerWidth:9},
@@ -2518,6 +2563,36 @@ let targetZoneSource='SYSTEM_DEFAULT';
 let targetManualOverride=false;
 let targetDistanceReference=null;
 
+function bootstrapParkJieunTestProfile(){
+  let resetApplied=false;
+  try{
+    if(localStorage.getItem(ACTIVE_TEST_PROFILE_KEY)!==PARK_JIEUN_PROFILE_VERSION){
+      [STORAGE,COMPLETED_ROUNDS_KEY,STATE_HISTORY_KEY,TEST_DATA_SEED_KEY,STATE_COLLECTION_LEVEL_KEY,'agi_master_clubs'].forEach(key=>localStorage.removeItem(key));
+      localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,'100');
+      localStorage.setItem(TEST_DATA_SEED_KEY,'DISABLED_PARK_JIEUN');
+      localStorage.setItem(ACTIVE_TEST_PROFILE_KEY,PARK_JIEUN_PROFILE_VERSION);
+      resetApplied=true;
+    }
+    localStorage.setItem('agi_master_clubs',JSON.stringify(PARK_JIEUN_PROFILE.clubs));
+  }catch(e){
+    console.warn('Park Jieun test profile bootstrap failed',e);
+  }
+  if(resetApplied)stateCollectionLevel=100;
+  tee=PARK_JIEUN_PROFILE.tee;
+  playerHandicap=PARK_JIEUN_PROFILE.handicap;
+  sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
+  return resetApplied;
+}
+function applyParkJieunSetupDefaults(){
+  if($('courseSelect'))$('courseSelect').value=PARK_JIEUN_PROFILE.course;
+  if($('courseNine'))$('courseNine').value=PARK_JIEUN_PROFILE.nine;
+  if($('targetScoreInput'))$('targetScoreInput').value=String(PARK_JIEUN_PROFILE.targetScore);
+  tee=PARK_JIEUN_PROFILE.tee;
+  playerHandicap=PARK_JIEUN_PROFILE.handicap;
+  sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
+  setSelected($('teeSegment'),tee);
+  syncSgBenchmarkUI();
+}
 
 function courseHoleData(){
   return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
@@ -3378,6 +3453,13 @@ function getMasterClubs(){
   }catch{}
   return DEFAULT_MASTER_CLUBS.map(x=>({...x}));
 }
+function clubCarryLabel(club){
+  if(club?.name==='Putter')return 'Putting';
+  const min=Number(club?.carryMin),max=Number(club?.carryMax);
+  if(Number.isFinite(min)&&Number.isFinite(max)&&max>min)return min+'–'+max+'m';
+  if(Number.isFinite(max)&&!Number.isFinite(min))return '≈'+max+'m';
+  return Number.isFinite(Number(club?.carry))?Number(club.carry)+'m':'—';
+}
 function referenceDistance(){
   return targetDistanceM||greenDistanceM||null;
 }
@@ -3396,14 +3478,14 @@ function renderClubSuggestions(){
     : (greenDistanceM ? 'Green '+Math.round(greenDistanceM)+'m' : '기준 거리');
   wrap.innerHTML=recs.map((club,i)=>
     '<button class="clubSuggestion '+(i===0?'best':'')+'" data-club="'+club.name+'">'+
-    '<b>'+club.name+'</b><span>'+club.carry+'m carry</span></button>'
+    '<b>'+club.name+'</b><span>'+clubCarryLabel(club)+' carry</span></button>'
   ).join('');
 }
 function renderAllClubs(){
   const wrap=$('allClubList'); if(!wrap)return;
   wrap.innerHTML=masterClubs.map(club=>
     '<button class="allClubBtn" data-club="'+club.name+'"><b>'+club.name+'</b><span>'+
-    (club.name==='Putter'?'Putting':club.carry+'m carry · CENTER ±'+(club.centerWidth??'—')+'m')+'</span></button>'
+    (club.name==='Putter'?'Putting':clubCarryLabel(club)+' carry')+'</span></button>'
   ).join('');
 }
 
@@ -4154,8 +4236,15 @@ function emptyRound(course,nine){
       shots:[],putts:0,puttsDetail:[],puttingState:null,
       penalties:0,penaltyEvents:[],completed:false,review:null
     })),
-    playerHandicap:null,
-    sgBenchmarkMode:sgBenchmarkMode||null,
+    playerProfileId:PARK_JIEUN_PROFILE.id,
+    playerProfileVersion:PARK_JIEUN_PROFILE.version,
+    playerName:PARK_JIEUN_PROFILE.name,
+    playerSex:PARK_JIEUN_PROFILE.sex,
+    playerHandicap:PARK_JIEUN_PROFILE.handicap,
+    targetScore:PARK_JIEUN_PROFILE.targetScore,
+    missProfile:{...PARK_JIEUN_PROFILE.missProfile},
+    clubProfile:PARK_JIEUN_PROFILE.clubs.map(c=>({...c})),
+    sgBenchmarkMode:PARK_JIEUN_PROFILE.sgBenchmarkMode,
     sgDataVersion:window.JGI_SG_BENCHMARK_DATA?.version||null,
     analysisSnapshot:null,specialEvents:[],pendingResetEvent:null,nextShotReset:null,pending:null});
 }
@@ -6848,7 +6937,14 @@ function normalizeRound(r){
   r.samplingRoundIndex=Number(r.samplingRoundIndex)||currentSamplingRoundIndex();
   r.samplingPlan=r.samplingPlan||buildSamplingPlan(r.stateCollectionLevel,r.samplingRoundIndex);
   r.stateSamplingEvents=Array.isArray(r.stateSamplingEvents)?r.stateSamplingEvents:[];
+  r.playerName=r.playerName||null;
+  r.playerSex=r.playerSex||null;
+  r.playerProfileId=r.playerProfileId||null;
+  r.playerProfileVersion=r.playerProfileVersion||null;
   r.playerHandicap=clampNumber(r.playerHandicap,0,25);
+  r.targetScore=clampNumber(r.targetScore,50,150);
+  r.missProfile=r.missProfile||null;
+  r.clubProfile=Array.isArray(r.clubProfile)?r.clubProfile:null;
   r.sgBenchmarkMode=r.sgBenchmarkMode||'PLAYER';
   r.sgDataVersion=r.sgDataVersion||window.JGI_SG_BENCHMARK_DATA?.version||null;
   r.tee=normalizeTeeName(r.tee);
@@ -8658,11 +8754,12 @@ function precomputeAllCourseIntelligence(){
   });
 }
 
+const parkProfileResetApplied=bootstrapParkJieunTestProfile();
 initScales();
+applyParkJieunSetupDefaults();
 renderTargetZoneControl();
 precomputeAllCourseIntelligence();
 loadGoogleMaps();
-sgBenchmarkMode=null;
 stateCollectionLevel=activeSamplingCycleLevel()||normalizeCollectionLevel(localStorage.getItem(STATE_COLLECTION_LEVEL_KEY)||stateCollectionLevel);
 localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
 syncStatePlanUI();
@@ -8673,14 +8770,14 @@ if(stored){
   if(stored.completedAt)archiveRound(stored,roundIsFull(stored)?'FULL':'PARTIAL');
 }
 renderRoundHistoryStatus();
-const currentTestSeedVersion=localStorage.getItem(TEST_DATA_SEED_KEY);
-if(currentTestSeedVersion!==TEST_DATA_SEED_VERSION&&currentTestSeedVersion!=='RESET')seedSyntheticTestData(true);
-renderTestDataPreview();
+localStorage.setItem(TEST_DATA_SEED_KEY,'DISABLED_PARK_JIEUN');
+if(parkProfileResetApplied)console.info('Previous JGI round/test data cleared for Park Jieun test profile.');
 
 $('enterRoundBtn').onclick=()=>{
   historicalViewMode=false;
   $('introScreen').classList.add('hidden');
   $('appTopbar').classList.remove('hidden');
+  applyParkJieunSetupDefaults();
   showScreen('setup');
   startGPS();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -8755,33 +8852,39 @@ $('statePlanSegment').addEventListener('click',e=>{
   syncStatePlanUI();
 });
 $('sgBenchmarkSegment').addEventListener('click',e=>{
-  const b=e.target.closest('[data-v]');if(!b)return;
-  sgBenchmarkMode=b.dataset.v;
+  const b=e.target.closest('[data-v]');if(!b||b.disabled)return;
+  sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   syncSgBenchmarkUI();
 });
-$('seedTestDataBtn').onclick=()=>{
-  seedSyntheticTestData(false);
-};
-$('resetTestDataBtn').onclick=()=>{
+if($('seedTestDataBtn'))$('seedTestDataBtn').onclick=()=>seedSyntheticTestData(false);
+if($('resetTestDataBtn'))$('resetTestDataBtn').onclick=()=>{
   if(!confirm('생성된 테스트 데이터만 삭제할까요?\n\n실제 입력한 라운드와 클럽 설정은 유지됩니다.'))return;
   const n=resetSyntheticTestData();
   alert('테스트 데이터 '+n+'라운드를 삭제했습니다.');
 };
 function startRoundWithCondition(){
-  tee=normalizeTeeName(tee);
-  if(!sgBenchmarkMode){
-    alert('획득타수(SG) 비교 기준을 먼저 선택해 주세요.\n\n투어 / 스크래치 / 핸디 5 / 10 / 15 / 20 / 25 중 하나를 선택해야 합니다.');
-    $('sgBenchmarkSegment').scrollIntoView({behavior:'smooth',block:'center'});
-    return;
-  }
+  tee=PARK_JIEUN_PROFILE.tee;
+  sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
+  const targetScore=clampNumber($('targetScoreInput')?.value||PARK_JIEUN_PROFILE.targetScore,50,150)||PARK_JIEUN_PROFILE.targetScore;
   const previousRound=load();
   if(previousRound&&!previousRound.completedAt&&roundHasRecordedData(previousRound)){
     previousRound.completedAt=Date.now();
     archiveRound(previousRound,'PARTIAL');
   }
   startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
-  round=emptyRound($('courseSelect').value,$('courseNine').value.trim()||'Course');
-  round.tee=tee;round.stateCollectionLevel=stateCollectionLevel;round.playerHandicap=null;round.sgBenchmarkMode=sgBenchmarkMode;round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
+  round=emptyRound(PARK_JIEUN_PROFILE.course,PARK_JIEUN_PROFILE.nine);
+  round.tee=PARK_JIEUN_PROFILE.tee;
+  round.stateCollectionLevel=stateCollectionLevel;
+  round.playerProfileId=PARK_JIEUN_PROFILE.id;
+  round.playerProfileVersion=PARK_JIEUN_PROFILE.version;
+  round.playerName=PARK_JIEUN_PROFILE.name;
+  round.playerSex=PARK_JIEUN_PROFILE.sex;
+  round.playerHandicap=PARK_JIEUN_PROFILE.handicap;
+  round.targetScore=targetScore;
+  round.missProfile={...PARK_JIEUN_PROFILE.missProfile};
+  round.clubProfile=PARK_JIEUN_PROFILE.clubs.map(c=>({...c}));
+  round.sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
+  round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
   hydrateRoundCourseTruth(round);window.JGI_WHOOP?.capture(round);save();renderRoundHistoryStatus();showScreen('round')
 };
 $('startRoundBtn').onclick=()=>{
@@ -9508,6 +9611,7 @@ $('endRoundBtn').onclick=()=>{
 };
 $('gpsTop').onclick=startGPS;
 </script>
+<script src="target-score-coach.js"></script>
 <script src="whoop-pilot.js"></script>
 </body>
 </html>
