@@ -259,3 +259,167 @@ body.round-active #roundScreen.map-first-round .roundMapStage{
 body.round-active .mapFirstCockpit{
   bottom:0!important;
 }
+
+
+/* Round cockpit visual polish V2 */
+body.round-active .mapFirstTop .mapFirstPill,
+body.round-active .mapFirstTop .mapFirstDistanceBubble{
+  background:rgba(5,12,9,.90)!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.46)!important;
+  box-shadow:0 7px 22px rgba(0,0,0,.27)!important;
+  backdrop-filter:blur(14px)!important;
+  -webkit-backdrop-filter:blur(14px)!important;
+}
+body.round-active .mapFirstTop .mapFirstShotPill .chev,
+body.round-active .mapFirstTop .gpsMenuChev{
+  color:#d9e3dd!important;
+}
+body.round-active .mapFirstTop .mapFirstDistanceBubble span{
+  color:#c0cbc5!important;
+}
+body.round-active .mapFirstTop .mapFirstLivePill{
+  color:#22df78!important;
+  border-color:#22df78!important;
+  background:rgba(5,12,9,.92)!important;
+}
+body.round-active .mapFirstTop .mapFirstGpsPill{
+  background:rgba(5,12,9,.92)!important;
+}
+body.round-active .mapFirstCockpit{
+  padding:10px 12px 0!important;
+  border-radius:28px 28px 0 0!important;
+}
+body.round-active .mapFirstQuickActions{
+  gap:8px!important;
+  padding-bottom:9px!important;
+}
+body.round-active .mapFirstQuickActions button{
+  min-height:50px!important;
+  height:50px!important;
+  border-radius:17px!important;
+  font-size:12px!important;
+  font-weight:1000!important;
+}
+body.round-active .mapFirstQuickActions .actionIcon{
+  width:23px!important;
+  height:23px!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  margin-right:5px!important;
+  font-size:0!important;
+  vertical-align:middle!important;
+}
+body.round-active .mapFirstQuickActions .actionIcon svg{
+  width:22px!important;
+  height:22px!important;
+  display:block!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:2!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.round-active .mapFirstQuickActions .penaltyIcon{
+  color:#ff4f62!important;
+}
+body.round-active .mapFirstTargetRow{
+  grid-template-columns:58px minmax(0,1fr)!important;
+  gap:8px!important;
+  margin:7px 0 0!important;
+  padding:0 0 8px!important;
+}
+body.round-active .mapFirstTargetLabel{
+  font-size:10px!important;
+  letter-spacing:.16em!important;
+}
+body.round-active .mapFirstTargetSegment{
+  gap:6px!important;
+}
+body.round-active .mapFirstTargetSegment button{
+  min-height:39px!important;
+  height:39px!important;
+  border-radius:13px!important;
+  font-size:11px!important;
+}
+body.round-active .mapFirstCoachBar{
+  grid-template-columns:98px minmax(0,1fr)!important;
+  min-height:55px!important;
+  gap:8px!important;
+  padding:8px 0 9px!important;
+}
+body.round-active .mapFirstCoachBadge span{
+  font-size:9px!important;
+}
+body.round-active .mapFirstCoachBadge b{
+  margin-top:3px!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+}
+body.round-active .mapFirstCoachText{
+  font-size:11px!important;
+  line-height:1.34!important;
+}
+body.round-active .mapFirstCoachText strong{
+  font-size:12px!important;
+}
+body.round-active .mapFirstCoachText .coachReason{
+  margin-top:3px!important;
+}
+body.round-active .mapFirstMainRow{
+  grid-template-columns:.78fr 1.15fr 1.32fr!important;
+  gap:9px!important;
+  min-height:calc(86px + env(safe-area-inset-bottom))!important;
+  padding:10px 0 max(8px,env(safe-area-inset-bottom))!important;
+  border-bottom:0!important;
+}
+body.round-active .mapFirstHoleSummary{
+  padding:4px!important;
+}
+body.round-active .mapFirstHoleSummary strong{
+  font-size:22px!important;
+  line-height:1.05!important;
+}
+body.round-active .mapFirstHoleSummary span{
+  margin-top:6px!important;
+  font-size:11px!important;
+}
+body.round-active .mapFirstClubTrack{
+  height:64px!important;
+  border-radius:21px!important;
+}
+body.round-active .mapFirstClubTrack strong{
+  font-size:27px!important;
+}
+body.round-active .mapFirstClubTrack::after{
+  right:15px!important;
+  font-size:19px!important;
+}
+body.round-active .mapFirstNextShot{
+  height:64px!important;
+  border-radius:21px!important;
+  font-size:17px!important;
+  letter-spacing:-.02em!important;
+}
+body.round-active .mapFirstNextShot b{
+  font-size:28px!important;
+  margin-left:5px!important;
+}
+@media(max-width:390px){
+  body.round-active .mapFirstCockpit{padding-left:9px!important;padding-right:9px!important}
+  body.round-active .mapFirstQuickActions{gap:6px!important}
+  body.round-active .mapFirstQuickActions button{height:47px!important;min-height:47px!important;font-size:11px!important}
+  body.round-active .mapFirstTargetRow{grid-template-columns:54px minmax(0,1fr)!important;gap:6px!important}
+  body.round-active .mapFirstTargetSegment button{height:37px!important;min-height:37px!important;font-size:10px!important}
+  body.round-active .mapFirstCoachBar{grid-template-columns:90px minmax(0,1fr)!important;min-height:52px!important}
+  body.round-active .mapFirstMainRow{
+    grid-template-columns:.74fr 1.12fr 1.30fr!important;
+    gap:6px!important;
+    min-height:calc(82px + env(safe-area-inset-bottom))!important;
+  }
+  body.round-active .mapFirstHoleSummary strong{font-size:20px!important}
+  body.round-active .mapFirstHoleSummary span{font-size:10px!important}
+  body.round-active .mapFirstClubTrack{height:60px!important}
+  body.round-active .mapFirstClubTrack strong{font-size:25px!important}
+  body.round-active .mapFirstNextShot{height:60px!important;font-size:15px!important}
+}
