@@ -625,3 +625,109 @@ body.round-active .coachWhyHint{color:#08783d!important}
   .coachDetailRow b{font-size:13.5px}
   .jgiCoachModalFoot{padding-left:14px;padding-right:14px}
 }
+
+
+/* JGI current strategy feedback · Korean UI */
+.coachStrategyBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:35px;
+  height:17px;
+  margin:0 6px 3px 0;
+  padding:0 7px;
+  border-radius:999px;
+  font-size:8px;
+  line-height:1;
+  font-weight:1000;
+  vertical-align:middle;
+}
+.coachStrategyBadge.attack{
+  background:#fff0dd;
+  border:1px solid #f5b56c;
+  color:#b75a00;
+}
+.coachStrategyBadge.defend{
+  background:#e5f0ff;
+  border:1px solid #9dc5f6;
+  color:#1767b5;
+}
+.coachStrategyBadge.neutral{
+  background:#eef1ef;
+  border:1px solid #cdd5d0;
+  color:#5f6c64;
+}
+body.round-active .coachStrategyBadge.attack{color:#a94f00!important}
+body.round-active .coachStrategyBadge.defend{color:#145fa9!important}
+body.round-active .coachStrategyBadge.neutral{color:#59645e!important}
+
+.coachStrategyCard{
+  margin-bottom:14px;
+  padding:18px;
+  border-radius:19px;
+  border:1px solid;
+}
+.coachStrategyCard>span{
+  display:block;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.12em;
+}
+.coachStrategyCard>strong{
+  display:block;
+  margin-top:5px;
+  font-size:29px;
+  line-height:1.05;
+  letter-spacing:-.045em;
+}
+.coachStrategyCard>p{
+  margin:9px 0 0;
+  font-size:14px;
+  line-height:1.48;
+  font-weight:850;
+}
+.coachStrategyCard.attack{
+  background:#fff4e7;
+  border-color:#f2c28d;
+}
+.coachStrategyCard.attack>span,
+.coachStrategyCard.attack>strong{color:#b65b00}
+.coachStrategyCard.attack>p{color:#69411e}
+.coachStrategyCard.defend{
+  background:#edf5ff;
+  border-color:#b8d4f4;
+}
+.coachStrategyCard.defend>span,
+.coachStrategyCard.defend>strong{color:#1767b5}
+.coachStrategyCard.defend>p{color:#2d4b69}
+.coachStrategyCard.neutral{
+  background:#f0f3f1;
+  border-color:#d6ddd9;
+}
+.coachStrategyCard.neutral>span,
+.coachStrategyCard.neutral>strong{color:#59675f}
+.coachStrategyCard.neutral>p{color:#445049}
+.coachStrategyAction{
+  margin-top:13px;
+  padding-top:12px;
+  border-top:1px solid rgba(0,0,0,.10);
+}
+.coachStrategyAction b{
+  display:block;
+  margin-bottom:4px;
+  font-size:10px;
+  letter-spacing:.08em;
+}
+.coachStrategyAction em{
+  display:block;
+  font-size:14px;
+  line-height:1.45;
+  font-style:normal;
+  font-weight:1000;
+}
+@media(max-width:390px){
+  .coachStrategyBadge{min-width:32px;height:16px;padding:0 6px;font-size:7.5px}
+  .coachStrategyCard{padding:16px}
+  .coachStrategyCard>strong{font-size:26px}
+  .coachStrategyCard>p,.coachStrategyAction em{font-size:13px}
+}

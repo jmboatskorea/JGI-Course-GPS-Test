@@ -483,6 +483,58 @@
     return dir+' 도그레그'+(angle!==null?' · '+angle.toFixed(1)+'°':'')+(turn!==null?' · 코너 약 '+turn.toFixed(0)+'m':'');
   }
 
+  function strategyMeta(mode){
+    const m=String(mode||'NEUTRAL').toUpperCase();
+    if(m==='ATTACK')return {key:'attack',label:'공격'};
+    if(m==='DEFEND')return {key:'defend',label:'수비'};
+    return {key:'neutral',label:'기본'};
+  }
+
+  function strategyReasonDisplay(ctx){
+    if(!ctx)return '현재 전략 판단 데이터가 없습니다.';
+    const mode=String(ctx.mode||'NEUTRAL').toUpperCase();
+    const parts=[];
+    const delta=num(ctx.planDeltaBefore);
+    const widthKey=ctx?.risk?.width?.key||fairwayWidthBand(ctx?.risk?.widthM).key;
+    const risks=[ctx?.risk?.left,ctx?.risk?.right].filter(Boolean);
+    const dangerNear=risks.some(r=>r?.active&&Number(r?.urgency)>=3);
+    const cautionOrCloser=risks.some(r=>r?.active&&Number(r?.urgency)>=2);
+    const lie=String(ctx.startLie||'').toUpperCase();
+    const difficult=['RECOVERY','BUNKER','SAND','ROUGH','B CUT'].includes(lie);
+    const goodLie=['FAIRWAY','A CUT','FRINGE'].includes(lie);
+    const greenD=num(ctx.distanceToGreenM);
+
+    if(delta!==null&&delta>0)parts.push('목표보다 +'+delta+' 뒤처짐');
+    if(delta!==null&&delta<0)parts.push('목표보다 '+delta+' 앞섬');
+
+    if(mode==='ATTACK'){
+      if(goodLie)parts.push('좋은 라이');
+      if(greenD!==null&&greenD<=100)parts.push('그린까지 '+Math.round(greenD)+'m');
+      if(!cautionOrCloser)parts.push('가까운 큰 위험 없음');
+      return parts.length?parts.join(' · '):'현재 스코어 흐름과 샷 조건이 공격 기회에 적합';
+    }
+
+    if(mode==='DEFEND'){
+      if(widthKey==='NARROW')parts.push('랜딩 구역 좁음');
+      if(dangerNear)parts.push('위험요소 5m 이내');
+      if(difficult)parts.push('어려운 라이');
+      return parts.length?parts.join(' · '):'현재 홀 목표와 코스 위험을 고려해 안전 우선';
+    }
+
+    if(widthKey==='NORMAL')parts.push('랜딩 구역 보통');
+    if(widthKey==='WIDE')parts.push('랜딩 구역 넓음');
+    if(!cautionOrCloser)parts.push('가까운 큰 위험 없음');
+    return parts.length?parts.join(' · '):'공격·수비 어느 쪽으로도 강하게 기울지 않는 기본 상황';
+  }
+
+  function strategyActionDisplay(ctx){
+    const mode=String(ctx?.mode||'NEUTRAL').toUpperCase();
+    const target=targetDirectionDisplay(ctx?.recommendedTarget);
+    if(mode==='ATTACK')return target+' 공략 · 좋은 조건에서는 스코어 기회를 사용';
+    if(mode==='DEFEND')return target+' 공략 · 큰 미스 없이 다음 플레이 위치 확보';
+    return target+' 공략 · 타깃을 정하고 평소 루틴대로 실행';
+  }
+
   function coachDetailHtml(ctx){
     if(!ctx)return '<div class="coachDetailEmpty">현재 판단 데이터가 없습니다.</div>';
     const risk=ctx.risk||{};
@@ -490,16 +542,23 @@
     const widthLabel=risk.width?.label||fairwayWidthBand(widthM).label;
     const miss=ctx.missDirection?targetDirectionDisplay(ctx.missDirection)+' 미스 경향':'등록된 미스 방향 데이터 없음';
     const carry=num(ctx.clubCarryM);
+    const strategy=strategyMeta(ctx.mode);
     const rows=[
       ['랜딩 구역',widthM===null?'폭 데이터 없음':widthM.toFixed(1)+'m · '+widthLabel],
       ['좌측 위험',detailRiskLine('좌측',risk.left)],
       ['우측 위험',detailRiskLine('우측',risk.right)],
-      ['Player 패턴',miss],
-      ['클럽 / Target',(ctx.club||'클럽 데이터 없음')+' · Carry '+(carry===null?'데이터 없음':carry.toFixed(0)+'m')+' · '+targetSourceDisplay(ctx)],
-      ['반대 Target 확인',targetCheckDisplay(ctx)],
+      ['플레이어 패턴',miss],
+      ['클럽 / 타깃',(ctx.club||'클럽 데이터 없음')+' · 캐리 '+(carry===null?'데이터 없음':carry.toFixed(0)+'m')+' · '+targetSourceDisplay(ctx)],
+      ['반대 타깃 확인',targetCheckDisplay(ctx)],
       ['도그레그',doglegDisplay(ctx.dogleg)]
     ];
-    return '<div class="coachModalHero">'+
+    return '<div class="coachStrategyCard '+strategy.key+'">'+
+      '<span>현재 전략</span>'+
+      '<strong>'+htmlEscape(strategy.label)+'</strong>'+
+      '<p>'+htmlEscape(strategyReasonDisplay(ctx))+'</p>'+
+      '<div class="coachStrategyAction"><b>지금 행동</b><em>'+htmlEscape(strategyActionDisplay(ctx))+'</em></div>'+
+      '</div>'+
+      '<div class="coachModalHero">'+
       '<span>JGI 추천 공략</span>'+
       '<strong>'+htmlEscape(recommendationDisplay(ctx,ctx.recommendedTarget))+'</strong>'+
       '<p>'+htmlEscape(ctx.reason||'현재 상황 기준 추천')+'</p>'+
@@ -581,8 +640,11 @@
     renderCoachModal(ctx);
     if(!text)return;
 
+    const strategy=strategyMeta(ctx?.mode);
+    const strategyBadge='<span class="coachStrategyBadge '+strategy.key+'">'+strategy.label+'</span>';
+
     if(r.pending?.result){
-      text.innerHTML=resultCoachText(ctx,r.pending.result)+coachWhyHint();
+      text.innerHTML=strategyBadge+resultCoachText(ctx,r.pending.result)+coachWhyHint();
       return;
     }
 
@@ -591,7 +653,7 @@
     const mismatch=selected!==rec
       ? '현재 선택 · '+targetSurfaceDisplay(ctx)+' '+targetDirectionDisplay(selected)+' · '
       : '';
-    text.innerHTML='<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>'+coachWhyHint();
+    text.innerHTML=strategyBadge+'<strong>'+recommendationDisplay(ctx,rec)+'</strong><span class="coachReason">'+mismatch+(reasonDisplay(ctx)||'현재 상황 기준 추천')+'</span>'+coachWhyHint();
   }
 
   function holeLossPoint(h){
@@ -1003,7 +1065,7 @@
       modal.innerHTML=
         '<div class="jgiCoachModalPanel">'+
           '<div class="jgiCoachModalHead">'+
-            '<div><span>JGI AGENT</span><h3 id="jgiCoachModalTitle">왜 이렇게 판단했나요?</h3><p id="jgiCoachModalMeta">현재 홀 · 목표 기준</p></div>'+
+            '<div><span>JGI 에이전트</span><h3 id="jgiCoachModalTitle">왜 이렇게 판단했나요?</h3><p id="jgiCoachModalMeta">현재 홀 · 목표 기준</p></div>'+
             '<button id="jgiCoachModalClose" class="jgiCoachModalX" type="button" aria-label="닫기">×</button>'+
           '</div>'+
           '<div id="jgiCoachModalBody" class="jgiCoachModalBody"></div>'+
