@@ -16,7 +16,7 @@ module.exports=async(req,res)=>{
     const match=/^([+-])(\d{2}):(\d{2})$/.exec(offset);
     const minutes=match?(match[1]==='-'?-1:1)*(Number(match[2])*60+Number(match[3])):0;
     const localDay=timestamp=>new Date(new Date(timestamp).getTime()+minutes*60000).toISOString().slice(0,10);
-    if(localDay(cycle.start)!==localDay(Date.now()))return w.json(res,200,{status:'no_today_data',connected:true,snapshot:null});
+    if(cycle.end&&localDay(cycle.end)!==localDay(Date.now()))return w.json(res,200,{status:'no_today_data',connected:true,snapshot:null});
     const [recovery,sleep]=await Promise.all([w.get(`/cycle/${cycle.id}/recovery`,s,true),w.get(`/cycle/${cycle.id}/sleep`,s,true)]);
     const r=score(recovery),sl=score(sleep),c=score(cycle);
     const snapshot={source:'WHOOP',capturedAt:new Date().toISOString(),cycleStart:cycle.start,timezoneOffset:offset,recovery:number(r?.recovery_score),sleep:number(sl?.sleep_performance_percentage),hrv:number(r?.hrv_rmssd_milli),restingHR:number(r?.resting_heart_rate),dayStrain:number(c?.strain)};
