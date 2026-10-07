@@ -1355,6 +1355,50 @@ body.round-active .mapFirstNextShot{
 body.round-active .mapFirstNextShot.pending{
   background:linear-gradient(90deg,#f0a02d,#ffc14f)!important;color:#171006!important
 }
+body.round-active .mapFirstTargetRow{
+  margin:5px 0 0!important;
+  padding:0 0 6px!important;
+  display:grid!important;
+  grid-template-columns:52px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:7px!important;
+  border:0!important;
+  border-bottom:1px solid #d8dcda!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+body.round-active .mapFirstTargetLabel{
+  color:#58615c!important;
+  font-size:9px!important;
+  font-weight:1000!important;
+  letter-spacing:.12em!important;
+}
+body.round-active .mapFirstTargetSegment{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;
+}
+body.round-active .mapFirstTargetSegment button{
+  min-height:31px!important;
+  height:31px!important;
+  padding:0 4px!important;
+  border-radius:10px!important;
+  background:#f5f6f4!important;
+  color:#323835!important;
+  border:1px solid #c7ccca!important;
+  font-size:9px!important;
+  font-weight:1000!important;
+}
+body.round-active .mapFirstTargetSegment button.sel{
+  background:#08783d!important;
+  color:#fff!important;
+  border-color:#08783d!important;
+  box-shadow:0 3px 9px rgba(8,120,61,.16)!important;
+}
+body.round-active .mapFirstTargetSegment button:disabled{
+  opacity:.62!important;
+  cursor:default!important;
+}
 body.round-active .modal{background:rgba(245,247,244,.78)!important}
 body.round-active .modal .sheet{
   background:#fff!important;color:#111!important;border-color:#b9bfbc!important;
@@ -1608,6 +1652,15 @@ body.round-active .modal .sheet .puttHistoryRow{
           <button id="mapFirstDrop" type="button"><span class="actionIcon">◉</span><span id="mapFirstDropText">공 위치</span></button>
         </div>
 
+        <div class="mapFirstTargetRow targetZoneBlock">
+          <span class="mapFirstTargetLabel">TARGET</span>
+          <div id="targetZoneSegment" class="targetZoneSegment mapFirstTargetSegment">
+            <button type="button" data-target-zone="LEFT">LEFT</button>
+            <button type="button" data-target-zone="CENTER" class="sel">CENTER</button>
+            <button type="button" data-target-zone="RIGHT">RIGHT</button>
+          </div>
+        </div>
+
         <div id="mapFirstPendingActions" class="mapFirstPendingActions hidden">
           <button id="mapFirstChangeClub" type="button">클럽 변경</button>
           <button id="mapFirstCancelShot" class="danger" type="button">샷 취소</button>
@@ -1681,13 +1734,7 @@ body.round-active .modal .sheet .puttHistoryRow{
               </span>
               <span id="startPositionValue" class="value">GPS</span>
             </button>
-            <div class="targetZoneBlock">
-              <div id="targetZoneSegment" class="targetZoneSegment">
-                <button type="button" data-target-zone="LEFT">왼쪽</button>
-                <button type="button" data-target-zone="CENTER" class="sel">중간</button>
-                <button type="button" data-target-zone="RIGHT">오른쪽</button>
-              </div>
-            </div>
+            
             <span class="dockLabel">CLUB</span>
             <strong id="clubBasisLabel">기준 거리</strong>
             <button id="penaltyBtn" class="dockAction danger">페널티</button>
@@ -3363,7 +3410,10 @@ function renderAllClubs(){
 function targetZoneLabel(v){return ({LEFT:'왼쪽',CENTER:'중간',RIGHT:'오른쪽'})[v]||v||'중간'}
 function renderTargetZoneControl(){
   const el=$('targetZoneSegment');if(!el)return;
-  el.querySelectorAll('[data-target-zone]').forEach(b=>b.classList.toggle('sel',b.dataset.targetZone===targetZone));
+  el.querySelectorAll('[data-target-zone]').forEach(b=>{
+    b.classList.toggle('sel',b.dataset.targetZone===targetZone);
+    b.disabled=!!round?.pending;
+  });
 }
 function resetTargetZoneSelection(){
   targetZone='CENTER';
