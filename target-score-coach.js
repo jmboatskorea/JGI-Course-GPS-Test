@@ -328,6 +328,167 @@
     host.appendChild(box);
   }
 
+  function roundLossRows(r=safeRound()){
+    if(!r)return [];
+    const info=typeof sgBenchmarkInfo==='function'?sgBenchmarkInfo(r):null;
+    const rows=[];
+    (r.holes||[]).forEach(h=>{
+      (h.shots||[]).forEach((s,i)=>{
+        const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info):null;
+        if(!sg||!Number.isFinite(Number(sg.value)))return;
+        rows.push({
+          kind:'SHOT',hole:h.hole,index:i+1,club:s.club||'—',
+          sg:Number(sg.value),
+          startLie:String(s.startLie||'—'),
+          endLie:String(s.endLie||'—'),
+          direction:String(s.direction||'—'),
+          selectedTarget:s?.targetScoreCoach?.selectedTarget||s.targetZone||null,
+          recommendedTarget:s?.targetScoreCoach?.recommendedTarget||null
+        });
+      });
+      (h.puttsDetail||[]).forEach((p,i)=>{
+        const sg=typeof computePuttSG==='function'?computePuttSG(h,p,i,info):null;
+        if(!sg||!Number.isFinite(Number(sg.value)))return;
+        rows.push({
+          kind:'PUTT',hole:h.hole,index:i+1,club:'Putt',
+          sg:Number(sg.value),startLie:'GREEN',endLie:p.result||'—',
+          direction:null,selectedTarget:null,recommendedTarget:null
+        });
+      });
+    });
+    return rows.sort((a,b)=>a.sg-b.sg);
+  }
+
+  function reportDecisionRows(r=safeRound()){
+    if(!r)return [];
+    const info=typeof sgBenchmarkInfo==='function'?sgBenchmarkInfo(r):null;
+    const rows=[];
+    (r.holes||[]).forEach(h=>(h.shots||[]).forEach((s,i)=>{
+      const c=s?.targetScoreCoach;
+      if(!c?.recommendedTarget||!c?.selectedTarget||c.recommendedTarget===c.selectedTarget)return;
+      const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info):null;
+      rows.push({
+        hole:h.hole,index:i+1,club:s.club||'—',
+        selected:c.selectedTarget,recommended:c.recommendedTarget,
+        result:String(s.direction||s.endLie||'—'),
+        sg:Number.isFinite(Number(sg?.value))?Number(sg.value):null,
+        reason:c.reason||''
+      });
+    }));
+    return rows.sort((a,b)=>(a.sg??0)-(b.sg??0));
+  }
+
+  function reportPatterns(r=safeRound()){
+    const shots=(r?.holes||[]).flatMap(h=>h.shots||[]);
+    const drivers=shots.filter(s=>String(s.club||'').toUpperCase()==='DR');
+    const driverLeft=drivers.filter(s=>String(s.direction||'').toUpperCase()==='LEFT').length;
+    const longIrons=shots.filter(s=>['5I','6I'].includes(String(s.club||'').toUpperCase()));
+    const longLeft=longIrons.filter(s=>String(s.direction||'').toUpperCase()==='LEFT').length;
+    const mismatch=reportDecisionRows(r).length;
+    const penalties=(r?.holes||[]).reduce((a,h)=>a+Number(h.penalties||0),0);
+    const threePutts=(r?.holes||[]).filter(h=>(h.puttsDetail||[]).length>=3).length;
+    return {drivers:drivers.length,driverLeft,longIrons:longIrons.length,longLeft,mismatch,penalties,threePutts};
+  }
+
+  function reportNextActions(r=safeRound()){
+    const p=reportPatterns(r),actions=[];
+    if(p.driverLeft>0)actions.push('Driver · LEFT miss가 관찰된 홀에서는 CENTER 또는 우측 여유 Target을 먼저 검토');
+    if(p.longLeft>0)actions.push('Long Iron · 5I/6I에서 LEFT 결과가 반복되면 Pin보다 Green Center 우선');
+    if(p.mismatch>0)actions.push('Target 결정 · Player Target과 JGI Target이 달랐던 상황은 어드레스 전에 한 번 더 확인');
+    if(p.penalties>0)actions.push('Penalty · 위험지역 인접 샷에서는 한 단계 보수적인 Target/Club 선택');
+    if(p.threePutts>0)actions.push('Putting · 3퍼트 발생 홀의 첫 퍼트 거리와 남은 거리 관리 우선');
+    if(!actions.length)actions.push('현재 관찰에서는 큰 반복 패턴이 부족함 · 같은 입력 품질로 다음 라운드 표본 확보');
+    return actions.slice(0,3);
+  }
+
+  function reportHoleFlow(r=safeRound()){
+    const plan=ensurePlan(r);if(!r||!plan)return '';
+    const completed=(r.holes||[]).filter(h=>h.completed);
+    return completed.map(h=>{
+      const target=plan.holeTargets?.[h.hole];
+      const actual=typeof holeScore==='function'?holeScore(h):null;
+      const d=Number.isFinite(actual)&&Number.isFinite(Number(target))?actual-Number(target):null;
+      const cls=d===null?'':d>0?'bad':d<0?'good':'';
+      const delta=d===null?'—':d===0?'0':(d>0?'+':'')+d;
+      return '<div class="finalHoleCell '+cls+'"><span>H'+h.hole+'</span><b>'+actual+'</b><small>T '+target+' · '+delta+'</small></div>';
+    }).join('');
+  }
+
+  function reportWhoop(r=safeRound()){
+    const w=r?.whoopToday;if(!w)return '<div class="finalReportEmpty">WHOOP snapshot 없음</div>';
+    const item=(label,value,unit='')=>'<div class="finalReportMetric"><span>'+label+'</span><b>'+(Number.isFinite(Number(value))?Number(value)+(unit?' '+unit:''):'—')+'</b></div>';
+    return '<div class="finalReportMetrics">'+
+      item('Recovery',w.recovery,'%')+
+      item('Sleep',w.sleep,'%')+
+      item('HRV',w.hrv,'ms')+
+      item('Resting HR',w.restingHR,'bpm')+
+      item('Day Strain',w.dayStrain,'')+
+      '</div><div class="dataNote">WHOOP 수치는 당시 상태 참고값이며 Shot 결과의 원인으로 단정하지 않습니다.</div>';
+  }
+
+  function renderFinalReport(){
+    const r=safeRound(),card=byId('finalRoundReportCard'),host=byId('finalRoundReportBody');
+    if(!card||!host)return;
+    if(!r?.completedAt){
+      card.classList.add('hidden');
+      host.innerHTML='';
+      return;
+    }
+    card.classList.remove('hidden');
+
+    const plan=ensurePlan(r);
+    const completed=(r.holes||[]).filter(h=>h.completed);
+    const actual=completed.reduce((sum,h)=>sum+(num(typeof holeScore==='function'?holeScore(h):null)||0),0);
+    const planned=completed.reduce((sum,h)=>sum+(num(plan?.holeTargets?.[h.hole])||num(h.par)||0),0);
+    const full=completed.length>=18;
+    const targetRef=full?(num(r.targetScore)??plan?.targetScore):planned;
+    const targetDelta=Number.isFinite(targetRef)?actual-targetRef:null;
+    const targetLabel=targetDelta===null?'—':targetDelta===0?'ON TARGET':targetDelta>0?'+'+targetDelta+' vs Target':targetDelta+' vs Target';
+
+    const sg=typeof sgRoundSummary==='function'?sgRoundSummary():null;
+    const sgHtml=sg?'<div class="finalReportMetrics">'+
+      '<div class="finalReportMetric"><span>SG Total</span><b>'+formatSg(sg.total)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Tee</span><b>'+formatSg(sg.totals.ott)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Approach</span><b>'+formatSg(sg.totals.app)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Around Green</span><b>'+formatSg(sg.totals.arg)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Putting</span><b>'+formatSg(sg.totals.putt)+'</b></div>'+
+      '</div><div class="dataNote">SG Benchmark · '+sg.info.label+'</div>':'<div class="finalReportEmpty">SG 계산 대기</div>';
+
+    const losses=roundLossRows(r).slice(0,3);
+    const lossHtml=losses.length?losses.map((x,i)=>
+      '<div class="finalReportListRow"><b>'+(i+1)+'. H'+x.hole+' '+(x.kind==='PUTT'?'Putt '+x.index:'Shot '+x.index+' · '+x.club)+'</b><span>SG '+(x.sg>0?'+':'')+x.sg.toFixed(2)+(x.kind==='SHOT'?' · '+x.startLie+' → '+x.endLie:'')+'</span></div>'
+    ).join(''):'<div class="finalReportEmpty">계산 가능한 SG 손실 샷 없음</div>';
+
+    const decisions=reportDecisionRows(r).slice(0,3);
+    const decisionHtml=decisions.length?decisions.map(x=>
+      '<div class="finalReportListRow"><b>H'+x.hole+' Shot '+x.index+' · '+x.club+'</b><span>Player '+x.selected+' / JGI '+x.recommended+' · Result '+x.result+(Number.isFinite(x.sg)?' · SG '+(x.sg>0?'+':'')+x.sg.toFixed(2):'')+'</span><small>'+x.reason+'</small></div>'
+    ).join(''):'<div class="finalReportEmpty">Player Target과 JGI Target이 달랐던 저장 샷 없음</div>';
+
+    const patt=reportPatterns(r);
+    const patternHtml='<div class="finalReportPattern">'+
+      '<b>Driver LEFT</b><span>'+patt.driverLeft+'/'+patt.drivers+'</span>'+
+      '<b>Long Iron LEFT</b><span>'+patt.longLeft+'/'+patt.longIrons+'</span>'+
+      '<b>Target mismatch</b><span>'+patt.mismatch+'</span>'+
+      '<b>Penalty / 3-putt</b><span>'+patt.penalties+' / '+patt.threePutts+'</span>'+
+      '</div><div class="dataNote">이번 라운드에서 관찰된 결과이며 개인 Baseline이나 원인으로 단정하지 않습니다.</div>';
+
+    const actions=reportNextActions(r);
+    const actionHtml=actions.map((x,i)=>'<div class="finalReportAction"><b>'+(i+1)+'</b><span>'+x+'</span></div>').join('');
+
+    host.innerHTML=
+      '<div class="finalReportHero">'+
+        '<div><span>'+(full?'FINAL ROUND REPORT':'PARTIAL ROUND REPORT')+'</span><h3>'+(r.playerName||'Player')+'</h3><p>'+r.course+' · '+r.nine+' · '+String(r.tee||'—')+' Tee · '+completed.length+'H</p></div>'+
+        '<div class="finalReportScore"><span>Target '+(full?(r.targetScore??'—'):planned)+'</span><b>'+actual+'</b><small>'+targetLabel+'</small></div>'+
+      '</div>'+
+      '<div class="finalReportSection"><h4>TARGET SCORE FLOW</h4><div class="finalHoleGrid">'+reportHoleFlow(r)+'</div></div>'+
+      '<div class="finalReportSection"><h4>STROKES GAINED</h4>'+sgHtml+'</div>'+
+      '<div class="finalReportSection"><h4>BIGGEST LOSSES</h4>'+lossHtml+'</div>'+
+      '<div class="finalReportSection"><h4>KEY DECISIONS</h4>'+decisionHtml+'</div>'+
+      '<div class="finalReportSection"><h4>OBSERVED PATTERN</h4>'+patternHtml+'</div>'+
+      '<div class="finalReportSection"><h4>WHOOP CONDITION</h4>'+reportWhoop(r)+'</div>'+
+      '<div class="finalReportSection finalReportNext"><h4>NEXT ROUND · ACTIONS</h4>'+actionHtml+'</div>';
+  }
+
   function installUi(){
     const cockpit=document.querySelector('.mapFirstCockpit');
     const targetRow=cockpit?.querySelector('.mapFirstTargetRow');
@@ -344,6 +505,14 @@
       card.className='card targetCoachOverview';
       card.innerHTML='<div class="title">JGI TARGET SCORE COACH</div><div class="sub">목표 스코어 계획과 실제 플레이를 샷 단위로 비교합니다.</div><div id="targetScoreCoachOverviewBody" style="margin-top:10px"></div>';
       overview.insertAdjacentElement('afterend',card);
+    }
+    const coachCard=byId('targetScoreCoachOverviewBody')?.closest('.targetCoachOverview');
+    if(coachCard&&!byId('finalRoundReportCard')){
+      const report=document.createElement('div');
+      report.id='finalRoundReportCard';
+      report.className='card finalRoundReport hidden';
+      report.innerHTML='<div class="title">JGI FINAL ROUND REPORT V0.1</div><div class="sub">Target Score · Shot Decision · SG · Pattern · Next Action</div><div id="finalRoundReportBody" style="margin-top:10px"></div>';
+      coachCard.insertAdjacentElement('afterend',report);
     }
   }
 
@@ -404,7 +573,7 @@
 
   wrap('renderRound',function(){renderBar()});
   wrap('syncMapFirstUI',function(){renderBar()});
-  wrap('renderOverview',function(){renderOverviewCoach()});
+  wrap('renderOverview',function(){renderOverviewCoach();renderFinalReport()});
   wrap('renderHoleReview',function(out,pre,holeNo){appendHoleReview(holeNo)});
 
   const targetSeg=byId('targetZoneSegment');
