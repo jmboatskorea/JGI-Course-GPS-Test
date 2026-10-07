@@ -6,6 +6,8 @@
   const COURSE_STRATEGY_VERSION='JGI_COURSE_STRATEGY_V1';
   const byId=id=>document.getElementById(id);
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
+  let agentHistoryMode='HOLE';
+  let agentHistoryHole=1;
 
   function safeRound(){
     return (typeof round!=='undefined'&&round)?round:null;
@@ -677,6 +679,228 @@
     return shots.find(s=>s.targetScoreCoach.recommendedTarget!==s.targetScoreCoach.selectedTarget)||null;
   }
 
+  function historyStrategyMeta(coach){
+    if(!coach?.mode)return {key:'unknown',label:'전략 기록 없음'};
+    return strategyMeta(coach.mode);
+  }
+
+  function historyLieLabel(value){
+    const v=String(value||'').toUpperCase();
+    return ({
+      TEE:'티',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',
+      ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',GREEN:'그린',
+      FRINGE:'프린지',RECOVERY:'트러블',HOLED:'홀아웃'
+    })[v]||value||'미확인';
+  }
+
+  function historyDirectionLabel(value){
+    const v=String(value||'').toUpperCase();
+    if(['LEFT','CENTER','RIGHT'].includes(v))return targetDirectionDisplay(v);
+    return value||'미확인';
+  }
+
+  function historyReasonText(coach){
+    const reason=String(coach?.reason||'판단 이유 기록 없음');
+    return reason
+      .replaceAll('Landing Zone','랜딩 구역')
+      .replaceAll('CENTER','중앙')
+      .replaceAll('LEFT','좌측')
+      .replaceAll('RIGHT','우측')
+      .replaceAll('miss','미스');
+  }
+
+  function historyShotRows(h,r=safeRound()){
+    if(!h)return [];
+    const info=typeof sgBenchmarkInfo==='function'?sgBenchmarkInfo(r):null;
+    return (h.shots||[]).map((s,i)=>{
+      const coach=s?.targetScoreCoach||null;
+      if(!coach)return null;
+      const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info):null;
+      return {
+        index:i+1,
+        shot:s,
+        coach,
+        sg:Number.isFinite(Number(sg?.value))?Number(sg.value):null
+      };
+    }).filter(Boolean);
+  }
+
+  function historyFlow(rows){
+    const flow=[];
+    rows.forEach(row=>{
+      const meta=historyStrategyMeta(row.coach);
+      const last=flow[flow.length-1];
+      if(!last||last.key!==meta.key)flow.push(meta);
+    });
+    return flow;
+  }
+
+  function historyMismatchCount(rows){
+    return rows.filter(row=>{
+      const c=row.coach;
+      return c?.recommendedTarget&&c?.selectedTarget&&c.recommendedTarget!==c.selectedTarget;
+    }).length;
+  }
+
+  function historyMatchCount(rows){
+    return rows.filter(row=>{
+      const c=row.coach;
+      return c?.recommendedTarget&&c?.selectedTarget&&c.recommendedTarget===c.selectedTarget;
+    }).length;
+  }
+
+  function historyStrategyBadges(flow){
+    if(!flow.length)return '<span class="agentHistoryNoData">전략 기록 없음</span>';
+    return flow.map(meta=>'<span class="agentHistoryStrategy '+htmlEscape(meta.key)+'">'+htmlEscape(meta.label)+'</span>').join('<span class="agentHistoryArrow">→</span>');
+  }
+
+  function historyShotResultText(row){
+    const s=row?.shot||{};
+    const parts=[historyLieLabel(s.endLie)];
+    if(s.direction)parts.push(historyDirectionLabel(s.direction));
+    if(Number.isFinite(row?.sg))parts.push('SG '+(row.sg>0?'+':'')+row.sg.toFixed(2));
+    return parts.filter(Boolean).join(' · ');
+  }
+
+  function historyShotCardHtml(row){
+    const c=row.coach||{};
+    const meta=historyStrategyMeta(c);
+    const recommended=c.recommendedTarget?targetDirectionDisplay(c.recommendedTarget):'기록 없음';
+    const selected=c.selectedTarget?targetDirectionDisplay(c.selectedTarget):'기록 없음';
+    const mismatch=Boolean(c.recommendedTarget&&c.selectedTarget&&c.recommendedTarget!==c.selectedTarget);
+    const delta=num(c.planDeltaBefore);
+    const deltaText=delta===null?'목표 흐름 기록 없음':targetProgressDisplay(delta);
+    return '<div class="agentHistoryShot '+(mismatch?'mismatch':'')+'">'+
+      '<div class="agentHistoryShotTop"><div><span>SHOT '+row.index+'</span><b>'+htmlEscape(row.shot?.club||'클럽 미확인')+'</b></div>'+
+      '<span class="agentHistoryStrategy '+meta.key+'">'+htmlEscape(meta.label)+'</span></div>'+
+      '<div class="agentHistoryDecision"><b>JGI 추천</b><span>'+htmlEscape(recommended)+'</span><b>플레이어 선택</b><span class="'+(mismatch?'different':'')+'">'+htmlEscape(selected)+(mismatch?' · 다름':'')+'</span></div>'+
+      '<div class="agentHistoryReason">'+htmlEscape(deltaText)+' · '+htmlEscape(historyReasonText(c))+'</div>'+
+      '<div class="agentHistoryResult"><b>결과</b><span>'+htmlEscape(historyShotResultText(row))+'</span></div>'+
+      '</div>';
+  }
+
+  function historyHoleCompactHtml(h){
+    const r=safeRound();
+    const rows=historyShotRows(h,r);
+    const flow=historyFlow(rows);
+    const mismatches=historyMismatchCount(rows);
+    const target=holeTarget(h?.hole,r);
+    const actual=typeof holeScore==='function'?holeScore(h):null;
+    const loss=holeLossPoint(h);
+    const lossText=loss&&loss.sg<-0.02
+      ?(loss.type==='PUTT'?'퍼트 '+loss.index:'샷 '+loss.index+' · '+loss.label)+' · SG '+(loss.sg>0?'+':'')+loss.sg.toFixed(2)
+      :'큰 SG 손실 기록 없음';
+    return '<div class="agentHistoryCompact">'+
+      '<div class="agentHistoryCompactTop"><b>JGI 에이전트 히스토리</b><span>H'+htmlEscape(h?.hole||'—')+'</span></div>'+
+      '<div class="agentHistoryScoreLine"><span>목표 '+(Number.isFinite(Number(target))?target:'—')+'</span><span>실제 '+(Number.isFinite(Number(actual))?actual:'—')+'</span></div>'+
+      '<div class="agentHistoryFlow"><small>전략 흐름</small><div>'+historyStrategyBadges(flow)+'</div></div>'+
+      '<div class="agentHistoryCompactGrid"><span>추천과 다른 선택</span><b>'+mismatches+'회</b><span>주요 손실</span><b>'+htmlEscape(lossText)+'</b></div>'+
+      '<div class="dataNote">상황 → JGI 판단 → 플레이어 선택 → 결과를 Shot Snapshot으로 보존합니다.</div>'+
+      '</div>';
+  }
+
+  function historyHoleDetailHtml(h){
+    if(!h)return '<div class="agentHistoryEmpty">홀 데이터가 없습니다.</div>';
+    const r=safeRound();
+    const rows=historyShotRows(h,r);
+    const flow=historyFlow(rows);
+    const target=holeTarget(h.hole,r);
+    const actual=typeof holeScore==='function'?holeScore(h):null;
+    const mismatch=historyMismatchCount(rows);
+    const match=historyMatchCount(rows);
+    const loss=holeLossPoint(h);
+    const lossText=loss&&Number.isFinite(loss.sg)
+      ?(loss.type==='PUTT'?'퍼트 '+loss.index:'샷 '+loss.index+' · '+loss.label)+' · SG '+(loss.sg>0?'+':'')+loss.sg.toFixed(2)
+      :'계산 가능한 SG 기록 없음';
+
+    return '<div class="agentHistoryHoleHero">'+
+      '<div><span>H'+h.hole+' · PAR '+(h.par||'—')+'</span><strong>'+(Number.isFinite(Number(actual))?actual:'—')+'</strong><small>목표 '+(Number.isFinite(Number(target))?target:'—')+'</small></div>'+
+      '<div class="agentHistoryFlow large"><small>전략 흐름</small><div>'+historyStrategyBadges(flow)+'</div></div>'+
+      '</div>'+
+      '<div class="agentHistoryMiniStats">'+
+        '<div><span>에이전트 기록</span><b>'+rows.length+'샷</b></div>'+
+        '<div><span>추천 일치</span><b>'+match+'회</b></div>'+
+        '<div><span>다른 선택</span><b>'+mismatch+'회</b></div>'+
+      '</div>'+
+      '<div class="agentHistoryLoss"><span>이 홀의 가장 큰 SG 손실</span><b>'+htmlEscape(lossText)+'</b></div>'+
+      (rows.length?'<div class="agentHistoryTimeline">'+rows.map(historyShotCardHtml).join('')+'</div>':
+        '<div class="agentHistoryEmpty">이 홀에는 저장된 JGI 에이전트 Shot Snapshot이 없습니다. 이전 버전 기록이거나 아직 샷이 확정되지 않은 홀일 수 있습니다.</div>')+
+      '<div class="agentHistoryCaution">결과가 좋거나 나빴다는 사실만으로 당시 판단의 원인을 단정하지 않습니다.</div>';
+  }
+
+  function historyRoundRows(r=safeRound()){
+    const rows=[];
+    (r?.holes||[]).forEach(h=>{
+      historyShotRows(h,r).forEach(row=>rows.push({...row,hole:h.hole,holeObj:h}));
+    });
+    return rows;
+  }
+
+  function historyRoundHtml(r=safeRound()){
+    if(!r)return '<div class="agentHistoryEmpty">라운드 데이터가 없습니다.</div>';
+    const rows=historyRoundRows(r);
+    const counts={attack:0,defend:0,neutral:0,unknown:0};
+    rows.forEach(row=>{const k=historyStrategyMeta(row.coach).key;counts[k]=(counts[k]||0)+1});
+    const match=historyMatchCount(rows),mismatch=historyMismatchCount(rows);
+    const completed=(r.holes||[]).filter(h=>h.completed);
+    const holesHtml=(r.holes||[]).map(h=>{
+      const hrows=historyShotRows(h,r),flow=historyFlow(hrows);
+      const actual=typeof holeScore==='function'?holeScore(h):null;
+      const target=holeTarget(h.hole,r);
+      const hm=historyMismatchCount(hrows);
+      return '<div class="agentHistoryRoundHole">'+
+        '<div class="agentHistoryRoundHoleNo"><b>H'+h.hole+'</b><span>목표 '+(Number.isFinite(Number(target))?target:'—')+' / 실제 '+(Number.isFinite(Number(actual))?actual:'—')+'</span></div>'+
+        '<div class="agentHistoryRoundFlow">'+historyStrategyBadges(flow)+'</div>'+
+        '<span class="agentHistoryRoundMismatch">'+(hm?('다른 선택 '+hm+'회'):'추천 흐름 유지')+'</span>'+
+        '</div>';
+    }).join('');
+
+    const observed=rows.length
+      ?(mismatch>0?'JGI 추천과 다른 Target 선택이 '+mismatch+'회 기록되었습니다. 결과와의 관계는 각 Shot에서 별도로 확인합니다.':'현재 저장된 Agent Shot에서는 JGI 추천과 다른 Target 선택이 없습니다.')
+      :'아직 집계할 JGI 에이전트 Shot Snapshot이 없습니다.';
+
+    return '<div class="agentHistoryRoundHero"><span>현재 라운드</span><strong>'+completed.length+'홀 · '+rows.length+'개 Agent Shot</strong><p>'+htmlEscape(observed)+'</p></div>'+
+      '<div class="agentHistoryRoundStats">'+
+        '<div class="attack"><span>공격</span><b>'+counts.attack+'</b></div>'+
+        '<div class="defend"><span>수비</span><b>'+counts.defend+'</b></div>'+
+        '<div class="neutral"><span>기본</span><b>'+counts.neutral+'</b></div>'+
+        '<div><span>추천 일치</span><b>'+match+'</b></div>'+
+        '<div><span>다른 선택</span><b>'+mismatch+'</b></div>'+
+        '<div><span>전략 미기록</span><b>'+counts.unknown+'</b></div>'+
+      '</div>'+
+      '<div class="agentHistorySectionTitle">홀별 전략 흐름</div>'+
+      '<div class="agentHistoryRoundList">'+holesHtml+'</div>'+
+      '<div class="agentHistoryCaution">이 화면은 각 Shot 당시 저장된 판단 Snapshot을 합산합니다. 추천과 결과의 상관관계를 인과로 단정하지 않습니다.</div>';
+  }
+
+  function historyDefaultHole(r=safeRound()){
+    const completed=[...(r?.holes||[])].filter(h=>h.completed);
+    if(completed.length)return Number(completed[completed.length-1].hole)||1;
+    return Number(r?.currentHole)||1;
+  }
+
+  function renderAgentHistory(){
+    const r=safeRound();
+    const root=byId('agentHistoryBody');
+    const tabs=byId('agentHistoryHoleTabs');
+    const mode=byId('agentHistoryModeTabs');
+    if(!root||!tabs||!mode)return;
+    if(!Number.isFinite(Number(agentHistoryHole))||agentHistoryHole<1||agentHistoryHole>18)agentHistoryHole=historyDefaultHole(r);
+    mode.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.historyMode===agentHistoryMode));
+    tabs.classList.toggle('hidden',agentHistoryMode!=='HOLE');
+    if(agentHistoryMode==='HOLE'){
+      tabs.innerHTML=(r?.holes||[]).map(h=>{
+        const has=historyShotRows(h,r).length>0;
+        return '<button class="'+(Number(h.hole)===Number(agentHistoryHole)?'sel ':'')+(has?'has-data':'')+'" data-history-hole="'+h.hole+'">'+h.hole+'</button>';
+      }).join('');
+      const h=r?.holes?.[Number(agentHistoryHole)-1]||null;
+      root.innerHTML=historyHoleDetailHtml(h);
+    }else{
+      tabs.innerHTML='';
+      root.innerHTML=historyRoundHtml(r);
+    }
+  }
+
   function holeSummary(h){
     if(!h)return '홀 데이터 없음';
     const target=holeTarget(h.hole,safeRound());
@@ -724,7 +948,7 @@
     host.querySelectorAll('.targetCoachHoleReview').forEach(x=>x.remove());
     const box=document.createElement('div');
     box.className='targetCoachHoleReview';
-    box.innerHTML='<b>JGI 목표 스코어 에이전트</b><br>'+holeSummary(h);
+    box.innerHTML=historyHoleCompactHtml(h);
     host.appendChild(box);
   }
 
@@ -1082,6 +1306,42 @@
       });
     }
 
+    const mainHost=document.querySelector('main');
+    if(mainHost&&!byId('historyScreen')){
+      const screen=document.createElement('section');
+      screen.id='historyScreen';
+      screen.className='screen hidden agentHistoryScreen';
+      screen.innerHTML=
+        '<div class="liveHead agentHistoryHead"><div><div class="eyebrow">JGI · DECISION HISTORY</div><h2>JGI 히스토리</h2><div class="sub">상황 → JGI 판단 → 플레이어 선택 → 결과</div></div></div>'+
+        '<div id="agentHistoryModeTabs" class="agentHistoryModeTabs"><button class="sel" data-history-mode="HOLE">홀별</button><button data-history-mode="ROUND">18홀 전체</button></div>'+
+        '<div id="agentHistoryHoleTabs" class="agentHistoryHoleTabs"></div>'+
+        '<div id="agentHistoryBody"></div>';
+      mainHost.appendChild(screen);
+      screen.addEventListener('click',e=>{
+        const modeBtn=e.target.closest('[data-history-mode]');
+        if(modeBtn){
+          agentHistoryMode=modeBtn.dataset.historyMode;
+          renderAgentHistory();
+          return;
+        }
+        const holeBtn=e.target.closest('[data-history-hole]');
+        if(holeBtn){
+          agentHistoryHole=Number(holeBtn.dataset.historyHole)||1;
+          renderAgentHistory();
+        }
+      });
+    }
+
+    const bottom=byId('bottomnav');
+    if(bottom&&!bottom.querySelector('[data-screen="history"]')){
+      const btn=document.createElement('button');
+      btn.dataset.screen='history';
+      btn.innerHTML='<b>↺</b>기록';
+      const overviewBtn=bottom.querySelector('[data-screen="overview"]');
+      if(overviewBtn)overviewBtn.insertAdjacentElement('afterend',btn);
+      else bottom.appendChild(btn);
+    }
+
     const overview=document.querySelector('#overviewScreen .card');
     if(overview&&!byId('targetScoreCoachOverviewBody')){
       const card=document.createElement('div');
@@ -1154,6 +1414,16 @@
       if(typeof save==='function')save();
     }
     renderBar();
+  });
+
+  wrap('showScreen',function(out,pre,name){
+    const screen=byId('historyScreen');
+    if(screen)screen.classList.toggle('hidden',name!=='history');
+    if(name==='history'){
+      agentHistoryHole=agentHistoryHole||historyDefaultHole(safeRound());
+      renderAgentHistory();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
   });
 
   wrap('renderRound',function(){enablePendingTargetEditing();renderBar()});
