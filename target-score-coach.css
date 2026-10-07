@@ -107,3 +107,96 @@ body.round-active .mapFirstCoachText .bad{color:#b51f2d!important}
   .mapFirstCoachText{font-size:9px}
   .targetCoachGrid{gap:5px}
 }
+
+.finalRoundReport{border-color:rgba(101,226,143,.32)}
+.finalReportHero{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:start;
+  padding:12px;
+  border-radius:15px;
+  background:rgba(4,20,15,.58);
+  border:1px solid rgba(255,255,255,.10);
+}
+.finalReportHero span{font-size:8px;font-weight:1000;letter-spacing:.14em;color:#78eca0}
+.finalReportHero h3{margin:4px 0 0;font-size:20px}
+.finalReportHero p{margin:4px 0 0;font-size:10px;color:#9fb0a6}
+.finalReportScore{text-align:right}
+.finalReportScore span{display:block;font-size:9px;color:#9fb0a6}
+.finalReportScore b{display:block;font-size:30px;line-height:1;margin-top:4px}
+.finalReportScore small{display:block;margin-top:4px;font-size:9px;color:#8de6aa}
+.finalReportSection{margin-top:14px}
+.finalReportSection h4{margin:0 0 8px;font-size:10px;letter-spacing:.13em;color:#8be9aa}
+.finalHoleGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.finalHoleCell{
+  padding:7px 5px;
+  border-radius:10px;
+  text-align:center;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+}
+.finalHoleCell span{display:block;font-size:8px;color:#93a49a;font-weight:900}
+.finalHoleCell b{display:block;margin-top:2px;font-size:14px}
+.finalHoleCell small{display:block;margin-top:2px;font-size:7px;color:#87998e}
+.finalHoleCell.bad{border-color:rgba(255,125,88,.32);background:rgba(255,96,73,.07)}
+.finalHoleCell.good{border-color:rgba(63,219,116,.30);background:rgba(41,187,91,.07)}
+.finalReportMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.finalReportMetric{
+  padding:8px 6px;
+  border-radius:11px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+}
+.finalReportMetric span{display:block;font-size:8px;color:#91a398}
+.finalReportMetric b{display:block;margin-top:3px;font-size:12px}
+.finalReportListRow{
+  padding:9px 10px;
+  border-radius:11px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  margin-bottom:6px;
+}
+.finalReportListRow b{display:block;font-size:11px}
+.finalReportListRow span{display:block;margin-top:3px;font-size:9px;color:#bcc8c0;line-height:1.4}
+.finalReportListRow small{display:block;margin-top:3px;font-size:8px;color:#82948a}
+.finalReportPattern{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px 10px;
+  padding:10px;
+  border-radius:11px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  font-size:10px;
+}
+.finalReportPattern b{color:#a9b9b0}
+.finalReportPattern span{font-weight:1000;text-align:right}
+.finalReportAction{
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr);
+  gap:7px;
+  align-items:start;
+  padding:8px 9px;
+  border-radius:11px;
+  border:1px solid rgba(64,215,113,.18);
+  background:rgba(42,171,85,.06);
+  margin-bottom:6px;
+}
+.finalReportAction b{
+  display:grid;
+  place-items:center;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:rgba(65,220,115,.14);
+  color:#78eda0;
+  font-size:9px;
+}
+.finalReportAction span{font-size:10px;line-height:1.45}
+.finalReportEmpty{font-size:10px;color:#8ea096;padding:8px 0}
+@media(max-width:390px){
+  .finalHoleGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .finalReportMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .finalReportHero{grid-template-columns:minmax(0,1fr) auto;padding:10px}
+  .finalReportScore b{font-size:26px}
+}
