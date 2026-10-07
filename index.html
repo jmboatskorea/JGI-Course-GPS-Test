@@ -4525,11 +4525,18 @@ function resultToParLabel(r){
   return d===0?'이븐':((d>0?'+':'')+d);
 }
 function resultTeeLabel(v){return ({Blue:'블루',White:'화이트',Red:'레드'})[v]||v||'—'}
+function resultCompletedHoleCount(r){
+  return (r?.holes||[]).filter(h=>h?.completed).length;
+}
 function resultRoundLabel(r,index=0){
-  return r?.testRoundNo?r.testRoundNo+'라운드':(resultDateLabel(r)+' · '+(index+1)+'번째');
+  if(r?.testRoundNo)return r.testRoundNo+'라운드';
+  const completed=resultCompletedHoleCount(r);
+  return !roundIsFull(r)&&completed>0
+    ? resultDateLabel(r)+' · '+completed+'홀 종료'
+    : resultDateLabel(r)+' · '+(index+1)+'번째';
 }
 function resultFullRounds(){
-  return loadCompletedRounds().filter(r=>r?.fullRound||roundIsFull(r)).sort((a,b)=>Number(b?.startedAt||b?.completedAt||0)-Number(a?.startedAt||a?.completedAt||0));
+  return loadCompletedRounds().filter(r=>roundHasRecordedData(r)).sort((a,b)=>Number(b?.startedAt||b?.completedAt||0)-Number(a?.startedAt||a?.completedAt||0));
 }
 function setResultsSelectOptions(){
   const rounds=resultFullRounds();
@@ -4566,18 +4573,22 @@ function filteredResultRounds(){
 function renderRoundResultsSearch(){
   setResultsSelectOptions();
   const rounds=filteredResultRounds();
-  const scores=rounds.map(resultScore).filter(Number.isFinite);
+  const fullRounds=rounds.filter(r=>r?.fullRound||roundIsFull(r));
+  const scores=fullRounds.map(resultScore).filter(Number.isFinite);
   $('resultsCount').textContent=rounds.length;
   $('resultsAverage').textContent=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):'—';
   $('resultsBest').textContent=scores.length?Math.min(...scores):'—';
-  $('resultsSelectionHint').textContent='한 개 선택 → 기존 라운드 리포트 · 여러 개 선택 → 종합 분석';
-  const ids=new Set(rounds.map(r=>r.id));resultsSelectedIds=new Set([...resultsSelectedIds].filter(id=>ids.has(id)));
+  $('resultsSelectionHint').textContent='9홀/중도 종료 기록은 리포트 열람 가능 · 종합 분석은 18홀 완료 라운드만';
+  const ids=new Set(fullRounds.map(r=>r.id));resultsSelectedIds=new Set([...resultsSelectedIds].filter(id=>ids.has(id)));
   $('resultsRoundList').innerHTML=rounds.length?rounds.map((r,i)=>{
-    const score=resultScore(r),checked=resultsSelectedIds.has(r.id)?' checked':'';
+    const score=resultScore(r),full=!!(r?.fullRound||roundIsFull(r)),completed=resultCompletedHoleCount(r);
+    const checked=full&&resultsSelectedIds.has(r.id)?' checked':'';
+    const disabled=full?'':' disabled';
+    const status=full?'18홀 완료':(completed?completed+'홀 종료':'중도 종료');
     return '<div class="resultsRoundRow">'+
-      '<input type="checkbox" data-result-check="'+safeText(r.id)+'"'+checked+' aria-label="라운드 선택">'+
+      '<input type="checkbox" data-result-check="'+safeText(r.id)+'"'+checked+disabled+' aria-label="종합 분석 라운드 선택">'+
       '<div><div class="resultsRoundDate">'+resultDateLabel(r)+'</div><div class="resultsRoundName">'+safeText(resultRoundLabel(r,i))+'</div></div>'+
-      '<div><div class="resultsRoundCourse">'+safeText(r.course||'골프장')+'</div><div class="resultsRoundMeta">'+safeText(r.nine||'코스')+' · '+resultTeeLabel(r.tee)+' 티</div></div>'+
+      '<div><div class="resultsRoundCourse">'+safeText(r.course||'골프장')+'</div><div class="resultsRoundMeta">'+safeText(r.nine||'코스')+' · '+resultTeeLabel(r.tee)+' 티 · '+status+'</div></div>'+
       '<div class="resultsRoundScore"><b>'+score+'</b><span>'+resultToParLabel(r)+'</span></div>'+
       '<button class="resultsRoundOpen" data-result-open="'+safeText(r.id)+'">이 라운드 리포트 보기</button>'+
     '</div>';
@@ -8636,13 +8647,14 @@ $('resultsRoundList').onclick=e=>{
   if(check){if(check.checked)resultsSelectedIds.add(check.dataset.resultCheck);else resultsSelectedIds.delete(check.dataset.resultCheck)}
 };
 $('resultsSelectAllBtn').onclick=()=>{
-  const rounds=filteredResultRounds();const allSelected=rounds.length&&rounds.every(r=>resultsSelectedIds.has(r.id));
+  const rounds=filteredResultRounds().filter(r=>r?.fullRound||roundIsFull(r));
+  const allSelected=rounds.length&&rounds.every(r=>resultsSelectedIds.has(r.id));
   rounds.forEach(r=>{if(allSelected)resultsSelectedIds.delete(r.id);else resultsSelectedIds.add(r.id)});
   renderRoundResultsSearch();
 };
 $('resultsAnalyzeBtn').onclick=()=>{
-  const rounds=filteredResultRounds().filter(r=>resultsSelectedIds.has(r.id));
-  if(!rounds.length){alert('분석할 라운드를 한 개 이상 선택하세요.');return}
+  const rounds=filteredResultRounds().filter(r=>(r?.fullRound||roundIsFull(r))&&resultsSelectedIds.has(r.id));
+  if(!rounds.length){alert('종합 분석은 18홀 완료 라운드만 선택할 수 있습니다.');return}
   if(rounds.length===1){openHistoricalRound(rounds[0].id);return}
   renderMultiRoundReview(rounds);window.scrollTo({top:0,behavior:'smooth'});
 };
