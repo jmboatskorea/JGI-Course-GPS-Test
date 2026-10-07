@@ -200,3 +200,23 @@ body.round-active .mapFirstCoachText .bad{color:#b51f2d!important}
   .finalReportHero{grid-template-columns:minmax(0,1fr) auto;padding:10px}
   .finalReportScore b{font-size:26px}
 }
+
+
+/* Home-screen / standalone round viewport: fixed inset geometry follows the
+   actual iOS app viewport instead of reserving a separate 100dvh box. */
+body.round-active{
+  height:auto!important;
+  min-height:0!important;
+}
+body.round-active .app{
+  height:auto!important;
+  min-height:0!important;
+}
+body.round-active #roundScreen.map-first-round{
+  height:auto!important;
+  min-height:0!important;
+}
+body.round-active #roundScreen.map-first-round .roundMapStage{
+  height:auto!important;
+  min-height:0!important;
+}
