@@ -1443,7 +1443,7 @@ body.round-active .modal .sheet .puttHistoryRow{
 </style>
 
 <link rel="stylesheet" href="whoop-pilot.css">
-<link rel="stylesheet" href="target-score-coach.css?v=20261007-2300">
+<link rel="stylesheet" href="target-score-coach.css?v=20261007-2340">
 
 <style id="jgiIntroV2Style">
 #introScreen.introV2{
@@ -9894,6 +9894,21 @@ $('endRoundBtn').onclick=()=>{
   showScreen('overview');
 };
 $('gpsTop').onclick=startGPS;
+</script>
+<script id="jgiRoundViewportFix">
+(function(){
+  function setJgiRoundViewport(){
+    var h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||document.documentElement.clientHeight||0;
+    if(h>0)document.documentElement.style.setProperty('--jgi-round-vh',Math.round(h)+'px');
+  }
+  setJgiRoundViewport();
+  window.addEventListener('resize',setJgiRoundViewport,{passive:true});
+  window.addEventListener('orientationchange',function(){setTimeout(setJgiRoundViewport,60)},{passive:true});
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',setJgiRoundViewport,{passive:true});
+    window.visualViewport.addEventListener('scroll',setJgiRoundViewport,{passive:true});
+  }
+})();
 </script>
 <script src="target-score-coach.js?v=20261007-2300"></script>
 <script src="whoop-pilot.js"></script>

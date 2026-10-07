@@ -203,21 +203,59 @@ body.round-active .mapFirstCoachText .bad{color:#b51f2d!important}
 }
 
 
-/* Home-screen / standalone round viewport: fixed inset geometry follows the
-   actual iOS app viewport instead of reserving a separate 100dvh box. */
-body.round-active{
-  height:auto!important;
+/* iOS Home Screen round viewport: use the measured visual viewport height.
+   This keeps the cockpit on the real bottom edge and gives the map the remaining space. */
+html:has(body.round-active){
+  height:var(--jgi-round-vh,100dvh)!important;
   min-height:0!important;
+  overflow:hidden!important;
+}
+body.round-active{
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:var(--jgi-round-vh,100dvh)!important;
+  min-height:0!important;
+  overflow:hidden!important;
 }
 body.round-active .app{
-  height:auto!important;
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:auto!important;
+  width:100%!important;
+  max-width:480px!important;
+  margin:0 auto!important;
+  height:var(--jgi-round-vh,100dvh)!important;
   min-height:0!important;
+  padding:0!important;
+  overflow:hidden!important;
 }
 body.round-active #roundScreen.map-first-round{
-  height:auto!important;
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:var(--jgi-round-vh,100dvh)!important;
   min-height:0!important;
+  overflow:hidden!important;
 }
 body.round-active #roundScreen.map-first-round .roundMapStage{
-  height:auto!important;
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:var(--jgi-round-vh,100dvh)!important;
   min-height:0!important;
+}
+body.round-active .mapFirstCockpit{
+  bottom:0!important;
 }
