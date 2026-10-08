@@ -3870,7 +3870,13 @@ function showTargetSnapshot(target,startRef=null){
   renderJgiCourseView();
 }
 function activeTargetStartReference(){
-  if(round?.pending?.start)return round.pending.start;
+  const p=round?.pending;
+  const awaitingLock=!!p&&!p.result&&!p.editingExisting&&p.startLocked!==true;
+  if(awaitingLock){
+    const live=(typeof gpsPoint==='function'?gpsPoint():null)||rawGpsPoint()||p.start;
+    if(live)return live;
+  }
+  if(p?.start)return p.start;
   const start=resolveShotStart();
   if(start)return start;
   return targetDistanceReference||rawGpsPoint();
@@ -7496,6 +7502,8 @@ function lockPendingShotStart(){
   p.shotIntent=inferShotIntent(startGreenDistanceM,target);
 
   if(!save()){
+    p.startLocked=false;
+    p.startLockedAt=null;
     alert('샷 위치 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해 주세요.');
     return false;
   }
