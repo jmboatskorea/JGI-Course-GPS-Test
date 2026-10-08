@@ -5335,10 +5335,19 @@ function rebuildEditedRoundDerived(r,original=null){
       const startGreen=green&&s.start?hav(s.start,green):null;
       const endGreen=(s.holed===true||String(s.endLie||'').toUpperCase()==='HOLED')?0:(green&&s.end?hav(s.end,green):null);
       const master=(r.clubProfile||masterClubs||[]).find(c=>c?.name===s.club);
+      s.centerWidthM=master?.centerWidth??s.centerWidthM??null;
       let target=s.target||null;
-      if(target&&s.start&&Number.isFinite(Number(target.lat))&&Number.isFinite(Number(target.lng))){
+      if(ch&&s.start&&target?.basis!=='MAP_OVERRIDE'&&typeof targetZonePointForShot==='function'){
+        const recalculated=targetZonePointForShot(ch,s.start,master?.carry??null,s.targetZone||target?.zone||'CENTER',h.par);
+        if(recalculated){
+          target={...recalculated,source:s.targetSource||target?.source||'SYSTEM_DEFAULT'};
+        }
+      }else if(target&&s.start&&Number.isFinite(Number(target.lat))&&Number.isFinite(Number(target.lng))){
         target={...target,distanceM:hav(s.start,{lat:Number(target.lat),lng:Number(target.lng)})};
-        s.target=target;s.targetLat=target.lat;s.targetLng=target.lng;s.targetFairwayWidthM=target.fairwayWidthM??s.targetFairwayWidthM??null;
+      }
+      if(target){
+        s.target=target;s.targetZone=target.zone||s.targetZone||'CENTER';s.targetSource=target.source||s.targetSource||'SYSTEM_DEFAULT';
+        s.targetLat=target.lat??null;s.targetLng=target.lng??null;s.targetFairwayWidthM=target.fairwayWidthM??null;
       }
       const derived=(ch&&s.start&&typeof deriveCourseIntelligence==='function')
         ?deriveCourseIntelligence(ch,s.start,master?.carry??null,target,h.par):{};
