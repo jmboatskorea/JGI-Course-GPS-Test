@@ -1853,7 +1853,7 @@ body.round-active .modal .sheet .puttHistoryRow{
           <span class="pill">TARGET 73</span>
         </div>
         <div class="grid2" style="margin-top:12px">
-          <div class="metric"><div class="k">TEE</div><div class="v">RED</div><div class="s">Jagorawi Old</div></div>
+          <div class="metric"><div class="k">TEE</div><div class="v" id="setupProfileTeeName">RED</div><div class="s" id="setupProfileCourseName">Jagorawi Old</div></div>
           <div class="metric"><div class="k">SG</div><div class="v" style="font-size:15px">FEMALE</div><div class="s">Scratch V0.1</div></div>
         </div>
         <div class="field">
@@ -1870,6 +1870,7 @@ body.round-active .modal .sheet .puttHistoryRow{
           <label>골프장</label>
           <select id="courseSelect">
             <option>Jagorawi Golf & Country Club</option>
+            <option>Ora Country Club</option>
             <option>Emeralda Golf Club</option>
           </select>
         </div>
@@ -1880,7 +1881,7 @@ body.round-active .modal .sheet .puttHistoryRow{
         <div class="field">
           <label>티</label>
           <div class="segment" id="teeSegment">
-            <button data-v="Blue">블루</button><button data-v="White">화이트</button><button class="sel" data-v="Red">레드</button>
+            <button class="hidden" data-v="Gold">골드</button><button data-v="Blue">블루</button><button data-v="White">화이트</button><button class="sel" data-v="Red">레드</button>
           </div>
         </div>
       </div>
@@ -2854,6 +2855,7 @@ body.round-active .modal .sheet .puttHistoryRow{
 
 <script src="jagorawi-old-course-data.js"></script>
 <script src="jagorawi-old-scorecard-data.js"></script>
+<script src="ora-south-left-course-data.js"></script>
 <script src="jgi-strokes-gained-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -2998,26 +3000,49 @@ function applyParkJieunSetupDefaults(){
   playerHandicap=PARK_JIEUN_PROFILE.handicap;
   sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   setSelected($('teeSegment'),tee);
+  syncSetupCourseSelection();
   syncSgBenchmarkUI();
 }
 
+// Course selection is round-scoped; Jagorawi stays the default and historical source.
+function isOraSouthLeft(r=round){
+  return r?.course==='Ora Country Club'&&r?.nine==='South Left';
+}
+function activeCourseData(r=round){
+  return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_DATA:window.JGI_OLD_COURSE_DATA;
+}
+function activeCourseScorecard(r=round){
+  return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA:window.JGI_OLD_SCORECARD_DATA;
+}
+function syncSetupCourseSelection(){
+  const ora=$('courseSelect')?.value==='Ora Country Club';
+  const input=$('courseNine');
+  if(input){input.value=ora?'South Left':PARK_JIEUN_PROFILE.nine;input.readOnly=ora}
+  $('teeSegment')?.querySelector('[data-v="Gold"]')?.classList.toggle('hidden',!ora);
+  if(!ora&&tee==='Gold'){tee='Red';setSelected($('teeSegment'),tee)}
+  if($('setupProfileCourseName'))$('setupProfileCourseName').textContent=ora?'Ora South Left':'Jagorawi Old';
+  if($('setupProfileTeeName'))$('setupProfileTeeName').textContent=tee.toUpperCase();
+}
 function courseHoleData(){
-  return window.JGI_OLD_COURSE_DATA?.holes?.[String(round?.currentHole||1)]||null;
+  return activeCourseData()?.holes?.[String(round?.currentHole||1)]||null;
 }
 function normalizeTeeName(v){
   return ({Back:'Blue',Regular:'White',Front:'Red',Ladies:'Red'})[v]||v||'White';
 }
-function scorecardHoleData(holeNo,teeName=tee){
-  const h=window.JGI_OLD_SCORECARD_DATA?.holes?.[String(holeNo)]||window.JGI_OLD_SCORECARD_DATA?.holes?.[holeNo]||null;
+function scorecardHoleData(holeNo,teeName=tee,r=round){
+  const scorecard=activeCourseScorecard(r);
+  const h=scorecard?.holes?.[String(holeNo)]||scorecard?.holes?.[holeNo]||null;
   if(!h)return null;
   const t=normalizeTeeName(teeName);
   return {...h,tee:t,distanceM:Number(h[t])||null};
 }
 function hydrateRoundCourseTruth(r){
   if(!r)return r;
+  const scorecard=activeCourseScorecard(r);
+  r.courseVersion=r.courseVersion||activeCourseData(r)?.version||null;
   r.tee=normalizeTeeName(r.tee||tee);
   (r.holes||[]).forEach((h,i)=>{
-    const sc=scorecardHoleData(h.hole||i+1,r.tee);
+    const sc=scorecardHoleData(h.hole||i+1,r.tee,r);
     if(!sc)return;
     h.par=sc.par;
     h.teeDistanceM=sc.distanceM;
@@ -3025,13 +3050,15 @@ function hydrateRoundCourseTruth(r){
     h.strokeIndexLadies=sc.indexLadies;
   });
   r.courseTruth={
-    courseId:22987,
-    source:window.JGI_OLD_SCORECARD_DATA?.source||'Jagorawi Old Course scorecard',
-    distanceUnit:window.JGI_OLD_SCORECARD_DATA?.distanceUnit||'m',
+    courseId:scorecard?.courseId??22987,
+    source:scorecard?.source||'Jagorawi Old Course scorecard',
+    distanceUnit:scorecard?.distanceUnit||'m',
     tee:r.tee,
-    rating:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.rating??null,
-    slope:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.slope??null,
-    totalDistanceM:window.JGI_OLD_SCORECARD_DATA?.tees?.[r.tee]?.total??null
+    rating:scorecard?.tees?.[r.tee]?.rating??null,
+    slope:scorecard?.tees?.[r.tee]?.slope??null,
+    totalDistanceM:scorecard?.tees?.[r.tee]?.total??null,
+    courseVersion:r.courseVersion,
+    publicId:scorecard?.publicId||null
   };
   return r;
 }
@@ -3045,8 +3072,9 @@ function unpackCourseShape(item){
 }
 function courseShapes(h){
   if(!h)return [];
-  const own=(h.s||[]).map(unpackCourseShape);
-  const water=(h.w||[]).map(i=>window.JGI_OLD_COURSE_DATA?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
+  const raw=Array.isArray(h.localS)?h.localS.map(i=>h.s?.[i]).filter(Boolean):(h.s||[]);
+  const own=raw.map(unpackCourseShape);
+  const water=(h.w||[]).map(i=>activeCourseData()?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
   return own.concat(water);
 }
 
@@ -3401,7 +3429,7 @@ function fitCurrentHole(useHeading=true){
 const TEE_COORDINATE_VERSION='JGI_TEE_COORD_V1';
 
 function courseHoleGeometryByNumber(holeNo){
-  const holes=window.JGI_OLD_COURSE_DATA?.holes;
+  const holes=activeCourseData()?.holes;
   if(!holes)return null;
   return holes?.[String(holeNo)]||holes?.[Number(holeNo)]||null;
 }
@@ -4087,7 +4115,7 @@ function clearTarget(){
 function recenterMap(){
   if(!googleMap)return;
   if(gps){googleMap.panTo({lat:gps.lat,lng:gps.lng});googleMap.setZoom(Math.max(googleMap.getZoom()||16,17))}
-  else{googleMap.panTo(JAGORAWI_OLD_CENTER);googleMap.setZoom(16)}
+  else{const t=activeCourseData()?.holes?.['1']?.t;googleMap.panTo(t?{lat:t[0],lng:t[1]}:JAGORAWI_OLD_CENTER);googleMap.setZoom(16)}
 }
 
 function currentHoleHasPreviousShot(){
@@ -4603,13 +4631,13 @@ function beginPending(club,previousShot=null){
     targetLng:targetSnapshot?.lng??null,
     targetFairwayWidthM:targetSnapshot?.fairwayWidthM??null,
     courseContext:{
-      course:'Jagorawi Golf & Country Club',courseId:22987,
+      course:round.course,courseId:activeCourseData()?.courseId??22987,
       hole:round.currentHole,holeId:ch?.i??ch?.id??ch?.holeId??null,
       greenId:ch?.greenId??null,
       greenDistanceM:startGreenDistanceM,
       startGreenDistanceM:startGreenDistanceM,
       endGreenDistanceM:null,
-      geometryVersion:window.JGI_OLD_COURSE_DATA?.version||'JGI_OLD_V1',
+      geometryVersion:activeCourseData()?.version||'JGI_OLD_V1',
       courseIntelligenceVersion:COURSE_INTELLIGENCE_VERSION,
       ...deriveCourseIntelligence(ch,startSnapshot,master?.carry??null,targetSnapshot,hole().par),
       sgBenchmarkVersion:window.JGI_SG_BENCHMARK_DATA?.version||null
@@ -5380,7 +5408,7 @@ function roundEditChooseMapPoint(latLng){
 function roundEditFitMap(holeNo,shotIndex,selectedPoint){
   if(!googleMap||!window.google?.maps)return;
   const h=roundEditDraft?.holes?.[holeNo-1];
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  const ch=activeCourseData(roundEditDraft)?.holes?.[String(holeNo)]||null;
   const bounds=new google.maps.LatLngBounds();
   let has=false;
   const extend=p=>{
@@ -5448,7 +5476,7 @@ function openRoundEditMap(shotIndex,kind){
   roundEditMapShotIndex=Number(shotIndex);
   roundEditMapKind=kind;
 
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(roundEditHole)]||null;
+  const ch=activeCourseData(roundEditDraft)?.holes?.[String(roundEditHole)]||null;
   const fallback=kind==='start'
     ?(shot.start||(ch?.t?{lat:ch.t[0],lng:ch.t[1]}:shot.end))
     :(shot.end||(ch?.g?{lat:ch.g[0],lng:ch.g[1]}:shot.start));
@@ -5519,7 +5547,7 @@ function rebuildEditedRoundDerived(r,original=null){
     h.putts=h.puttsDetail.length;
     h.firstPutt=h.puttsDetail[0]?.distanceM??null;
     h.penalties=h.penaltyEvents.reduce((sum,p)=>sum+Math.max(1,Number(p?.strokes)||1),0);
-    const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(h.hole)]||null;
+    const ch=activeCourseData(r)?.holes?.[String(h.hole)]||null;
     const green=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
 
     h.shots.forEach((s,si)=>{
@@ -8321,7 +8349,7 @@ function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
 function pct(n,d){return d?Math.round(n/d*100):null}
 
 function greenPointForHole(holeNo){
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  const ch=activeCourseData()?.holes?.[String(holeNo)]||null;
   return ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
 }
 function clampNumber(v,min,max){
@@ -8443,7 +8471,7 @@ function computePuttSG(h,p,index,info=sgBenchmarkInfo()){
   return {value:a-b-1,startExpected:a,endExpected:b};
 }
 function greenEdgePolygonForHole(holeNo){
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  const ch=activeCourseData()?.holes?.[String(holeNo)]||null;
   const green=(ch?.s||[]).find(x=>x?.[0]==='G'&&Array.isArray(x?.[2])&&x[2].length>=2);
   return green?.[2]||null;
 }
@@ -8802,7 +8830,7 @@ function renderReviewSatelliteMap(holeNo){
   const host=$('reviewMap');
   const mapEl=$('googleMap');
   const h=round?.holes?.[holeNo-1];
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
+  const ch=activeCourseData()?.holes?.[String(holeNo)];
   if(!host||!mapEl||!h||!ch||!googleMap||!window.google?.maps)return false;
 
   clearReviewMapObjects();
@@ -8884,7 +8912,7 @@ function renderReviewJgiMap(holeNo){
   restoreGoogleMapHome();
   const el=$('reviewMap');if(!el)return;
   const h=round?.holes?.[holeNo-1];
-  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)];
+  const ch=activeCourseData()?.holes?.[String(holeNo)];
   if(!h||!ch){
     el.innerHTML='<div class="reviewMapEmpty">이 홀의 코스 데이터를 찾을 수 없습니다.</div>';
     return;
@@ -9765,7 +9793,7 @@ function renderStory(){
   $('nextFocus').innerHTML='<strong style="color:#ffd36e;font-size:15px">'+action+'</strong><br><br><span class="dataNote">'+(mentalLead?mentalText+' 이 관계를 원인으로 단정하지 않고 다음 라운드에서 다시 확인합니다.':'현재 라운드의 실제 샷 기록에서 가장 큰 반복 이슈를 기준으로 한 행동 제안입니다.')+'</span>';
 }
 function precomputeAllCourseIntelligence(){
-  const holes=window.JGI_OLD_COURSE_DATA?.holes||{};
+  const holes=activeCourseData()?.holes||{};
   Object.keys(holes).forEach(no=>{
     const par=scorecardHoleData(Number(no),tee)?.par??null;
     buildCourseIntelligenceModel(holes[no],par);
@@ -10004,7 +10032,8 @@ $('multiDashboardTabs').onclick=e=>{
 $('multiAllDetailJump').onclick=()=>{
   const d=$('multiAllDetails');if(!d)return;d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});
 };
-$('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
+$('courseSelect').addEventListener('change',syncSetupCourseSelection);
+$('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee);syncSetupCourseSelection()});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
   const requested=normalizeCollectionLevel(e.target.dataset.v);
@@ -10029,7 +10058,10 @@ if($('resetTestDataBtn'))$('resetTestDataBtn').onclick=()=>{
   alert('테스트 데이터 '+n+'라운드를 삭제했습니다.');
 };
 function startRoundWithCondition(){
-  tee=PARK_JIEUN_PROFILE.tee;
+  const isOra=$('courseSelect')?.value==='Ora Country Club';
+  const selectedCourse=isOra?'Ora Country Club':PARK_JIEUN_PROFILE.course;
+  const selectedNine=isOra?'South Left':PARK_JIEUN_PROFILE.nine;
+  tee=isOra&&['Gold','Blue','White','Red'].includes(tee)?tee:PARK_JIEUN_PROFILE.tee;
   sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   const targetScore=clampNumber($('targetScoreInput')?.value||PARK_JIEUN_PROFILE.targetScore,50,150)||PARK_JIEUN_PROFILE.targetScore;
   const previousRound=load();
@@ -10038,8 +10070,8 @@ function startRoundWithCondition(){
     archiveRound(previousRound,'PARTIAL');
   }
   startPositionOverride=null;clearManualPosition();clearTarget();resetTargetZoneSelection();
-  round=emptyRound(PARK_JIEUN_PROFILE.course,PARK_JIEUN_PROFILE.nine);
-  round.tee=PARK_JIEUN_PROFILE.tee;
+  round=emptyRound(selectedCourse,selectedNine);
+  round.tee=tee;
   round.stateCollectionLevel=stateCollectionLevel;
   round.playerProfileId=PARK_JIEUN_PROFILE.id;
   round.playerProfileVersion=PARK_JIEUN_PROFILE.version;
@@ -10051,7 +10083,7 @@ function startRoundWithCondition(){
   round.clubProfile=PARK_JIEUN_PROFILE.clubs.map(c=>({...c}));
   round.sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   round.sgDataVersion=window.JGI_SG_BENCHMARK_DATA?.version||null;
-  hydrateRoundCourseTruth(round);window.JGI_WHOOP?.capture(round);save();renderRoundHistoryStatus();showScreen('round')
+  hydrateRoundCourseTruth(round);precomputeAllCourseIntelligence();window.JGI_WHOOP?.capture(round);save();renderRoundHistoryStatus();showScreen('round')
 };
 $('startRoundBtn').onclick=()=>{
   if(!sgBenchmarkMode){startRoundWithCondition();return}
@@ -10068,7 +10100,7 @@ $('resumeRoundBtn').onclick=()=>{
   }else{
     resetTargetZoneSelection();
   }
-  tee=normalizeTeeName(round.tee||'White');stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
+  tee=normalizeTeeName(round.tee||'White');precomputeAllCourseIntelligence();stateCollectionLevel=normalizeCollectionLevel(round.stateCollectionLevel||100);
   localStorage.setItem(STATE_COLLECTION_LEVEL_KEY,String(stateCollectionLevel));
   playerHandicap=clampNumber(round.playerHandicap,0,String(round.playerSex||'').toUpperCase()==='FEMALE'?28:25);
   sgBenchmarkMode=round.sgBenchmarkMode||'TOUR';
