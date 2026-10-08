@@ -1,14 +1,16 @@
 // JGI Strokes Gained Benchmark V1
 // TOUR: Mark Broadie PGA TOUR ShotLink expected-strokes baseline (2003-2010, 8M+ shots).
 // Handicap lenses: MODELED, not observed handicap-population expected-strokes tables.
-// Female Scratch V0.1: MODELED_PUBLIC_CALIBRATED, built from public female-golf
-// performance anchors and the JGI expected-strokes structure. It is NOT LPGA ShotLink.
+// Female SG V0.2: Female Scratch V0.1 is the base expected-strokes curve.
+// A continuous MODELED handicap lens (HCP 0.0-28.0) is applied from that base.
+// It is NOT an observed female handicap-population table and NOT LPGA ShotLink.
 // Units: off-green distance = yards; putting distance = feet.
 window.JGI_SG_BENCHMARK_DATA={
   version:"JGI_SG_V1_2026-10-01",
-  extensionVersion:"JGI_FEMALE_SG_V0_1_2026-10-07",
+  extensionVersion:"JGI_FEMALE_SG_V0_2_2026-10-08",
   labels:{
     TOUR:"Tour",
+    FEMALE_PLAYER:"여자 HCP · V0.2",
     FEMALE_SCRATCH:"여자 Scratch · V0.1",
     SCRATCH:"Scratch",
     HCP_5:"HCP 5",
@@ -19,6 +21,10 @@ window.JGI_SG_BENCHMARK_DATA={
   },
   levels:{
     TOUR:{handicap:null,type:"MEASURED",sex:"MALE",profile:null,useOffset:false},
+    FEMALE_PLAYER:{
+      handicap:null,type:"MODELED",sex:"FEMALE",profile:"FEMALE_SCRATCH",useOffset:true,
+      source:"PUBLIC_CALIBRATED",quality:"LOW",level:"HANDICAP_0_28"
+    },
     FEMALE_SCRATCH:{
       handicap:null,type:"MODELED",sex:"FEMALE",profile:"FEMALE_SCRATCH",useOffset:false,
       source:"PUBLIC_CALIBRATED",quality:"LOW",level:"SCRATCH"
@@ -38,6 +44,19 @@ window.JGI_SG_BENCHMARK_DATA={
     longDefinition:"TEE or >100 yards",
     shortDefinition:"Off-green <=100 yards",
     note:"Tour is a measured published baseline. Scratch/HCP lenses are modeled comparison lenses."
+  },
+  femaleHandicapModel:{
+    version:"JGI_FEMALE_SG_V0_2_2026-10-08",
+    baseProfile:"FEMALE_SCRATCH",
+    baseProfileVersion:"JGI_FEMALE_SG_V0_1_2026-10-07",
+    minHandicap:0,
+    maxHandicap:28,
+    shares:{long:0.65,short:0.20,putting:0.15},
+    shotsPerRound:{long:14,short:7,putting:30},
+    longDefinition:"TEE or >100 yards",
+    shortDefinition:"Off-green <=100 yards",
+    type:"MODELED_HANDICAP_LENS",
+    note:"Continuous female handicap lens derived from the Female Scratch expected-strokes curve using the same JGI 65/20/15 modeled allocation used by the male handicap lens."
   },
   sources:[
     {name:"Mark Broadie, Assessing Golfer Performance on the PGA TOUR, Table 9",role:"TOUR_OFF_GREEN",type:"MEASURED_PUBLISHED_BASELINE"},
@@ -160,25 +179,49 @@ window.JGI_SG_BENCHMARK_DATA={
   ]
 };
 
-(function installFemaleScratchBenchmark(){
+(function installFemaleHandicapBenchmark(){
   function install(){
-    if(window.JGI_FEMALE_SG_V0_1_INSTALLED)return;
+    if(window.JGI_FEMALE_SG_V0_2_INSTALLED)return;
     if(typeof window.sgBenchmarkInfo!=="function"||typeof window.sgExpected!=="function")return;
-    window.JGI_FEMALE_SG_V0_1_INSTALLED=true;
+    window.JGI_FEMALE_SG_V0_2_INSTALLED=true;
 
     const data=window.JGI_SG_BENCHMARK_DATA;
     const female=data.profiles.FEMALE_SCRATCH;
+    const lens=data.femaleHandicapModel;
     const baseInfo=window.sgBenchmarkInfo;
     const baseExpected=window.sgExpected;
+    const isFemaleMode=mode=>mode==="FEMALE_PLAYER"||mode==="FEMALE_SCRATCH";
+    const clampFemaleHandicap=value=>{
+      const n=Number(value);
+      return Number.isFinite(n)?Math.min(lens.maxHandicap,Math.max(lens.minHandicap,n)):null;
+    };
+    const resolveFemaleHandicap=r=>{
+      const direct=clampFemaleHandicap(r?.playerHandicap);
+      if(direct!==null)return direct;
+      if(typeof playerHandicap!=="undefined"){
+        const globalValue=clampFemaleHandicap(playerHandicap);
+        if(globalValue!==null)return globalValue;
+      }
+      return 0;
+    };
+    const handicapOffset=(handicap,bucket)=>{
+      const h=clampFemaleHandicap(handicap)??0;
+      return h*(lens.shares?.[bucket]||0)/(lens.shotsPerRound?.[bucket]||1);
+    };
 
     window.sgBenchmarkInfo=function(r){
       const mode=r?.sgBenchmarkMode||(typeof sgBenchmarkMode!=="undefined"?sgBenchmarkMode:null)||"PLAYER";
-      if(mode==="FEMALE_SCRATCH"){
+      if(isFemaleMode(mode)){
+        const h=resolveFemaleHandicap(r);
         return {
-          mode:"FEMALE_SCRATCH",requestedMode:"FEMALE_SCRATCH",
-          label:data.labels.FEMALE_SCRATCH,handicap:null,type:"MODELED",fallback:false,
-          sex:"FEMALE",level:"SCRATCH",profile:"FEMALE_SCRATCH",useOffset:false,
-          source:female.source,quality:female.quality,profileVersion:female.version
+          mode:"FEMALE_PLAYER",requestedMode:mode,
+          label:"여자 HCP "+h.toFixed(1)+" · V0.2",handicap:h,type:"MODELED",fallback:false,
+          sex:"FEMALE",level:"HCP_"+h.toFixed(1),profile:"FEMALE_SCRATCH",useOffset:true,
+          source:female.source,quality:female.quality,
+          profileVersion:lens.version,baseProfileVersion:female.version,
+          benchmarkPopulation:"FEMALE_HANDICAP_MODELED_FROM_SCRATCH",
+          benchmarkType:"MODELED_PUBLIC_CALIBRATED_HANDICAP_LENS",
+          minHandicap:lens.minHandicap,maxHandicap:lens.maxHandicap
         };
       }
       return arguments.length?baseInfo(r):baseInfo();
@@ -189,38 +232,54 @@ window.JGI_SG_BENCHMARK_DATA={
       if(resolved?.profile!=="FEMALE_SCRATCH")return baseExpected(distanceM,lie,resolved);
       const key=typeof sgLieKey==="function"?sgLieKey(lie):null;
       if(!key||!Number.isFinite(Number(distanceM)))return null;
+      const h=clampFemaleHandicap(resolved.handicap)??0;
+
       if(key==="green"){
         const feet=Math.max(0,Number(distanceM)*3.2808399);
         if(feet<=0)return 0;
-        return interpolateRows(female.putting,feet,"feet","expected");
+        const base=interpolateRows(female.putting,feet,"feet","expected");
+        return Number.isFinite(base)?base+handicapOffset(h,"putting"):null;
       }
+
       const yards=Number(distanceM)*1.0936133;
       let lieKey=key;
       if(lieKey==="tee"&&yards<100)lieKey="fairway";
       if(lieKey!=="tee"&&yards>female.maxValidatedOffGreenYards)return null;
-      return interpolateRows(female.offGreen,yards,"yards",lieKey);
+      const base=interpolateRows(female.offGreen,yards,"yards",lieKey);
+      if(!Number.isFinite(base))return null;
+      const bucket=(key==="tee"||yards>100)?"long":"short";
+      return base+handicapOffset(h,bucket);
     };
 
     function applyFemaleMetadata(r){
-      if(!r||r.sgBenchmarkMode!=="FEMALE_SCRATCH")return r;
+      if(!r||!isFemaleMode(r.sgBenchmarkMode))return r;
+      const info=window.sgBenchmarkInfo(r);
+      r.sgBenchmarkEffectiveMode="FEMALE_PLAYER";
       r.sgBenchmarkSex="FEMALE";
-      r.sgBenchmarkLevel="SCRATCH";
-      r.sgBenchmarkPopulation=female.benchmarkPopulation;
-      r.sgBenchmarkType=female.benchmarkType;
+      r.sgBenchmarkLevel=info.level;
+      r.sgBenchmarkHandicap=info.handicap;
+      r.sgBenchmarkHandicapMin=lens.minHandicap;
+      r.sgBenchmarkHandicapMax=lens.maxHandicap;
+      r.sgBenchmarkPopulation=info.benchmarkPopulation;
+      r.sgBenchmarkBasePopulation=female.benchmarkPopulation;
+      r.sgBenchmarkType=info.benchmarkType;
       r.sgBenchmarkSource=female.source;
       r.sgQuality=female.quality;
-      r.sgProfileVersion=female.version;
+      r.sgProfileVersion=lens.version;
+      r.sgBaseProfileVersion=female.version;
       r.sgDataVersion=data.version;
       return r;
     }
 
     const segment=document.getElementById("sgBenchmarkSegment");
-    if(segment&&!segment.querySelector('[data-v="FEMALE_SCRATCH"]')){
-      const button=document.createElement("button");
-      button.type="button";
-      button.dataset.v="FEMALE_SCRATCH";
-      button.textContent="여자 Scratch";
-      segment.insertBefore(button,segment.children[1]||null);
+    if(segment){
+      const oldButton=segment.querySelector('[data-v="FEMALE_SCRATCH"]');
+      const playerButton=segment.querySelector('[data-v="FEMALE_PLAYER"]')||oldButton;
+      if(playerButton){
+        playerButton.dataset.v="FEMALE_PLAYER";
+        const h=resolveFemaleHandicap(typeof round!=="undefined"?round:null);
+        playerButton.textContent="여자 HCP "+h.toFixed(1);
+      }
     }
 
     const baseEmptyRound=window.emptyRound;
@@ -247,15 +306,19 @@ window.JGI_SG_BENCHMARK_DATA={
     if(typeof baseBeginPending==="function"){
       window.beginPending=function(){
         const ok=baseBeginPending.apply(this,arguments);
-        if(ok&&typeof round!=="undefined"&&round?.pending&&round.sgBenchmarkMode==="FEMALE_SCRATCH"){
+        if(ok&&typeof round!=="undefined"&&round?.pending&&isFemaleMode(round.sgBenchmarkMode)){
           applyFemaleMetadata(round);
+          const info=window.sgBenchmarkInfo(round);
           round.pending.courseContext={
             ...(round.pending.courseContext||{}),
+            sgBenchmarkEffectiveMode:"FEMALE_PLAYER",
             sgBenchmarkSex:"FEMALE",
-            sgBenchmarkLevel:"SCRATCH",
+            sgBenchmarkLevel:info.level,
+            sgBenchmarkHandicap:info.handicap,
             sgBenchmarkSource:female.source,
             sgBenchmarkQuality:female.quality,
-            sgBenchmarkProfileVersion:female.version
+            sgBenchmarkProfileVersion:lens.version,
+            sgBenchmarkBaseProfileVersion:female.version
           };
           if(typeof save==="function")save();
         }
@@ -265,8 +328,10 @@ window.JGI_SG_BENCHMARK_DATA={
 
     const performanceNote=document.querySelector("#performanceScreen .sgBox .sgStatus");
     if(performanceNote){
-      performanceNote.innerHTML="<b>라운드 시작 시 선택한 기준으로 고정</b>됩니다. Tour는 공개 PGA TOUR 기대타수 기준이며, 여자 Scratch V0.1은 공개 여성 성과자료로 보정한 JGI 테스트 모델입니다. 공식 LPGA Benchmark가 아닙니다.";
+      performanceNote.innerHTML="<b>Female SG V0.2</b>는 Female Scratch V0.1 Expected-Strokes Curve를 기준으로 HCP 0.0–28.0 연속 Modeled Handicap Lens를 적용합니다. HCP별 실측 Expected-Strokes Table이 아니며 공식 LPGA Benchmark가 아닙니다.";
     }
+
+    if(typeof syncSgBenchmarkUI==="function")syncSgBenchmarkUI();
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});
