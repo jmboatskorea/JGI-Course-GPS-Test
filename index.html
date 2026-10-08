@@ -713,11 +713,22 @@ body.round-active .bottomnav{display:none!important}
 .roundEditGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .roundEditGrid label{font-size:8px;color:#8fa198;font-weight:800}
 .roundEditGrid input,.roundEditGrid select{margin-top:3px;padding:9px;border-radius:10px;font-size:10px}
-.roundEditGps{grid-column:1/-1;padding-top:5px;border-top:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.roundEditGpsTitle{grid-column:1/-1;color:#79ed9d;font-size:8px;font-weight:900}
+.roundEditGps{grid-column:1/-1;padding-top:8px;border-top:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.roundEditGpsTitle{grid-column:1/-1;color:#79ed9d;font-size:9px;font-weight:900;line-height:1.45}
+.roundEditPositionBtn{min-height:48px;border:1px solid rgba(121,237,157,.25);border-radius:12px;background:rgba(38,122,71,.10);color:#fff;padding:9px 10px;text-align:left;font-weight:950}
+.roundEditPositionBtn b{display:block;font-size:10px}.roundEditPositionBtn small{display:block;margin-top:4px;color:#8fa198;font-size:8px;font-weight:800}
 .roundEditAdd{border:1px dashed rgba(255,255,255,.18);background:transparent;color:#b9cbc1;border-radius:10px;padding:8px;font-size:9px;font-weight:900}
 .roundEditFoot{position:sticky;bottom:-1px;display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:12px;padding-top:10px;background:linear-gradient(180deg,transparent,#07130f 26%)}
-@media(max-width:420px){.resultsRoundManage{grid-template-columns:1fr 58px 58px}.roundEditGrid{grid-template-columns:1fr}.roundEditGps{grid-template-columns:1fr}.roundEditSummary{grid-template-columns:repeat(2,1fr)}}
+#roundEditMapModal{z-index:90;align-items:center;padding:16px}
+.roundEditMapSheet{width:min(720px,96vw);max-height:94svh;border-radius:22px;padding:14px;background:linear-gradient(180deg,#0a2118,#07130f)}
+.roundEditMapHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.roundEditMapHead h3{margin:2px 0 0;font-size:20px}.roundEditMapHead p{margin:5px 0 0;color:#a2b4a9;font-size:10px;line-height:1.45}
+.roundEditMapHost{position:relative;height:min(62svh,620px);min-height:360px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.16);background:#06110c}
+.roundEditMapHost #googleMap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+.roundEditMapBadge{position:absolute;z-index:8;left:10px;top:10px;padding:7px 9px;border-radius:999px;background:rgba(3,12,8,.82);border:1px solid rgba(255,255,255,.18);font-size:9px;font-weight:950;color:#fff;pointer-events:none}
+.roundEditMapHelp{margin-top:8px;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#a9bbb0;font-size:10px;line-height:1.5}
+.roundEditMapActions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:10px}
+@media(max-width:420px){.resultsRoundManage{grid-template-columns:1fr 58px 58px}.roundEditGrid{grid-template-columns:1fr}.roundEditGps{grid-template-columns:1fr}.roundEditSummary{grid-template-columns:repeat(2,1fr)}#roundEditMapModal{padding:0;align-items:flex-end}.roundEditMapSheet{width:100%;border-radius:22px 22px 0 0}.roundEditMapHost{height:58svh;min-height:340px}}
 .resultsActions{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:10px}
 .multiTrend{display:flex;align-items:flex-end;gap:5px;height:105px;margin-top:10px}
 .multiTrendItem{flex:1;text-align:center;min-width:0}.multiTrendBar{width:100%;max-width:36px;margin:0 auto;border-radius:7px 7px 2px 2px;background:#2f8e57}
@@ -2800,6 +2811,27 @@ body.round-active .modal .sheet .puttHistoryRow{
   </div>
 </div>
 
+<div id="roundEditMapModal" class="modal hidden">
+  <div class="sheet roundEditMapSheet">
+    <div class="roundEditMapHead">
+      <div>
+        <div class="eyebrow">JGI · POSITION EDIT</div>
+        <h3 id="roundEditMapTitle">샷 위치 수정</h3>
+        <p id="roundEditMapMeta">지도에서 실제 위치를 탭하거나 Pin을 드래그하세요.</p>
+      </div>
+      <button id="roundEditMapClose" class="x" type="button">×</button>
+    </div>
+    <div id="roundEditMapHost" class="roundEditMapHost">
+      <div id="roundEditMapBadge" class="roundEditMapBadge">위치 선택</div>
+    </div>
+    <div id="roundEditMapHelp" class="roundEditMapHelp">Satellite Map에서 실제 샷 위치를 선택하세요. 좌표 숫자는 내부 Raw Data로만 저장됩니다.</div>
+    <div class="roundEditMapActions">
+      <button id="roundEditMapCancel" class="btn ghost" type="button">취소</button>
+      <button id="roundEditMapConfirm" class="btn primary" type="button">위치 확정</button>
+    </div>
+  </div>
+</div>
+
 <script src="jagorawi-old-course-data.js"></script>
 <script src="jagorawi-old-scorecard-data.js"></script>
 <script src="jgi-strokes-gained-data.js"></script>
@@ -2884,6 +2916,12 @@ let multiReviewRange='ALL';
 let roundEditDraft=null;
 let roundEditOriginal=null;
 let roundEditHole=1;
+let roundEditMapActive=false;
+let roundEditMapShotIndex=null;
+let roundEditMapKind=null;
+let roundEditMapCandidate=null;
+let roundEditMapMarker=null;
+let roundEditMapObjects=[];
 
 // Google Maps V1: one Map instance is created and reused for the full round.
 const GOOGLE_MAPS_API_KEY=window.JGI_RUNTIME_CONFIG?.googleMapsBrowserKey||'';
@@ -3731,6 +3769,7 @@ window.initGoogleMap=function(){
   const status=$('mapLoadStatus');
   if(status)status.classList.add('ready');
   googleMap.addListener('click',e=>{
+    if(roundEditMapActive){roundEditChooseMapPoint(e.latLng);return}
     if(reviewSatelliteActive)return;
     if(dropMode){setManualPosition(e.latLng);return}
     if(round?.pending)return;
@@ -5204,9 +5243,10 @@ function roundEditClubOptions(current){
   if(current&&!clubs.includes(current))clubs.unshift(current);
   return [...new Set(clubs)].map(v=>[v,v]);
 }
-function roundEditPointInput(label,kind,axis,value,shotIndex){
-  const v=Number(value);
-  return '<label>'+label+' '+axis.toUpperCase()+'<input type="number" step="0.0000001" inputmode="decimal" value="'+(Number.isFinite(v)?v:'')+'" data-re-shot="'+shotIndex+'" data-re-point="'+kind+'" data-re-axis="'+axis+'"></label>';
+function roundEditPositionButton(label,kind,point,shotIndex){
+  const source=positionSourceLabel(point?.source);
+  const state=point&&Number.isFinite(Number(point.lat))&&Number.isFinite(Number(point.lng))?'저장 위치 있음':'위치 없음';
+  return '<button class="roundEditPositionBtn" type="button" data-re-map-point="'+kind+'" data-re-shot="'+shotIndex+'"><b>📍 '+label+' 위치 수정</b><small>'+state+' · '+safeText(source)+'</small></button>';
 }
 function roundEditShotHtml(s,i){
   const lieOpts=['TEE','FAIRWAY','A CUT','B CUT','ROUGH','BUNKER','RECOVERY','FRINGE','GREEN','HOLED'].map(v=>[v,lieDisplayLabel(v)]);
@@ -5225,11 +5265,9 @@ function roundEditShotHtml(s,i){
       '<label>탄도'+roundEditSelect(trajOpts,s.trajectory,'data-re-shot="'+i+'" data-re-field="trajectory"')+'</label>'+
       '<label>방향'+roundEditSelect(dirOpts,s.direction,'data-re-shot="'+i+'" data-re-field="direction"')+'</label>'+
       '<label>거리 결과'+roundEditSelect(depthOpts,s.depth,'data-re-shot="'+i+'" data-re-field="depth"')+'</label>'+
-      '<div class="roundEditGps"><div class="roundEditGpsTitle">GPS · 좌표를 수정하면 거리 / Course Intelligence / SG 기준 위치가 다시 계산됩니다.</div>'+
-        roundEditPointInput('Start','start','lat',s.start?.lat,i)+
-        roundEditPointInput('Start','start','lng',s.start?.lng,i)+
-        roundEditPointInput('End','end','lat',s.end?.lat,i)+
-        roundEditPointInput('End','end','lng',s.end?.lng,i)+
+      '<div class="roundEditGps"><div class="roundEditGpsTitle">GPS · 숫자 좌표 대신 지도에서 위치를 수정합니다. 저장 후 거리 / Course Intelligence / SG 기준 위치가 다시 계산됩니다.</div>'+
+        roundEditPositionButton('START','start',s.start,i)+
+        roundEditPositionButton('END','end',s.end,i)+
       '</div>'+
     '</div>'+
   '</div>';
@@ -5300,19 +5338,153 @@ function openRoundEditor(roundId){
   return true;
 }
 function closeRoundEditor(){
+  if(roundEditMapActive)closeRoundEditMap();
   roundEditDraft=null;roundEditOriginal=null;roundEditHole=1;
   $('roundEditModal').classList.add('hidden');
 }
-function roundEditSetShotPoint(shot,kind,axis,value){
-  if(!shot)return;
-  shot[kind]=shot[kind]||{};
-  const n=Number(value);
-  if(!Number.isFinite(n))return;
-  shot[kind][axis]=n;
-  shot[kind].source='MANUAL_EDIT';
-  shot[kind].time=Date.now();
+function clearRoundEditMapObjects(){
+  roundEditMapObjects.forEach(x=>{try{x?.setMap&&x.setMap(null)}catch{}});
+  roundEditMapObjects=[];
+  if(roundEditMapMarker){try{roundEditMapMarker.setMap(null)}catch{};roundEditMapMarker=null}
+}
+function roundEditChooseMapPoint(latLng){
+  if(!roundEditMapActive||!latLng)return false;
+  const lat=typeof latLng.lat==='function'?latLng.lat():Number(latLng.lat);
+  const lng=typeof latLng.lng==='function'?latLng.lng():Number(latLng.lng);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng))return false;
+  roundEditMapCandidate={lat,lng};
+  if(roundEditMapMarker)roundEditMapMarker.setPosition(roundEditMapCandidate);
+  $('roundEditMapHelp').textContent='선택한 위치가 주황 Pin으로 표시됩니다. 맞으면 위치 확정을 누르세요.';
+  return true;
+}
+function roundEditFitMap(holeNo,shotIndex,selectedPoint){
+  if(!googleMap||!window.google?.maps)return;
+  const h=roundEditDraft?.holes?.[holeNo-1];
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(holeNo)]||null;
+  const bounds=new google.maps.LatLngBounds();
+  let has=false;
+  const extend=p=>{
+    if(p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))){
+      bounds.extend({lat:Number(p.lat),lng:Number(p.lng)});has=true;
+    }
+  };
+  const boundary=ch?courseShapes(ch).filter(x=>x.type==='HOLE_BOUNDARY'&&x.path?.length).sort((a,b)=>b.path.length-a.path.length)[0]:null;
+  (boundary?.path||[]).forEach(extend);
+  if(ch?.t)extend({lat:ch.t[0],lng:ch.t[1]});
+  if(ch?.g)extend({lat:ch.g[0],lng:ch.g[1]});
+
+  (h?.shots||[]).forEach((s,i)=>{
+    extend(s.start);extend(s.end);
+    if(s.start&&s.end){
+      const line=new google.maps.Polyline({
+        map:googleMap,path:[s.start,s.end],
+        strokeColor:i===shotIndex?'#ffffff':'#9ab7a5',
+        strokeOpacity:i===shotIndex?.98:.45,strokeWeight:i===shotIndex?4:2,zIndex:5
+      });
+      roundEditMapObjects.push(line);
+    }
+    if(i!==shotIndex&&s.end){
+      const marker=new google.maps.Marker({
+        map:googleMap,position:s.end,zIndex:7,clickable:false,
+        label:{text:String(i+1),color:'#111111',fontWeight:'900'},
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#ffffff',fillOpacity:.82,strokeColor:'#173429',strokeWeight:2}
+      });
+      roundEditMapObjects.push(marker);
+    }
+  });
+  extend(selectedPoint);
+  setTimeout(()=>{
+    google.maps.event.trigger(googleMap,'resize');
+    if(has)googleMap.fitBounds(bounds,{top:44,right:30,bottom:44,left:30});
+    if(ch?.t&&ch?.g){
+      const heading=bearingDeg({lat:ch.t[0],lng:ch.t[1]},{lat:ch.g[0],lng:ch.g[1]});
+      setTimeout(()=>{try{
+        if(typeof googleMap.moveCamera==='function')googleMap.moveCamera({heading,tilt:0});
+        else{googleMap.setHeading(heading);googleMap.setTilt(0)}
+      }catch{}},60);
+    }
+  },40);
+}
+function openRoundEditMap(shotIndex,kind){
+  const h=roundEditDraft?.holes?.[roundEditHole-1];
+  const shot=h?.shots?.[Number(shotIndex)];
+  if(!shot||!['start','end'].includes(kind))return false;
+  if(!googleMap&&window.google?.maps&&typeof window.initGoogleMap==='function')window.initGoogleMap();
+  if(!googleMap||!window.google?.maps){
+    loadGoogleMaps();
+    alert('Satellite Map을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.');
+    return false;
+  }
+
+  restoreGoogleMapHome();
+  clearRoundEditMapObjects();
+  clearCourseOverlays();
+  hideRoundMapObjectsForReview();
+
+  const mapEl=$('googleMap'),host=$('roundEditMapHost');
+  if(!mapEl||!host)return false;
+  host.appendChild(mapEl);
+  roundEditMapActive=true;
+  roundEditMapShotIndex=Number(shotIndex);
+  roundEditMapKind=kind;
+
+  const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(roundEditHole)]||null;
+  const fallback=kind==='start'
+    ?(shot.start||(ch?.t?{lat:ch.t[0],lng:ch.t[1]}:shot.end))
+    :(shot.end||(ch?.g?{lat:ch.g[0],lng:ch.g[1]}:shot.start));
+  if(!fallback||!Number.isFinite(Number(fallback.lat))||!Number.isFinite(Number(fallback.lng))){
+    closeRoundEditMap();
+    alert('기존 샷 위치를 찾을 수 없습니다.');
+    return false;
+  }
+  roundEditMapCandidate={lat:Number(fallback.lat),lng:Number(fallback.lng)};
+  roundEditMapMarker=new google.maps.Marker({
+    map:googleMap,position:roundEditMapCandidate,draggable:true,zIndex:30,title:'수정할 샷 위치',
+    icon:{path:google.maps.SymbolPath.CIRCLE,scale:12,fillColor:'#ff8619',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3}
+  });
+  roundEditMapMarker.addListener('dragend',()=>{
+    const p=roundEditMapMarker.getPosition();
+    roundEditChooseMapPoint(p);
+  });
+
+  $('roundEditMapTitle').textContent='SHOT '+(Number(shotIndex)+1)+' · '+(kind==='start'?'START':'END')+' 위치 수정';
+  $('roundEditMapMeta').textContent=roundEditHole+'번 홀 · '+safeText(shot.club||'—')+' · 지도 탭 또는 Pin 드래그';
+  $('roundEditMapBadge').textContent='SHOT '+(Number(shotIndex)+1)+' · '+(kind==='start'?'START':'END');
+  $('roundEditMapHelp').textContent='Satellite Map에서 실제 위치를 탭하거나 주황 Pin을 드래그하세요.';
+  $('roundEditMapModal').classList.remove('hidden');
+  roundEditFitMap(roundEditHole,Number(shotIndex),roundEditMapCandidate);
+  return true;
+}
+function closeRoundEditMap(){
+  if(!roundEditMapActive){
+    $('roundEditMapModal')?.classList.add('hidden');
+    return;
+  }
+  roundEditMapActive=false;
+  roundEditMapShotIndex=null;
+  roundEditMapKind=null;
+  roundEditMapCandidate=null;
+  clearRoundEditMapObjects();
+  $('roundEditMapModal').classList.add('hidden');
+  restoreGoogleMapHome();
+}
+function confirmRoundEditMap(){
+  const h=roundEditDraft?.holes?.[roundEditHole-1];
+  const shot=h?.shots?.[Number(roundEditMapShotIndex)];
+  const point=roundEditMapCandidate;
+  const kind=roundEditMapKind;
+  if(!shot||!point||!['start','end'].includes(kind))return false;
+  const previous=shot[kind]||{};
+  shot[kind]={
+    ...previous,
+    lat:Number(point.lat),lng:Number(point.lng),
+    accuracy:0,source:'MANUAL_EDIT',time:Date.now()
+  };
   shot.positionSource=shot.positionSource||{};
   shot.positionSource[kind]='MANUAL_EDIT';
+  closeRoundEditMap();
+  renderRoundEditor();
+  return true;
 }
 function rebuildEditedRoundDerived(r,original=null){
   if(!r)return r;
@@ -9622,6 +9794,9 @@ $('importRoundDataFile').onchange=async()=>{
     setRoundTransferStatus(e?.message||'백업 파일을 가져오지 못했습니다.','warn');
   }
 };
+$('roundEditMapClose').onclick=closeRoundEditMap;
+$('roundEditMapCancel').onclick=closeRoundEditMap;
+$('roundEditMapConfirm').onclick=confirmRoundEditMap;
 $('roundEditClose').onclick=closeRoundEditor;
 $('roundEditCancel').onclick=closeRoundEditor;
 $('roundEditSave').onclick=saveRoundEditor;
@@ -9632,6 +9807,8 @@ $('roundEditHoleTabs').onclick=e=>{
 $('roundEditBody').onclick=e=>{
   if(!roundEditDraft)return;
   const h=roundEditDraft.holes?.[roundEditHole-1];if(!h)return;
+  const mapPoint=e.target.closest('[data-re-map-point]');
+  if(mapPoint){openRoundEditMap(Number(mapPoint.dataset.reShot),mapPoint.dataset.reMapPoint);return}
   const rs=e.target.closest('[data-re-remove-shot]');
   if(rs){
     const i=Number(rs.dataset.reRemoveShot);
@@ -9669,9 +9846,7 @@ $('roundEditBody').onchange=e=>{
   const penaltyIndex=e.target.dataset.rePenalty;
   if(shotIndex!==undefined){
     const s=h.shots?.[Number(shotIndex)];if(!s)return;
-    if(e.target.dataset.rePoint){
-      roundEditSetShotPoint(s,e.target.dataset.rePoint,e.target.dataset.reAxis,e.target.value);
-    }else if(e.target.dataset.reField){
+    if(e.target.dataset.reField){
       s[e.target.dataset.reField]=e.target.value;
       if(e.target.dataset.reField==='endLie')s.holed=e.target.value==='HOLED';
     }
