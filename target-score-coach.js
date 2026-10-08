@@ -298,7 +298,18 @@
       centerContext=contextForZone(ch,start,carry,'CENTER',h?.par);
     }
 
-    const baseContext=(manualTarget&&r?.pending?.courseContext)?r.pending.courseContext:centerContext;
+    const awaitingLock=!!r?.pending&&!r.pending.result&&!r.pending.editingExisting&&r.pending.startLocked!==true;
+    let manualLiveContext=null;
+    if(manualTarget&&awaitingLock&&ch&&start&&Number.isFinite(carry)&&r?.pending?.target&&typeof deriveCourseIntelligence==='function'){
+      const t=r.pending.target;
+      if(Number.isFinite(Number(t.lat))&&Number.isFinite(Number(t.lng))){
+        const point={...t,distanceM:typeof hav==='function'?hav(start,{lat:Number(t.lat),lng:Number(t.lng)}):t.distanceM};
+        manualLiveContext=deriveCourseIntelligence(ch,start,carry,point,h?.par);
+      }
+    }
+    const baseContext=(manualTarget&&r?.pending?.courseContext)
+      ?(manualLiveContext||r.pending.courseContext)
+      :centerContext;
     const base=courseMetrics(baseContext);
     const missDirection=clubMissDirection(r,club);
     const targetSource=targetSourceValue(r);
@@ -438,11 +449,19 @@
 
   function currentPreviewContext(){
     const r=safeRound();if(!r)return null;
-    if(r.pending?.targetScoreCoach?.version===VERSION)return r.pending.targetScoreCoach;
+    const p=r.pending;
+    const awaitingLock=!!p&&!p.result&&!p.editingExisting&&p.startLocked!==true;
+    if(p?.targetScoreCoach?.version===VERSION&&!awaitingLock)return p.targetScoreCoach;
     let club=null;
-    try{club=typeof mapFirstSelectedClub==='function'?mapFirstSelectedClub():null}catch{}
-    const start=(typeof resolveShotStart==='function'?resolveShotStart():null)||(typeof teeBoxPoint==='function'?teeBoxPoint():null);
-    return buildShotContext(r,club,start,(typeof targetZone!=='undefined'?targetZone:'CENTER'));
+    try{club=p?.club||(typeof mapFirstSelectedClub==='function'?mapFirstSelectedClub():null)}catch{}
+    let start=null;
+    try{
+      if(awaitingLock&&typeof gpsPoint==='function')start=gpsPoint();
+      if(!start&&p?.start)start=p.start;
+      if(!start&&typeof resolveShotStart==='function')start=resolveShotStart();
+      if(!start&&typeof teeBoxPoint==='function')start=teeBoxPoint();
+    }catch{}
+    return buildShotContext(r,club,start,p?.targetZone||(typeof targetZone!=='undefined'?targetZone:'CENTER'));
   }
 
   function htmlEscape(value){
@@ -1394,6 +1413,15 @@
       r.pending.targetScoreCoach=buildShotContext(r,r.pending.club,r.pending.start,r.pending.targetZone||r.pending.target?.zone||'CENTER');
       if(typeof save==='function')save();
       enablePendingTargetEditing();
+      renderBar();
+    }
+  });
+
+  wrap('lockPendingShotStart',function(ok){
+    const r=safeRound(),p=r?.pending;
+    if(ok&&p&&!p.result&&p.startLocked===true){
+      p.targetScoreCoach=buildShotContext(r,p.club,p.start,p.targetZone||p.target?.zone||'CENTER');
+      if(typeof save==='function')save();
       renderBar();
     }
   });

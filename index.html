@@ -3870,7 +3870,13 @@ function showTargetSnapshot(target,startRef=null){
   renderJgiCourseView();
 }
 function activeTargetStartReference(){
-  if(round?.pending?.start)return round.pending.start;
+  const p=round?.pending;
+  const awaitingLock=!!p&&!p.result&&!p.editingExisting&&p.startLocked!==true;
+  if(awaitingLock){
+    const live=(typeof gpsPoint==='function'?gpsPoint():null)||rawGpsPoint()||p.start;
+    if(live)return live;
+  }
+  if(p?.start)return p.start;
   const start=resolveShotStart();
   if(start)return start;
   return targetDistanceReference||rawGpsPoint();
@@ -4465,7 +4471,7 @@ function beginPending(club,previousShot=null){
   round.pending={
     id:'s'+Date.now(),club,start:startSnapshot,
     startLie:hole().shots.length===0?'TEE':currentLie,
-    startedAt:Date.now(),shotIntent,
+    preparedAt:Date.now(),startedAt:Date.now(),startLocked:false,startLockedAt:null,shotIntent,
     centerWidthM:master?.centerWidth??null,target:targetSnapshot,
     targetZone:targetSnapshot?.zone||targetZone,
     targetSource:targetSnapshot?.source||targetZoneSource,
@@ -7351,7 +7357,7 @@ function finalizePending(endPoint,endLie){
     id:p.id,hole:round.currentHole,club:p.club,start:p.start,end:endPoint||null,
     startLie:p.startLie||'UNKNOWN',endLie:isHoled?'HOLED':(r.endLie||endLie||'UNKNOWN'),
     holed:isHoled,
-    distanceM:endPoint&&p.start?hav(p.start,endPoint):null,startedAt:p.startedAt,updatedAt:Date.now(),
+    distanceM:endPoint&&p.start?hav(p.start,endPoint):null,startedAt:p.startedAt,startLockedAt:p.startLockedAt||p.startedAt||null,updatedAt:Date.now(),
     shotIntent:p.shotIntent||r.shotIntent||null,
     intendedShape:r.intendedShape||null,
     resultSource:r.resultSource||'MANUAL',
@@ -7395,7 +7401,8 @@ function restoreFinalizedShotAsPending(shot){
   const h=hole(),wasCompleted=!!h.completed,completedAt=h.completedAt||null,achievement=h.achievement||null;
   h.completed=false;h.completedAt=null;h.review=null;h.achievement=null;
   round.pending={
-    id:shot.id,club:shot.club,start:shot.start,startLie:shot.startLie,startedAt:shot.startedAt,
+    id:shot.id,club:shot.club,start:shot.start,startLie:shot.startLie,preparedAt:shot.preparedAt||shot.startedAt,
+    startedAt:shot.startedAt,startLocked:true,startLockedAt:shot.startLockedAt||shot.startedAt||null,
     shotIntent:shot.shotIntent,centerWidthM:shot.centerWidthM??null,target:shot.target||null,
     targetZone:shot.targetZone||shot.target?.zone||'CENTER',targetSource:shot.targetSource||shot.target?.source||'SYSTEM_DEFAULT',
     targetLat:shot.targetLat??shot.target?.lat??null,targetLng:shot.targetLng??shot.target?.lng??null,
@@ -7434,6 +7441,77 @@ function cancelPendingEdit(){
   }
   save();renderRound();renderCourseHole();return true;
 }
+function lockPendingShotStart(){
+  const p=round?.pending;
+  if(!p||p.result)return false;
+  if(p.editingExisting||p.startLocked===true)return true;
+
+  let locked=null;
+  const preparedSource=String(p.start?.source||'').toUpperCase();
+  if(['TEE_BOX','MANUAL_DROP'].includes(preparedSource)){
+    locked={...p.start,time:Date.now()};
+  }else{
+    locked=typeof gpsPoint==='function'?gpsPoint():rawGpsPoint();
+  }
+
+  if(!locked){
+    alert('샷 위치를 확정할 수 없습니다. GPS를 확인하거나 지도에서 공 위치를 지정해 주세요.');
+    startGPS();
+    return false;
+  }
+  if(locked.source==='GPS'&&!gpsNearCurrentHole()){
+    const ok=confirm('현재 GPS가 선택한 코스에서 멀리 떨어져 있습니다. 이 위치를 Shot Start로 저장할까요?');
+    if(!ok)return false;
+  }
+
+  const master=masterClubs.find(c=>c.name===p.club);
+  const ch=courseHoleData();
+  const oldTarget=p.target||null;
+  let target=oldTarget;
+
+  if(oldTarget?.basis==='MAP_OVERRIDE'&&Number.isFinite(Number(oldTarget.lat))&&Number.isFinite(Number(oldTarget.lng))){
+    const point={lat:Number(oldTarget.lat),lng:Number(oldTarget.lng)};
+    target={...oldTarget,distanceM:hav(locked,point)};
+  }else{
+    target=targetZonePointForShot(ch,locked,master?.carry??null,p.targetZone||targetZone,hole().par);
+    if(target)target.source=p.targetSource||targetZoneSource;
+  }
+
+  const greenPt=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
+  const startGreenDistanceM=greenPt?hav(locked,greenPt):null;
+  const lockedAt=Date.now();
+
+  p.start=locked;
+  p.preparedAt=p.preparedAt||p.startedAt||lockedAt;
+  p.startedAt=lockedAt;
+  p.startLocked=true;
+  p.startLockedAt=lockedAt;
+  p.target=target;
+  p.targetZone=target?.zone||p.targetZone||targetZone;
+  p.targetSource=target?.source||p.targetSource||targetZoneSource;
+  p.targetLat=target?.lat??null;
+  p.targetLng=target?.lng??null;
+  p.targetFairwayWidthM=target?.fairwayWidthM??null;
+  p.courseContext={
+    ...(p.courseContext||{}),
+    greenDistanceM:startGreenDistanceM,
+    startGreenDistanceM:startGreenDistanceM,
+    endGreenDistanceM:null,
+    ...deriveCourseIntelligence(ch,locked,master?.carry??null,target,hole().par)
+  };
+  p.shotIntent=inferShotIntent(startGreenDistanceM,target);
+
+  if(!save()){
+    p.startLocked=false;
+    p.startLockedAt=null;
+    alert('샷 위치 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해 주세요.');
+    return false;
+  }
+  if(target)showTargetSnapshot(target,locked);
+  renderRound();
+  return true;
+}
+
 function startShot(club){
   if(round.pending){
     if(!round.pending.result){
@@ -7480,7 +7558,7 @@ function renderRound(){
       $('changeClubBtn').classList.remove('hidden');
     }else{
       $('pendingStatusLabel').textContent='SHOT '+((hole().shots?.length||0)+1)+' · 준비';
-      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · 샷 시작 위치 저장됨';
+      $('pendingGPS').textContent=intentLabel(pending.shotIntent)+' · 타깃 '+targetZoneLabel(pending.targetZone||pending.target?.zone)+' · '+(pending.startLocked?'Shot Start GPS 확정':'샷 완료 시 GPS 확정');
       $('shotResultBtn').textContent='샷 완료 · 결과 입력';
       $('stateCheckBtn').classList.toggle('hidden',!!pending.playerState);
       $('changeClubBtn').classList.remove('hidden');
@@ -9834,7 +9912,11 @@ function syncMapFirstUI(){
 }
 function mapFirstNextAction(){
   const club=mapFirstSelectedClub();
-  if(round?.pending&&!round.pending.result){openShotResult();return}
+  if(round?.pending&&!round.pending.result){
+    if(!lockPendingShotStart())return;
+    openShotResult();
+    return;
+  }
   if(round?.pending?.result&&String(round.pending.result.endLie||'').toUpperCase()==='GREEN'){openPutt();return}
   if(club==='Putter'){openPutt();return}
   startShot(club);syncMapFirstUI();
@@ -9910,7 +9992,7 @@ $('gpsTop').onclick=startGPS;
   }
 })();
 </script>
-<script src="target-score-coach.js?v=20261007-2300"></script>
+<script src="target-score-coach.js?v=20261008-1435"></script>
 <script src="whoop-pilot.js"></script>
 </body>
 </html>
