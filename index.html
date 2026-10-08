@@ -1982,7 +1982,7 @@ body.round-active .modal .sheet .puttHistoryRow{
           </div>
 
           <button id="mapFirstNextShot" class="mapFirstNextShot" type="button">
-            <span id="mapFirstNextText">다음 샷으로</span><b>›</b>
+            <span id="mapFirstNextText">샷 완료</span><b>›</b>
           </button>
         </div>
 
@@ -3668,7 +3668,7 @@ window.initGoogleMap=function(){
   googleMap.addListener('click',e=>{
     if(reviewSatelliteActive)return;
     if(dropMode){setManualPosition(e.latLng);return}
-    if(round?.pending)return;
+    if(round?.pending&&!round.pending.result)return;
     setTarget(e.latLng);
   });
   updatePlayerMarker();
@@ -3778,7 +3778,7 @@ function renderTargetZoneControl(){
   const el=$('targetZoneSegment');if(!el)return;
   el.querySelectorAll('[data-target-zone]').forEach(b=>{
     b.classList.toggle('sel',b.dataset.targetZone===targetZone);
-    b.disabled=!!round?.pending;
+    b.disabled=!!round?.pending&&!round.pending.result;
   });
 }
 function resetTargetZoneSelection(){
@@ -3870,7 +3870,14 @@ function showTargetSnapshot(target,startRef=null){
   renderJgiCourseView();
 }
 function activeTargetStartReference(){
-  if(round?.pending?.start)return round.pending.start;
+  const pending=round?.pending;
+  const resultLie=String(pending?.result?.endLie||'').toUpperCase();
+  const planningNext=!!pending?.result&&!['GREEN','HOLED'].includes(resultLie);
+  if(planningNext){
+    const live=(typeof gpsPoint==='function'?gpsPoint():null)||rawGpsPoint();
+    if(live)return live;
+  }
+  if(pending?.start)return pending.start;
   const start=resolveShotStart();
   if(start)return start;
   return targetDistanceReference||rawGpsPoint();
@@ -3884,7 +3891,7 @@ function targetStartReferenceLabel(ref){
   return 'START';
 }
 function setTarget(latLng){
-  if(!window.google?.maps||round?.pending)return;
+  if(!window.google?.maps||(round?.pending&&!round.pending.result))return;
   const pos={lat:latLng.lat(),lng:latLng.lng()};
   targetManualOverride=true;
   targetZoneSource='PLAYER_SELECTED';
@@ -4506,7 +4513,7 @@ function finishPendingAndMaybeStart(club=null){
     return false;
   }
   currentLie=round.pending.result.endLie||currentLie;
-  const finished=finalizePending(endPoint,currentLie);
+  const finished=finalizePending(endPoint,currentLie,{preserveTarget:!!club});
   if(club)return beginNextShot(club,finished);
   renderRound();
   return true;
@@ -7336,7 +7343,7 @@ function setSelected(container,value){
 }
 function resetFlo(){resetStateDraft()}
 function openFlo(){openStateCheck('shot',false,'',null)}
-function finalizePending(endPoint,endLie){
+function finalizePending(endPoint,endLie,options={}){
   if(!round.pending)return null;
   const p=round.pending;
   const r=p.result||{};
@@ -7368,7 +7375,9 @@ function finalizePending(endPoint,endLie){
     playerState:p.playerState||null,
     editHistory
   };
-  hole().shots.push(shot); round.pending=null; clearTarget(); save(); return shot;
+  hole().shots.push(shot); round.pending=null;
+  if(!options?.preserveTarget)clearTarget();
+  save(); return shot;
 }
 function updatePendingClub(club){
   if(!round?.pending||!club||club==='Putter')return false;
@@ -9247,7 +9256,7 @@ $('allClubList').addEventListener('click',e=>{
 });
 
 $('targetZoneSegment').onclick=e=>{
-  const b=e.target.closest('[data-target-zone]');if(!b||round?.pending)return;
+  const b=e.target.closest('[data-target-zone]');if(!b||(round?.pending&&!round.pending.result))return;
   targetZone=b.dataset.targetZone;
   targetZoneSource='PLAYER_SELECTED';
   targetManualOverride=false;
@@ -9366,6 +9375,7 @@ $('saveShotResultBtn').onclick=()=>{
   const queued=holed?null:(round.pending.queuedClub||null);
   round.pending.queuedClub=null;
   save();$('shotResultModal').classList.add('hidden');
+  if(!holed&&String(round.pending.result.endLie||'').toUpperCase()!=='GREEN')clearTarget();
   const proceed=()=>{
     const ask=shouldPromptStateCheck(round.pending);
     const after=()=>{if(holed)finalizeHoleFromShot();else if(queued)finishPendingAndMaybeStart(queued);else renderRound()};
@@ -9807,7 +9817,13 @@ function buildMapFirstHoleMenu(){
 }
 function syncMapFirstUI(){
   if(!$('mapFirstShotLabel')||!round)return;
-  const shotNo=(hole()?.shots?.length||0)+1;
+  const pending=round.pending;
+  const awaitingResult=!!pending&&!pending.result;
+  const resultSaved=!!pending&&!!pending.result;
+  const resultLie=String(pending?.result?.endLie||'').toUpperCase();
+  const onGreen=resultSaved&&['GREEN','HOLED'].includes(resultLie);
+  const planningNext=resultSaved&&!onGreen;
+  const shotNo=(hole()?.shots?.length||0)+1+(planningNext?1:0);
   $('mapFirstShotLabel').textContent='SHOT '+shotNo;
   $('mapFirstHoleTitle').textContent=round.currentHole+'번 홀';
   $('mapFirstHoleMeta').textContent='Par '+(hole()?.par??'—')+(hole()?.teeDistanceM?' · '+hole().teeDistanceM+'m':'');
@@ -9815,12 +9831,8 @@ function syncMapFirstUI(){
   const gp=$('mapFirstGpsPill');gp.classList.remove('warn','bad');
   if(gps){$('mapFirstGpsText').textContent='±'+Math.round(gps.accuracy)+'m';if(Number(gps.accuracy)>15)gp.classList.add('warn')}
   else{$('mapFirstGpsText').textContent='GPS';gp.classList.add('bad')}
-  const pending=round.pending;
-  const awaitingResult=!!pending&&!pending.result;
-  const resultSaved=!!pending&&!!pending.result;
-  const onGreen=resultSaved&&String(pending.result.endLie||'').toUpperCase()==='GREEN';
   $('mapFirstNextShot').classList.toggle('pending',awaitingResult);
-  $('mapFirstNextText').textContent=awaitingResult?'샷 완료':(onGreen?'퍼팅 입력':'다음 샷으로');
+  $('mapFirstNextText').textContent=awaitingResult?'결과 입력':(onGreen?'퍼팅 입력':'샷 완료');
   $('mapFirstPendingActions')?.classList.toggle('hidden',!pending);
   $('mapFirstChangeClub')?.classList.toggle('hidden',!awaitingResult);
   $('mapFirstCancelShot')?.classList.toggle('hidden',!awaitingResult);
@@ -9835,9 +9847,11 @@ function syncMapFirstUI(){
 function mapFirstNextAction(){
   const club=mapFirstSelectedClub();
   if(round?.pending&&!round.pending.result){openShotResult();return}
-  if(round?.pending?.result&&String(round.pending.result.endLie||'').toUpperCase()==='GREEN'){openPutt();return}
+  if(round?.pending?.result&&['GREEN','HOLED'].includes(String(round.pending.result.endLie||'').toUpperCase())){openPutt();return}
   if(club==='Putter'){openPutt();return}
-  startShot(club);syncMapFirstUI();
+  startShot(club);
+  if(round?.pending&&!round.pending.result)openShotResult();
+  syncMapFirstUI();
 }
 function closeMapFirstMenus(except=null){['mapFirstShotMenu','mapFirstHoleMenu','mapFirstGpsMenu'].forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')})}
 $('mapFirstLivePill').onclick=()=>showScreen('overview');
@@ -9910,7 +9924,7 @@ $('gpsTop').onclick=startGPS;
   }
 })();
 </script>
-<script src="target-score-coach.js?v=20261007-2300"></script>
+<script src="target-score-coach.js?v=20261008-1420"></script>
 <script src="whoop-pilot.js"></script>
 </body>
 </html>
