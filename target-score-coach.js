@@ -298,7 +298,18 @@
       centerContext=contextForZone(ch,start,carry,'CENTER',h?.par);
     }
 
-    const baseContext=(manualTarget&&r?.pending?.courseContext)?r.pending.courseContext:centerContext;
+    const awaitingLock=!!r?.pending&&!r.pending.result&&!r.pending.editingExisting&&r.pending.startLocked!==true;
+    let manualLiveContext=null;
+    if(manualTarget&&awaitingLock&&ch&&start&&Number.isFinite(carry)&&r?.pending?.target&&typeof deriveCourseIntelligence==='function'){
+      const t=r.pending.target;
+      if(Number.isFinite(Number(t.lat))&&Number.isFinite(Number(t.lng))){
+        const point={...t,distanceM:typeof hav==='function'?hav(start,{lat:Number(t.lat),lng:Number(t.lng)}):t.distanceM};
+        manualLiveContext=deriveCourseIntelligence(ch,start,carry,point,h?.par);
+      }
+    }
+    const baseContext=(manualTarget&&r?.pending?.courseContext)
+      ?(manualLiveContext||r.pending.courseContext)
+      :centerContext;
     const base=courseMetrics(baseContext);
     const missDirection=clubMissDirection(r,club);
     const targetSource=targetSourceValue(r);
