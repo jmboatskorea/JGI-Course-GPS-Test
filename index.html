@@ -100,6 +100,12 @@ hr{border:0;border-top:1px solid #203746;margin:12px 0}
 .bounceItem.action{border-color:rgba(126,255,164,.36);background:rgba(25,121,61,.16)}.bounceItem.action b{color:#82f3a3}
 .askQuick{display:flex;gap:7px;overflow:auto;margin-top:9px;scrollbar-width:none}.askQuick button{white-space:nowrap;border:1px solid rgba(255,255,255,.18);background:rgba(4,20,15,.68);color:#fff;border-radius:999px;padding:9px 11px;font-size:11px;font-weight:850}
 .askAnswer{margin-top:10px;padding:12px;border-radius:14px;background:rgba(17,47,37,.72);border:1px solid rgba(126,255,164,.24);font-size:13px;line-height:1.55}
+.multiAskComposer{display:grid;gap:8px;margin-top:12px}.multiAskComposer textarea{min-height:96px;resize:vertical;line-height:1.5;font-size:14px}.multiAskComposer button:disabled{opacity:.55;cursor:wait}
+#multiAgentModal{z-index:110;align-items:center;padding:18px}.multiAgentSheet{width:min(860px,96vw);max-height:94svh;border-radius:24px;padding:18px;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0b2119,#06110c)}
+.multiAgentHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex:0 0 auto}.multiAgentHead h3{margin:4px 0 0;font-size:27px;line-height:1.1}.multiAgentHead p{margin:7px 0 0;color:#a9bbb0;font-size:12px;line-height:1.45;max-width:680px}
+.multiAgentAnswer{margin-top:14px;overflow:auto;white-space:pre-wrap;word-break:keep-all;padding:18px;border:1px solid rgba(255,255,255,.12);border-radius:17px;background:rgba(4,18,13,.72);font-size:15px;line-height:1.7;color:#f4f8f6;min-height:260px;max-height:calc(94svh - 190px)}
+.multiAgentAnswer.loading{color:#a8bbb0}.multiAgentAnswer.error{color:#ff9ba4;border-color:rgba(255,102,116,.30)}.multiAgentFoot{flex:0 0 auto;margin-top:10px}
+@media(max-width:520px){#multiAgentModal{padding:0;align-items:flex-end}.multiAgentSheet{width:100%;height:96svh;max-height:96svh;border-radius:24px 24px 0 0;padding:16px 14px max(14px,env(safe-area-inset-bottom))}.multiAgentHead h3{font-size:24px}.multiAgentAnswer{flex:1;max-height:none;min-height:0;font-size:14px;padding:15px}}
 .dataNote{font-size:10px;line-height:1.45;color:#9fb1a6;margin-top:8px}
 .mapControlBtn.active{background:#ff8619;border-color:#ffb066;color:#fff}
 .storyCategory{margin-bottom:10px}
@@ -2335,13 +2341,12 @@ body.round-active .modal .sheet .puttHistoryRow{
 
         <div id="multiAskCard" class="card">
           <div class="title">JGI에게 묻기</div>
-          <div class="sub">선택한 라운드가 5개 이상이면 누적 기록을 기준으로 답합니다.</div>
-          <div id="multiAskButtons" class="askQuick" style="margin-top:10px">
-            <button data-mq="driver">드라이버 문제는?</button>
-            <button data-mq="hazard">오른쪽 위험지역에서는?</button>
-            <button data-mq="loss">어디서 가장 많이 흔들렸어?</button>
+          <div class="sub">선택한 라운드의 Shot · SG · Course · Player State 데이터를 기준으로 자유롭게 질문하세요.</div>
+          <div class="multiAskComposer">
+            <textarea id="multiAskInput" maxlength="1000" placeholder="예: 티샷 SG -3.42가 왜 나왔어?"></textarea>
+            <button id="multiAskSubmit" class="btn primary full" type="button">JGI에게 질문</button>
           </div>
-          <div id="multiAskAnswer" class="askAnswer">질문을 선택하면 선택한 라운드의 기록만 기준으로 답합니다.</div>
+          <div id="multiAskStatus" class="dataNote">1라운드부터 질문할 수 있습니다. 데이터가 없으면 추측하지 않습니다.</div>
         </div>
       </div>
     </section>
@@ -2829,6 +2834,21 @@ body.round-active .modal .sheet .puttHistoryRow{
       <button id="roundEditMapCancel" class="btn ghost" type="button">취소</button>
       <button id="roundEditMapConfirm" class="btn primary" type="button">위치 확정</button>
     </div>
+  </div>
+</div>
+
+<div id="multiAgentModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="multiAgentTitle">
+  <div class="sheet multiAgentSheet">
+    <div class="multiAgentHead">
+      <div>
+        <div class="eyebrow">JGI · PLAYER AGENT</div>
+        <h3 id="multiAgentTitle">JGI 답변</h3>
+        <p id="multiAgentQuestion"></p>
+      </div>
+      <button id="multiAgentClose" class="x" type="button" aria-label="닫기">×</button>
+    </div>
+    <div id="multiAgentAnswer" class="multiAgentAnswer" aria-live="polite">질문을 분석하고 있습니다…</div>
+    <div class="multiAgentFoot"><button id="multiAgentCloseBottom" class="btn ghost full" type="button">닫기</button></div>
   </div>
 </div>
 
@@ -7848,9 +7868,7 @@ function renderMultiRoundReview(rounds,fromRange=false){
   multiDashboardMode='PERFORMANCE';multiPerformanceMode='SCORING';multiTeeClubFilter='ALL';
   $('multiDashboardTabs')?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.multiDashboard==='PERFORMANCE'));
   renderMultiDashboard(rounds);
-  const enough=rounds.length>=5;
-  $('multiAskButtons').querySelectorAll('button').forEach(b=>b.disabled=!enough);
-  $('multiAskAnswer').innerHTML=enough?'질문을 선택하면 선택한 라운드의 기록만 기준으로 답합니다.':'5라운드 이상을 선택하면 누적 JGI 질문을 사용할 수 있습니다.';
+  if($('multiAskStatus'))$('multiAskStatus').textContent=rounds.length+'라운드 선택됨 · 자유 질문 가능 · 저장된 데이터에 없는 내용은 추측하지 않습니다.';
 }
 function normalizeRound(r){
   if(!r)return null;
@@ -9907,6 +9925,78 @@ $('resultsAnalyzeBtn').onclick=()=>{
   if(!rounds.length){alert('종합 분석은 18홀 완료 라운드만 선택할 수 있습니다.');return}
   renderMultiRoundReview(rounds);window.scrollTo({top:0,behavior:'smooth'});
 };
+function jgiAgentPoint(p){
+  if(!p||!Number.isFinite(Number(p.lat))||!Number.isFinite(Number(p.lng)))return null;
+  return {lat:Number(p.lat),lng:Number(p.lng),accuracy:Number.isFinite(Number(p.accuracy))?Number(p.accuracy):null,source:p.source||null};
+}
+function jgiAgentRisk(risk){
+  if(!risk)return null;
+  return {type:risk.type||null,distanceM:Number.isFinite(Number(risk.distanceM))?Number(risk.distanceM):null,severity:risk.severity||risk.riskLevel||null};
+}
+function jgiAgentState(state){
+  if(!state)return null;
+  const keys=['pressure','interference','tension','confidence','focus','thoughtFocus','note'];
+  const out={};keys.forEach(k=>{if(state[k]!==undefined&&state[k]!==null&&state[k]!=='')out[k]=state[k]});
+  return Object.keys(out).length?out:null;
+}
+function jgiAgentRoundContext(r){
+  const benchmark=multiSgBenchmarkInfo(r),summary=multiSgForRound(r);
+  return {
+    roundId:r.id||null,date:resultDateKey(r),course:r.course||null,nine:r.nine||null,tee:r.tee||null,
+    player:{name:r.playerName||null,sex:r.playerSex||null,handicap:Number.isFinite(Number(r.playerHandicap))?Number(r.playerHandicap):null,targetScore:Number.isFinite(Number(r.targetScore))?Number(r.targetScore):null},
+    score:{total:resultScore(r),par:resultPar(r),toPar:resultToPar(r)},
+    benchmark:{available:benchmark.available,label:benchmark.label,mode:benchmark.info?.mode||r.sgBenchmarkMode||null,handicap:benchmark.info?.handicap??null,quality:benchmark.info?.quality||r.sgQuality||null,profileVersion:benchmark.info?.profileVersion||r.sgProfileVersion||null},
+    sg:{total:summary.total,ott:summary.totals.ott,app:summary.totals.app,arg:summary.totals.arg,putt:summary.totals.putt,penalty:summary.totals.penalty,missing:summary.counts.missing},
+    whoop:r.whoopToday||null,
+    holes:(r.holes||[]).filter(h=>h.completed||(h.shots||[]).length||(h.puttsDetail||[]).length||(h.penaltyEvents||[]).length).map(h=>({
+      hole:h.hole,par:h.par??null,teeDistanceM:h.teeDistanceM??null,strokeIndexLadies:h.strokeIndexLadies??null,score:storedHoleScore(h),penalties:Number(h.penalties||0),
+      shots:(h.shots||[]).map((shot,i)=>{
+        const calc=benchmark.available?computeShotSG(h,shot,i,benchmark.info):null,cr=shot.courseContext?.courseRisk||{};
+        return {number:i+1,category:sgShotCategory(h,shot,i),club:shot.club||null,startLie:shot.startLie||null,endLie:shot.endLie||null,distanceM:Number.isFinite(Number(shot.distanceM))?Number(shot.distanceM):null,
+          startDistanceToHoleM:calc?.startDistanceM??shotStartDistanceToHoleM(h,shot,i)??null,endDistanceToHoleM:calc?.endDistanceM??shotEndDistanceToHoleM(h,shot,i)??null,
+          sg:calc?.value??null,expectedBefore:calc?.startExpected??null,expectedAfter:calc?.endExpected??null,direction:shot.direction||null,depth:shot.depth||null,trajectory:shot.trajectory||null,
+          intendedShape:shot.intendedShape||null,ballFlight:shot.ballFlight||null,targetZone:shot.targetZone||shot.target?.zone||null,targetSource:shot.targetSource||shot.target?.source||null,
+          targetDistanceM:Number.isFinite(Number(shot.target?.distanceM))?Number(shot.target.distanceM):null,fairwayWidthM:Number.isFinite(Number(shot.courseContext?.fairwayWidth?.landingWidthM))?Number(shot.courseContext.fairwayWidth.landingWidthM):null,
+          dogleg:shot.courseContext?.dogleg?{direction:shot.courseContext.dogleg.direction||null,angleDeg:shot.courseContext.dogleg.angleDeg??null}:null,risk:{left:jgiAgentRisk(cr.left),right:jgiAgentRisk(cr.right)},
+          start:jgiAgentPoint(shot.start),end:jgiAgentPoint(shot.end),playerState:jgiAgentState(shot.playerState||shot.flo)};
+      }),
+      putts:(h.puttsDetail||[]).map((p,i)=>{const calc=benchmark.available?computePuttSG(h,p,i,benchmark.info):null;return {number:i+1,distanceM:Number.isFinite(Number(p.distanceM))?Number(p.distanceM):null,slope:p.slope||null,break:p.break||null,result:p.result||null,sg:calc?.value??null,expectedBefore:calc?.startExpected??null,expectedAfter:calc?.endExpected??null,playerState:jgiAgentState(p.playerState)};}),
+      penaltyEvents:(h.penaltyEvents||[]).map(p=>({type:p.type||null,strokes:Number(p.strokes||1)})),puttingState:jgiAgentState(h.puttingState)
+    }))
+  };
+}
+function buildJgiAgentContext(rounds){
+  const ordered=[...(rounds||[])].sort((a,b)=>Number(a.startedAt||0)-Number(b.startedAt||0)),pattern=multiPatternSummary(ordered);
+  return {contextVersion:'JGI_AGENT_ROUND_CONTEXT_V1',generatedAt:new Date().toISOString(),selection:{roundCount:ordered.length,dateFrom:ordered.length?resultDateKey(ordered[0]):null,dateTo:ordered.length?resultDateKey(ordered.at(-1)):null},
+    aggregate:{teeShots:pattern.teeTotal,teeRight:pattern.teeRight,threePutts:pattern.threePutts,penalties:pattern.penalties,approachShots:pattern.approach,approachMisses:pattern.approachMiss},rounds:ordered.map(jgiAgentRoundContext)};
+}
+function setMultiAgentOpen(open){$('multiAgentModal')?.classList.toggle('hidden',!open);document.body.style.overflow=open?'hidden':''}
+function closeMultiAgentAnswer(){setMultiAgentOpen(false)}
+async function askJgiAgent(){
+  const input=$('multiAskInput'),button=$('multiAskSubmit'),question=(input?.value||'').trim(),rounds=multiReviewRounds||[];
+  if(!question){alert('궁금한 내용을 입력하세요.');input?.focus();return}
+  if(!rounds.length){alert('분석할 라운드를 먼저 선택하세요.');return}
+  const payload=JSON.stringify({question,context:buildJgiAgentContext(rounds)});
+  if(payload.length>1200000){alert('선택한 라운드 데이터가 너무 많습니다. 라운드 수를 줄여 다시 질문해 주세요.');return}
+  $('multiAgentQuestion').textContent=question;$('multiAgentAnswer').className='multiAgentAnswer loading';
+  $('multiAgentAnswer').textContent='선택한 '+rounds.length+'라운드의 Shot · SG · Course · State 데이터를 분석하고 있습니다…';setMultiAgentOpen(true);
+  button.disabled=true;button.textContent='분석 중…';$('multiAskStatus').textContent='JGI Agent가 선택한 라운드 데이터만 기준으로 분석 중입니다.';
+  try{
+    const res=await fetch('/api/jgi-agent',{method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(data?.message||data?.status||'JGI Agent 응답을 받지 못했습니다.');
+    $('multiAgentAnswer').className='multiAgentAnswer';$('multiAgentAnswer').textContent=data.answer||'답변을 생성하지 못했습니다.';
+    $('multiAskStatus').textContent='답변 완료 · 선택한 '+rounds.length+'라운드 데이터 기준';
+  }catch(e){
+    $('multiAgentAnswer').className='multiAgentAnswer error';$('multiAgentAnswer').textContent=e?.message||'JGI Agent 연결에 실패했습니다.';
+    $('multiAskStatus').textContent='질문 처리 실패 · 연결 설정을 확인해 주세요.';
+  }finally{button.disabled=false;button.textContent='JGI에게 질문'}
+}
+$('multiAskSubmit').onclick=askJgiAgent;
+$('multiAskInput').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();askJgiAgent()}});
+$('multiAgentClose').onclick=closeMultiAgentAnswer;$('multiAgentCloseBottom').onclick=closeMultiAgentAnswer;
+$('multiAgentModal').addEventListener('click',e=>{if(e.target===$('multiAgentModal'))closeMultiAgentAnswer()});
+
 $('multiDashboardTabs').onclick=e=>{
   const b=e.target.closest('[data-multi-dashboard]');if(!b)return;
   setMultiDashboardMode(b.dataset.multiDashboard);
@@ -9914,16 +10004,6 @@ $('multiDashboardTabs').onclick=e=>{
 $('multiAllDetailJump').onclick=()=>{
   const d=$('multiAllDetails');if(!d)return;d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});
 };
-$('multiAskButtons').onclick=e=>{
-  const b=e.target.closest('[data-mq]');if(!b||b.disabled)return;
-  const rounds=multiReviewRounds,p=multiPatternSummary(rounds),dr=multiClubRiskStats(rounds,'DR'),w=multiClubRiskStats(rounds,'3W');
-  let answer='';
-  if(b.dataset.mq==='driver')answer='<b>드라이버 기록</b><br>선택한 라운드의 티샷 '+p.teeTotal+'개 중 우측 미스가 '+p.teeRight+'회 기록되었습니다. 오른쪽 위험지역 드라이버 샘플은 '+dr.count+'회입니다.';
-  if(b.dataset.mq==='hazard')answer='<b>오른쪽 위험지역</b><br>드라이버 '+dr.count+'회에서 우측 미스 '+dr.right+'회·벌타 '+dr.penalty+'회, 3번 우드 '+w.count+'회에서 우측 미스 '+w.right+'회·벌타 '+w.penalty+'회가 기록되었습니다.';
-  if(b.dataset.mq==='loss')answer='<b>반복 손실 후보</b><br>벌타 '+p.penalties+'타, 3퍼트 '+p.threePutts+'회, 그린 공략 미스 '+p.approachMiss+'회가 기록되었습니다. 아직은 관찰 결과이며 원인을 단정하지 않습니다.';
-  $('multiAskAnswer').innerHTML=answer;
-};
-
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee)});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
