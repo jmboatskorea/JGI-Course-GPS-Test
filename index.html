@@ -9903,7 +9903,6 @@ $('resultsSelectAllBtn').onclick=()=>{
 $('resultsAnalyzeBtn').onclick=()=>{
   const rounds=filteredResultRounds().filter(r=>(r?.fullRound||roundIsFull(r))&&resultsSelectedIds.has(r.id));
   if(!rounds.length){alert('종합 분석은 18홀 완료 라운드만 선택할 수 있습니다.');return}
-  if(rounds.length===1){openHistoricalRound(rounds[0].id);return}
   renderMultiRoundReview(rounds);window.scrollTo({top:0,behavior:'smooth'});
 };
 $('multiDashboardTabs').onclick=e=>{
