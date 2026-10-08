@@ -965,6 +965,13 @@ body.round-active .bottomnav{display:none!important}
 #puttModal .puttRangeHead .helper{flex:1;margin:8px 0!important;text-align:left}
 #puttModal .puttRangeToggle{min-height:38px!important;padding:7px 12px;border-radius:999px;border:1px solid #a9d7bf;background:#e8f8ef;color:#087a44;font-size:11px;font-weight:1000;white-space:nowrap}
 #puttModal .puttRangeToggle.long{background:#0da55a;color:#fff;border-color:#0a914e}
+
+.roundTransferCard{border-color:rgba(88,165,255,.30)}
+.roundTransferActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.roundTransferStatus{margin-top:9px;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#9eb0a5;font-size:10px;line-height:1.5}
+.roundTransferStatus.good{border-color:rgba(92,225,139,.28);color:#8de7aa}
+.roundTransferStatus.warn{border-color:rgba(255,166,72,.30);color:#ffba74}
+@media(max-width:390px){.roundTransferActions{grid-template-columns:1fr}.roundTransferActions .btn{width:100%}}
 </style>
 <link rel="stylesheet" href="cumulative-report.css">
 <style id="onCourseFreshFinal">
@@ -2061,6 +2068,17 @@ body.round-active .modal .sheet .puttHistoryRow{
           <div class="resultsMetric"><b id="resultsBest">—</b><span>최고 스코어</span></div>
         </div>
 
+        <div class="card roundTransferCard">
+          <div class="title">라운드 백업 · 기기 이동</div>
+          <div class="sub">휴대폰에 저장된 라운드를 파일로 옮겨 노트북 JGI에서 그대로 확인할 수 있습니다.</div>
+          <div class="roundTransferActions">
+            <button id="exportRoundDataBtn" class="btn primary" type="button">백업 내보내기</button>
+            <button id="importRoundDataBtn" class="btn ghost" type="button">백업 가져오기</button>
+          </div>
+          <input id="importRoundDataFile" class="hidden" type="file" accept=".json,application/json">
+          <div id="roundTransferStatus" class="roundTransferStatus">완료/중도종료 라운드와 현재 저장 중인 라운드를 함께 백업합니다. WHOOP 로그인 토큰은 포함하지 않습니다.</div>
+        </div>
+
         <div class="card">
           <div class="title">빠른 선택</div>
           <div id="resultsQuick" class="resultsQuick" style="margin-top:9px">
@@ -2747,6 +2765,7 @@ const $=id=>document.getElementById(id);
 const STORAGE='agi_player_v1_round';
 const COMPLETED_ROUNDS_KEY='jgi_completed_rounds_v1';
 const COMPLETED_ROUNDS_LIMIT=40;
+const ROUND_BACKUP_FORMAT='JGI_ROUND_BACKUP_V1';
 const TEST_DATA_SEED_KEY='jgi_test_data_seed_v1';
 const TEST_DATA_SEED_VERSION='JGI_DEMO_27R_HCP5_MENTAL5_V3';
 const ACTIVE_TEST_PROFILE_KEY='jgi_active_test_profile_v1';
@@ -4615,6 +4634,157 @@ function renderRoundHistoryStatus(){
   const el=$('roundHistoryStatus');if(!el)return;
   const s=completedRoundSummary();
   el.innerHTML='<b>저장 기록</b> · 완료 '+s.full+'라운드'+(s.partial?' · 중도 종료 '+s.partial+'라운드':'')+' · 샷 '+s.shots+' · 퍼트 '+s.putts;
+}
+
+function roundBackupActive(){
+  try{
+    const raw=localStorage.getItem(STORAGE);
+    return raw?JSON.parse(raw):null;
+  }catch{return null}
+}
+function roundBackupInputCount(r){
+  return (r?.holes||[]).reduce((sum,h)=>sum+
+    (h?.shots||[]).length+
+    (h?.puttsDetail||[]).length+
+    (h?.penaltyEvents||[]).length+
+    (h?.completed?1:0),0);
+}
+function roundBackupRichness(r){
+  try{return JSON.stringify(r||{}).length}catch{return 0}
+}
+function preferRoundBackup(existing,incoming){
+  if(!existing)return incoming;
+  if(!incoming)return existing;
+  const ec=roundBackupInputCount(existing),ic=roundBackupInputCount(incoming);
+  if(ic!==ec)return ic>ec?incoming:existing;
+  const er=roundBackupRichness(existing),ir=roundBackupRichness(incoming);
+  if(ir!==er)return ir>er?incoming:existing;
+  const et=Math.max(Number(existing?.archivedAt||0),Number(existing?.completedAt||0),Number(existing?.startedAt||0));
+  const it=Math.max(Number(incoming?.archivedAt||0),Number(incoming?.completedAt||0),Number(incoming?.startedAt||0));
+  return it>=et?incoming:existing;
+}
+function buildRoundBackupPackage(){
+  const active=roundBackupActive();
+  return {
+    format:ROUND_BACKUP_FORMAT,
+    version:1,
+    exportedAt:new Date().toISOString(),
+    profileVersion:PARK_JIEUN_PROFILE_VERSION,
+    activeRound:active&&roundHasRecordedData(active)?active:null,
+    completedRounds:loadCompletedRounds(),
+    stateSamplingHistory:loadStateHistory()
+  };
+}
+function roundBackupFilename(){
+  const d=new Date(),pad=n=>String(n).padStart(2,'0');
+  return 'JGI_round_backup_'+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+'.json';
+}
+function setRoundTransferStatus(message,type=''){
+  const el=$('roundTransferStatus');if(!el)return;
+  el.textContent=message;
+  el.classList.remove('good','warn');
+  if(type)el.classList.add(type);
+}
+async function exportRoundBackup(){
+  const data=buildRoundBackupPackage();
+  const count=(data.completedRounds||[]).length+(data.activeRound?1:0);
+  if(!count){
+    setRoundTransferStatus('내보낼 라운드 기록이 없습니다.','warn');
+    return;
+  }
+  const text=JSON.stringify(data,null,2);
+  const name=roundBackupFilename();
+  const blob=new Blob([text],{type:'application/json'});
+  let shared=false;
+
+  try{
+    if(typeof File!=='undefined'&&navigator.share&&navigator.canShare){
+      const exportFile=new File([blob],name,{type:'application/json'});
+      if(navigator.canShare({files:[exportFile]})){
+        await navigator.share({title:'JGI 라운드 백업',text:'JGI 라운드 백업 파일',files:[exportFile]});
+        shared=true;
+      }
+    }
+  }catch(e){
+    if(e?.name==='AbortError'){
+      setRoundTransferStatus('내보내기를 취소했습니다.','warn');
+      return;
+    }
+  }
+
+  if(!shared){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=name;a.rel='noopener';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  setRoundTransferStatus('백업 완료 · '+count+'개 라운드 기록 · '+name,'good');
+}
+function normalizeImportedRound(value){
+  if(!value||typeof value!=='object'||!value.id||!Array.isArray(value.holes))return null;
+  try{return normalizeRound(JSON.parse(JSON.stringify(value)))}catch{return null}
+}
+function mergeSamplingHistory(existing,incoming){
+  const map=new Map();
+  [...(existing||[]),...(incoming||[])].forEach(row=>{
+    if(!row||typeof row!=='object')return;
+    const key=String(row.roundId||row.id||'');
+    if(!key)return;
+    const prev=map.get(key);
+    if(!prev||Number(row.completedAt||0)>=Number(prev.completedAt||0))map.set(key,row);
+  });
+  return [...map.values()].sort((a,b)=>Number(a.completedAt||0)-Number(b.completedAt||0)).slice(-100);
+}
+function importRoundBackupData(data){
+  if(!data||data.format!==ROUND_BACKUP_FORMAT||Number(data.version)!==1)throw new Error('지원하지 않는 JGI 백업 파일입니다.');
+
+  const imported=(Array.isArray(data.completedRounds)?data.completedRounds:[])
+    .map(normalizeImportedRound).filter(Boolean);
+  const active=normalizeImportedRound(data.activeRound);
+  let activeAdded=false;
+
+  if(active&&roundHasRecordedData(active)&&!imported.some(r=>r.id===active.id)){
+    const snapshot=JSON.parse(JSON.stringify(active));
+    snapshot.fullRound=roundIsFull(snapshot);
+    snapshot.archiveStatus=snapshot.fullRound?'FULL':'PARTIAL';
+    snapshot.importedFromActive=true;
+    imported.push(snapshot);
+    activeAdded=true;
+  }
+
+  if(!imported.length)throw new Error('가져올 라운드 기록이 없습니다.');
+
+  const merged=new Map();
+  loadCompletedRounds().forEach(r=>{if(r?.id)merged.set(r.id,r)});
+  imported.forEach(r=>{
+    if(!r?.id)return;
+    merged.set(r.id,preferRoundBackup(merged.get(r.id),r));
+  });
+
+  const rounds=[...merged.values()].sort((a,b)=>
+    Number(a?.completedAt||a?.archivedAt||a?.startedAt||0)-
+    Number(b?.completedAt||b?.archivedAt||b?.startedAt||0)
+  );
+  if(!saveCompletedRounds(rounds))throw new Error('가져온 라운드를 저장하지 못했습니다.');
+
+  if(Array.isArray(data.stateSamplingHistory)){
+    const sampling=mergeSamplingHistory(loadStateHistory(),data.stateSamplingHistory);
+    saveStateHistory(sampling);
+  }
+
+  renderRoundHistoryStatus();
+  resultsSelectedIds.clear();
+  renderRoundResultsSearch();
+  return {imported:imported.length,total:loadCompletedRounds().length,activeAdded};
+}
+async function importRoundBackupFile(file){
+  if(!file)return;
+  if(file.size>25*1024*1024)throw new Error('백업 파일이 너무 큽니다.');
+  const raw=await file.text();
+  let data;
+  try{data=JSON.parse(raw)}catch{throw new Error('JSON 백업 파일을 읽을 수 없습니다.')}
+  return importRoundBackupData(data);
 }
 function isSyntheticRound(r){
   return !!r&&(r.synthetic===true||r.dataSource==='TEST_GENERATED'||String(r.id||'').startsWith('test-hcp6-r'));
@@ -9146,6 +9316,18 @@ $('enterRoundBtn').onclick=()=>{
 };
 $('enterResultsBtn').onclick=showRoundResults;
 
+$('exportRoundDataBtn').onclick=()=>{exportRoundBackup().catch(()=>setRoundTransferStatus('백업 파일을 만들지 못했습니다. 다시 시도해 주세요.','warn'))};
+$('importRoundDataBtn').onclick=()=>{$('importRoundDataFile').value='';$('importRoundDataFile').click()};
+$('importRoundDataFile').onchange=async()=>{
+  const file=$('importRoundDataFile').files?.[0];if(!file)return;
+  setRoundTransferStatus('백업 파일 확인 중…');
+  try{
+    const result=await importRoundBackupFile(file);
+    setRoundTransferStatus('가져오기 완료 · '+result.imported+'개 기록 반영 · 현재 총 '+result.total+'개 라운드'+(result.activeAdded?' · 진행 중이던 라운드는 중도종료 기록으로 추가':'')+'.','good');
+  }catch(e){
+    setRoundTransferStatus(e?.message||'백업 파일을 가져오지 못했습니다.','warn');
+  }
+};
 $('resultsHomeBtn').onclick=returnToJgiHome;
 $('backToResultsBtn').onclick=exitHistoricalRound;
 $('multiBackBtn').onclick=()=>{document.body.classList.remove('multi-review-open');$('appTopbar')?.classList.remove('hidden');$('resultsMultiView').classList.add('hidden');$('resultsSearchView').classList.remove('hidden');renderRoundResultsSearch();window.scrollTo({top:0,behavior:'smooth'})};
