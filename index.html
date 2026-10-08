@@ -690,10 +690,34 @@ body.round-active .bottomnav{display:none!important}
 .resultsRoundCourse{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .resultsRoundMeta{font-size:9px;color:#7e8d84;margin-top:2px}
 .resultsRoundScore{text-align:right}.resultsRoundScore b{display:block;font-size:21px}.resultsRoundScore span{font-size:9px;color:#6ef099}
-.resultsRoundOpen{
-  grid-column:2/5;min-height:34px;border:1px solid rgba(39,242,122,.22);border-radius:10px;background:rgba(39,242,122,.06);
-  color:#77f2a3;font-size:9px;font-weight:950
-}
+.resultsRoundManage{grid-column:2/5;display:grid;grid-template-columns:minmax(0,1fr) 64px 64px;gap:6px}
+.resultsRoundOpen,.resultsRoundEdit,.resultsRoundDelete{min-height:34px;border-radius:10px;font-size:9px;font-weight:950}
+.resultsRoundOpen{border:1px solid rgba(39,242,122,.22);background:rgba(39,242,122,.06);color:#77f2a3}
+.resultsRoundEdit{border:1px solid rgba(255,154,50,.32);background:rgba(255,134,25,.08);color:#ffad61}
+.resultsRoundDelete{border:1px solid rgba(255,102,116,.30);background:rgba(255,102,116,.07);color:#ff8b96}
+.roundEditSheet{max-height:94svh;overflow:auto}
+.roundEditHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.roundEditHead h3{margin:2px 0 0;font-size:21px}.roundEditHead p{margin:5px 0 0;color:#9fb1a6;font-size:10px;line-height:1.45}
+.roundEditHoleTabs{display:flex;gap:6px;overflow:auto;margin:12px 0 10px;padding-bottom:3px;scrollbar-width:none}
+.roundEditHoleTabs button{flex:0 0 38px;height:38px;border-radius:11px;border:1px solid rgba(255,255,255,.14);background:#07130e;color:#dfe9e3;font-weight:900}
+.roundEditHoleTabs button.sel{background:linear-gradient(180deg,#ff9b32,#f16d00);border-color:#ff9b32;color:#fff}
+.roundEditSummary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.roundEditSummary div{padding:9px 7px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#08100b;text-align:center}
+.roundEditSummary b{display:block;font-size:17px}.roundEditSummary span{display:block;margin-top:2px;color:#889a90;font-size:8px}
+.roundEditSection{margin-top:10px;padding:10px;border:1px solid rgba(255,255,255,.11);border-radius:15px;background:rgba(5,20,15,.58)}
+.roundEditSectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.roundEditSectionHead b{font-size:12px}.roundEditSectionHead span{font-size:9px;color:#8fa198}
+.roundEditItem{padding:9px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#07110c;margin-top:7px}
+.roundEditItemTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.roundEditItemTitle b{font-size:11px}.roundEditRemove{border:1px solid rgba(255,102,116,.25);background:rgba(255,102,116,.07);color:#ff8b96;border-radius:9px;padding:6px 8px;font-size:8px;font-weight:900}
+.roundEditGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.roundEditGrid label{font-size:8px;color:#8fa198;font-weight:800}
+.roundEditGrid input,.roundEditGrid select{margin-top:3px;padding:9px;border-radius:10px;font-size:10px}
+.roundEditGps{grid-column:1/-1;padding-top:5px;border-top:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.roundEditGpsTitle{grid-column:1/-1;color:#79ed9d;font-size:8px;font-weight:900}
+.roundEditAdd{border:1px dashed rgba(255,255,255,.18);background:transparent;color:#b9cbc1;border-radius:10px;padding:8px;font-size:9px;font-weight:900}
+.roundEditFoot{position:sticky;bottom:-1px;display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:12px;padding-top:10px;background:linear-gradient(180deg,transparent,#07130f 26%)}
+@media(max-width:420px){.resultsRoundManage{grid-template-columns:1fr 58px 58px}.roundEditGrid{grid-template-columns:1fr}.roundEditGps{grid-template-columns:1fr}.roundEditSummary{grid-template-columns:repeat(2,1fr)}}
 .resultsActions{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:10px}
 .multiTrend{display:flex;align-items:flex-end;gap:5px;height:105px;margin-top:10px}
 .multiTrendItem{flex:1;text-align:center;min-width:0}.multiTrendBar{width:100%;max-width:36px;margin:0 auto;border-radius:7px 7px 2px 2px;background:#2f8e57}
@@ -2757,6 +2781,25 @@ body.round-active .modal .sheet .puttHistoryRow{
   </div>
 </div>
 
+<div id="roundEditModal" class="modal hidden">
+  <div class="sheet roundEditSheet">
+    <div class="roundEditHead">
+      <div>
+        <div class="eyebrow">JGI · ROUND EDIT</div>
+        <h3 id="roundEditTitle">라운드 수정</h3>
+        <p id="roundEditMeta">저장된 Raw Data를 수정합니다. 스코어와 분석은 입력값에서 다시 계산됩니다.</p>
+      </div>
+      <button id="roundEditClose" class="x" type="button">×</button>
+    </div>
+    <div id="roundEditHoleTabs" class="roundEditHoleTabs"></div>
+    <div id="roundEditBody"></div>
+    <div class="roundEditFoot">
+      <button id="roundEditCancel" class="btn ghost" type="button">취소</button>
+      <button id="roundEditSave" class="btn primary" type="button">수정 저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="jagorawi-old-course-data.js"></script>
 <script src="jagorawi-old-scorecard-data.js"></script>
 <script src="jgi-strokes-gained-data.js"></script>
@@ -2838,6 +2881,9 @@ let resultsSelectedIds=new Set();
 let multiReviewRounds=[];
 let multiReviewSourceRounds=[];
 let multiReviewRange='ALL';
+let roundEditDraft=null;
+let roundEditOriginal=null;
+let roundEditHole=1;
 
 // Google Maps V1: one Map instance is created and reused for the full round.
 const GOOGLE_MAPS_API_KEY=window.JGI_RUNTIME_CONFIG?.googleMapsBrowserKey||'';
@@ -5117,6 +5163,241 @@ function resetSyntheticTestData(){
   renderRoundHistoryStatus();renderTestDataPreview();syncStatePlanUI();
   return removed;
 }
+
+function removeRoundSamplingHistory(roundId){
+  try{
+    const next=loadStateHistory().filter(x=>String(x?.roundId||'')!==String(roundId||''));
+    saveStateHistory(next);
+  }catch(e){console.warn('Round sampling history delete failed',e)}
+}
+function deleteStoredRound(roundId){
+  const id=String(roundId||'');if(!id)return false;
+  const found=loadCompletedRounds().find(r=>String(r?.id||'')===id);
+  if(!found)return false;
+  const label=resultDateLabel(found)+' · '+safeText(found.course||'골프장')+' · '+resultScore(found)+'타';
+  if(!confirm(label+'\n\n이 라운드를 삭제할까요?\n삭제 후에는 현재 기기에서 되돌릴 수 없습니다.'))return false;
+
+  const history=loadCompletedRounds().filter(r=>String(r?.id||'')!==id);
+  if(!saveCompletedRounds(history)){
+    alert('라운드 삭제 저장에 실패했습니다. 다시 시도해 주세요.');
+    return false;
+  }
+  removeRoundSamplingHistory(id);
+  try{
+    const active=load();
+    if(String(active?.id||'')===id)localStorage.removeItem(STORAGE);
+  }catch{}
+  if(String(round?.id||'')===id&&!historicalViewMode)round=load();
+  resultsSelectedIds.delete(id);
+  renderRoundHistoryStatus();
+  renderRoundResultsSearch();
+  return true;
+}
+function roundEditOption(value,label,current){
+  return '<option value="'+safeText(value)+'"'+(String(value)===String(current)?' selected':'')+'>'+safeText(label)+'</option>';
+}
+function roundEditSelect(options,current,attrs){
+  return '<select '+attrs+'>'+options.map(x=>roundEditOption(x[0],x[1],current)).join('')+'</select>';
+}
+function roundEditClubOptions(current){
+  const clubs=(roundEditDraft?.clubProfile||masterClubs||[]).map(c=>c?.name).filter(Boolean);
+  if(current&&!clubs.includes(current))clubs.unshift(current);
+  return [...new Set(clubs)].map(v=>[v,v]);
+}
+function roundEditPointInput(label,kind,axis,value,shotIndex){
+  const v=Number(value);
+  return '<label>'+label+' '+axis.toUpperCase()+'<input type="number" step="0.0000001" inputmode="decimal" value="'+(Number.isFinite(v)?v:'')+'" data-re-shot="'+shotIndex+'" data-re-point="'+kind+'" data-re-axis="'+axis+'"></label>';
+}
+function roundEditShotHtml(s,i){
+  const lieOpts=['TEE','FAIRWAY','A CUT','B CUT','ROUGH','BUNKER','RECOVERY','FRINGE','GREEN','HOLED'].map(v=>[v,lieDisplayLabel(v)]);
+  const shapeOpts=['STRAIGHT','DRAW','FADE'].map(v=>[v,shapeLabel(v)]);
+  const trajOpts=['LOW','MID','HIGH'].map(v=>[v,v==='LOW'?'낮음':v==='MID'?'보통':'높음']);
+  const dirOpts=['LEFT','CENTER','RIGHT'].map(v=>[v,dirLabel(v)]);
+  const depthOpts=['SHORT','TARGET','PIN_HIGH','LONG','HOLED'].map(v=>[v,depthLabel(v)]);
+  return '<div class="roundEditItem" data-re-shot-row="'+i+'">'+
+    '<div class="roundEditItemTitle"><b>SHOT '+(i+1)+' · '+safeText(s.club||'—')+'</b><button class="roundEditRemove" type="button" data-re-remove-shot="'+i+'">샷 삭제</button></div>'+
+    '<div class="roundEditGrid">'+
+      '<label>클럽'+roundEditSelect(roundEditClubOptions(s.club),s.club,'data-re-shot="'+i+'" data-re-field="club"')+'</label>'+
+      '<label>시작 Lie'+roundEditSelect(lieOpts,s.startLie,'data-re-shot="'+i+'" data-re-field="startLie"')+'</label>'+
+      '<label>종료 Lie'+roundEditSelect(lieOpts,s.endLie,'data-re-shot="'+i+'" data-re-field="endLie"')+'</label>'+
+      '<label>의도 구질'+roundEditSelect(shapeOpts,s.intendedShape,'data-re-shot="'+i+'" data-re-field="intendedShape"')+'</label>'+
+      '<label>실제 구질'+roundEditSelect(shapeOpts,s.ballFlight,'data-re-shot="'+i+'" data-re-field="ballFlight"')+'</label>'+
+      '<label>탄도'+roundEditSelect(trajOpts,s.trajectory,'data-re-shot="'+i+'" data-re-field="trajectory"')+'</label>'+
+      '<label>방향'+roundEditSelect(dirOpts,s.direction,'data-re-shot="'+i+'" data-re-field="direction"')+'</label>'+
+      '<label>거리 결과'+roundEditSelect(depthOpts,s.depth,'data-re-shot="'+i+'" data-re-field="depth"')+'</label>'+
+      '<div class="roundEditGps"><div class="roundEditGpsTitle">GPS · 좌표를 수정하면 거리 / Course Intelligence / SG 기준 위치가 다시 계산됩니다.</div>'+
+        roundEditPointInput('Start','start','lat',s.start?.lat,i)+
+        roundEditPointInput('Start','start','lng',s.start?.lng,i)+
+        roundEditPointInput('End','end','lat',s.end?.lat,i)+
+        roundEditPointInput('End','end','lng',s.end?.lng,i)+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+function roundEditPuttHtml(p,i){
+  const slope=[['UPHILL','오르막'],['FLAT','평지'],['DOWNHILL','내리막']];
+  const br=[['LEFT','왼쪽'],['STRAIGHT','직선'],['RIGHT','오른쪽']];
+  const result=[['HOLED','성공'],['TAP_IN','TAP-IN'],['REMAIN_2','남음 0.5–2m'],['REMAIN_LONG','남음 2m 이상'],['MISS_LEFT','왼쪽 미스'],['MISS_RIGHT','오른쪽 미스'],['SHORT','짧음'],['LONG','OVER']];
+  return '<div class="roundEditItem">'+
+    '<div class="roundEditItemTitle"><b>PUTT '+(i+1)+'</b><button class="roundEditRemove" type="button" data-re-remove-putt="'+i+'">퍼트 삭제</button></div>'+
+    '<div class="roundEditGrid">'+
+      '<label>거리(m)<input type="number" min="0.1" step="0.1" value="'+Number(p.distanceM||0).toFixed(1)+'" data-re-putt="'+i+'" data-re-field="distanceM"></label>'+
+      '<label>Slope'+roundEditSelect(slope,p.slope,'data-re-putt="'+i+'" data-re-field="slope"')+'</label>'+
+      '<label>Break'+roundEditSelect(br,p.break,'data-re-putt="'+i+'" data-re-field="break"')+'</label>'+
+      '<label>결과'+roundEditSelect(result,p.result,'data-re-putt="'+i+'" data-re-field="result"')+'</label>'+
+    '</div>'+
+  '</div>';
+}
+function roundEditPenaltyHtml(p,i){
+  const types=[['OB','OB'],['HAZARD','해저드'],['LOST_BALL','로스트 볼']];
+  return '<div class="roundEditItem">'+
+    '<div class="roundEditItemTitle"><b>PENALTY '+(i+1)+'</b><button class="roundEditRemove" type="button" data-re-remove-penalty="'+i+'">벌타 삭제</button></div>'+
+    '<div class="roundEditGrid">'+
+      '<label>종류'+roundEditSelect(types,p.type,'data-re-penalty="'+i+'" data-re-field="type"')+'</label>'+
+      '<label>벌타<input type="number" min="1" max="9" step="1" value="'+Math.max(1,Number(p.strokes)||1)+'" data-re-penalty="'+i+'" data-re-field="strokes"></label>'+
+    '</div>'+
+  '</div>';
+}
+function renderRoundEditor(){
+  if(!roundEditDraft)return;
+  roundEditHole=Math.max(1,Math.min(18,Number(roundEditHole)||1));
+  const h=roundEditDraft.holes?.[roundEditHole-1];if(!h)return;
+  const shots=h.shots||[],putts=h.puttsDetail||[],penalties=h.penaltyEvents||[];
+  const score=h.completed?(shots.length+putts.length+Number(h.penalties||0)):'—';
+  $('roundEditTitle').textContent=resultDateLabel(roundEditDraft)+' · '+safeText(roundEditDraft.course||'골프장');
+  $('roundEditMeta').textContent=safeText(roundEditDraft.nine||'코스')+' · '+resultTeeLabel(roundEditDraft.tee)+' 티 · Round ID '+safeText(roundEditDraft.id||'—');
+  $('roundEditHoleTabs').innerHTML=Array.from({length:18},(_,x)=>{
+    const n=x+1;
+    return '<button type="button" class="'+(n===roundEditHole?'sel':'')+'" data-re-hole="'+n+'">'+n+'</button>';
+  }).join('');
+  $('roundEditBody').innerHTML=
+    '<div class="roundEditSummary">'+
+      '<div><b>'+roundEditHole+'</b><span>홀</span></div>'+
+      '<div><b>'+safeText(String(h.par??'—'))+'</b><span>PAR</span></div>'+
+      '<div><b>'+safeText(String(score))+'</b><span>현재 스코어</span></div>'+
+      '<div><b>'+Number(h.penalties||0)+'</b><span>벌타</span></div>'+
+    '</div>'+
+    '<div class="roundEditSection"><div class="roundEditSectionHead"><b>SHOT</b><span>'+shots.length+'개</span></div>'+
+      (shots.length?shots.map(roundEditShotHtml).join(''):'<div class="pendingText">저장된 샷이 없습니다.</div>')+
+    '</div>'+
+    '<div class="roundEditSection"><div class="roundEditSectionHead"><b>PUTT</b><span>'+putts.length+'개</span></div>'+
+      (putts.length?putts.map(roundEditPuttHtml).join(''):'<div class="pendingText">저장된 퍼트가 없습니다.</div>')+
+      '<button class="roundEditAdd" type="button" data-re-add-putt>+ 퍼트 추가</button>'+
+    '</div>'+
+    '<div class="roundEditSection"><div class="roundEditSectionHead"><b>PENALTY</b><span>'+penalties.length+'개</span></div>'+
+      (penalties.length?penalties.map(roundEditPenaltyHtml).join(''):'<div class="pendingText">벌타 기록이 없습니다.</div>')+
+      '<button class="roundEditAdd" type="button" data-re-add-penalty>+ 페널티 추가</button>'+
+    '</div>';
+}
+function openRoundEditor(roundId){
+  const found=loadCompletedRounds().find(r=>String(r?.id||'')===String(roundId||''));if(!found)return false;
+  roundEditOriginal=JSON.parse(JSON.stringify(found));
+  roundEditDraft=normalizeRound(JSON.parse(JSON.stringify(found)));
+  roundEditHole=Math.max(1,Math.min(18,Number(roundEditDraft.currentHole)||1));
+  if(roundEditDraft.fullRound||roundIsFull(roundEditDraft))roundEditHole=1;
+  renderRoundEditor();
+  $('roundEditModal').classList.remove('hidden');
+  return true;
+}
+function closeRoundEditor(){
+  roundEditDraft=null;roundEditOriginal=null;roundEditHole=1;
+  $('roundEditModal').classList.add('hidden');
+}
+function roundEditSetShotPoint(shot,kind,axis,value){
+  if(!shot)return;
+  shot[kind]=shot[kind]||{};
+  const n=Number(value);
+  if(!Number.isFinite(n))return;
+  shot[kind][axis]=n;
+  shot[kind].source='MANUAL_EDIT';
+  shot[kind].time=Date.now();
+  shot.positionSource=shot.positionSource||{};
+  shot.positionSource[kind]='MANUAL_EDIT';
+}
+function rebuildEditedRoundDerived(r,original=null){
+  if(!r)return r;
+  const oldByShot=new Map();
+  (original?.holes||[]).forEach(h=>(h.shots||[]).forEach(s=>oldByShot.set(String(s.id||''),s)));
+  (r.holes||[]).forEach((h,hi)=>{
+    h.hole=h.hole||hi+1;
+    h.shots=Array.isArray(h.shots)?h.shots:[];
+    h.puttsDetail=Array.isArray(h.puttsDetail)?h.puttsDetail:[];
+    h.penaltyEvents=Array.isArray(h.penaltyEvents)?h.penaltyEvents:[];
+    h.puttsDetail.forEach((p,i)=>p.number=i+1);
+    h.putts=h.puttsDetail.length;
+    h.firstPutt=h.puttsDetail[0]?.distanceM??null;
+    h.penalties=h.penaltyEvents.reduce((sum,p)=>sum+Math.max(1,Number(p?.strokes)||1),0);
+    const ch=window.JGI_OLD_COURSE_DATA?.holes?.[String(h.hole)]||null;
+    const green=ch?.g?{lat:ch.g[0],lng:ch.g[1]}:null;
+
+    h.shots.forEach((s,si)=>{
+      if(s.start&&s.end)s.distanceM=hav(s.start,s.end);
+      const startGreen=green&&s.start?hav(s.start,green):null;
+      const endGreen=(s.holed===true||String(s.endLie||'').toUpperCase()==='HOLED')?0:(green&&s.end?hav(s.end,green):null);
+      const master=(r.clubProfile||masterClubs||[]).find(c=>c?.name===s.club);
+      let target=s.target||null;
+      if(target&&s.start&&Number.isFinite(Number(target.lat))&&Number.isFinite(Number(target.lng))){
+        target={...target,distanceM:hav(s.start,{lat:Number(target.lat),lng:Number(target.lng)})};
+        s.target=target;s.targetLat=target.lat;s.targetLng=target.lng;s.targetFairwayWidthM=target.fairwayWidthM??s.targetFairwayWidthM??null;
+      }
+      const derived=(ch&&s.start&&typeof deriveCourseIntelligence==='function')
+        ?deriveCourseIntelligence(ch,s.start,master?.carry??null,target,h.par):{};
+      s.courseContext={...(s.courseContext||{}),greenDistanceM:startGreen,startGreenDistanceM:startGreen,endGreenDistanceM:endGreen,...derived};
+      s.holed=String(s.endLie||'').toUpperCase()==='HOLED'||s.holed===true;
+      if(s.holed)s.depth='HOLED';
+
+      const before=oldByShot.get(String(s.id||''));
+      if(before){
+        const tracked=x=>JSON.stringify({
+          club:x.club,start:x.start,end:x.end,startLie:x.startLie,endLie:x.endLie,intendedShape:x.intendedShape,
+          ballFlight:x.ballFlight,trajectory:x.trajectory,direction:x.direction,depth:x.depth
+        });
+        if(tracked(before)!==tracked(s)){
+          s.editHistory=Array.isArray(s.editHistory)?s.editHistory:[];
+          s.editHistory.push({at:Date.now(),type:'ROUND_EDIT',previous:{
+            club:before.club,start:before.start,end:before.end,startLie:before.startLie,endLie:before.endLie,
+            intendedShape:before.intendedShape,ballFlight:before.ballFlight,trajectory:before.trajectory,direction:before.direction,depth:before.depth
+          }});
+        }
+      }
+    });
+
+    if(h.completed){
+      h.achievement=holeAchievementCode(h);
+      h.review=buildHoleReview(h);
+    }else{
+      h.achievement=null;h.review=null;
+    }
+  });
+  r.fullRound=roundIsFull(r);
+  r.archiveStatus=r.fullRound?'FULL':'PARTIAL';
+  r.editedAt=Date.now();
+  r.analysisSnapshot=null;
+  return r;
+}
+function saveRoundEditor(){
+  if(!roundEditDraft?.id)return false;
+  const edited=rebuildEditedRoundDerived(roundEditDraft,roundEditOriginal);
+  const history=loadCompletedRounds();
+  const idx=history.findIndex(r=>String(r?.id||'')===String(edited.id));
+  if(idx<0){alert('수정할 라운드를 찾을 수 없습니다.');return false}
+  history[idx]=JSON.parse(JSON.stringify(edited));
+  history.sort((a,b)=>Number(a?.completedAt||a?.archivedAt||a?.startedAt||0)-Number(b?.completedAt||b?.archivedAt||b?.startedAt||0));
+  if(!saveCompletedRounds(history)){
+    alert('라운드 수정 저장에 실패했습니다. 다시 시도해 주세요.');
+    return false;
+  }
+  try{
+    const active=load();
+    if(String(active?.id||'')===String(edited.id))localStorage.setItem(STORAGE,JSON.stringify(edited));
+  }catch{}
+  renderRoundHistoryStatus();
+  resultsSelectedIds.delete(String(edited.id));
+  closeRoundEditor();
+  renderRoundResultsSearch();
+  return true;
+}
+
 function resultDateKey(r){
   const d=new Date(Number(r?.startedAt||r?.completedAt||Date.now()));
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
@@ -5205,7 +5486,11 @@ function renderRoundResultsSearch(){
       '<div><div class="resultsRoundDate">'+resultDateLabel(r)+'</div><div class="resultsRoundName">'+safeText(resultRoundLabel(r,i))+'</div></div>'+
       '<div><div class="resultsRoundCourse">'+safeText(r.course||'골프장')+'</div><div class="resultsRoundMeta">'+safeText(r.nine||'코스')+' · '+resultTeeLabel(r.tee)+' 티 · '+status+'</div></div>'+
       '<div class="resultsRoundScore"><b>'+score+'</b><span>'+resultToParLabel(r)+'</span></div>'+
-      '<button class="resultsRoundOpen" data-result-open="'+safeText(r.id)+'">이 라운드 리포트 보기</button>'+
+      '<div class="resultsRoundManage">'+
+        '<button class="resultsRoundOpen" data-result-open="'+safeText(r.id)+'">리포트 보기</button>'+
+        '<button class="resultsRoundEdit" data-result-edit="'+safeText(r.id)+'">수정</button>'+
+        '<button class="resultsRoundDelete" data-result-delete="'+safeText(r.id)+'">삭제</button>'+
+      '</div>'+
     '</div>';
   }).join(''):'<div class="pendingText">선택한 조건에 저장된 라운드가 없습니다.</div>';
 }
@@ -8054,7 +8339,7 @@ function shapeLabel(v){return ({HOOK:'훅',DRAW:'드로우',STRAIGHT:'스트레�
 function dirLabel(v){return ({LEFT:'왼쪽',CENTER:'센터',RIGHT:'오른쪽'})[v]||v||'—'}
 function depthLabel(v){return ({SHORT:'짧음',PIN_HIGH:'핀 하이',TARGET:'목표 거리',LONG:'김',HOLED:'홀인'})[v]||v||'—'}
 function lieDisplayLabel(v){return ({TEE:'티',HOLED:'홀인',GREEN:'그린',FRINGE:'프린지',FAIRWAY:'페어웨이','A CUT':'A컷','B CUT':'B컷',ROUGH:'러프',BUNKER:'벙커',SAND:'벙커',RECOVERY:'트러블',OTHER:'기타',UNKNOWN:'미확인',Unknown:'미확인'})[v]||v||'—'}
-function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정',GREEN_REFERENCE:'그린 기준점'})[v]||v||'—'}
+function positionSourceLabel(v){return ({GPS:'GPS',TEE_BOX:'티박스',PREVIOUS_END:'직전 샷 위치',MANUAL_DROP:'지도 지정',MANUAL_EDIT:'수정 위치',GREEN_REFERENCE:'그린 기준점'})[v]||v||'—'}
 function puttResultLabel(v){return ({HOLED:'성공',MISS_LEFT:'왼쪽 미스',MISS_RIGHT:'오른쪽 미스',SHORT:'짧음',LONG:'OVER',TAP_IN:'TAP-IN · 0.5m 이내',REMAIN_2:'남음 0.5–2m',REMAIN_LONG:'남음 2m 이상'})[v]||v||'—'}
 function puttSlopeLabel(v){return ({UPHILL:'오르막',FLAT:'평지',DOWNHILL:'내리막'})[String(v||'').toUpperCase()]||v||'—'}
 function puttBreakLabel(v){return ({LEFT:'왼쪽',STRAIGHT:'직선',RIGHT:'오른쪽'})[String(v||'').toUpperCase()]||v||'—'}
@@ -9328,6 +9613,74 @@ $('importRoundDataFile').onchange=async()=>{
     setRoundTransferStatus(e?.message||'백업 파일을 가져오지 못했습니다.','warn');
   }
 };
+$('roundEditClose').onclick=closeRoundEditor;
+$('roundEditCancel').onclick=closeRoundEditor;
+$('roundEditSave').onclick=saveRoundEditor;
+$('roundEditHoleTabs').onclick=e=>{
+  const b=e.target.closest('[data-re-hole]');if(!b)return;
+  roundEditHole=Number(b.dataset.reHole)||1;renderRoundEditor();
+};
+$('roundEditBody').onclick=e=>{
+  if(!roundEditDraft)return;
+  const h=roundEditDraft.holes?.[roundEditHole-1];if(!h)return;
+  const rs=e.target.closest('[data-re-remove-shot]');
+  if(rs){
+    const i=Number(rs.dataset.reRemoveShot);
+    if(Number.isInteger(i)&&h.shots?.[i]&&confirm('SHOT '+(i+1)+'을 삭제할까요?')){h.shots.splice(i,1);renderRoundEditor()}
+    return;
+  }
+  const rp=e.target.closest('[data-re-remove-putt]');
+  if(rp){
+    const i=Number(rp.dataset.reRemovePutt);
+    if(Number.isInteger(i)&&h.puttsDetail?.[i]&&confirm('PUTT '+(i+1)+'을 삭제할까요?')){h.puttsDetail.splice(i,1);h.puttsDetail.forEach((p,j)=>p.number=j+1);h.putts=h.puttsDetail.length;renderRoundEditor()}
+    return;
+  }
+  const rpen=e.target.closest('[data-re-remove-penalty]');
+  if(rpen){
+    const i=Number(rpen.dataset.reRemovePenalty);
+    if(Number.isInteger(i)&&h.penaltyEvents?.[i]&&confirm('이 페널티를 삭제할까요?')){h.penaltyEvents.splice(i,1);h.penalties=h.penaltyEvents.reduce((sum,p)=>sum+Math.max(1,Number(p.strokes)||1),0);renderRoundEditor()}
+    return;
+  }
+  if(e.target.closest('[data-re-add-putt]')){
+    h.puttsDetail=h.puttsDetail||[];
+    h.puttsDetail.push({number:h.puttsDetail.length+1,distanceM:1,slope:'FLAT',break:'STRAIGHT',result:'HOLED',relativeSide:null,relativeDepth:null,playerState:null,at:Date.now()});
+    h.putts=h.puttsDetail.length;renderRoundEditor();return;
+  }
+  if(e.target.closest('[data-re-add-penalty]')){
+    h.penaltyEvents=h.penaltyEvents||[];
+    h.penaltyEvents.push({type:'OB',strokes:1,hole:h.hole,at:Date.now(),source:'ROUND_EDIT'});
+    h.penalties=h.penaltyEvents.reduce((sum,p)=>sum+Math.max(1,Number(p.strokes)||1),0);renderRoundEditor();return;
+  }
+};
+$('roundEditBody').onchange=e=>{
+  if(!roundEditDraft)return;
+  const h=roundEditDraft.holes?.[roundEditHole-1];if(!h)return;
+  const shotIndex=e.target.dataset.reShot;
+  const puttIndex=e.target.dataset.rePutt;
+  const penaltyIndex=e.target.dataset.rePenalty;
+  if(shotIndex!==undefined){
+    const s=h.shots?.[Number(shotIndex)];if(!s)return;
+    if(e.target.dataset.rePoint){
+      roundEditSetShotPoint(s,e.target.dataset.rePoint,e.target.dataset.reAxis,e.target.value);
+    }else if(e.target.dataset.reField){
+      s[e.target.dataset.reField]=e.target.value;
+      if(e.target.dataset.reField==='endLie')s.holed=e.target.value==='HOLED';
+    }
+    return;
+  }
+  if(puttIndex!==undefined){
+    const p=h.puttsDetail?.[Number(puttIndex)];if(!p)return;
+    const field=e.target.dataset.reField;
+    p[field]=field==='distanceM'?Math.max(.1,Number(e.target.value)||.1):e.target.value;
+    return;
+  }
+  if(penaltyIndex!==undefined){
+    const p=h.penaltyEvents?.[Number(penaltyIndex)];if(!p)return;
+    const field=e.target.dataset.reField;
+    p[field]=field==='strokes'?Math.max(1,Math.min(9,Number(e.target.value)||1)):e.target.value;
+    h.penalties=h.penaltyEvents.reduce((sum,x)=>sum+Math.max(1,Number(x.strokes)||1),0);
+  }
+};
 $('resultsHomeBtn').onclick=returnToJgiHome;
 $('backToResultsBtn').onclick=exitHistoricalRound;
 $('multiBackBtn').onclick=()=>{document.body.classList.remove('multi-review-open');$('appTopbar')?.classList.remove('hidden');$('resultsMultiView').classList.add('hidden');$('resultsSearchView').classList.remove('hidden');renderRoundResultsSearch();window.scrollTo({top:0,behavior:'smooth'})};
@@ -9348,6 +9701,10 @@ $('resultsClearFilterBtn').onclick=()=>{
   renderRoundResultsSearch();
 };
 $('resultsRoundList').onclick=e=>{
+  const del=e.target.closest('[data-result-delete]');
+  if(del){deleteStoredRound(del.dataset.resultDelete);return}
+  const edit=e.target.closest('[data-result-edit]');
+  if(edit){openRoundEditor(edit.dataset.resultEdit);return}
   const open=e.target.closest('[data-result-open]');
   if(open){openHistoricalRound(open.dataset.resultOpen);return}
   const check=e.target.closest('[data-result-check]');
