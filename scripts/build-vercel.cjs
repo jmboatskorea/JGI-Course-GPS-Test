@@ -14,6 +14,7 @@ const files = [
   'target-score-coach.js', 'target-score-coach.css',
   'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
+  'ora-south-left-course-data.js',
   'jgi-strokes-gained-data.js'
 ];
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
