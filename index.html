@@ -1870,8 +1870,7 @@ body.round-active .modal .sheet .puttHistoryRow{
           <label>골프장</label>
           <select id="courseSelect">
             <option>Jagorawi Golf & Country Club</option>
-            <option>Ora Country Club</option>
-            <option>Emeralda Golf Club</option>
+            <option value="Ora Country Club">Ora Country Club · South Left</option>
           </select>
         </div>
         <div class="field">
@@ -1882,6 +1881,10 @@ body.round-active .modal .sheet .puttHistoryRow{
           <label>티</label>
           <div class="segment" id="teeSegment">
             <button class="hidden" data-v="Gold">골드</button><button data-v="Blue">블루</button><button data-v="White">화이트</button><button class="sel" data-v="Red">레드</button>
+          </div>
+          <div id="oraTeeField" class="hidden">
+            <select id="oraTeeSelect" aria-label="Ora Tournament Tee Candidate"></select>
+            <div class="dataNote">GI 원본의 Tee 색상·후보별 GPS 매핑은 미확인입니다. 후보와 대회 거리를 확인해 주세요. TEE BOX는 GI 홀 기준 좌표이며 실제 Tee 위치는 GPS로 확인하세요.</div>
           </div>
         </div>
       </div>
@@ -3005,23 +3008,60 @@ function applyParkJieunSetupDefaults(){
 }
 
 // Course selection is round-scoped; Jagorawi stays the default and historical source.
+// Preserve the source file. Its color keys are import aliases, not verified GI colors.
+const ORA_TEE_CANDIDATES=Object.freeze(Object.fromEntries(
+  Object.entries(window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA.tees).map(([key,t])=>
+    [key,'Tournament Tee Candidate · '+[...new Set(t.providerNames)].join(' / ')]
+  )
+));
+const oraCandidateScorecard=Object.freeze({
+  ...window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA,
+  tees:Object.freeze(Object.fromEntries(Object.entries(ORA_TEE_CANDIDATES).map(([key,label])=>
+    [label,Object.freeze({...window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA.tees[key],label})]
+  ))),
+  holes:Object.freeze(Object.fromEntries(Object.entries(window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA.holes).map(([no,h])=>
+    [no,Object.freeze({par:h.par,indexMen:h.indexMen,indexLadies:h.indexLadies,
+      ...Object.fromEntries(Object.entries(ORA_TEE_CANDIDATES).map(([key,label])=>[label,h[key]]))})]
+  )))
+});
+// Static shared course sources contain no Player state or strategy results.
+const sharedCourseSources=Object.freeze([
+  Object.freeze({data:window.JGI_OLD_COURSE_DATA,scorecard:window.JGI_OLD_SCORECARD_DATA}),
+  Object.freeze({data:window.JGI_ORA_SOUTH_LEFT_DATA,scorecard:oraCandidateScorecard})
+]);
 function isOraSouthLeft(r=round){
   return r?.course==='Ora Country Club'&&r?.nine==='South Left';
 }
 function activeCourseData(r=round){
-  return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_DATA:window.JGI_OLD_COURSE_DATA;
+  return sharedCourseSources[isOraSouthLeft(r)?1:0].data;
 }
 function activeCourseScorecard(r=round){
-  return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA:window.JGI_OLD_SCORECARD_DATA;
+  return sharedCourseSources[isOraSouthLeft(r)?1:0].scorecard;
+}
+function courseDataForHole(h){
+  return sharedCourseSources.find(c=>Object.values(c.data.holes).includes(h))?.data||activeCourseData();
 }
 function syncSetupCourseSelection(){
   const ora=$('courseSelect')?.value==='Ora Country Club';
   const input=$('courseNine');
   if(input){input.value=ora?'South Left':PARK_JIEUN_PROFILE.nine;input.readOnly=ora}
-  $('teeSegment')?.querySelector('[data-v="Gold"]')?.classList.toggle('hidden',!ora);
-  if(!ora&&tee==='Gold'){tee='Red';setSelected($('teeSegment'),tee)}
+  $('teeSegment').classList.toggle('hidden',ora);
+  $('oraTeeField').classList.toggle('hidden',!ora);
+  const candidates=$('oraTeeSelect');
+  if(!candidates.options.length){
+    candidates.add(new Option('Tournament Tee Candidate 선택',''));
+    Object.entries(oraCandidateScorecard.tees).forEach(([key,t])=>
+      candidates.add(new Option(key+' · '+Math.round(t.total)+'m',key))
+    );
+  }
+  if(ora){
+    if(!Object.hasOwn(oraCandidateScorecard.tees,tee))tee='';
+    candidates.value=tee;
+  }else if(!['Blue','White','Red'].includes(tee)){
+    tee=PARK_JIEUN_PROFILE.tee;setSelected($('teeSegment'),tee);
+  }
   if($('setupProfileCourseName'))$('setupProfileCourseName').textContent=ora?'Ora South Left':'Jagorawi Old';
-  if($('setupProfileTeeName'))$('setupProfileTeeName').textContent=tee.toUpperCase();
+  if($('setupProfileTeeName'))$('setupProfileTeeName').textContent=ora?(tee||'Tournament Tee Candidate'):tee.toUpperCase();
 }
 function courseHoleData(){
   return activeCourseData()?.holes?.[String(round?.currentHole||1)]||null;
@@ -3033,14 +3073,14 @@ function scorecardHoleData(holeNo,teeName=tee,r=round){
   const scorecard=activeCourseScorecard(r);
   const h=scorecard?.holes?.[String(holeNo)]||scorecard?.holes?.[holeNo]||null;
   if(!h)return null;
-  const t=normalizeTeeName(teeName);
+  const t=isOraSouthLeft(r)?(ORA_TEE_CANDIDATES[teeName]||teeName):normalizeTeeName(teeName);
   return {...h,tee:t,distanceM:Number(h[t])||null};
 }
 function hydrateRoundCourseTruth(r){
   if(!r)return r;
   const scorecard=activeCourseScorecard(r);
   r.courseVersion=r.courseVersion||activeCourseData(r)?.version||null;
-  r.tee=normalizeTeeName(r.tee||tee);
+  r.tee=isOraSouthLeft(r)?(ORA_TEE_CANDIDATES[r.tee]||r.tee||null):normalizeTeeName(r.tee||tee);
   (r.holes||[]).forEach((h,i)=>{
     const sc=scorecardHoleData(h.hole||i+1,r.tee,r);
     if(!sc)return;
@@ -3074,7 +3114,7 @@ function courseShapes(h){
   if(!h)return [];
   const raw=Array.isArray(h.localS)?h.localS.map(i=>h.s?.[i]).filter(Boolean):(h.s||[]);
   const own=raw.map(unpackCourseShape);
-  const water=(h.w||[]).map(i=>activeCourseData()?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
+  const water=(h.w||[]).map(i=>courseDataForHole(h)?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
   return own.concat(water);
 }
 
@@ -3159,7 +3199,8 @@ function smoothCenterlinePoints(points,radius=1){
 }
 function buildCourseIntelligenceModel(h,holePar=null){
   if(!h?.t||!h?.g)return null;
-  const key=String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'');
+  const source=courseDataForHole(h);
+  const key=[source?.courseId,source?.version||'JGI_OLD_V1',h.i??h.id??h.holeId??JSON.stringify(h.t),holePar??''].join('|');
   if(courseIntelligenceCache.has(key))return courseIntelligenceCache.get(key);
 
   const tee={lat:h.t[0],lng:h.t[1]};
@@ -3428,8 +3469,8 @@ function fitCurrentHole(useHeading=true){
 
 const TEE_COORDINATE_VERSION='JGI_TEE_COORD_V1';
 
-function courseHoleGeometryByNumber(holeNo){
-  const holes=activeCourseData()?.holes;
+function courseHoleGeometryByNumber(holeNo,r=round){
+  const holes=activeCourseData(r)?.holes;
   if(!holes)return null;
   return holes?.[String(holeNo)]||holes?.[Number(holeNo)]||null;
 }
@@ -3524,7 +3565,7 @@ function teeShotCoordinatePoint(shot,holeGeometry){
 function teeShotCoordinateForRow(row){
   const holeNo=Number(row?.h?.hole??row?.s?.hole);
   if(!Number.isFinite(holeNo))return null;
-  const geometry=courseHoleGeometryByNumber(holeNo);
+  const geometry=courseHoleGeometryByNumber(holeNo,row?.r||round);
   return teeShotCoordinatePoint(row?.s,geometry);
 }
 
@@ -3786,6 +3827,17 @@ function renderCourseHole(){
   renderCurrentHoleFocusMask(h);
   renderCenterCorridorOverlay(h);
 
+  if(isOraSouthLeft()){
+    const colors={FAIRWAY:'#43b76a',GREEN:'#8ceba3',BUNKER:'#f1d28b',WATER:'#4295ed',WATER_PATH:'#4295ed',TEE:'#eeeeee'};
+    courseShapes(h).forEach(s=>{
+      if(!colors[s.type]||s.path.length<(s.line?2:3))return;
+      const options={map:googleMap,clickable:false,geodesic:false,strokeColor:colors[s.type],strokeOpacity:.85,strokeWeight:1,zIndex:3};
+      courseOverlays.push(s.line
+        ?new google.maps.Polyline({...options,path:s.path})
+        :new google.maps.Polygon({...options,paths:s.path,fillColor:colors[s.type],fillOpacity:.22}));
+    });
+  }
+
   // Keep course geometry internal; Satellite only shows the current-hole focus and 15m center corridor.
   refreshGreenDistance();
   fitCurrentHole(true);
@@ -3798,7 +3850,7 @@ window.initGoogleMap=function(){
   const el=$('googleMap');
   if(!el||!window.google?.maps)return;
   googleMap=new google.maps.Map(el,{
-    center:JAGORAWI_OLD_CENTER,
+    center:isOraSouthLeft()&&courseHoleData()?.t?{lat:courseHoleData().t[0],lng:courseHoleData().t[1]}:JAGORAWI_OLD_CENTER,
     zoom:16,
     mapTypeId:'satellite',
     renderingType:google.maps.RenderingType.VECTOR,
@@ -4672,7 +4724,7 @@ function finishPendingAndMaybeStart(club=null){
 
 function emptyRound(course,nine){
   const level=normalizeCollectionLevel(stateCollectionLevel),samplingRoundIndex=currentSamplingRoundIndex();
-  return hydrateRoundCourseTruth({version:9,id:'r'+Date.now(),course,nine,tee:normalizeTeeName(tee),stateCollectionLevel:level,stateSamplingVersion:STATE_SAMPLING_VERSION,samplingRoundIndex,samplingPlan:buildSamplingPlan(level,samplingRoundIndex),stateSamplingEvents:[],startedAt:Date.now(),completedAt:null,currentHole:1,
+  return hydrateRoundCourseTruth({version:9,id:'r'+Date.now(),course,nine,tee:isOraSouthLeft({course,nine})?(Object.hasOwn(oraCandidateScorecard.tees,tee)?tee:null):normalizeTeeName(tee),stateCollectionLevel:level,stateSamplingVersion:STATE_SAMPLING_VERSION,samplingRoundIndex,samplingPlan:buildSamplingPlan(level,samplingRoundIndex),stateSamplingEvents:[],startedAt:Date.now(),completedAt:null,currentHole:1,
     holes:Array.from({length:18},(_,i)=>({
       hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
       shots:[],putts:0,puttsDetail:[],puttingState:null,
@@ -8472,7 +8524,8 @@ function computePuttSG(h,p,index,info=sgBenchmarkInfo()){
 }
 function greenEdgePolygonForHole(holeNo){
   const ch=activeCourseData()?.holes?.[String(holeNo)]||null;
-  const green=(ch?.s||[]).find(x=>x?.[0]==='G'&&Array.isArray(x?.[2])&&x[2].length>=2);
+  const shapes=Array.isArray(ch?.localS)?ch.localS.map(i=>ch.s?.[i]):(ch?.s||[]);
+  const green=shapes.find(x=>x?.[0]==='G'&&Array.isArray(x?.[2])&&x[2].length>=2);
   return green?.[2]||null;
 }
 function pointToGeoSegmentDistanceM(point,a,b){
@@ -10033,6 +10086,7 @@ $('multiAllDetailJump').onclick=()=>{
   const d=$('multiAllDetails');if(!d)return;d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});
 };
 $('courseSelect').addEventListener('change',syncSetupCourseSelection);
+$('oraTeeSelect').addEventListener('change',()=>{tee=$('oraTeeSelect').value;syncSetupCourseSelection()});
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee);syncSetupCourseSelection()});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
@@ -10061,7 +10115,10 @@ function startRoundWithCondition(){
   const isOra=$('courseSelect')?.value==='Ora Country Club';
   const selectedCourse=isOra?'Ora Country Club':PARK_JIEUN_PROFILE.course;
   const selectedNine=isOra?'South Left':PARK_JIEUN_PROFILE.nine;
-  tee=isOra&&['Gold','Blue','White','Red'].includes(tee)?tee:PARK_JIEUN_PROFILE.tee;
+  if(isOra&&!Object.hasOwn(oraCandidateScorecard.tees,tee)){
+    alert('Ora South Left의 Tournament Tee Candidate를 선택해 주세요.');return;
+  }
+  tee=isOra?tee:PARK_JIEUN_PROFILE.tee;
   sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   const targetScore=clampNumber($('targetScoreInput')?.value||PARK_JIEUN_PROFILE.targetScore,50,150)||PARK_JIEUN_PROFILE.targetScore;
   const previousRound=load();
@@ -10086,6 +10143,9 @@ function startRoundWithCondition(){
   hydrateRoundCourseTruth(round);precomputeAllCourseIntelligence();window.JGI_WHOOP?.capture(round);save();renderRoundHistoryStatus();showScreen('round')
 };
 $('startRoundBtn').onclick=()=>{
+  if($('courseSelect').value==='Ora Country Club'&&!Object.hasOwn(oraCandidateScorecard.tees,tee)){
+    alert('Ora South Left의 Tournament Tee Candidate를 선택해 주세요.');return;
+  }
   if(!sgBenchmarkMode){startRoundWithCondition();return}
   showScreen('condition');window.JGI_WHOOP?.refresh();
 };
