@@ -228,6 +228,152 @@ class MultiCourse(unittest.TestCase):
         self.assertTrue(self.page.locator("#teeSegment").is_visible())
         self.assertFalse(self.page.locator("#oraTeeField").is_visible())
 
+    def generate_strategy(self):
+        self.page.evaluate("JGI_TOURNAMENT_PREVIEW.open()")
+        self.page.select_option("#tsTee", CANDIDATE)
+        self.page.click("#tsGenerate")
+
+    def test_tournament_18_plans_par_logic_and_no_writes(self):
+        before = self.page.evaluate("({store:JSON.stringify(localStorage),profile:JSON.stringify(PARK_JIEUN_PROFILE),gi:JSON.stringify(JGI_ORA_SOUTH_LEFT_DATA)})")
+        self.generate_strategy()
+        data = self.page.evaluate("""() => {
+          const s=JGI_TOURNAMENT_PREVIEW.getStrategy();
+          return {count:s.holes.length,holes:s.holes.map(h=>({hole:h.hole,par:h.par,
+            hasPlans:!!h.planA&&!!h.planB,distinct:h.planA.club!==h.planB.club||h.planA.target!==h.planB.target,
+            landing:h.planA.landing.distanceM,remaining:h.planA.remainingM,
+            front:h.greenRange.frontM,center:h.greenRange.centerM,back:h.greenRange.backM,
+            second:h.planA.second?.club,third:h.planA.second?.remainingM,preferred:h.planA.preferredThird?.distanceM,
+            width:h.planA.landing.widthM,comparison:h.comparison,confidence:h.planA.confidence})),
+            store:JSON.stringify(localStorage),profile:JSON.stringify(PARK_JIEUN_PROFILE),gi:JSON.stringify(JGI_ORA_SOUTH_LEFT_DATA)};
+        }""")
+        self.assertEqual(data["count"], 18)
+        self.assertEqual((before["store"],before["profile"],before["gi"]),(data["store"],data["profile"],data["gi"]))
+        for h in data["holes"]:
+            self.assertTrue(h["hasPlans"] and h["distinct"])
+            self.assertGreater(h["landing"], 0)
+            self.assertGreaterEqual(h["remaining"], 0)
+            if h["par"] == 3:
+                self.assertIsInstance(h["front"], (float,int))
+                self.assertIsInstance(h["back"], (float,int))
+            if h["par"] == 4:
+                self.assertIsInstance(h["comparison"]["safetyGain"], (float,int))
+                self.assertIsInstance(h["comparison"]["remainingCostM"], (float,int))
+            if h["par"] == 5:
+                self.assertTrue(h["second"])
+                self.assertGreater(h["third"], 0)
+                self.assertGreater(h["preferred"], 0)
+        self.assertIsNone(data["holes"][17]["width"])
+        self.assertEqual(self.page.locator("#tsQuick tbody tr").count(), 18)
+
+    def test_tournament_recent_observation_quality(self):
+        data = self.page.evaluate("""() => {
+          const good={club:'DR',distanceM:220,direction:'LEFT',depth:'LONG',startLie:'TEE',
+            positionSource:{start:'GPS',end:'GPS'},start:{accuracy:3},end:{accuracy:4},editHistory:[]};
+          const r={id:'r-quality',playerProfileId:PARK_JIEUN_PROFILE.id,holes:[{shots:[good,
+            {...good,end:{accuracy:40}},{...good,editHistory:[{type:'ROUND_EDIT'}]},
+            {...good,positionSource:{start:'GPS',end:'MANUAL_EDIT'}},
+            {...good,start:{accuracy:null}},{...good,distanceM:999}]}]};
+          const before=JSON.stringify(PARK_JIEUN_PROFILE);
+          const observation=JGI_TOURNAMENT_STRATEGY.observations(PARK_JIEUN_PROFILE,[r]);
+          return {observation,unchanged:before===JSON.stringify(PARK_JIEUN_PROFILE)};
+        }""")
+        self.assertTrue(data["unchanged"])
+        self.assertEqual(data["observation"]["DR"]["count"], 1)
+        self.assertEqual(data["observation"]["DR"]["observedDistanceM"], 220)
+        self.assertEqual(data["observation"]["DR"]["confidence"], "LOW")
+        self.assertNotIn("carry", data["observation"]["DR"])
+
+    def test_tournament_real_player_selection_and_distance_separation(self):
+        self.page.evaluate("""() => {
+          const p={id:'real-player-b',name:'Player B',handicap:12,
+            clubs:PARK_JIEUN_PROFILE.clubs.map(c=>({...c,carry:c.carry*1.3,carryMin:c.carryMin?c.carryMin*1.3:null,carryMax:c.carryMax?c.carryMax*1.3:null}))};
+          localStorage.setItem(COMPLETED_ROUNDS_KEY,JSON.stringify([{id:'b-round',playerProfileId:p.id,
+            playerName:p.name,playerHandicap:p.handicap,clubProfile:p.clubs,missProfile:{driver:'RIGHT'},holes:[]}]));
+        }""")
+        self.generate_strategy()
+        first = self.page.evaluate("JGI_TOURNAMENT_PREVIEW.getStrategy().holes[0].planA.landing.distanceM")
+        self.page.select_option("#tsPlayer", "real-player-b")
+        self.page.click("#tsGenerate")
+        second = self.page.evaluate("JGI_TOURNAMENT_PREVIEW.getStrategy().holes[0].planA.landing.distanceM")
+        self.assertNotEqual(first, second)
+        self.page.fill("#tsOfficial", "340")
+        self.page.locator("#tsOfficial").blur()
+        data = self.page.evaluate("""() => {const h=JGI_TOURNAMENT_PREVIEW.getStrategy().holes[0];
+          return {official:h.officialDistanceM,scorecard:h.scorecardDistanceM,gps:h.gpsDistanceM,source:h.distanceSource};}""")
+        self.assertEqual(data["official"], 340)
+        self.assertEqual(data["scorecard"], 302.67)
+        self.assertNotEqual(data["official"], data["gps"])
+        self.assertEqual(data["source"], "USER_SUPPLIED_OFFICIAL")
+
+    def test_tournament_missing_geometry_remains_unavailable(self):
+        data = self.page.evaluate("""() => {
+          const course={...JGI_ORA_SOUTH_LEFT_DATA,holes:{...JGI_ORA_SOUTH_LEFT_DATA.holes}};
+          course.holes['1']={...course.holes['1'],s:[],localS:[]};
+          const s=JGI_TOURNAMENT_STRATEGY.calculate({course,scorecard:oraCandidateScorecard,
+            player:PARK_JIEUN_PROFILE,tee:'Tournament Tee Candidate · Regular'},
+            {shapes:courseShapes,model:buildCourseIntelligenceModel,projector:courseLocalProjector,
+              distance:hav,shapeDistance:distanceToShapeXY,side:riskSide,section:projectedLandingSection});
+          const h=s.holes[0];return {types:h.geometryTypes,width:h.planA.landing.widthM,
+            bunker:h.planA.risk.bunker,water:h.planA.risk.water,front:h.greenRange.frontM,mode:h.planA.mode};
+        }""")
+        self.assertEqual(data, {"types":[],"width":None,"bunker":None,"water":None,"front":None,"mode":"CAUTION"})
+
+    def test_tournament_mobile_navigation(self):
+        self.page.set_viewport_size({"width":390,"height":844})
+        self.generate_strategy()
+        self.assertEqual(self.page.locator("#tsHoles button").count(), 18)
+        for n in [2,5,18]:
+            self.page.locator(f'#tsHoles button[data-hole="{n}"]').click()
+            self.assertIn(f"Hole {n}", self.page.locator("#tsHoleTitle").inner_text())
+            self.assertEqual(self.page.locator("#tsPlans article").count(), 2)
+        dimensions = self.page.evaluate("({width:innerWidth,scroll:document.getElementById('tournamentStrategy').scrollWidth})")
+        self.assertLessEqual(dimensions["scroll"], dimensions["width"])
+        self.page.click("#tsClose")
+        self.assertFalse(self.page.locator("#tournamentStrategy").is_visible())
+
+    def test_tournament_club_choice_and_recent_layup_reference(self):
+        data = self.page.evaluate("""() => {
+          const geo={shapes:courseShapes,model:buildCourseIntelligenceModel,projector:courseLocalProjector,
+            distance:hav,shapeDistance:distanceToShapeXY,side:riskSide,section:projectedLandingSection};
+          const alternate={...PARK_JIEUN_PROFILE,clubs:PARK_JIEUN_PROFILE.clubs.map(c=>c.name==='DR'?{...c,carry:140,carryMin:130,carryMax:150}:c)};
+          const a=JGI_TOURNAMENT_STRATEGY.calculate({course:JGI_ORA_SOUTH_LEFT_DATA,scorecard:oraCandidateScorecard,
+            player:alternate,tee:'Tournament Tee Candidate · Regular'},geo);
+          const recent=Array.from({length:3},(_,i)=>({id:'reference-'+i,playerProfileId:PARK_JIEUN_PROFILE.id,
+            holes:[{shots:Array.from({length:2},()=>({club:'6I',distanceM:137,shotIntent:'GREEN_ATTACK',startLie:'FAIRWAY',
+              direction:'LEFT',positionSource:{start:'GPS',end:'GPS'},start:{accuracy:3},end:{accuracy:3},editHistory:[]}))}]}));
+          const b=JGI_TOURNAMENT_STRATEGY.calculate({course:JGI_ORA_SOUTH_LEFT_DATA,scorecard:oraCandidateScorecard,
+            player:PARK_JIEUN_PROFILE,rounds:recent,tee:'Tournament Tee Candidate · Regular'},geo);
+          return {nonDriver:a.holes.some(h=>h.par===4&&h.planA.club!=='DR'),
+            preferred:b.holes[6].planA.preferredThird,second:b.holes[6].planA.second.club,
+            rawCarry:PARK_JIEUN_PROFILE.clubs.find(c=>c.name==='6I').carry,observed:b.recent['6I'].observedDistanceM};
+        }""")
+        self.assertTrue(data["nonDriver"])
+        self.assertEqual(data["preferred"]["distanceM"], 125)
+        self.assertEqual(data["rawCarry"], 125)
+        self.assertEqual(data["observed"], 137)
+        self.assertNotEqual(data["second"], "DR")
+
+    def test_tournament_satellite_orientation_contract(self):
+        self.generate_strategy()
+        data = self.page.evaluate("""() => {
+          const maps=[];class Overlay{constructor(options){this.options=options}setMap(){}}
+          class MapDouble{constructor(node,options){this.options=options;this.heading=0;maps.push(this)}
+            fitBounds(){}setHeading(value){this.heading=value}getHeading(){return this.heading}setTilt(value){this.tilt=value}addListener(){}}
+          class Bounds{extend(){return this}}
+          window.google={maps:{Map:MapDouble,Marker:Overlay,Polyline:Overlay,Polygon:Overlay,
+            LatLngBounds:Bounds,RenderingType:{VECTOR:'VECTOR'},SymbolPath:{CIRCLE:'CIRCLE'},
+            event:{addListenerOnce:(map,name,cb)=>{if(name==='idle')cb()}}}};
+          document.querySelector('#tsHoles button[data-hole="5"]').click();
+          const h=JGI_TOURNAMENT_PREVIEW.getStrategy().holes[4].sourceGeometry;
+          return {type:maps[0].options.mapTypeId,heading:maps[0].heading,
+            expected:bearingDeg({lat:h.t[0],lng:h.t[1]},{lat:h.g[0],lng:h.g[1]}),tilt:maps[0].tilt,
+            locked:maps[0].options.headingInteractionEnabled===false};
+        }""")
+        self.assertEqual(data["type"], "satellite")
+        self.assertAlmostEqual(data["heading"], data["expected"])
+        self.assertEqual(data["tilt"], 0)
+        self.assertTrue(data["locked"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

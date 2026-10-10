@@ -12,6 +12,7 @@ const files = [
   'index.html', 'cumulative-report.css',
   'whoop-pilot.js', 'whoop-pilot.css',
   'target-score-coach.js', 'target-score-coach.css',
+  'tournament-strategy.js', 'tournament-strategy-ui.js', 'tournament-strategy.css',
   'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
   'ora-south-left-course-data.js',

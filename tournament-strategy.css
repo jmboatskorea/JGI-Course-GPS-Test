@@ -1,0 +1,18 @@
+#tournamentStrategy{position:fixed;inset:0;z-index:1000;overflow:auto;background:#07120d;color:#edf7f0;padding:18px max(16px,calc((100vw - 1000px)/2));font:14px/1.5 system-ui,sans-serif;box-sizing:border-box}
+#tournamentStrategy[hidden],#tournamentStrategy [hidden]{display:none!important}
+#tournamentStrategy *{box-sizing:border-box;min-width:0}
+#tournamentStrategy button,#tournamentStrategy select,#tournamentStrategy input{font:inherit;color:inherit;background:#12271c;border:1px solid #365943;border-radius:9px;padding:10px;max-width:100%}
+#tournamentStrategy button{cursor:pointer;min-height:44px}
+#tournamentStrategy button:focus-visible,#tournamentStrategy select:focus-visible,#tournamentStrategy input:focus-visible{outline:2px solid #5dffb3;outline-offset:2px}
+#tournamentStrategy h1{font-size:22px;margin:4px 0}#tournamentStrategy h2{font-size:19px}#tournamentStrategy h3{margin-top:0;font-size:18px}
+.ts-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.ts-head small{color:#83b397;font-size:11px}
+.ts-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ts-settings label,.ts-hole-head label{display:grid;gap:5px}.ts-settings select{width:100%}
+.ts-note{color:#adc2b5;font-size:12px;overflow-wrap:anywhere}.ts-primary{width:100%;font-weight:bold;background:#175636!important}
+#tsStatus{min-height:22px;color:#79e7aa}#tsHoles{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:5px;margin:18px 0}#tsHoles button{padding:8px 0}
+#tsHoles button[aria-current=true]{background:#239452;border-color:#62e394}.ts-hole-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.ts-hole-head label{max-width:210px;font-size:11px}
+#tsMap{height:440px;background:#13261b;border:1px solid #345741;border-radius:14px;overflow:hidden}.ts-legend{font-size:12px;color:#a5c9b4;margin:8px 0 18px}
+.ts-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ts-plans article{padding:16px;background:#102119;border:1px solid #355140;border-radius:14px}.ts-plan-A{border-top:3px solid #18e98a!important}.ts-plan-B{border-top:3px solid #ff9a47!important}
+.ts-instruction{font-size:16px;font-weight:bold;overflow-wrap:anywhere}.ts-plans dl{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:7px 12px;font-size:12px}.ts-plans dt{color:#8fab9a}.ts-plans dd{margin:0;overflow-wrap:anywhere}.ts-second{border-top:1px solid #355140;margin-top:12px;font-size:13px}.ts-second h4{margin-bottom:8px}
+.ts-basis{font-size:12px;color:#adc2b5;margin:20px 0}.ts-basis summary{cursor:pointer;padding:12px;border:1px solid #355140;border-radius:10px}
+.ts-table-wrap{overflow-x:auto;border:1px solid #355140;border-radius:10px}#tsQuick{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}#tsQuick td,#tsQuick th{padding:10px;text-align:left;border-bottom:1px solid #253c2f}#tsQuick tbody tr{cursor:pointer}#tsQuick tbody tr:hover{background:#20392a}
+@media(max-width:600px){.ts-plans{grid-template-columns:1fr}#tsMap{height:380px}.ts-settings{grid-template-columns:1fr}.ts-hole-head{align-items:flex-start}.ts-head h1{font-size:19px}.ts-hole-head label{max-width:160px}#tournamentStrategy{padding-bottom:40px}}
