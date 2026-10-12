@@ -192,6 +192,40 @@ function physical(group,playerId,point,engine){
 }
 const greenPoint=()=>({...mapPoint(),lat:-6.4555,lng:106.8825});
 const pinPoint=()=>({...greenPoint(),lat:-6.4556,source:'SCORER_MANUAL_MAP'});
+test('Pending 결과 UI: 복원된 Shot 3 (7I)와 선택 선수의 Raw Shot을 대상으로 타수 없이 확정',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  for(let i=0;i<3;i++){
+    if(i===2)group=lesson.setShotClub(group,a.playerId,'7I',engine);
+    group=physical(group,a.playerId,mapPoint(),engine);
+  }
+  group=physical(group,b.playerId,gpsPoint(),engine);
+  group=lesson.setShotClub(group,a.playerId,'DR',engine); // Next club differs from the stored pending shot.
+  group.players[0].round.pending=null; // Restored raw record is sufficient; never depend on a global pointer.
+  group=lesson.selectPlayer(group,a.playerId);lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  const current=()=>lesson.pendingResultShot(group.players.find(p=>p.playerId===group.selectedPlayerId));
+  const unchanged=JSON.stringify(group),target=current();
+  assert.equal(target.shotSequence,3);assert.equal(target.club,'7I');assert.equal(target.playerId,a.playerId);
+  assert.equal(JSON.stringify(group),unchanged);
+  group=lesson.selectPlayer(group,b.playerId);assert.equal(current().playerId,b.playerId);assert.equal(current().shotSequence,1);
+  group=lesson.selectPlayer(group,a.playerId);assert.equal(current().id,target.id);
+  const beforeB=structuredClone(group.players[1]),beforeEarlier=structuredClone(group.players[0].round.holes[0].shots.slice(0,2));
+  group=lesson.onGreen(group,a.playerId,current().id,greenPoint(),null,engine);
+  assert.equal(current(),null);assert.equal(group.players[0].round.holes[0].shots.length,3);
+  assert.deepEqual(group.players[0].round.holes[0].shots.slice(0,2),beforeEarlier);assert.deepEqual(group.players[1],beforeB);
+  group=lesson.selectPlayer(group,b.playerId);group=lesson.holed(group,b.playerId,current().id,engine);
+  assert.equal(current(),null);assert.equal(group.players[1].round.holes[0].shots.length,1);assert.equal(group.players[1].round.holes[0].score,1);
+});
+test('Pending 결과 UI: 다른 홀·미등록·완료·Putting·다음 시작으로 확정된 Shot의 버튼은 숨김',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,mapPoint(),engine);assert.ok(lesson.pendingResultShot(group.players[0]));
+  const terminal=structuredClone(group.players[0]);terminal.round.holes[0].completed=true;assert.equal(lesson.pendingResultShot(terminal),null);
+  terminal.round.holes[0].completed=false;terminal.round.holes[0].lessonStatus='AWAITING_PUTTING';assert.equal(lesson.pendingResultShot(terminal),null);
+  const nextHole=lesson.chooseHole(group,pid,2);assert.equal(lesson.pendingResultShot(nextHole.players[0]),null);
+  assert.equal(lesson.pendingResultShot(lesson.createGroup(1,engine).players[0]),null);
+  assert.equal(lesson.pendingResultShot(undefined),null);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,gpsPoint()),pid,engine);
+  assert.equal(lesson.pendingResultShot(group.players[0]),null);assert.equal(group.players[0].round.holes[0].shots.length,1);
+});
 test('Phase 3B: Shot 1→2→3→4는 같은 선수의 확인 좌표만 연결하며 Physical Shot을 추가하지 않음',()=>{
   const engine=services();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
   group=physical(group,pid,gpsPoint(),engine);

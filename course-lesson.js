@@ -298,8 +298,12 @@
     p.shotDraft={...emptyShotDraft(h.hole),club:p.shotDraft.club};p.round.analysisSnapshot=null;
     next.updatedAt=services.now();return validateGroup(next);
   }
+  function pendingResultShot(player){
+    const r=player?.round,h=r?.holes[r.currentHole-1],shots=h?.shots||[],shot=shots[shots.length-1];
+    return player?.registered&&h&&!h.completed&&h.lessonStatus!=='AWAITING_PUTTING'&&shot?.status==='PENDING_RESULT'?shot:null;
+  }
   const api={STORAGE,developmentAllowed,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
-    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed};
+    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
   let sharedMap=null,mapController=null,mapError=null;
@@ -346,6 +350,12 @@
         <div class="lessonActions"><button type="button" id="lessonGetGps">기록원 GPS 후보 가져오기</button><button type="button" id="lessonConfirmPosition" disabled>선택 선수의 볼 위치 확인</button></div>
         <div id="lessonPosition" class="lessonMeta" aria-live="polite"></div>
         <div class="lessonControls"><label>사용 클럽<select id="lessonShotClub"></select></label><button type="button" id="lessonShotSave" disabled>SHOT SAVE · Physical Shot 1회</button></div>
+        <div id="lessonPendingResult" class="lessonBench" role="group" aria-labelledby="lessonPendingResultLabel" hidden>
+          <strong id="lessonPendingResultLabel"></strong><div class="lessonActions">
+            <button type="button" id="lessonOnGreen" data-lesson-result="ON_GREEN" disabled>ON GREEN · 확대 Green</button>
+            <button type="button" id="lessonHoled" data-lesson-result="HOLED" disabled>HOLED · Hole Out</button>
+          </div>
+        </div>
         <p class="lessonMeta">실제로 친 샷을 한 번만 저장하세요. 같은 선수의 다음 시작 위치를 확인하면 직전 Shot의 End로 연결합니다. 과거 누락 위치는 추정하지 않습니다. SG는 아직 미계산입니다.</p>
         <div id="lessonHoleState" class="lessonMeta" role="status"></div>
         <div id="lessonShotHistory" class="lessonShotHistory" aria-live="polite"></div></section>
@@ -397,6 +407,7 @@
     }
     function render(){
       el('lessonEditor').hidden=!group;el('lessonPlayers').replaceChildren();
+      el('lessonPendingResult').hidden=true;el('lessonOnGreen').disabled=true;el('lessonHoled').disabled=true;
       if(!group){el('lessonGroupMeta').textContent='선수 1~4명의 테스트 Group을 만드세요.';el('lessonShotPanel').hidden=true;mapController.render();return;}
       el('lessonPlayerCount').value=String(group.players.length);
       const registered=group.players.filter(p=>p.registered).length;
@@ -425,6 +436,11 @@
         el('lessonHole').value=String(p.round.currentHole);el('lessonShotClub').value=draft.club;
         el('lessonConfirmPosition').disabled=blocked||!draft.position||draft.confirmed;el('lessonShotSave').disabled=blocked||!draft.confirmed;
         el('lessonShotClub').disabled=blocked;el('lessonGetGps').disabled=blocked;
+        const pending=pendingResultShot(p);
+        if(pending){
+          el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
+          el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 저장된 Shot '+pending.shotSequence+' ('+pending.club+') · PENDING RESULT';
+        }
         el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · 다음 홀은 직접 선택하세요.':h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · Putting 준비 상태 저장됨 · 거리/퍼팅 입력은 Phase 3C에서 제공합니다.':'';
         el('lessonPosition').textContent=draft.position?(draft.confirmed?'확인됨':'미확인 후보')+' · '+draft.position.lat.toFixed(6)+', '+draft.position.lng.toFixed(6)+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
         el('lessonShotHistory').replaceChildren();
@@ -432,16 +448,6 @@
           const row=document.createElement('div');
           const label=shot.status==='PENDING_RESULT'?'PENDING RESULT':shot.result?.type==='NEXT_SHOT_START'?'End 연결 · 다음 시작 위치':shot.result?.type||'기존 기록';
           row.textContent='Shot '+shot.shotSequence+' · '+shot.club+' · '+(shot.start?.source==='GPS'?'GPS':'MAP TOUCH')+' · '+label+' · SG 미계산';
-          if(!blocked&&shot===h.shots.at(-1)&&shot.status==='PENDING_RESULT'){
-            const actions=document.createElement('div');actions.className='lessonActions';
-            const green=document.createElement('button');green.type='button';green.dataset.lessonResult='ON_GREEN';green.textContent='ON GREEN · 확대 Green';
-            green.addEventListener('click',()=>{try{mapController.openGreen({groupId:group.groupId,playerId:p.playerId,hole:h.hole,shotId:shot.id});}catch(e){status(e.message,true);}});
-            const out=document.createElement('button');out.type='button';out.dataset.lessonResult='HOLED';out.textContent='HOLED · Hole Out';
-            out.addEventListener('click',()=>{try{if(!confirm(p.profile.name+' · '+h.hole+'번 홀 · Shot '+shot.shotSequence+'가 홀인했나요? 추가 타수 없이 이 선수의 홀만 완료합니다.'))return;
-              commit(holed(currentInput(),p.playerId,shot.id,services),'HOLED 저장 · 추가 Shot/Putting 없음 · 선택 선수만 Hole 완료');
-            }catch(e){status(e.message,true);}});
-            actions.append(green,out);row.append(actions);
-          }
           el('lessonShotHistory').append(row);
         });
       }
@@ -469,6 +475,21 @@
     el('lessonShotClub').addEventListener('change',()=>{try{commit(setShotClub(currentInput(),group.selectedPlayerId,el('lessonShotClub').value,services),'선수별 클럽 선택 저장');}catch(e){status(e.message,true);}});
     el('lessonConfirmPosition').addEventListener('click',()=>{try{commit(confirmPosition(currentInput(),group.selectedPlayerId,services),'기록원이 선택 선수의 볼 위치를 확인했습니다.');}catch(e){status(e.message,true);}});
     el('lessonShotSave').addEventListener('click',()=>{try{commit(recordShot(currentInput(),group.selectedPlayerId,services),'Physical Shot 1회 저장 · PENDING RESULT · SG 미계산');}catch(e){status('Shot 저장 실패: '+e.message,true);}});
+    el('lessonOnGreen').addEventListener('click',()=>{
+      try{
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=pendingResultShot(p);
+        assert(shot,'선택 선수의 현재 홀에 결과를 확정할 Pending Shot이 없습니다.');
+        mapController.openGreen({groupId:group.groupId,playerId:p.playerId,hole:p.round.currentHole,shotId:shot.id});
+      }catch(e){status(e.message,true);}
+    });
+    el('lessonHoled').addEventListener('click',()=>{
+      try{
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=pendingResultShot(p);
+        assert(shot,'선택 선수의 현재 홀에 결과를 확정할 Pending Shot이 없습니다.');
+        if(!confirm(p.profile.name+' · '+p.round.currentHole+'번 홀 · Shot '+shot.shotSequence+'가 홀인했나요? 추가 타수 없이 이 선수의 홀만 완료합니다.'))return;
+        commit(holed(currentInput(),p.playerId,shot.id,services),'HOLED 저장 · 추가 Shot/Putting 없음 · 선택 선수만 Hole 완료');
+      }catch(e){status(e.message,true);}
+    });
     el('lessonGetGps').addEventListener('click',()=>{
       if(!navigator.geolocation){status('이 브라우저는 GPS를 지원하지 않습니다. Map Touch를 사용하세요.',true);return;}
       const playerId=group.selectedPlayerId,groupId=group.groupId,requestedHole=group.players.find(p=>p.playerId===playerId).round.currentHole;
