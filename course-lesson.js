@@ -76,10 +76,28 @@
         r.holes.forEach(h=>{
           if(h.lessonStatus==='AWAITING_PUTTING'){
             const entry=h.shots.find(s=>s.id===h.puttingReady?.entryShotId);
-            assert(!h.completed&&entry?.result?.type==='ON_GREEN'&&h.puttingReady.status==='AWAITING_INPUT'&&h.puttingReady.firstPuttDistanceM===null,'Putting 준비 상태가 올바르지 않습니다.');
+            assert(!h.completed&&entry?.result?.type==='ON_GREEN'&&h.puttingReady.status==='AWAITING_INPUT'&&
+              (h.puttingReady.firstPuttDistanceM===null||h.puttingReady.firstPuttDistanceM===h.puttsDetail[0]?.distanceM),'Putting 준비 상태가 올바르지 않습니다.');
             validatePosition(h.puttingReady.ballPosition);
           }
-          if(h.lessonStatus==='HOLED')assert(h.completed&&h.shots.some(s=>s.holed===true)&&h.score===h.shots.length+(h.putts||0)+(h.penalties||0),'Hole 완료 상태가 일치하지 않습니다.');
+          if(h.puttingReady?.distanceInput!==undefined){
+            const ready=h.puttingReady;
+            assert(typeof ready.distanceInput==='string'&&ready.distanceInput.length<=24&&ready.distanceM===puttDistance(ready.distanceInput),'퍼팅 거리 입력 상태가 올바르지 않습니다.');
+            assert(ready.distanceM===null||typeof ready.inputId==='string'&&ready.inputId.startsWith('clpd_'),'퍼팅 입력 ID를 확인하세요.');
+          }
+          if(h.puttsDetail.some(putt=>putt.strokeKind==='PUTT')){
+            assert(h.putts===h.puttsDetail.length&&h.shots.some(s=>s.id===h.puttingReady?.entryShotId&&s.result?.type==='ON_GREEN'),'퍼팅 수/ON GREEN 연결이 일치하지 않습니다.');
+            h.puttsDetail.forEach((putt,i)=>{
+              assert(putt.strokeKind==='PUTT'&&putt.physicalStroke===true&&putt.id==='clputt_'+putt.inputId?.slice(5)&&!ids.has(putt.id),'퍼팅 ID 중복 또는 오류입니다.');ids.add(putt.id);
+              assert(putt.playerId===player.playerId&&putt.roundId===r.id&&putt.groupId===group.groupId&&putt.hole===h.hole&&putt.number===i+1,'퍼팅 소유자/순서가 일치하지 않습니다.');
+              assert(Number.isFinite(putt.distanceM)&&putt.distanceM>=0.1&&['HOLED','SHORT','LONG'].includes(putt.result)&&putt.sg===null,'퍼팅 거리/결과/SG를 확인하세요.');
+              assert(putt.result!=='HOLED'||i===h.puttsDetail.length-1&&h.completed,'HOLED 뒤에 퍼팅을 추가할 수 없습니다.');
+            });
+            assert(h.completed===(h.puttsDetail.at(-1).result==='HOLED'),'퍼팅 홀 완료 상태가 일치하지 않습니다.');
+            assert(h.puttingReady.status===(h.completed?'HOLED':'AWAITING_INPUT')&&h.firstPutt===h.puttsDetail[0].distanceM&&
+              h.puttingReady.firstPuttDistanceM===h.firstPutt&&h.score===h.shots.length+h.putts+(h.penalties||0),'퍼팅 준비/Score 상태가 일치하지 않습니다.');
+          }
+          if(h.lessonStatus==='HOLED')assert(h.completed&&(h.shots.some(s=>s.holed===true)||h.puttsDetail.at(-1)?.result==='HOLED')&&h.score===h.shots.length+(h.putts||0)+(h.penalties||0),'Hole 완료 상태가 일치하지 않습니다.');
         });
         if(r.pending?.status==='PENDING_RESULT')assert(r.holes.some(h=>h.shots.some(s=>s.id===r.pending.id&&s.status==='PENDING_RESULT')),'Pending Shot 참조를 찾을 수 없습니다.');
       }else assert(player.profile===null&&player.round===null,'미등록 선수의 Round가 올바르지 않습니다.');
@@ -166,7 +184,7 @@
   function playableHole(player){
     const h=player.round.holes[player.round.currentHole-1];
     assert(!h.completed,'이 선수의 홀은 완료됐습니다. 다음 홀을 선택하세요.');
-    assert(h.lessonStatus!=='AWAITING_PUTTING','ON GREEN 저장 완료 · Putting 입력은 Phase 3C에서 제공합니다.');
+    assert(h.lessonStatus!=='AWAITING_PUTTING','ON GREEN 저장 완료 · 퍼팅 거리와 결과를 입력하세요.');
     return h;
   }
   function setShotClub(group,playerId,club,services){
@@ -308,6 +326,39 @@
     return player?.registered&&h&&!h.completed&&h.lessonStatus!=='AWAITING_PUTTING'&&
       (shot?.status==='PENDING_RESULT'||(shot?.status==='RESULT_CONFIRMED'&&shot.result?.type==='NEXT_SHOT_START'))?shot:null;
   }
+  function puttDistance(raw){
+    const value=Number(raw);
+    const rounded=Math.round(value*10)/10;
+    return raw.trim()!==''&&Number.isFinite(rounded)&&value>=0.1?rounded:null;
+  }
+  function puttingHole(group,playerId,hole){
+    assert(group.selectedPlayerId===playerId,'선택 선수의 퍼팅만 입력할 수 있습니다.');
+    const p=shotPlayer(group,playerId),h=p.round.holes[p.round.currentHole-1];
+    assert(h.hole===hole&&!h.completed&&h.lessonStatus==='AWAITING_PUTTING'&&h.puttingReady?.status==='AWAITING_INPUT','현재 선수/홀의 PUTTING READY 상태를 확인하세요.');
+    assert(h.puttsDetail.every(putt=>putt.strokeKind==='PUTT')&&(h.putts||0)===h.puttsDetail.length,'기존 퍼팅 기록과 충돌하여 저장을 차단합니다.');
+    return {p,h};
+  }
+  function setPuttDistance(group,playerId,hole,raw,services){
+    assert(typeof raw==='string'&&raw.length<=24,'퍼팅 거리 입력을 확인하세요.');
+    const next=clone(validateGroup(group)),{h}=puttingHole(next,playerId,hole),ready=h.puttingReady;
+    if(ready.distanceInput!==raw){ready.distanceInput=raw;ready.distanceM=puttDistance(raw);ready.inputId=ready.distanceM===null?null:id('clpd',services);}
+    next.updatedAt=services.now();return validateGroup(next);
+  }
+  function recordPutt(group,playerId,hole,number,inputId,result,services){
+    const next=clone(validateGroup(group)),{p,h}=puttingHole(next,playerId,hole),ready=h.puttingReady;
+    assert(['HOLED','SHORT','LONG'].includes(result),'퍼팅 결과를 선택하세요.');
+    assert(ready.distanceM>=0.1&&Number.isFinite(ready.distanceM)&&ready.inputId===inputId&&
+      typeof inputId==='string'&&number===h.puttsDetail.length+1,'거리 입력이 없거나 이미 저장된 퍼팅입니다. 다음 실제 거리를 입력하세요.');
+    assert(!p.round.holes.some(hole=>hole.puttsDetail.some(putt=>putt.inputId===inputId)),'이미 저장된 퍼팅 입력입니다.');
+    h.puttsDetail.push({id:'clputt_'+inputId.slice(5),inputId,playerId:p.playerId,roundId:p.roundId,groupId:next.groupId,
+      hole:h.hole,number,distanceM:ready.distanceM,result,strokeKind:'PUTT',physicalStroke:true,
+      source:'SCORER_CONFIRMED',slope:null,break:null,sg:null,at:services.now()});
+    h.putts=h.puttsDetail.length;h.firstPutt=h.puttsDetail[0].distanceM;ready.firstPuttDistanceM=h.firstPutt;
+    ready.distanceInput='';ready.distanceM=null;ready.inputId=null;
+    h.score=h.shots.length+h.putts+(h.penalties||0);p.round.analysisSnapshot=null;
+    if(result==='HOLED'){h.completed=true;h.completedAt=services.now();h.lessonStatus='HOLED';ready.status='HOLED';}
+    next.updatedAt=services.now();return validateGroup(next);
+  }
   const terminalResult=shot=>['ON_GREEN','HOLED'].includes(shot?.result?.type);
   function cancellationContext(group,playerId,shotId,undo){
     assert(group.selectedPlayerId===playerId,'선택 선수의 기록만 취소할 수 있습니다.');
@@ -396,7 +447,7 @@
     next.updatedAt=services.now();return validateGroup(next);
   }
   const api={STORAGE,developmentAllowed,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
-    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot};
+    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot,setPuttDistance,recordPutt};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
   let sharedMap=null,mapController=null,mapError=null;
@@ -427,7 +478,7 @@
       }};
     const host=document.createElement('section');host.className='courseLessonDev';host.id='courseLessonDev';
     host.innerHTML=`<a href="./">← 기존 JGI HOME</a><h1>코스레슨 · 선수 등록</h1>
-      <div class="lessonNotice">개발 테스트 전용 · 가상 선수만 사용하세요. 인증/실서비스가 아닙니다.<br>이름: TEST 선수 A · 전화/WhatsApp: TEST-WA-001 또는 TEST-TEL-001. 실제 개인정보 입력 금지.<br>Group은 이 브라우저에만 임시 저장됩니다. Putting 입력·Penalty·SG 종합 검증·DB/Guest Claim·자동 폐기는 아직 제공하지 않습니다.</div>
+      <div class="lessonNotice">개발 테스트 전용 · 가상 선수만 사용하세요. 인증/실서비스가 아닙니다.<br>이름: TEST 선수 A · 전화/WhatsApp: TEST-WA-001 또는 TEST-TEL-001. 실제 개인정보 입력 금지.<br>Group은 이 브라우저에만 임시 저장됩니다. Penalty·SG 종합 검증·DB/Guest Claim·자동 폐기는 아직 제공하지 않습니다.</div>
       <section class="lessonPanel"><h2>테스트 Group</h2><div class="lessonControls">
         <label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
         <button type="button" id="lessonCreateGroup">새 테스트 Group 만들기</button>
@@ -451,6 +502,15 @@
         </div>
         <p class="lessonMeta">실제로 친 샷을 한 번만 저장하세요. 같은 선수의 다음 시작 위치를 확인하면 직전 Shot의 End로 연결합니다. 과거 누락 위치는 추정하지 않습니다. SG는 아직 미계산입니다.</p>
         <div id="lessonHoleState" class="lessonMeta" role="status"></div>
+        <section id="lessonPutting" class="lessonBench" hidden aria-labelledby="lessonPuttTitle">
+          <h2 id="lessonPuttTitle">PUTTING READY</h2><p id="lessonPuttMeta" class="lessonMeta" aria-live="polite"></p>
+          <div id="lessonPuttInputPanel"><p class="lessonMeta">PIN 기준 거리 선택 · 실제 거리를 직접 입력하거나 보정하세요. 공유 PIN 없이도 입력할 수 있습니다.</p>
+            <button type="button" id="lessonPuttRangeToggle" class="puttRangeToggle">5m+</button>
+            <div id="lessonPuttDistancePicker"></div><p id="lessonPuttScaleLabel" class="lessonMeta"></p>
+            <div id="lessonPuttDistanceRow"></div>
+            <div class="lessonPuttResults"><button type="button" id="lessonPuttHoled" disabled>HOLED</button><button type="button" id="lessonPuttShort" disabled>SHORT</button><button type="button" id="lessonPuttLong" disabled>LONG</button></div>
+          </div><div id="lessonPuttHistory" class="lessonMeta" aria-live="polite"></div>
+        </section>
         <div class="lessonBench"><strong id="lessonCancelTarget"></strong><div class="lessonActions">
           <button type="button" id="lessonUndoShot" disabled>UNDO LAST SHOT</button>
           <button type="button" id="lessonCancelResult" disabled>RESULT CANCEL · 결과만 취소</button>
@@ -486,6 +546,65 @@
     const status=(message,error=false)=>{el('lessonStatus').textContent=message;el('lessonStatus').dataset.error=String(error);};
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
+    // Reuse Player's distance controls and PIN scale without its global Round/draft handlers.
+    const greenPicker=document.getElementById('puttGreen').cloneNode(true);
+    greenPicker.querySelector('#puttBall').remove();greenPicker.querySelector('#puttLine').remove();
+    const distanceRow=document.getElementById('puttDistanceInput').closest('.puttDistanceRow').cloneNode(true);
+    for(const root of [greenPicker,distanceRow]){
+      for(const node of [root,...root.querySelectorAll('[id]')])if(node.id)node.id='lesson'+node.id[0].toUpperCase()+node.id.slice(1);
+      for(const node of root.querySelectorAll('[clip-path]'))node.setAttribute('clip-path','url(#lessonPuttGreenClip)');
+    }
+    greenPicker.setAttribute('aria-label','PIN 기준 퍼팅 거리 선택 · 실제 거리를 입력하세요.');
+    el('lessonPuttDistancePicker').append(greenPicker);el('lessonPuttDistanceRow').append(distanceRow);
+    el('lessonPuttDistanceInput').setAttribute('inputmode','decimal');
+    let puttRangeLong=false;
+    function renderPutting(){
+      const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),h=p?.round?.holes[p.round.currentHole-1],ready=h?.puttingReady;
+      el('lessonPutting').hidden=!ready;if(!ready)return;
+      const number=h.puttsDetail.length+1,ordinal=number===1?'1st':number===2?'2nd':number===3?'3rd':number+'th';
+      el('lessonPuttTitle').textContent=p.profile.name+' · '+h.hole+'번 홀 · '+(h.completed?'HOLE OUT':ordinal+' PUTT');
+      el('lessonPuttMeta').textContent=(h.completed?'HOLE OUT':'PUTTING READY')+' · Putts '+h.puttsDetail.length+' · Score '+(h.shots.length+h.putts+(h.penalties||0))+' · 마지막 결과 '+(h.puttsDetail.at(-1)?.result||'없음')+' · SG 미계산';
+      el('lessonPuttInputPanel').hidden=h.completed;
+      el('lessonPuttDistanceInput').value=ready.distanceInput||'';
+      const rings=puttRangeLong?[5,10,15,20]:[0.5,1,2,3,5],max=puttRangeLong?20:5;
+      el('lessonPuttRings').innerHTML=rings.map(m=>'<circle cx="180" cy="180" r="'+(140*m/max)+'" fill="none" stroke="#8cc6ad" stroke-dasharray="4 5"/><text x="180" y="'+(195-140*m/max)+'" text-anchor="middle">'+m+'m</text>').join('');
+      el('lessonPuttScaleLabel').textContent='PIN 기준 · '+rings.join('m / ')+'m';
+      el('lessonPuttRangeToggle').textContent=puttRangeLong?'0–5m':'5m+';
+      el('lessonPuttHistory').replaceChildren();
+      h.puttsDetail.forEach(putt=>{const row=document.createElement('div');row.textContent=putt.number+' PUTT · '+putt.distanceM.toFixed(1)+'m · '+putt.result+' · SG 미계산';el('lessonPuttHistory').append(row);});
+      for(const [button,result] of [['lessonPuttHoled','HOLED'],['lessonPuttShort','SHORT'],['lessonPuttLong','LONG']]){
+        el(button).disabled=h.completed||ready.distanceM==null;
+        const token=ready.inputId,playerId=p.playerId,hole=h.hole,groupId=group.groupId;
+        el(button).onclick=()=>{
+          try{assert(group?.groupId===groupId,'Group이 변경됐습니다. 다시 입력하세요.');
+            commit(recordPutt(currentInput(),playerId,hole,number,token,result,services),result==='HOLED'?'선택 선수 HOLE OUT · 다른 선수는 계속 입력할 수 있습니다.':'퍼팅 1회 저장 · 다음 실제 거리를 입력하세요.');
+          }catch(e){status('퍼팅 저장 차단: '+e.message,true);}
+        };
+      }
+    }
+    function savePuttDistance(raw){
+      try{
+        const p=group.players.find(p=>p.playerId===group.selectedPlayerId);
+        const next=setPuttDistance(currentInput(),p.playerId,p.round.currentHole,raw,services);
+        saveGroup(localStorage,next);group=next;renderPutting();status('퍼팅 거리 입력 저장 · 타수는 증가하지 않습니다.');
+      }catch(e){for(const key of ['lessonPuttHoled','lessonPuttShort','lessonPuttLong'])el(key).disabled=true;status('거리 저장 실패: '+e.message,true);}
+    }
+    el('lessonPuttDistanceInput').addEventListener('input',()=>savePuttDistance(el('lessonPuttDistanceInput').value));
+    el('lessonPuttDistanceInput').addEventListener('change',()=>{
+      const value=puttDistance(el('lessonPuttDistanceInput').value);
+      savePuttDistance(value===null?'':value.toFixed(1));
+    });
+    for(const [key,delta] of [['lessonPuttMinus',-0.1],['lessonPuttPlus',0.1]])el(key).onclick=()=>{
+      const value=Number(el('lessonPuttDistanceInput').value)||0;
+      savePuttDistance(Math.max(0.1,Math.round((value+delta)*10)/10).toFixed(1));
+    };
+    el('lessonPuttRangeToggle').onclick=()=>{puttRangeLong=!puttRangeLong;renderPutting();};
+    greenPicker.addEventListener('click',event=>{
+      const ctm=greenPicker.getScreenCTM();if(!ctm)return;
+      const point=greenPicker.createSVGPoint();point.x=event.clientX;point.y=event.clientY;
+      const q=point.matrixTransform(ctm.inverse()),radius=Math.hypot(q.x-180,q.y-180);
+      if(radius<=140)savePuttDistance(Math.max(0.1,Math.round(radius*(puttRangeLong?20:5)/140*10)/10).toFixed(1));
+    });
     for(let i=1;i<=18;i++){const option=document.createElement('option');option.value=String(i);option.textContent=i+'번 홀';el('lessonHole').append(option);}
     services.clubs.forEach(club=>{const option=document.createElement('option');option.value=club;option.textContent=club;el('lessonShotClub').append(option);});
     mapController=window.JGICourseLessonMapController(host,()=>group,point=>{
@@ -494,7 +613,7 @@
       geometry:(r,hole)=>greenGeometry(r,hole,services),contains:pointInGreen,
       onSave:(context,point,pin)=>{
         assert(group?.groupId===context.groupId&&group.selectedPlayerId===context.playerId&&group.players.find(p=>p.playerId===context.playerId)?.round?.currentHole===context.hole,'선수/Group/홀이 변경됐습니다. Popup을 다시 여세요.');
-        commit(onGreen(currentInput(),context.playerId,context.shotId,point,pin,services),'ON GREEN 저장 · 추가 Shot 없음 · Putting 입력은 Phase 3C에서 제공합니다.');
+        commit(onGreen(currentInput(),context.playerId,context.shotId,point,pin,services),'ON GREEN 저장 · 추가 Shot 없음 · 1st PUTT 실제 거리를 입력하세요.');
       }
     });
     if(sharedMap)mapController.attach(sharedMap);if(mapError)mapController.unavailable(mapError);
@@ -508,6 +627,7 @@
       }catch(e){el('lessonBenchmark').textContent=e.message;}
     }
     function render(){
+      renderPutting();
       el('lessonEditor').hidden=!group;el('lessonPlayers').replaceChildren();
       el('lessonPendingResult').hidden=true;el('lessonOnGreen').disabled=true;el('lessonHoled').disabled=true;
       el('lessonUndoShot').disabled=true;el('lessonCancelResult').disabled=true;
@@ -521,7 +641,8 @@
         const name=document.createElement('strong');name.textContent=player.profile?.name||'선수 '+(i+1)+' · 미등록';
         const details=document.createElement('small');
         const shots=player.round?.holes.flatMap(h=>h.shots)||[];
-        details.textContent=player.registered?String.fromCharCode(65+i)+' · '+player.round.sgBenchmarkLabel+' · '+player.profile.tee+' · Shot '+shots.length+' / Pending '+shots.filter(s=>s.status==='PENDING_RESULT').length:'선수 정보를 입력하세요.';
+        const current=player.round?.holes[player.round.currentHole-1];
+        details.textContent=player.registered?String.fromCharCode(65+i)+' · '+player.round.sgBenchmarkLabel+' · '+player.profile.tee+' · Shot '+shots.length+' / Pending '+shots.filter(s=>s.status==='PENDING_RESULT').length+' · '+current.hole+'번 홀 · Putts '+current.putts+(current.completed?' · HOLE OUT':current.puttingReady?' · 다음 PUTT '+(current.puttsDetail.length+1):''):'선수 정보를 입력하세요.';
         button.append(name,details);button.addEventListener('click',()=>{
           try{const next=selectPlayer(updateDraft(group,group.selectedPlayerId,readDraft()),player.playerId);commit(next,'선수 전환 완료 · 입력 상태 유지');}catch(e){status(e.message,true);}
         });el('lessonPlayers').append(button);
@@ -546,7 +667,7 @@
           el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
           el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 선택된 Shot '+pending.shotSequence+' ('+pending.club+') · 결과 선택';
         }
-        el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · 다음 홀은 직접 선택하세요.':h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · Putting 준비 상태 저장됨 · 거리/퍼팅 입력은 Phase 3C에서 제공합니다.':'';
+        el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · Putts '+h.putts+' · 다음 홀은 직접 선택하세요.':h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · PUTTING READY · 실제 퍼팅 거리와 결과를 입력하세요.':'';
         const last=h.shots.at(-1),target=letter+' · '+p.profile.name+' · '+h.hole+'번 홀';
         el('lessonCancelTarget').textContent=target+' · 마지막 Shot '+(last?.shotSequence||'없음')+' · 선택 Shot '+(pending?.shotSequence||'없음');
         el('lessonCancelInfo').textContent='샷 취소: 마지막 Shot만 제거 · 결과 취소: 선택 Shot 유지 · 공유 PIN 보존';

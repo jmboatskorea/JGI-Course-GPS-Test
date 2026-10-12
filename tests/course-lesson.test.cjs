@@ -192,6 +192,108 @@ function physical(group,playerId,point,engine){
 }
 const greenPoint=()=>({...mapPoint(),lat:-6.4555,lng:106.8825});
 const pinPoint=()=>({...greenPoint(),lat:-6.4556,source:'SCORER_MANUAL_MAP'});
+function puttingFixture(count=2){
+  const engine=services();let group=registeredGroup(count,engine);
+  for(const player of group.players){
+    group=lesson.selectPlayer(group,player.playerId);
+    for(let i=0;i<3;i++)group=physical(group,player.playerId,mapPoint(),engine);
+    group=lesson.onGreen(group,player.playerId,group.players.find(p=>p.playerId===player.playerId).round.pending.id,greenPoint(),null,engine);
+  }
+  return {engine,group:lesson.selectPlayer(group,group.players[0].playerId)};
+}
+function putt(group,pid,distance,result,engine){
+  group=lesson.selectPlayer(group,pid);
+  const p=group.players.find(p=>p.playerId===pid),hole=p.round.currentHole;
+  group=lesson.setPuttDistance(group,pid,hole,String(distance),engine);
+  const h=group.players.find(p=>p.playerId===pid).round.holes[hole-1];
+  return lesson.recordPutt(group,pid,hole,h.puttsDetail.length+1,h.puttingReady.inputId,result,engine);
+}
+for(const sequence of [[0,0,1,1],[0,1,0,1],[1,1,0,0],[0,1,2,3,3,2,1,0]])
+test('Phase 3C 자유 순서 '+sequence.join(' → ')+': 선수 독립·HOLE OUT·Score·Raw Data·복원',()=>{
+  const {engine,...fixture}=puttingFixture(Math.max(...sequence)+1);let group=fixture.group;
+  const initial=structuredClone(group),store=memory();
+  for(const index of sequence){
+    const previous=structuredClone(group);
+    const p=group.players[index],count=p.round.holes[0].putts;
+    group=putt(group,p.playerId,count===0?8:1,count===0?'SHORT':'HOLED',engine);
+    assert.equal(group.selectedPlayerId,p.playerId);
+    for(const [j,other] of group.players.entries())if(j!==index)assert.deepEqual(other,previous.players[j]);
+    lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  }
+  for(const [index,p] of group.players.entries()){
+    const h=p.round.holes[0];assert.equal(h.putts,2);assert.equal(h.score,5);assert.equal(h.completed,true);
+    assert.deepEqual(h.shots,initial.players[index].round.holes[0].shots);assert.deepEqual(p.ballPosition,initial.players[index].ballPosition);
+    assert.deepEqual(h.puttsDetail.map(putt=>[putt.number,putt.distanceM,putt.result]),[[1,8,'SHORT'],[2,1,'HOLED']]);
+    assert.ok(h.puttsDetail.every(putt=>putt.playerId===p.playerId&&putt.hole===1&&putt.sg===null));
+  }
+  assert.equal(group.holePins,undefined);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+});
+for(const count of [1,2,3])test('Phase 3C '+count+'퍼팅 Score, LONG 대기 및 거리만 입력 시 타수 불변',()=>{
+  const {engine,...fixture}=puttingFixture(1);let group=fixture.group;const pid=group.players[0].playerId;
+  for(let i=1;i<=count;i++){
+    group=lesson.setPuttDistance(group,pid,1,String(i===1?8:1),engine);
+    const h=group.players[0].round.holes[0];assert.equal(h.putts,i-1);assert.equal(h.shots.length,3);
+    group=lesson.recordPutt(group,pid,1,i,h.puttingReady.inputId,i===count?'HOLED':'LONG',engine);
+    assert.equal(group.players[0].round.holes[0].putts,i);
+    if(i<count)assert.equal(group.players[0].round.holes[0].puttingReady.distanceM,null);
+  }
+  const h=group.players[0].round.holes[0];assert.equal(h.score,3+count);assert.equal(h.completed,true);
+  assert.throws(()=>lesson.setPuttDistance(group,pid,1,'1',engine),/PUTTING READY/);
+});
+test('Phase 3C 거리 Draft는 선수/홀별 독립 저장, PIN 거리로 덮어쓰지 않음',()=>{
+  const {engine,...fixture}=puttingFixture();let group=fixture.group;const [a,b]=group.players;
+  group=lesson.setPuttDistance(group,a.playerId,1,'8.25',engine);
+  group=lesson.selectPlayer(group,b.playerId);group=lesson.setPuttDistance(group,b.playerId,1,'2.5',engine);
+  group=lesson.selectPlayer(group,a.playerId);
+  assert.equal(group.players[0].round.holes[0].puttingReady.distanceInput,'8.25');
+  assert.equal(group.players[0].round.holes[0].puttingReady.distanceM,8.3);
+  assert.equal(group.players[1].round.holes[0].puttingReady.distanceM,2.5);
+  group=lesson.chooseHole(group,a.playerId,2);assert.equal(group.players[0].round.currentHole,2);
+  assert.throws(()=>lesson.setPuttDistance(group,a.playerId,1,'1',engine),/PUTTING READY/);
+  group=lesson.chooseHole(group,a.playerId,1);
+  const store=memory();lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  assert.equal(group.players[0].round.holes[0].putts,0);
+});
+test('Phase 3C 공유 PIN/기존 ON GREEN 복원 유지 및 기존 퍼팅 충돌 거부',()=>{
+  const {engine,...fixture}=puttingFixture(1);let group=fixture.group;const pid=group.players[0].playerId;
+  group.holePins={'1':{...pinPoint(),hole:1,groupId:group.groupId,isSurveyed:false}};
+  const pins=structuredClone(group.holePins),store=memory();
+  lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  assert.equal(group.players[0].round.holes[0].puttingReady.distanceInput,undefined);
+  group=lesson.setPuttDistance(group,pid,1,'12',engine);
+  assert.equal(group.players[0].round.holes[0].puttingReady.distanceM,12);assert.deepEqual(group.holePins,pins);
+  group=putt(group,pid,12,'HOLED',engine);assert.deepEqual(group.holePins,pins);
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  const conflict=puttingFixture(1).group;conflict.players[0].round.holes[0].putts=1;
+  assert.throws(()=>lesson.setPuttDistance(conflict,conflict.players[0].playerId,1,'1',engine),/기존 퍼팅 기록/);
+});
+test('Phase 3C 입력 없음/오류/중복 터치/늦은 이벤트 및 후속 취소 차단',()=>{
+  const {engine,...fixture}=puttingFixture();let group=fixture.group;const [a,b]=group.players;
+  for(const raw of ['','0','-1','NaN','Infinity','1e308']){
+    group=lesson.setPuttDistance(group,a.playerId,1,raw,engine);
+    assert.equal(group.players[0].round.holes[0].puttingReady.distanceM,null);
+    assert.throws(()=>lesson.recordPutt(group,a.playerId,1,1,null,'SHORT',engine),/거리 입력/);
+  }
+  group=lesson.setPuttDistance(group,a.playerId,1,'8',engine);
+  const token=group.players[0].round.holes[0].puttingReady.inputId,before=structuredClone(group);
+  assert.throws(()=>lesson.recordPutt(group,a.playerId,1,1,token,'TAP_IN',engine));assert.deepEqual(group,before);
+  const switched=lesson.selectPlayer(group,b.playerId);
+  assert.throws(()=>lesson.recordPutt(switched,a.playerId,1,1,token,'SHORT',engine),/선택 선수/);
+  group=lesson.recordPutt(group,a.playerId,1,1,token,'SHORT',engine);
+  assert.throws(()=>lesson.recordPutt(group,a.playerId,1,1,token,'SHORT',engine),/이미 저장/);
+  group=lesson.setPuttDistance(group,a.playerId,1,'1',engine);
+  assert.throws(()=>lesson.recordPutt(group,a.playerId,1,2,token,'HOLED',engine),/이미 저장/);
+  const h=group.players[0].round.holes[0],shotId=h.shots.at(-1).id,unchanged=structuredClone(group);
+  assert.throws(()=>lesson.undoLastShot(group,a.playerId,shotId,engine),/후속 기록/);
+  assert.throws(()=>lesson.cancelResult(group,a.playerId,shotId,engine),/후속 기록/);
+  assert.deepEqual(group,unchanged);
+  group=lesson.recordPutt(group,a.playerId,1,2,h.puttingReady.inputId,'HOLED',engine);
+  assert.throws(()=>lesson.recordPutt(group,a.playerId,1,3,h.puttingReady.inputId,'HOLED',engine),/PUTTING READY/);
+  for(const mutate of [h=>h.putts++,h=>h.score++,h=>h.puttsDetail[0].playerId=b.playerId,h=>h.puttsDetail[1].id=h.puttsDetail[0].id,h=>h.puttsDetail[0].sg=0]){
+    const corrupt=structuredClone(group);mutate(corrupt.players[0].round.holes[0]);assert.throws(()=>lesson.validateGroup(corrupt));
+  }
+});
 function undoFixture(legacy=false){
   const engine=services();engine.clubs.push('3W','58°');engine.now=(()=>{let t=1234;return ()=>++t;})();
   let group=registeredGroup(2,engine);const [a,b]=group.players;
@@ -453,8 +555,8 @@ test('Phase 3B: ON GREEN은 선수 A만 변경하고 End/Putting 준비만 저�
   assert.equal(s.endLie,'GREEN');assert.equal(s.endState,'ON_GREEN');assert.equal(s.holed,false);assert.equal(s.sg,null);
   assert.equal(h.puttingReady.firstPuttDistanceM,null);assert.equal(h.puttingState,null);assert.equal(h.lessonStatus,'AWAITING_PUTTING');
   assert.equal(p.round.pending,null);assert.deepEqual(p.ballPosition,s.end);assert.equal(group.holePins,undefined);
-  assert.throws(()=>lesson.recordShot(group,a.playerId,engine),/Phase 3C/);
-  assert.throws(()=>lesson.stagePosition(group,a.playerId,mapPoint()),/Phase 3C/);
+  assert.throws(()=>lesson.recordShot(group,a.playerId,engine),/퍼팅 거리/);
+  assert.throws(()=>lesson.stagePosition(group,a.playerId,mapPoint()),/퍼팅 거리/);
   assert.throws(()=>lesson.onGreen(group,a.playerId,shotId,greenPoint(),null,engine));
   assert.equal(before.players[0].round.holes[0].shots[0].status,'PENDING_RESULT');
 });
