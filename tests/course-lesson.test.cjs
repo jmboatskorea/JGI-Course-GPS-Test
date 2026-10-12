@@ -208,6 +208,117 @@ function putt(group,pid,distance,result,engine){
   const h=group.players.find(p=>p.playerId===pid).round.holes[hole-1];
   return lesson.recordPutt(group,pid,hole,h.puttsDetail.length+1,h.puttingReady.inputId,result,engine);
 }
+for(const order of [[0],[0,1],[1,0],[1,2,0],[3,1,0,2]])test('AUTO NEXT HOLE 완료 순서 '+order.join(' → ')+': 마지막 등록 선수만 이동, 기록/선택/Tee 보존',()=>{
+  const {engine,...fixture}=puttingFixture(order.length);let group=fixture.group;
+  const store=memory(),original=structuredClone(group),writes=[];
+  const recordingStore={...store,setItem:(key,value)=>{writes.push(JSON.parse(value));store.setItem(key,value);}};
+  for(const [i,index] of order.entries()){
+    const pid=group.players[index].playerId;
+    const completed=putt(group,pid,1,'HOLED',engine),before=structuredClone(completed);
+    const result=lesson.saveHoleCompletion(recordingStore,completed,1,engine);group=result.group;
+    assert.equal(group.selectedPlayerId,pid);assert.deepEqual(completed,before);
+    assert.equal(group.players[index].round.holes[0].score,4);
+    if(i<order.length-1){
+      assert.equal(result.message,null);assert.ok(group.players.every(p=>p.round.currentHole===1));
+      for(const p of group.players)if(!p.round.holes[0].completed)assert.equal(p.round.holes[0].puttingReady.status,'AWAITING_INPUT');
+    }else{
+      assert.equal(result.message,'HOLE 1 COMPLETE → HOLE 2');
+      assert.equal(writes.at(-2).players[index].round.currentHole,1);
+      assert.equal(writes.at(-2).players[index].round.holes[0].puttsDetail.at(-1).result,'HOLED');
+      assert.ok(writes.at(-2).players.every(p=>p.round.holes[0].completed));
+      for(const [j,p] of group.players.entries()){
+        assert.equal(p.round.currentHole,2);assert.deepEqual(p.round.holes,before.players[j].round.holes);
+        assert.deepEqual(p.profile,original.players[j].profile);assert.equal(p.round.tee,original.players[j].round.tee);
+        assert.equal(p.ballPosition,null);assert.equal(p.shotDraft.position,null);assert.equal(p.shotDraft.confirmed,false);
+        assert.equal(p.shotDraft.hole,2);assert.equal(p.round.pending,null);
+      }
+      assert.deepEqual(lesson.advanceCompletedHole(group,1,engine).group,group);
+      assert.throws(()=>lesson.recordPutt(group,pid,1,1,before.players[index].round.holes[0].puttsDetail[0].inputId,'HOLED',engine),/PUTTING READY/);
+    }
+    assert.deepEqual(lesson.restoreGroup(store),group);
+  }
+  const review=lesson.chooseHole(group,group.selectedPlayerId,1);
+  assert.equal(review.players.find(p=>p.playerId===group.selectedPlayerId).round.holes[0].score,4);
+  const next=physical(group,group.selectedPlayerId,mapPoint(),engine),player=next.players.find(p=>p.playerId===next.selectedPlayerId);
+  assert.equal(player.round.holes[1].shots[0].shotSequence,1);assert.equal(player.round.holes[1].shots[0].previousShotId,undefined);
+  assert.deepEqual(player.round.holes[0],group.players.find(p=>p.playerId===next.selectedPlayerId).round.holes[0]);
+});
+test('AUTO NEXT HOLE Physical HOLED, 미등록 제외, 공유 PIN/다른 선수 데이터 보존',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(1,engine);
+  const empty=lesson.createGroup(1,engine).players[0]; // Use separate IDs for the unregistered slot.
+  empty.playerId='clp_TEST_UNREGISTERED';empty.roundId='clr_TEST_UNREGISTERED';group.players.push(empty);
+  const pid=group.players[0].playerId;
+  group.holePins={'1':{...pinPoint(),hole:1,groupId:group.groupId,isSurveyed:false}};
+  group=physical(group,pid,mapPoint(),engine);const id=group.players[0].round.pending.id;
+  const completed=lesson.holed(group,pid,id,engine),before=structuredClone(completed);
+  group=lesson.saveHoleCompletion(store,completed,1,engine).group;
+  assert.equal(group.players[0].round.currentHole,2);assert.deepEqual(group.players[1],before.players[1]);
+  assert.deepEqual(group.holePins,before.holePins);assert.deepEqual(group.players[0].round.holes[0],before.players[0].round.holes[0]);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+});
+test('AUTO NEXT HOLE 저장 순서/실패: 완료 기록을 먼저 보존하고 이동 실패 시 현재 홀 유지',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,mapPoint(),engine);const completed=lesson.holed(group,pid,group.players[0].round.pending.id,engine);
+  let writes=0;
+  const result=lesson.saveHoleCompletion({...store,setItem:(k,v)=>{if(++writes===2)throw new Error('TEST_QUOTA');store.setItem(k,v);}},completed,1,engine);
+  assert.equal(result.error,true);assert.match(result.message,/완료 저장됨.*TEST_QUOTA/);
+  assert.deepEqual(result.group,completed);assert.deepEqual(lesson.restoreGroup(store),completed);
+  assert.throws(()=>lesson.saveHoleCompletion({setItem:()=>{throw new Error('TEST_FIRST_SAVE');}},completed,1,engine),/TEST_FIRST_SAVE/);
+});
+test('AUTO NEXT HOLE 지난 홀 정정/다른 Current Hole: 완료 조건을 다시 만족해도 이후 기록은 초기화하지 않음',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);
+  const [a,b]=group.players;
+  for(const pid of [a.playerId,b.playerId]){
+    group=lesson.selectPlayer(group,pid);group=physical(group,pid,mapPoint(),engine);
+    group=lesson.saveHoleCompletion(store,lesson.holed(group,pid,group.players.find(p=>p.playerId===pid).round.pending.id,engine),1,engine).group;
+  }
+  group=physical(group,b.playerId,mapPoint(),engine);
+  group=lesson.selectPlayer(group,a.playerId);group=lesson.chooseHole(group,a.playerId,1);
+  const id=group.players[0].round.holes[0].shots[0].id;
+  group=lesson.cancelResult(group,a.playerId,id,engine);
+  assert.equal(group.players[0].round.holes[0].completed,false);assert.equal(group.players[1].round.currentHole,2);
+  assert.equal(lesson.advanceCompletedHole(group,1,engine).message,null);
+  group=lesson.chooseHole(group,b.playerId,1);
+  const completed=lesson.holed(group,a.playerId,id,engine),before=structuredClone(completed);
+  const result=lesson.saveHoleCompletion(store,completed,1,engine);
+  assert.match(result.message,/이후 홀 기록/);assert.deepEqual(result.group,before);
+  assert.equal(result.group.players[1].round.holes[1].shots.length,1);
+});
+test('AUTO NEXT HOLE 지난 홀 완료 정정이 미해결이면 다음 홀 전원 HOLED도 자동 진행 차단',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  for(const pid of [a.playerId,b.playerId]){
+    group=lesson.selectPlayer(group,pid);group=physical(group,pid,mapPoint(),engine);
+    group=lesson.saveHoleCompletion(store,lesson.holed(group,pid,group.players.find(p=>p.playerId===pid).round.pending.id,engine),1,engine).group;
+  }
+  group=lesson.selectPlayer(group,a.playerId);group=lesson.chooseHole(group,a.playerId,1);
+  group=lesson.cancelResult(group,a.playerId,group.players[0].round.holes[0].shots[0].id,engine);
+  group=lesson.chooseHole(group,a.playerId,2);
+  for(const pid of [a.playerId,b.playerId]){
+    group=lesson.selectPlayer(group,pid);group=physical(group,pid,mapPoint(),engine);
+    group=lesson.holed(group,pid,group.players.find(p=>p.playerId===pid).round.pending.id,engine);
+  }
+  const before=structuredClone(group),result=lesson.saveHoleCompletion(store,group,2,engine);
+  assert.match(result.message,/지난 홀의 완료 상태/);assert.deepEqual(result.group,before);
+  assert.ok(result.group.players.every(p=>p.round.currentHole===2));assert.equal(result.group.players[0].round.holes[0].completed,false);
+});
+for(const putting of [false,true])test('HOLE 18 '+(putting?'Putting':'Physical Shot')+' 전원 완료 → ROUND COMPLETE, 이동/기록 변경 없음',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);
+  for(const player of group.players)group=lesson.chooseHole(group,player.playerId,18);
+  for(const player of group.players){
+    group=lesson.selectPlayer(group,player.playerId);group=lesson.chooseHole(group,player.playerId,18);
+    group=physical(group,player.playerId,mapPoint(),engine);
+    const id=group.players.find(p=>p.playerId===player.playerId).round.pending.id;
+    if(putting){group=lesson.onGreen(group,player.playerId,id,greenPoint(),null,engine);group=putt(group,player.playerId,1,'HOLED',engine);}
+    else group=lesson.holed(group,player.playerId,id,engine);
+    const before=structuredClone(group),result=lesson.saveHoleCompletion(store,group,18,engine);group=result.group;
+    assert.ok(group.players.every(p=>p.round.currentHole===18));
+    for(const [i,p] of group.players.entries())assert.deepEqual(p.round.holes,before.players[i].round.holes);
+    if(player.playerId===group.players[1].playerId){
+      assert.equal(result.message,'ROUND COMPLETE');assert.ok(group.players.every(p=>p.round.lessonRoundStatus==='COMPLETED'));
+    }
+  }
+  assert.deepEqual(lesson.restoreGroup(store),group);
+});
 for(const sequence of [[0,0,1,1],[0,1,0,1],[1,1,0,0],[0,1,2,3,3,2,1,0]])
 test('Phase 3C 자유 순서 '+sequence.join(' → ')+': 선수 독립·HOLE OUT·Score·Raw Data·복원',()=>{
   const {engine,...fixture}=puttingFixture(Math.max(...sequence)+1);let group=fixture.group;
