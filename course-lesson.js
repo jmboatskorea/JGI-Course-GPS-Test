@@ -8,6 +8,9 @@
   const id=(prefix,services)=>prefix+'_'+services.uuid();
   const testName=value=>typeof value==='string'&&value.length<=60&&(value===''||/^TEST\s+\S.*$/.test(value));
   const testContact=value=>typeof value==='string'&&(value===''||/^TEST-(?:TEL|WA)-\d{3}$/.test(value));
+  // Pasted text / iPad smart punctuation can contain visually identical dashes.
+  const normalizeContactDraft=draft=>({...draft,contact:typeof draft?.contact==='string'
+    ?draft.contact.trim().replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g,'-'):draft?.contact});
   function developmentAllowed(location){
     return ['localhost','127.0.0.1','[::1]',PREVIEW_HOST].includes(location.hostname)&&
       new URLSearchParams(location.search).get('courseLessonDev')==='1';
@@ -20,6 +23,7 @@
     assert(typeof draft.handicap==='string'&&draft.handicap.length<=8,'Handicap 입력을 확인하세요.');
   }
   function profileFromDraft(draft){
+    draft=normalizeContactDraft(draft);
     validateDraft(draft);
     assert(draft.name.trim()!=='','가상 선수 이름을 입력하세요.');
     assert(draft.handicap.trim()!=='','Handicap을 입력하세요.');
@@ -66,6 +70,7 @@
       course:'Jagorawi Golf & Country Club',nine:'Old Course',selectedPlayerId:players[0].playerId,players});
   }
   function updateDraft(group,playerId,draft){
+    draft=normalizeContactDraft(draft);
     validateGroup(group);validateDraft(draft);
     const next=clone(group),player=next.players.find(p=>p.playerId===playerId);
     assert(player,'선수를 찾을 수 없습니다.');player.draft=clone(draft);return next;
@@ -125,7 +130,7 @@
       <section class="lessonPanel" id="lessonEditor" hidden><h2 id="lessonPlayerTitle">선수 정보</h2>
         <form id="lessonPlayerForm"><div class="lessonFields">
           <label>가상 선수 이름<input id="lessonName" maxlength="60" placeholder="TEST 선수 A" autocomplete="off" required></label>
-          <label>전화번호 / WhatsApp (가상)<input id="lessonContact" maxlength="12" placeholder="TEST-WA-001" autocomplete="off"></label>
+          <label>전화번호 / WhatsApp (가상)<input id="lessonContact" maxlength="32" placeholder="TEST-WA-001" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label>
           <label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label>
           <label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label>
           <label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label>

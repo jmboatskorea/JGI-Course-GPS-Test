@@ -71,6 +71,33 @@ test('저장 실패를 성공으로 처리하지 않음',()=>{
   assert.throws(()=>lesson.saveGroup({setItem:()=>{throw new Error('quota');},getItem:()=>null},group),/quota/);
   assert.throws(()=>lesson.saveGroup({setItem:()=>{},getItem:()=>null},group),/저장 확인/);
 });
+test('Male/HCP20/Blue: WA/TEL 입력·정규화·등록·전환·복원 후 ID와 인원 유지',()=>{
+  for(const contact of ['TEST-WA-001','TEST-TEL-001',' TEST-WA-001 ','\u00a0TEST-TEL-001\u00a0','TEST\u2011WA\u2011001','TEST\u2013TEL\u2013001','TEST\uFF0DWA\uFF0D001']){
+    const engine=services(),store=memory();let group=lesson.createGroup(2,engine);
+    const [a,b]=group.players,ids=group.players.map(p=>[p.playerId,p.roundId]);
+    group=lesson.registerPlayer(group,a.playerId,{...draft('TEST 선수 A','MALE','20','Blue'),contact},engine);
+    const canonical=contact.includes('TEL')?'TEST-TEL-001':'TEST-WA-001';
+    assert.equal(group.players[0].draft.contact,canonical);assert.equal(group.players[0].profile.contact,canonical);
+    assert.equal(group.players[0].round.playerSex,'MALE');assert.equal(group.players[0].round.playerHandicap,20);assert.equal(group.players[0].round.tee,'Blue');
+    group=lesson.selectPlayer(group,b.playerId);
+    group=lesson.registerPlayer(group,b.playerId,{...draft('TEST 선수 B'),contact:'TEST-TEL-002'},engine);
+    group=lesson.selectPlayer(group,a.playerId);lesson.saveGroup(store,group);
+    const restored=lesson.restoreGroup(store);assert.deepEqual(restored,group);
+    assert.equal(restored.players.filter(p=>p.registered).length,2);
+    assert.deepEqual(restored.players.map(p=>[p.playerId,p.roundId]),ids);
+    assert.equal(restored.players[0].draft.contact,canonical);
+  }
+});
+test('미등록 Draft 전환/저장에도 연락처 정규화를 적용하며 허용 형식은 유지',()=>{
+  const engine=services(),store=memory();let group=lesson.createGroup(2,engine);
+  const [a,b]=group.players;
+  group=lesson.updateDraft(group,a.playerId,{...draft(),contact:' TEST\u2011TEL\u2011001 '});
+  group=lesson.selectPlayer(group,b.playerId);lesson.saveGroup(store,group);
+  group=lesson.selectPlayer(lesson.restoreGroup(store),a.playerId);
+  assert.equal(group.players[0].draft.contact,'TEST-TEL-001');
+  for(const contact of ['TEST-WA-00','TEST-WA-0001','TEST WA 001','TEST-WA-001x','+82-10-1234-5678'])
+    assert.throws(()=>lesson.registerPlayer(group,a.playerId,{...draft(),contact},engine));
+});
 test('개발 진입점은 명시적 query + localhost/지정 branch Preview에서만 허용',()=>{
   const check=(hostname,search)=>lesson.developmentAllowed({hostname,search});
   assert.equal(check('localhost','?courseLessonDev=1'),true);
