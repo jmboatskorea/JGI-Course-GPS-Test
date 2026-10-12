@@ -15,14 +15,17 @@
       const h=player.round.holes[hole-1],draft=player.shotDraft,last=h?.shots.at(-1);
       return draft?.hole===hole&&draft.confirmed?draft.position:h?.puttingReady?.ballPosition||last?.end||last?.start||null;
     }
+    const diagnostic=window.JGI_COURSE_LESSON_DIAGNOSTICS;
+    function diagnose(reason){diagnostic?.state(mode,reason,!!map);}
     function render(){
+      diagnose();
       const revision=++renderRevision;
       const group=getGroup(),selected=group?.players.find(p=>p.playerId===group.selectedPlayerId),r=selected?.round;
       if(green){
         if(group?.groupId===green.context.groupId&&selected?.playerId===green.context.playerId&&r?.currentHole===green.context.hole)renderGreen();
         else closeGreen();return;
       }
-      svg.toggleAttribute('hidden',mode!=='JGI');el('lessonSatelliteMap').hidden=mode!=='SAT';el('lessonSatellite').disabled=!available;
+      svg.toggleAttribute('hidden',mode!=='JGI');el('lessonSatelliteMap').hidden=mode!=='SAT';el('lessonSatellite').disabled=!available;diagnose();
       el('lessonSatellite').setAttribute('title',available?'Google Satellite':mapFailure||'Google Maps 초기화 완료를 기다리고 있습니다.');
       svg.replaceChildren();el('lessonMarkerLegend').textContent='';projector=null;
       markers.forEach(marker=>marker.setMap(null));candidateMarker?.setMap(null);
@@ -35,6 +38,7 @@
       if(h)projector=window.courseViewProjector(h,r,positions);
       if(!projector||!projector.shapes.some(shape=>shape.path.length>=3)){
         projector=null;mode='JGI';svg.toggleAttribute('hidden',false);el('lessonSatelliteMap').hidden=true;el('lessonSatellite').disabled=true;
+        diagnostic?.record('missing.GI');diagnose('MISSING_GI');
         el('lessonMapStatus').textContent=hole+'번 홀 GI 지도 데이터가 없습니다.';return;
       }
       svg.setAttribute('data-hole-id',h.i??h.id??'');
@@ -83,7 +87,7 @@
         const instance=map;
         requestAnimationFrame(()=>{
           if(revision!==renderRevision||map!==instance||!available||mode!=='SAT'||green)return;
-          google.maps.event.trigger(map,'resize');map.setMapTypeId?.('satellite');map.fitBounds(bounds,30);
+          google.maps.event.trigger(map,'resize');map.setMapTypeId?.('satellite');map.fitBounds(bounds,30);diagnose();
         });
       }
     }
@@ -97,8 +101,8 @@
       const q=screen.matrixTransform(ctm.inverse());if(q.x<0||q.x>400||q.y<0||q.y>700)return;
       onCandidate({...projector.unproject(q),accuracy:null,time:Date.now(),source:'MANUAL_DROP',inputMethod:'MAP_TOUCH'});
     });
-    el('lessonJgiMap').addEventListener('click',()=>{mode='JGI';el('lessonMapStatus').textContent='JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
-    el('lessonSatellite').addEventListener('click',()=>{if(!available)return;mode='SAT';el('lessonMapStatus').textContent='공통 위성 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
+    el('lessonJgiMap').addEventListener('click',()=>{mode='JGI';diagnostic?.record('mode.JGI');diagnose('USER_JGI');el('lessonMapStatus').textContent='JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
+    el('lessonSatellite').addEventListener('click',()=>{if(!available)return;mode='SAT';diagnostic?.record('mode.SAT');el('lessonMapStatus').textContent='공통 위성 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
     el('lessonMapStatus').textContent='JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.';
     function greenProjector(geometry){
       const points=geometry.polygons.flat(),local=window.courseLocalProjector(points[0]),xy=points.map(local.toXY);
@@ -152,7 +156,7 @@
       requestAnimationFrame(()=>{if(green===opened&&available){google.maps.event.trigger(map,'resize');map.fitBounds(bounds,40);}});
     }
     function closeGreen(){
-      if(!green)return;green=null;
+      if(!green)return;diagnostic?.record('Green.close');green=null;
       greenOverlays.forEach(overlay=>overlay.setMap(null));greenOverlays=[];greenBallMarker?.setMap(null);pinMarker?.setMap(null);
       if(map)el('lessonSatelliteMap').append(document.getElementById('googleMap'));
       document.body.classList.remove('lesson-green-open');if(dialog.open)dialog.close();render();
@@ -167,7 +171,7 @@
       green={context:{...context},geometry,projector:greenProjector(geometry),ball:null,pin:null,input:'BALL'};
       el('lessonGreenTitle').textContent=p.profile.name+' · '+context.hole+'번 홀 · Shot '+shot.shotSequence+' · ON GREEN';
       el('lessonGreenStatus').textContent='확대 Green 안에서 볼 위치를 탭하세요. PIN은 건너뛸 수 있습니다.';
-      dialog.showModal();document.body.classList.add('lesson-green-open');mountGreenMap();renderGreen();
+      diagnostic?.record('Green.open');dialog.showModal();document.body.classList.add('lesson-green-open');mountGreenMap();renderGreen();
     }
     greenSvg.addEventListener('click',event=>{
       if(!green)return;const ctm=greenSvg.getScreenCTM();if(!ctm)return;
@@ -185,14 +189,16 @@
     const controller={render,attach:instance=>{
       const same=map===instance,mapElement=instance?.getDiv?.()||document.getElementById('googleMap');
       if(!instance||!mapElement){controller.unavailable('기존 Google Map 인스턴스/화면 연결을 확인하세요.');return;}
-      map=instance;available=true;mapFailure=null;
+      diagnostic?.record('attach');map=instance;available=true;mapFailure=null;
       el('lessonSatelliteMap').append(mapElement);
       if(!same){
         mapClickListener?.remove?.();
         mapClickListener=map.addListener('click',event=>{const point={lat:event.latLng.lat(),lng:event.latLng.lng(),accuracy:null,time:Date.now(),source:'MANUAL_DROP',inputMethod:'MAP_TOUCH'};if(green)greenCandidate(point);else if(projector)onCandidate(point);});
       }
       if(green)mountGreenMap();render();
-    },openGreen,closeGreen,unavailable:message=>{available=false;mode='JGI';mapFailure=message;render();}};
+    },openGreen,closeGreen,unavailable:message=>{available=false;mode='JGI';mapFailure=message;
+      const reason=message?.includes('인증 오류')?'AUTH_FAILURE':'LOAD_OR_CONNECTION';
+      diagnostic?.record('unavailable.'+reason);diagnose(reason);render();}};
     return controller;
   };
 })();

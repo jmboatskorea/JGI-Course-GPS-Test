@@ -486,19 +486,65 @@
     setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot,setPuttDistance,recordPutt,advanceCompletedHole,saveHoleCompletion};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
+  // Preview-only, page-memory diagnostics. Never retain console text, URLs or credentials.
+  function installMapDiagnostics(){
+    const events=[],codes=new Set(),started=Date.now();
+    let output=null,sequence=0,currentMode='JGI',returnReason='없음',attached=false;
+    function paint(){
+      if(!output)return;
+      const node=document.getElementById('googleMap'),rect=node?.getBoundingClientRect();
+      const container=node?.parentElement,box=container?.getBoundingClientRect();
+      output.textContent=[
+        'hostname: '+window.location.hostname+' · 개발 모드: courseLessonDev=1',
+        'Google Maps 오류 코드: '+(codes.size?[...codes].join(', '):'확인 안 됨'),
+        '지도 모드: '+currentMode+' · JGI 복귀 사유: '+returnReason,
+        '기존 Map 연결: '+(attached?'연결됨':'아직 연결 안 됨'),
+        'Map DOM: '+(rect?Math.round(rect.width)+' × '+Math.round(rect.height)+'px':'없음')+
+          ' · 컨테이너: '+(box?Math.round(box.width)+' × '+Math.round(box.height)+'px':'없음'),
+        '이벤트 순서 (최근 100개 · 새로고침 시 초기화):',...events
+      ].join('\n');
+    }
+    function record(event){
+      // Only fixed event labels may enter the log, never arbitrary SDK error messages.
+      if(!['diagnostics.start','Maps.load','Maps.init','Maps.reuse','onReady','gm_authFailure','onError.AUTH_FAILURE','onError.LOAD_OR_CONNECTION','attachExistingMap','attach','unavailable.AUTH_FAILURE','unavailable.LOAD_OR_CONNECTION','mode.JGI','mode.SAT','missing.GI','Green.open','Green.close','Google.errorCode'].includes(event))return;
+      events.push(++sequence+' · +'+(Date.now()-started)+'ms · '+event);
+      if(events.length>100)events.shift();paint();
+    }
+    function capture(args){
+      for(const value of args){
+        if(typeof value!=='string')continue;
+        const match=value.match(/Google Maps JavaScript API error:\s*([A-Za-z]{1,64}(?:MapError|ApiError))\b/);
+        if(match&&!codes.has(match[1])){codes.add(match[1]);record('Google.errorCode');}
+      }
+    }
+    const original=console.error;
+    console.error=function(...args){capture(args);return original.apply(this,args);};
+    window.addEventListener('error',event=>capture([event.message]));
+    window.addEventListener('resize',paint);
+    const diagnostic={record,mount:node=>{output=node;paint();},state:(mode,reason,isAttached)=>{
+      currentMode=mode==='SAT'?'SAT':'JGI';attached=!!isAttached;
+      if(['AUTH_FAILURE','LOAD_OR_CONNECTION','MISSING_GI','USER_JGI'].includes(reason))returnReason=reason;
+      paint();
+    }};
+    record('diagnostics.start');return diagnostic;
+  }
+  window.JGI_COURSE_LESSON_DIAGNOSTICS=installMapDiagnostics();
   let sharedMap=null,mapController=null,mapError=null,mapAuthFailed=false;
   // Installed before the Player script loads Maps, so its listeners never own lesson clicks.
   window.JGI_COURSE_LESSON_MAP={onReady:map=>{
+      window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('onReady');
       sharedMap=map;
       if(mapAuthFailed){mapController?.unavailable(mapError);return;}
       mapError=null;mapController?.attach(map);
     },onError:(message,kind)=>{
+      window.JGI_COURSE_LESSON_DIAGNOSTICS?.record(kind==='AUTH_FAILURE'?'onError.AUTH_FAILURE':'onError.LOAD_OR_CONNECTION');
       // A Map constructor/ready callback does not establish successful SDK authorization.
       if(kind==='AUTH_FAILURE')mapAuthFailed=true;
       if(!mapAuthFailed||kind==='AUTH_FAILURE')mapError=message;
       mapController?.unavailable(mapError);
     }};
   function attachExistingMap(){
+    window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('attachExistingMap');
     if(mapError){mapController.unavailable(mapError);return;}
     const existing=sharedMap||(typeof googleMap!=='undefined'?googleMap:null);
     if(existing){window.JGI_COURSE_LESSON_MAP.onReady(existing);return;}
@@ -536,6 +582,7 @@
         <button type="button" id="lessonCreateGroup">새 테스트 Group 만들기</button>
         <button type="button" id="lessonRestoreGroup">저장된 Group 복원</button></div>
         <div id="lessonGroupMeta" class="lessonMeta"></div><div id="lessonPlayers" class="lessonPlayers" aria-label="선수 선택"></div></section>
+      <details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details>
       <section class="lessonPanel" id="lessonShotPanel" hidden><h2 id="lessonShotPlayer">선수별 샷 기록</h2>
         <div class="lessonControls"><label>선택 선수의 현재 홀<select id="lessonHole"></select></label>
           <button type="button" id="lessonJgiMap">JGI 코스 지도</button><button type="button" id="lessonSatellite" disabled>위성 지도</button></div>
@@ -687,6 +734,7 @@
         commit(onGreen(currentInput(),context.playerId,context.shotId,point,pin,services),'ON GREEN 저장 · 추가 Shot 없음 · 1st PUTT 실제 거리를 입력하세요.');
       }
     });
+    window.JGI_COURSE_LESSON_DIAGNOSTICS.mount(el('lessonMapDiagnosticText'));
     attachExistingMap();
     function previewBenchmark(){
       el('lessonHandicap').max=el('lessonSex').value==='FEMALE'?'28':'25';

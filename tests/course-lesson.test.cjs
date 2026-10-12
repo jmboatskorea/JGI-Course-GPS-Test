@@ -902,3 +902,30 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
   assert.deepEqual(group.players[0].round.holes[1].shots[3],beforeSave.players[0].round.holes[1].shots[3]);
   assert.deepEqual(group.players[0].round.pending,beforeSave.players[0].round.pending);
 });
+
+test('Preview 지도 진단: 로딩 전 순서/크기, 실제 오류 코드만 수집, 민감정보 미보존, 100개 제한',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),source=fs.readFileSync(require.resolve('../course-lesson.js'),'utf8');
+  const listeners={},forwarded=[],output={textContent:''},node={getBoundingClientRect:()=>({width:390,height:600}),parentElement:{getBoundingClientRect:()=>({width:390,height:620})}};
+  const context={window:{location:{hostname:'preview.example'},addEventListener:(name,fn)=>listeners[name]=fn},
+    document:{getElementById:()=>node},console:{error:(...args)=>forwarded.push(args)},Date};
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('  function installMapDiagnostics(){'),source.indexOf('  let sharedMap=null')),context);
+  const diag=context.window.JGI_COURSE_LESSON_DIAGNOSTICS;
+  diag.record('Maps.load');diag.record('Maps.init');diag.record('onReady');diag.mount(output);
+  assert.match(output.textContent,/1 · .*diagnostics.start[\s\S]*2 · .*Maps.load[\s\S]*3 · .*Maps.init[\s\S]*4 · .*onReady/);
+  assert.match(output.textContent,/오류 코드: 확인 안 됨/);
+  assert.match(output.textContent,/390 × 600px.*390 × 620px/);
+  context.console.error('Google Maps JavaScript API error: RefererNotAllowedMapError https://example.invalid/?key=SECRET', {token:'SECRET'});
+  listeners.error({message:'Google Maps JavaScript API error: InvalidKeyMapError https://example.invalid/?token=SECRET'});
+  context.console.error('/api/whoop/today 503 SECRET','Google Maps loading=async warning');
+  diag.record('gm_authFailure');diag.record('onError.AUTH_FAILURE');diag.state('JGI','AUTH_FAILURE',true);
+  assert.match(output.textContent,/RefererNotAllowedMapError, InvalidKeyMapError/);
+  assert.match(output.textContent,/JGI 복귀 사유: AUTH_FAILURE/);
+  assert.match(output.textContent,/기존 Map 연결: 연결됨/);
+  assert.doesNotMatch(output.textContent,/SECRET|https:|whoop|503|async warning/);
+  assert.equal(forwarded.length,2); // Original console output preserved.
+  const before=output.textContent;diag.record('SECRET');assert.equal(output.textContent,before);
+  for(let i=0;i<110;i++)diag.record('Maps.reuse');
+  assert.equal(output.textContent.split('\n').filter(line=>/^\d+ ·/.test(line)).length,100);
+  assert.ok(source.indexOf('window.JGI_COURSE_LESSON_DIAGNOSTICS=installMapDiagnostics()')>source.indexOf('if(!developmentAllowed(window.location))return;'));
+});
