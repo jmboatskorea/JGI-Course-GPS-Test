@@ -724,6 +724,40 @@ test('Phase 3B: HOLED Score는 기존 Physical Shot + Putting + Penalty 규칙 �
   assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
   const wrong=structuredClone(group);wrong.players[0].round.holes[0].score=2;assert.throws(()=>lesson.validateGroup(wrong));
 });
+test('Round/Course Lesson은 동일 기존 Google Map 초기화 설정을 사용하고 Lesson 클릭만 분리',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+  const source=html.slice(html.indexOf('window.initGoogleMap=function(){'),html.indexOf('window.gm_authFailure=function(){'));
+  for(const lessonMode of [false,true]){
+    const node={},created=[],calls=[];
+    class Map{constructor(el,options){created.push({el,options});}addListener(type){calls.push(type);}}
+    const context={google:{maps:{Map,RenderingType:{VECTOR:'VECTOR'}}},googleMap:null,JAGORAWI_OLD_CENTER:{lat:1,lng:2},
+      $:id=>id==='googleMap'?node:null,round:null,updatePlayerMarker:()=>calls.push('player'),renderCourseHole:()=>calls.push('round')};
+    context.window=lessonMode?{google:context.google,JGI_COURSE_LESSON_MAP:{onReady:map=>calls.push(map)}}:{google:context.google};
+    vm.createContext(context);vm.runInContext(source,context);context.window.initGoogleMap();
+    assert.equal(created.length,1);assert.equal(created[0].el,node);assert.equal(created[0].options.mapTypeId,'satellite');
+    if(lessonMode)assert.deepEqual(calls,[context.googleMap]);else assert.deepEqual(calls,['click','player','round']);
+  }
+});
+test('Satellite 준비 연결: SDK 선로딩/기존 Session/콜백 전후/오류 유지와 복구 — 중복 Map 생성 없음',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),source=fs.readFileSync(require.resolve('../course-lesson.js'),'utf8');
+  const bridge=source.slice(source.indexOf('  let sharedMap=null'),source.indexOf('  function boot(){'));
+  for(const scenario of ['preloaded','existing','early','late','error']){
+    const calls=[],session={},context={googleMap:null,googleMapsRequested:scenario==='late',controller:{attach:m=>calls.push(['attach',m]),unavailable:e=>calls.push(['error',e])}};
+    context.window={google:{maps:{Map:function(){}}},initGoogleMap:()=>{calls.push(['init']);context.googleMap=session;context.window.JGI_COURSE_LESSON_MAP.onReady(session);}};
+    vm.createContext(context);vm.runInContext(bridge,context);
+    if(scenario==='early')context.window.JGI_COURSE_LESSON_MAP.onReady(session);
+    if(scenario==='existing')context.googleMap=session;
+    if(scenario==='error'){context.window.JGI_COURSE_LESSON_MAP.onReady(session);context.window.JGI_COURSE_LESSON_MAP.onError('TEST_AUTH_ERROR');}
+    vm.runInContext('mapController=controller;attachExistingMap();',context);
+    if(scenario==='late'){assert.equal(calls.length,0);context.window.JGI_COURSE_LESSON_MAP.onReady(session);}
+    if(scenario==='error'){
+      assert.deepEqual(calls,[['error','TEST_AUTH_ERROR']]);
+      context.window.JGI_COURSE_LESSON_MAP.onReady(session);assert.equal(vm.runInContext('mapError',context),null);
+    }
+    assert.equal(calls.filter(c=>c[0]==='init').length,scenario==='preloaded'?1:0);
+    assert.equal(calls.filter(c=>c[0]==='attach').length,1);assert.equal(calls.at(-1)[1],session);
+  }
+});
 test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 제거/데이터 없음, Raw Data 불변',()=>{
   const vm=require('node:vm'),fs=require('node:fs'),nodes=new Map(),projected=[];
   class Element{
@@ -732,6 +766,7 @@ test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 �
     append(node){this.children.push(node);}
     replaceChildren(){this.children=[];}
     setAttribute(key,value){this.attrs[key]=String(value);}
+    toggleAttribute(key,enabled){if(enabled)this.attrs[key]='';else delete this.attrs[key];}
   }
   const el=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
   const context={JGI_COURSE_LESSON_MAP:{},round:{currentHole:1,course:'Jagorawi Golf & Country Club'},
@@ -793,6 +828,7 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
     append(n){if(n.parentElement)n.parentElement.children=n.parentElement.children.filter(x=>x!==n);this.children.push(n);n.parentElement=this;}
     replaceChildren(){this.children=[];}
     setAttribute(){}
+    toggleAttribute(){}
     showModal(){this.open=true;}
     close(){this.open=false;closed.push(()=>this.emit('close'));}
   }
@@ -813,6 +849,12 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
     onSave:(ctx,point,pin)=>{saved={ctx,point,pin};group=lesson.onGreen(group,ctx.playerId,ctx.shotId,point,pin,engine);controller.render();}
   });
   controller.attach(map);controller.attach(map);assert.equal(map.listeners.length,1);el('lessonSatellite').emit('click');
+  assert.equal(map.fits.length,0); // Hidden DOM must finish layout before fitBounds.
+  for(const frame of frames.splice(0))frame();assert.equal(map.fits.length,1);
+  assert.deepEqual(JSON.parse(JSON.stringify(map.fits[0].slice(0,2))),[{lat:0,lng:0},{lat:1,lng:1}]);
+  controller.unavailable('TEST_AUTH_ERROR');assert.equal(el('lessonSatellite').disabled,true);assert.match(el('lessonMapStatus').textContent,/TEST_AUTH_ERROR/);
+  controller.attach(map);assert.equal(el('lessonSatellite').disabled,false);assert.equal(map.listeners.length,1);
+  assert.doesNotMatch(el('lessonMapStatus').textContent,/TEST_AUTH_ERROR/);el('lessonSatellite').emit('click');
   const open=(shotId=group.players[0].round.pending.id)=>controller.openGreen({groupId:group.groupId,playerId:pid,hole:group.players[0].round.currentHole,shotId});
   const click=point=>map.listeners[0]({latLng:{lat:()=>point.lat,lng:()=>point.lng}});
   const before=structuredClone(group);open();click(greenPoint());el('lessonGreenPin').emit('click');click(pinPoint());

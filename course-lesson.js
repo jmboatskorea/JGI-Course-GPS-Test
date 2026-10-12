@@ -488,8 +488,16 @@
   if(!developmentAllowed(window.location))return;
   let sharedMap=null,mapController=null,mapError=null;
   // Installed before the Player script loads Maps, so its listeners never own lesson clicks.
-  window.JGI_COURSE_LESSON_MAP={onReady:map=>{sharedMap=map;mapController?.attach(map);},
+  window.JGI_COURSE_LESSON_MAP={onReady:map=>{sharedMap=map;mapError=null;mapController?.attach(map);},
     onError:message=>{mapError=message;mapController?.unavailable(message);}};
+  function attachExistingMap(){
+    if(mapError){mapController.unavailable(mapError);return;}
+    const existing=sharedMap||(typeof googleMap!=='undefined'?googleMap:null);
+    if(existing){window.JGI_COURSE_LESSON_MAP.onReady(existing);return;}
+    // A preloaded SDK makes Round's loader return early; initialize only if no session/request exists.
+    if(window.google?.maps?.Map&&typeof googleMapsRequested!=='undefined'&&!googleMapsRequested&&
+      typeof window.initGoogleMap==='function')window.initGoogleMap();
+  }
   function boot(){
     const services={uuid:()=>crypto.randomUUID(),now:()=>Date.now(),
       benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>window.hydrateRoundCourseTruth(r),
@@ -671,7 +679,7 @@
         commit(onGreen(currentInput(),context.playerId,context.shotId,point,pin,services),'ON GREEN 저장 · 추가 Shot 없음 · 1st PUTT 실제 거리를 입력하세요.');
       }
     });
-    if(sharedMap)mapController.attach(sharedMap);if(mapError)mapController.unavailable(mapError);
+    attachExistingMap();
     function previewBenchmark(){
       el('lessonHandicap').max=el('lessonSex').value==='FEMALE'?'28':'25';
       try{
