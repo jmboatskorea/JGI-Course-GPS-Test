@@ -724,6 +724,63 @@ test('Phase 3B: HOLED Score는 기존 Physical Shot + Putting + Penalty 규칙 �
   assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
   const wrong=structuredClone(group);wrong.players[0].round.holes[0].score=2;assert.throws(()=>lesson.validateGroup(wrong));
 });
+test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 제거/데이터 없음, Raw Data 불변',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),nodes=new Map(),projected=[];
+  class Element{
+    constructor(){this.attrs={};this.children=[];this.events={};}
+    addEventListener(type,fn){this.events[type]=fn;}
+    append(node){this.children.push(node);}
+    replaceChildren(){this.children=[];}
+    setAttribute(key,value){this.attrs[key]=String(value);}
+  }
+  const el=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
+  const context={JGI_COURSE_LESSON_MAP:{},round:{currentHole:1,course:'Jagorawi Golf & Country Club'},
+    document:{getElementById:el,createElementNS:()=>new Element()},Date};context.window=context;
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(require.resolve('../jagorawi-old-course-data.js'),'utf8'),context);
+  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+  for(const name of ['isOraSouthLeft','activeCourseData','unpackCourseShape','courseShapes','courseViewProjector','svgPath']){
+    const source=html.match(new RegExp('^function '+name+'\\([^]*?^}','m'))?.[0];assert.ok(source,name);vm.runInContext(source,context);
+  }
+  const project=context.courseViewProjector;
+  context.courseViewProjector=(h,r,points)=>{projected.push({h,r,points});return project(h,r,points);};
+  vm.runInContext(fs.readFileSync(require.resolve('../course-lesson-map.js'),'utf8'),context);
+  const engine=services();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  group=physical(group,a.playerId,mapPoint(),engine);group=physical(group,b.playerId,gpsPoint(),engine);
+  const controller=context.JGICourseLessonMapController({querySelector:s=>el(s.slice(1))},()=>group,()=>assert.fail('Missing geometry must not accept a click'),{});
+  const snapshot=structuredClone(group),history=structuredClone(group.players.map(p=>p.round.holes)),paths=[];
+  for(const hole of [1,2,3,1]){
+    group=lesson.chooseHole(group,a.playerId,hole);
+    const before=structuredClone(group);controller.render();assert.deepEqual(group,before);
+    const raw=context.JGI_OLD_COURSE_DATA.holes[String(hole)],svg=el('lessonCourseSvg');
+    assert.equal(svg.attrs['data-hole'],String(hole));assert.equal(svg.attrs['data-hole-id'],String(raw.i));
+    assert.equal(projected.at(-1).h,raw);assert.equal(projected.at(-1).r.currentHole,hole);
+    const shapes=svg.children.filter(node=>node.attrs['data-course-shape']);
+    const expected=context.courseShapes(raw,group.players[0].round).slice().sort((a,b)=>{
+      const order={HOLE_BOUNDARY:0,WATER:1,WATER_PATH:2,FAIRWAY:3,BUNKER:4,TEE:5,GREEN:6};return (order[a.type]??9)-(order[b.type]??9);
+    });
+    assert.deepEqual(shapes.map(node=>node.attrs['data-course-shape']),Array.from(expected,s=>s.type));
+    paths.push(shapes.map(node=>node.attrs.d).join('|'));
+    assert.equal(svg.children.filter(node=>node.attrs['data-player-marker']).length,hole===1?2:0);
+    if(hole!==1)assert.equal(projected.at(-1).points.length,0); // No hole-1 ball in the new viewport.
+    assert.match(el('lessonMapStatus').textContent,new RegExp(hole+'번 홀'));
+  }
+  assert.notEqual(paths[0],paths[1]);assert.notEqual(paths[1],paths[2]);assert.equal(paths[0],paths[3]);
+  group=lesson.chooseHole(group,a.playerId,3);group=lesson.selectPlayer(group,b.playerId);controller.render();
+  assert.equal(el('lessonCourseSvg').attrs['data-hole'],'1');
+  assert.equal(el('lessonCourseSvg').children.filter(node=>node.attrs['data-player-marker']).length,1);
+  group=lesson.chooseHole(group,b.playerId,2);group=physical(group,b.playerId,mapPoint(),engine);controller.render();
+  assert.equal(el('lessonCourseSvg').children.filter(node=>node.attrs['data-player-marker']).length,1);
+  const raw=context.JGI_OLD_COURSE_DATA.holes['2'],before=structuredClone(group);
+  delete context.JGI_OLD_COURSE_DATA.holes['2'];controller.render();
+  assert.equal(el('lessonCourseSvg').children.length,0);assert.equal(el('lessonCourseSvg').attrs['data-hole-id'],'');
+  assert.match(el('lessonMapStatus').textContent,/2번 홀 GI 지도 데이터가 없습니다/);
+  assert.equal(el('lessonSatelliteMap').hidden,true);assert.equal(el('lessonSatellite').disabled,true);
+  el('lessonCourseSvg').events.click({});assert.deepEqual(group,before);
+  context.JGI_OLD_COURSE_DATA.holes['2']=raw;controller.render();assert.ok(el('lessonCourseSvg').children.length>0);
+  assert.deepEqual(group.players.map(p=>p.round.holes[0]),snapshot.players.map(p=>p.round.holes[0]));
+  assert.deepEqual(group.players[0].round.holes,history[0]);
+});
 test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/resize 무시, 저장 후 원래 위성 화면 복귀',()=>{
   const vm=require('node:vm'),fs=require('node:fs');
   const engine=services();let group=registeredGroup(2,engine);const pid=group.players[0].playerId;
@@ -745,7 +802,7 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
   class Bounds{constructor(){this.points=[];}extend(p){this.points.push(p);}}
   const map={listeners:[],fits:[],addListener(type,fn){this.listeners.push(fn);},fitBounds(bounds){this.fits.push(bounds.points);}};
   const context={window:{JGI_COURSE_LESSON_MAP:{},activeCourseData:()=>({holes:{'1':{t:[0,0],g:[1,1]},'2':{t:[0,0],g:[2,2]}}}),
-      courseViewProjector:()=>({shapes:[],project:p=>({x:p.lng,y:p.lat,inside:true})}),
+      courseViewProjector:()=>({shapes:[{type:'GREEN',path:[{lat:0,lng:0},{lat:1,lng:0},{lat:1,lng:1}]}],project:p=>({x:p.lng,y:p.lat,inside:true})}),
       courseLocalProjector:()=>({toXY:p=>({x:p.lng,y:p.lat}),toLatLng:p=>({lat:p.y,lng:p.x})}),svgPath:()=>''},
     document:{getElementById:el,createElementNS:()=>new Element(),body:{classList:{add:v=>classes.add(v),remove:v=>classes.delete(v)}}},
     google:{maps:{Marker,Polygon,LatLngBounds:Bounds,SymbolPath:{CIRCLE:0},event:{trigger(){}}}},requestAnimationFrame:fn=>frames.push(fn),Date};
