@@ -192,6 +192,136 @@ function physical(group,playerId,point,engine){
 }
 const greenPoint=()=>({...mapPoint(),lat:-6.4555,lng:106.8825});
 const pinPoint=()=>({...greenPoint(),lat:-6.4556,source:'SCORER_MANUAL_MAP'});
+function undoFixture(legacy=false){
+  const engine=services();engine.clubs.push('3W','58°');engine.now=(()=>{let t=1234;return ()=>++t;})();
+  let group=registeredGroup(2,engine);const [a,b]=group.players;
+  const beforeLink=[];
+  for(const p of [a,b]){
+    group=lesson.selectPlayer(group,p.playerId);
+    for(const club of ['DR','3W','58°','DR']){
+      group=lesson.setShotClub(group,p.playerId,club,engine);
+      if(club==='DR'&&group.players.find(x=>x.playerId===p.playerId).round.holes[0].shots.length===3)
+        beforeLink.push(structuredClone(group.players.find(x=>x.playerId===p.playerId).round.holes[0].shots[2]));
+      group=physical(group,p.playerId,mapPoint(),engine);
+    }
+    const shot=group.players.find(x=>x.playerId===p.playerId).round.holes[0].shots[3];
+    group=lesson.onGreen(group,p.playerId,shot.id,greenPoint(),pinPoint(),engine);
+  }
+  if(legacy)for(const p of group.players)for(const shot of p.round.holes[0].shots)
+    for(const e of shot.editHistory)e.previous={end:e.previous.end,endLie:e.previous.endLie,endState:e.previous.endState||null,status:e.previous.status,result:e.previous.result};
+  group=lesson.selectPlayer(group,a.playerId);
+  return {engine,group,pid:a.playerId,beforeLink};
+}
+for(const legacy of [false,true])test('UNDO Shot 4 ON_GREEN: '+(legacy?'기존 축약 이력':'새 이력')+' 복구, A/B·PIN 보존, Shot 3 ON GREEN 재입력',()=>{
+  const {engine,pid,beforeLink,...fixture}=undoFixture(legacy);let group=fixture.group;
+  const store=memory();lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  const before=structuredClone(group),id=group.players[0].round.holes[0].shots[3].id;
+  group=lesson.undoLastShot(group,pid,id,engine);
+  const p=group.players[0],h=p.round.holes[0],shot=h.shots[2];
+  assert.equal(h.shots.length,3);assert.equal(h.completed,false);assert.equal(h.puttingReady,null);
+  assert.equal(shot.status,'PENDING_RESULT');assert.equal(p.round.pending.id,shot.id);
+  const {editHistory,...actual}=shot,{editHistory:oldHistory,...expected}=beforeLink[0];
+  assert.deepEqual(actual,expected);assert.equal(editHistory.at(-1).type,'SHOT_LINK_UNDONE');
+  assert.deepEqual(group.players[1],before.players[1]);assert.deepEqual(group.holePins,before.holePins);
+  assert.throws(()=>lesson.undoLastShot(group,pid,id,engine),/Physical Shot/);
+  group=lesson.onGreen(group,pid,shot.id,greenPoint(),null,engine);
+  assert.equal(group.players[0].round.holes[0].shots.length,3);
+  assert.equal(group.players[0].round.holes[0].puttingReady.entryShotId,shot.id);
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');
+  assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+});
+for(const type of ['ON_GREEN','HOLED'])for(const legacy of [false,true])test('RESULT CANCEL '+type+' / legacy='+legacy+': Physical Shot 유지 및 홀/Pending 복구',()=>{
+  const fixture=undoFixture(legacy),{engine,pid}=fixture;let group=fixture.group;
+  const id=group.players[0].round.holes[0].shots[3].id;
+  if(type==='HOLED'){
+    group=lesson.cancelResult(group,pid,id,engine);group=lesson.holed(group,pid,id,engine);
+  }
+  const before=structuredClone(group),hbefore=before.players[0].round.holes[0];
+  group=lesson.cancelResult(group,pid,id,engine);
+  const p=group.players[0],h=p.round.holes[0],shot=h.shots[3];
+  assert.equal(h.shots.length,4);assert.equal(shot.id,id);assert.deepEqual(shot.start,hbefore.shots[3].start);
+  assert.deepEqual(h.shots.slice(0,3),hbefore.shots.slice(0,3));
+  assert.equal(shot.result,null);assert.equal(shot.end,null);assert.equal(shot.holed,false);
+  assert.equal(shot.status,'PENDING_RESULT');assert.equal(p.round.pending.id,id);
+  assert.equal(h.completed,false);assert.equal(h.puttingReady,null);assert.equal(h.score,undefined);
+  assert.equal(h.completedAt,undefined);assert.equal(lesson.resultTargetShot(p,id).id,id);
+  assert.deepEqual(group.players[1],before.players[1]);assert.deepEqual(group.holePins,before.holePins);
+  assert.throws(()=>lesson.cancelResult(group,pid,id,engine),/ON GREEN/);
+  const store=memory();lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+});
+test('UNDO HOLED / 단일 Pending / 반복 취소 후 재기록: 타수와 중복 연결 없음',()=>{
+  const {engine,pid,...fixture}=undoFixture();let group=fixture.group;
+  const id=group.players[0].round.holes[0].shots[3].id;
+  group=lesson.holed(lesson.cancelResult(group,pid,id,engine),pid,id,engine);
+  group=lesson.undoLastShot(group,pid,id,engine);
+  assert.equal(group.players[0].round.holes[0].completed,false);
+  group=physical(group,pid,gpsPoint(),engine);
+  assert.equal(group.players[0].round.holes[0].shots.length,4);
+  group=lesson.undoLastShot(group,pid,group.players[0].round.pending.id,engine);
+  assert.equal(group.players[0].round.holes[0].shots[2].end,null);
+  for(let i=0;i<3;i++)group=lesson.undoLastShot(group,pid,group.players[0].round.holes[0].shots.at(-1).id,engine);
+  assert.equal(group.players[0].round.holes[0].shots.length,0);assert.equal(group.players[0].round.pending,null);
+  assert.equal(group.players[0].round.startedAt,null);assert.equal(group.players[0].ballPosition,null);
+  assert.equal(group.players[0].round.lessonRoundStatus,'REGISTERED');
+  group=physical(group,pid,mapPoint(),engine);assert.equal(group.players[0].round.holes[0].shots[0].shotSequence,1);
+});
+test('Undo는 여러 번 재확인한 자동 End 연결 전체를 복구하고 결과 취소는 기존 연결 End만 복구',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,gpsPoint(),engine);
+  const original=structuredClone(group.players[0].round.holes[0].shots[0]);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,mapPoint()),pid,engine);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,gpsPoint()),pid,engine);
+  const linked=structuredClone(group.players[0].round.holes[0].shots[0]);
+  const linkedGroup=structuredClone(group);
+  group=lesson.recordShot(group,pid,engine);
+  group=lesson.undoLastShot(group,pid,group.players[0].round.pending.id,engine);
+  const {editHistory:undoHistory,...undone}=group.players[0].round.holes[0].shots[0],{editHistory:initialHistory,...before}=original;
+  assert.deepEqual(undone,before);
+  group=linkedGroup;
+  group=lesson.onGreen(group,pid,linked.id,greenPoint(),null,engine);
+  group=lesson.cancelResult(group,pid,linked.id,engine);
+  const {editHistory,...restored}=group.players[0].round.holes[0].shots[0],{editHistory:prior,...expected}=linked;
+  assert.deepEqual(restored,expected);assert.equal(group.players[0].round.holes[0].shots.length,1);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,mapPoint()),pid,engine);
+  group=lesson.recordShot(group,pid,engine);
+  group=lesson.undoLastShot(group,pid,group.players[0].round.pending.id,engine);
+  const {editHistory:afterHistory,...after}=group.players[0].round.holes[0].shots[0];
+  assert.deepEqual(after,expected);
+});
+for(const conflict of ['putts','puttsDetail','penalties','penaltyEvents','puttingState','distance','nextHole','specialEvent','draft','review','missingHistory','changedHistory','missingLink'])
+test('취소 충돌 차단: '+conflict+' — 원본과 후속 기록 불변',()=>{
+  const {engine,pid,...fixture}=undoFixture();const group=fixture.group,h=group.players[0].round.holes[0],id=h.shots[3].id;
+  if(conflict==='putts'||conflict==='penalties')h[conflict]=1;
+  if(conflict==='puttsDetail'||conflict==='penaltyEvents')h[conflict].push({id:'TEST_FOLLOWUP'});
+  if(conflict==='puttingState')h.puttingState={status:'RECORDED'};
+  if(conflict==='distance')h.puttingReady.firstPuttDistanceM=3;
+  if(conflict==='nextHole')group.players[0].round.holes[1].shots.push({id:'TEST_NEXT_HOLE'});
+  if(conflict==='specialEvent')group.players[0].round.specialEvents.push({hole:1});
+  if(conflict==='draft')group.players[0].shotDraft.position=mapPoint();
+  if(conflict==='review')h.review={id:'TEST_REVIEW'};
+  if(conflict==='missingHistory'){h.shots[2].editHistory=[];h.shots[3].editHistory=[];}
+  if(conflict==='changedHistory'){
+    h.shots[2].result.confirmationId='CHANGED';h.shots[3].editHistory.at(-1).next.end=mapPoint();
+  }
+  if(conflict==='missingLink'){
+    delete h.shots[3].previousShotId;h.shots[3].editHistory=[];
+  }
+  const before=structuredClone(group);
+  assert.throws(()=>lesson.undoLastShot(group,pid,id,engine));assert.deepEqual(group,before);
+  assert.throws(()=>lesson.cancelResult(group,pid,id,engine));assert.deepEqual(group,before);
+});
+test('취소 대상/선수/후속 Physical Shot 충돌 차단, 다른 선수 PIN 이용 유지',()=>{
+  const {engine,pid,...fixture}=undoFixture();let group=fixture.group;
+  const h=group.players[0].round.holes[0],id=h.shots[3].id,bid=group.players[1].playerId;
+  assert.throws(()=>lesson.undoLastShot(group,pid,h.shots[2].id,engine),/마지막/);
+  assert.throws(()=>lesson.undoLastShot(group,bid,group.players[1].round.holes[0].shots[3].id,engine),/선택 선수/);
+  group=lesson.cancelResult(group,pid,id,engine);
+  group=lesson.onGreen(group,pid,h.shots[2].id,greenPoint(),null,engine);
+  const before=structuredClone(group);
+  assert.throws(()=>lesson.cancelResult(group,pid,h.shots[2].id,engine),/후속 Physical Shot/);
+  assert.deepEqual(group,before);
+});
 for(const type of ['ON_GREEN','HOLED'])test('과거 Shot 3 (58°) 선택 → '+type+': Shot 4/Pending/다른 선수 보존 및 저장 복원',()=>{
   const engine=services(),store=memory();engine.clubs.push('58°');
   let group=registeredGroup(2,engine);const [a,b]=group.players;

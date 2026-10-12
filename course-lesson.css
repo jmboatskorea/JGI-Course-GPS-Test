@@ -29,8 +29,9 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev #lessonSatelliteMap{position:absolute;inset:0}
 .courseLessonDev #googleMap{display:block;position:absolute;inset:0;width:100%;height:100%}
 .courseLessonDev .lessonShotHistory{display:grid;gap:8px;font-size:12px;line-height:1.5;margin-top:12px}
-.courseLessonDev .lessonShotHistory>button{padding:10px;background:#08131b;border:1px solid #315168;border-radius:10px;text-align:left;font:inherit}
+.courseLessonDev .lessonShotHistory>button{min-height:48px;padding:10px;background:#08131b;border:1px solid #315168;border-radius:10px;text-align:left;font:inherit}
 .courseLessonDev .lessonShotHistory>button[aria-pressed="true"]{border-color:#44d17a;background:#153629}
+.courseLessonDev #lessonUndoShot,.courseLessonDev #lessonCancelResult{min-height:48px;border-color:#b08445;background:#49331c}
 body.course-lesson-dev.lesson-green-open{overflow:hidden}
 .courseLessonDev .lessonGreenDialog{box-sizing:border-box;width:calc(100% - 16px);max-width:920px;height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:900px;padding:16px;border:1px solid #315168;border-radius:16px;background:#0b1822;color:#f4f8fb;overflow:auto}
 .courseLessonDev .lessonGreenDialog[open]{display:flex;flex-direction:column;gap:8px}

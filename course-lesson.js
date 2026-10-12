@@ -253,7 +253,7 @@
     });
   }
   function finishShotEnd(shot,point,type,services){
-    const at=services.now(),previous={end:clone(shot.end),endLie:shot.endLie,endState:shot.endState||null,status:shot.status,result:clone(shot.result)};
+    const at=services.now(),{editHistory,...saved}=shot,previous=clone(saved);
     if(point&&!shot.originalEnd)shot.originalEnd=clone(point);
     shot.end=point?clone(point):null;shot.endLie=type==='HOLED'?'HOLED':type==='ON_GREEN'?'GREEN':'UNKNOWN';
     shot.endState=type==='HOLED'?'HOLED':type==='ON_GREEN'?'ON_GREEN':'POSITION_CONFIRMED';shot.holed=type==='HOLED';
@@ -308,8 +308,95 @@
     return player?.registered&&h&&!h.completed&&h.lessonStatus!=='AWAITING_PUTTING'&&
       (shot?.status==='PENDING_RESULT'||(shot?.status==='RESULT_CONFIRMED'&&shot.result?.type==='NEXT_SHOT_START'))?shot:null;
   }
+  const terminalResult=shot=>['ON_GREEN','HOLED'].includes(shot?.result?.type);
+  function cancellationContext(group,playerId,shotId,undo){
+    assert(group.selectedPlayerId===playerId,'선택 선수의 기록만 취소할 수 있습니다.');
+    const p=shotPlayer(group,playerId),r=p.round,h=r.holes[r.currentHole-1],shot=h.shots.find(s=>s.id===shotId);
+    assert(shot?.physicalStroke===true&&['PENDING_RESULT','RESULT_CONFIRMED'].includes(shot.status),'현재 홀의 Physical Shot을 선택하세요.');
+    if(undo)assert(h.shots.at(-1)?.id===shotId,'현재 홀의 마지막 Physical Shot만 취소할 수 있습니다.');
+    else{
+      assert(terminalResult(shot),'ON GREEN 또는 HOLED 결과를 선택하세요.');
+      assert(h.shots.at(-1)?.id===shotId,'후속 Physical Shot이 있어 결과 취소를 차단합니다. 마지막 샷부터 확인하세요.');
+    }
+    const recorded=hole=>(hole.putts||0)>0||hole.puttsDetail.length>0||(hole.penalties||0)>0||hole.penaltyEvents.length>0||hole.puttingState!=null;
+    assert(!recorded(h)&&h.puttingReady?.firstPuttDistanceM==null&&h.review==null,'퍼팅/패널티/리뷰 등 후속 기록이 있어 취소를 차단합니다. 후속 기록을 먼저 확인하세요.');
+    assert(!r.holes.slice(r.currentHole).some(hole=>hole.shots.length||recorded(hole)),'다음 홀의 후속 기록이 있어 취소를 차단합니다.');
+    assert(!(r.specialEvents||[]).some(e=>e.hole==null||Number(e.hole)===h.hole),'관련 후속 이벤트가 있어 취소를 차단합니다.');
+    assert(!p.shotDraft.position&&!p.shotDraft.confirmed,'후속 볼 위치 입력이 있어 취소를 차단합니다. 입력을 먼저 확인하세요.');
+    assert(h.shots.filter(terminalResult).length<=1,'여러 종료 결과가 충돌하여 취소를 차단합니다.');
+    const terminal=h.shots.find(terminalResult);
+    assert(!h.completed||terminal?.result.type==='HOLED','홀 완료 상태와 Shot 결과가 충돌하여 취소를 차단합니다.');
+    assert(!h.puttingReady||h.puttingReady.entryShotId===terminal?.id,'Putting 준비 참조가 충돌하여 취소를 차단합니다.');
+    return {p,r,h,shot};
+  }
+  function restoreEnd(shot,index,type,services){
+    const history=shot.editHistory,entry=history?.[index],before=entry?.previous;
+    assert(before&&['PENDING_RESULT','RESULT_CONFIRMED'].includes(before.status),'이전 End 복구 이력이 없어 취소를 차단합니다.');
+    const {editHistory,...current}=shot;
+    if(before.id===shot.id){
+      for(const key of Object.keys(shot))if(key!=='editHistory')delete shot[key];
+      Object.assign(shot,clone(before));
+    }else{
+      // Phase 3B records saved before complete snapshots: recover only recorded facts.
+      assert(before.status==='PENDING_RESULT'||before.result?.type==='NEXT_SHOT_START','기존 결과의 복구 이력을 확인할 수 없어 취소를 차단합니다.');
+      Object.assign(shot,clone(before));
+      if(before.status==='PENDING_RESULT')delete shot.endState;
+      shot.holed=false;shot.positionSource.end=before.end?.source||null;
+      shot.distanceM=before.end?services.distance(shot.start,before.end):null;
+      shot.courseContext.endGreenDistanceM=null;shot.sg=null;
+      shot.updatedAt=history[index-1]?.at??shot.createdAt;
+      const original=history.slice(0,index).find(e=>e.next?.end)?.next.end;
+      if(original)shot.originalEnd=clone(original);else delete shot.originalEnd;
+    }
+    history.push({at:services.now(),type,source:'SCORER_CONFIRMATION',previous:clone(current),
+      next:{end:clone(shot.end),endLie:shot.endLie,endState:shot.endState||null}});
+  }
+  function recoverHole(p,h){
+    const terminal=h.shots.find(terminalResult),pending=h.shots.findLast(s=>s.status==='PENDING_RESULT');
+    h.completed=terminal?.result.type==='HOLED';
+    if(!h.completed){delete h.completedAt;delete h.score;}
+    else h.score=h.shots.length+(h.putts||0)+(h.penalties||0);
+    h.lessonStatus=terminal?.result.type==='HOLED'?'HOLED':terminal?'AWAITING_PUTTING':'IN_PROGRESS';
+    if(!terminal)h.puttingReady=null;
+    if(p.round.pending?.hole===h.hole||!p.round.pending)p.round.pending=pending?{
+      id:pending.id,hole:h.hole,shotSequence:pending.shotSequence,status:'PENDING_RESULT',result:null}:null;
+    const last=h.shots.at(-1);
+    p.ballPosition=terminal?.end?clone(terminal.end):last?clone(last.end||last.start):null;
+    p.shotDraft={...emptyShotDraft(h.hole),club:p.shotDraft.club};
+    p.round.analysisSnapshot=null;p.round.completedAt=null;
+    const remaining=p.round.holes.flatMap(hole=>hole.shots);
+    p.round.lessonRoundStatus=remaining.length?'IN_PROGRESS':'REGISTERED';
+    p.round.startedAt=remaining.length?Math.min(...remaining.map(s=>s.startedAt??s.createdAt)):null;
+    if(!h.shots.length)delete h.startedAt;
+  }
+  function cancelResult(group,playerId,shotId,services){
+    const next=clone(validateGroup(group)),{p,h,shot}=cancellationContext(next,playerId,shotId,false);
+    const index=shot.editHistory.length-1;
+    const end=shot.editHistory[index]?.next;
+    assert(end?.endState===shot.endState&&end.endLie===shot.endLie&&JSON.stringify(end.end)===JSON.stringify(shot.end),'결과 복구 이력이 일치하지 않아 취소를 차단합니다.');
+    restoreEnd(shot,index,'RESULT_CANCELLED',services);recoverHole(p,h);
+    next.updatedAt=services.now();return validateGroup(next);
+  }
+  function undoLastShot(group,playerId,shotId,services){
+    const next=clone(validateGroup(group)),{p,h,shot}=cancellationContext(next,playerId,shotId,true),previous=h.shots.at(-2);
+    assert(shot.previousShotId||previous?.result?.nextShotId!==shot.id,'자동 연결 참조가 손상되어 취소를 차단합니다.');
+    if(shot.previousShotId){
+      assert(previous?.id===shot.previousShotId,'직전 Shot 연결이 일치하지 않아 취소를 차단합니다.');
+      if(previous.result?.type==='NEXT_SHOT_START'){
+        assert(previous.result.nextShotId===shot.id&&previous.result.confirmationId===shot.confirmationId,'직전 End 연결이 변경되어 취소를 차단합니다.');
+        let index=previous.editHistory.findLastIndex(e=>e.next?.endState==='POSITION_CONFIRMED');
+        while(index>=0&&previous.editHistory[index].previous?.result?.type==='NEXT_SHOT_START'){
+          index=previous.editHistory.findLastIndex((e,i)=>i<index&&e.next?.endState==='POSITION_CONFIRMED');
+        }
+        assert(previous.editHistory[index]?.previous?.status==='PENDING_RESULT','자동 연결 전 End 이력이 없어 취소를 차단합니다.');
+        restoreEnd(previous,index,'SHOT_LINK_UNDONE',services);
+      }else assert(terminalResult(previous),'직전 End 복구 상태를 확인할 수 없어 취소를 차단합니다.');
+    }
+    h.shots.pop();recoverHole(p,h);
+    next.updatedAt=services.now();return validateGroup(next);
+  }
   const api={STORAGE,developmentAllowed,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
-    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot};
+    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
   let sharedMap=null,mapController=null,mapError=null;
@@ -364,6 +451,10 @@
         </div>
         <p class="lessonMeta">실제로 친 샷을 한 번만 저장하세요. 같은 선수의 다음 시작 위치를 확인하면 직전 Shot의 End로 연결합니다. 과거 누락 위치는 추정하지 않습니다. SG는 아직 미계산입니다.</p>
         <div id="lessonHoleState" class="lessonMeta" role="status"></div>
+        <div class="lessonBench"><strong id="lessonCancelTarget"></strong><div class="lessonActions">
+          <button type="button" id="lessonUndoShot" disabled>UNDO LAST SHOT</button>
+          <button type="button" id="lessonCancelResult" disabled>RESULT CANCEL · 결과만 취소</button>
+        </div><p class="lessonMeta" id="lessonCancelInfo">샷 취소는 마지막 Physical Shot 1개만 제거합니다. 결과 취소는 Shot을 유지합니다. 공유 PIN은 보존합니다.</p></div>
         <div id="lessonShotHistory" class="lessonShotHistory" aria-live="polite"></div></section>
       <dialog id="lessonGreenDialog" class="lessonGreenDialog" aria-labelledby="lessonGreenTitle">
         <div class="lessonGreenHeader"><h2 id="lessonGreenTitle">Green Detail</h2><button type="button" id="lessonGreenCancel">취소</button></div>
@@ -387,8 +478,11 @@
       <div id="lessonStatus" class="lessonStatus" role="status" aria-live="polite"></div>`;
     document.body.prepend(host);document.body.classList.add('course-lesson-dev');
     const el=id=>host.querySelector('#'+id);let group=null,selectedResult=null;
-    const selectedShot=p=>resultTargetShot(p,selectedResult?.groupId===group?.groupId&&
-      selectedResult.playerId===p?.playerId&&selectedResult.hole===p?.round?.currentHole?selectedResult.shotId:null);
+    const selectedShot=p=>{
+      const h=p?.round?.holes[p.round.currentHole-1];
+      return selectedResult?.groupId===group?.groupId&&selectedResult.playerId===p?.playerId&&
+        selectedResult.hole===p?.round?.currentHole?h?.shots.find(s=>s.id===selectedResult.shotId):h?.shots.at(-1);
+    };
     const status=(message,error=false)=>{el('lessonStatus').textContent=message;el('lessonStatus').dataset.error=String(error);};
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
@@ -416,6 +510,7 @@
     function render(){
       el('lessonEditor').hidden=!group;el('lessonPlayers').replaceChildren();
       el('lessonPendingResult').hidden=true;el('lessonOnGreen').disabled=true;el('lessonHoled').disabled=true;
+      el('lessonUndoShot').disabled=true;el('lessonCancelResult').disabled=true;
       if(!group){el('lessonGroupMeta').textContent='선수 1~4명의 테스트 Group을 만드세요.';el('lessonShotPanel').hidden=true;mapController.render();return;}
       el('lessonPlayerCount').value=String(group.players.length);
       const registered=group.players.filter(p=>p.registered).length;
@@ -433,7 +528,7 @@
       });
       const p=group.players.find(p=>p.playerId===group.selectedPlayerId);
       if(selectedResult&&(selectedResult.groupId!==group.groupId||selectedResult.playerId!==p.playerId||
-        selectedResult.hole!==p.round?.currentHole||!resultTargetShot(p,selectedResult.shotId)))selectedResult=null;
+        selectedResult.hole!==p.round?.currentHole||!p.round?.holes[p.round.currentHole-1].shots.some(s=>s.id===selectedResult.shotId)))selectedResult=null;
       el('lessonPlayerTitle').textContent='선수 '+(group.players.indexOf(p)+1)+' · '+(p.registered?'등록됨':'미등록');
       for(const [field,key] of [['lessonName','name'],['lessonContact','contact'],['lessonSex','sex'],['lessonHandicap','handicap'],['lessonTee','tee']])el(field).value=p.draft[key];
       el('lessonRoundMeta').textContent='Player ID: '+p.playerId+' · Round ID: '+p.roundId+' · '+(p.round?'독립 Round · '+p.round.lessonRoundStatus:'선수 등록 후 독립 Round 준비');
@@ -447,21 +542,26 @@
         el('lessonConfirmPosition').disabled=blocked||!draft.position||draft.confirmed;el('lessonShotSave').disabled=blocked||!draft.confirmed;
         el('lessonShotClub').disabled=blocked;el('lessonGetGps').disabled=blocked;
         const pending=selectedShot(p);
-        if(pending){
+        if(pending&&resultTargetShot(p,pending.id)){
           el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
           el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 선택된 Shot '+pending.shotSequence+' ('+pending.club+') · 결과 선택';
         }
         el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · 다음 홀은 직접 선택하세요.':h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · Putting 준비 상태 저장됨 · 거리/퍼팅 입력은 Phase 3C에서 제공합니다.':'';
+        const last=h.shots.at(-1),target=letter+' · '+p.profile.name+' · '+h.hole+'번 홀';
+        el('lessonCancelTarget').textContent=target+' · 마지막 Shot '+(last?.shotSequence||'없음')+' · 선택 Shot '+(pending?.shotSequence||'없음');
+        el('lessonCancelInfo').textContent='샷 취소: 마지막 Shot만 제거 · 결과 취소: 선택 Shot 유지 · 공유 PIN 보존';
+        if(last){try{cancellationContext(clone(group),p.playerId,last.id,true);el('lessonUndoShot').disabled=false;}catch(e){el('lessonCancelInfo').textContent='UNDO 차단: '+e.message;}}
+        if(terminalResult(pending)){try{cancellationContext(clone(group),p.playerId,pending.id,false);el('lessonCancelResult').disabled=false;}catch(e){el('lessonCancelInfo').textContent+=' · RESULT CANCEL 차단: '+e.message;}}
         el('lessonPosition').textContent=draft.position?(draft.confirmed?'확인됨':'미확인 후보')+' · '+draft.position.lat.toFixed(6)+', '+draft.position.lng.toFixed(6)+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
         el('lessonShotHistory').replaceChildren();
         h.shots.forEach(shot=>{
           const row=document.createElement('button');row.type='button';
-          row.disabled=!resultTargetShot(p,shot.id);row.setAttribute('aria-pressed',String(pending?.id===shot.id));
+          row.disabled=!['PENDING_RESULT','RESULT_CONFIRMED'].includes(shot.status);row.setAttribute('aria-pressed',String(pending?.id===shot.id));
           const label=shot.status==='PENDING_RESULT'?'PENDING RESULT':shot.result?.type==='NEXT_SHOT_START'?'End 연결 · 다음 시작 위치':shot.result?.type||'기존 기록';
           row.textContent='Shot '+shot.shotSequence+' · '+shot.club+' · '+(shot.start?.source==='GPS'?'GPS':'MAP TOUCH')+' · '+label+' · SG 미계산';
           row.addEventListener('click',()=>{
             selectedResult={groupId:group.groupId,playerId:p.playerId,hole:h.hole,shotId:shot.id};
-            render();status('Shot '+shot.shotSequence+' 선택 · ON GREEN 또는 HOLED 결과를 선택하세요.');
+            render();status('Shot '+shot.shotSequence+' 선택 · 결과 입력 또는 저장된 결과 취소');
           });
           el('lessonShotHistory').append(row);
         });
@@ -490,6 +590,18 @@
     el('lessonShotClub').addEventListener('change',()=>{try{commit(setShotClub(currentInput(),group.selectedPlayerId,el('lessonShotClub').value,services),'선수별 클럽 선택 저장');}catch(e){status(e.message,true);}});
     el('lessonConfirmPosition').addEventListener('click',()=>{try{commit(confirmPosition(currentInput(),group.selectedPlayerId,services),'기록원이 선택 선수의 볼 위치를 확인했습니다.');}catch(e){status(e.message,true);}});
     el('lessonShotSave').addEventListener('click',()=>{try{commit(recordShot(currentInput(),group.selectedPlayerId,services),'Physical Shot 1회 저장 · PENDING RESULT · SG 미계산');}catch(e){status('Shot 저장 실패: '+e.message,true);}});
+    for(const [button,undo] of [['lessonUndoShot',true],['lessonCancelResult',false]])el(button).addEventListener('click',()=>{
+      try{
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),h=p?.round?.holes[p.round.currentHole-1],shot=undo?h?.shots.at(-1):selectedShot(p);
+        assert(shot,'취소할 Shot이 없습니다.');
+        cancellationContext(clone(group),p.playerId,shot.id,undo);
+        const next=(undo?undoLastShot:cancelResult)(currentInput(),p.playerId,shot.id,services);
+        if(!confirm(p.profile.name+' · '+h.hole+'번 홀 · Shot '+shot.shotSequence+' ('+shot.club+') · '+
+          (undo?'마지막 Physical Shot과 결과를 취소할까요?':'ON GREEN / HOLED 결과만 취소할까요? Physical Shot은 유지합니다.')))return;
+        mapController.closeGreen();selectedResult=null;
+        commit(next,undo?'마지막 Shot 취소 완료 · 직전 End 복구 · 다른 선수/공유 PIN 보존':'결과 취소 완료 · Physical Shot 유지 · 홀 상태 복구');
+      }catch(e){status('취소 차단: '+e.message,true);}
+    });
     el('lessonOnGreen').addEventListener('click',()=>{
       try{
         const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=selectedShot(p);
