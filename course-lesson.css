@@ -1,0 +1,26 @@
+.courseLessonDev{max-width:760px;margin:0 auto;padding:20px 16px;color:#f4f8fb}
+body.course-lesson-dev>.app{display:none}
+.courseLessonDev h1{font-size:26px;margin:8px 0}
+.courseLessonDev h2{font-size:17px;margin:0 0 12px}
+.courseLessonDev .lessonNotice{padding:12px;border:1px solid #665031;border-radius:14px;color:#ffd596;font-size:13px;line-height:1.5}
+.courseLessonDev .lessonPanel{margin-top:16px;padding:16px;border:1px solid #284153;border-radius:16px;background:#0b1822}
+.courseLessonDev .lessonControls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.courseLessonDev .lessonControls label{display:grid;gap:6px;min-width:140px;font-size:13px}
+.courseLessonDev button{border:1px solid #315168;background:#123923;color:#fff;border-radius:12px;padding:12px;cursor:pointer;font-weight:800}
+.courseLessonDev button:disabled{opacity:.5;cursor:not-allowed}
+.courseLessonDev button:focus-visible,.courseLessonDev input:focus-visible,.courseLessonDev select:focus-visible{outline:2px solid #44d17a;outline-offset:3px}
+.courseLessonDev .lessonPlayers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.courseLessonDev .lessonPlayer{display:grid;gap:6px;text-align:left;min-width:0;background:#08131b}
+.courseLessonDev .lessonPlayer[aria-pressed="true"]{border-color:#44d17a;background:#153629}
+.courseLessonDev .lessonPlayer small{font-size:11px;color:#b9c8bf;overflow-wrap:anywhere}
+.courseLessonDev .lessonFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.courseLessonDev .lessonFields label{display:grid;gap:6px;font-size:13px;min-width:0}
+.courseLessonDev .lessonFields input,.courseLessonDev .lessonFields select{box-sizing:border-box;min-width:0}
+.courseLessonDev .lessonFields .lessonWide{grid-column:1/-1}
+.courseLessonDev .lessonMeta{font-size:12px;color:#b9c8bf;overflow-wrap:anywhere;line-height:1.6}
+.courseLessonDev .lessonActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.courseLessonDev .lessonStatus{padding:12px 0;font-size:13px;line-height:1.5;color:#91f4ad}
+.courseLessonDev .lessonStatus[data-error="true"]{color:#ff9ba4}
+.courseLessonDev .lessonBench{margin-top:12px;padding:12px;background:#08131b;border-radius:12px;font-size:13px;line-height:1.5}
+.courseLessonDev a{color:#91f4ad}
+@media(max-width:520px){.courseLessonDev{padding:16px 12px}.courseLessonDev .lessonFields{grid-template-columns:1fr}.courseLessonDev .lessonPanel{padding:12px}.courseLessonDev .lessonActions button{flex:1 1 100%}.courseLessonDev h1{font-size:22px}}
