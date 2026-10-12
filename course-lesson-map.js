@@ -135,10 +135,12 @@
     function openGreen(context){
       const group=getGroup(),p=group?.players.find(p=>p.playerId===context.playerId),h=p?.round?.holes?.[context.hole-1];
       if(green)throw new Error('현재 Green Popup을 먼저 닫으세요.');
-      if(group?.groupId!==context.groupId||group.selectedPlayerId!==context.playerId||p?.round?.currentHole!==context.hole||h?.shots.at(-1)?.id!==context.shotId||h.shots.at(-1).status!=='PENDING_RESULT')throw new Error('선택 선수의 현재 Pending Shot을 확인하세요.');
+      const shot=h?.shots.find(s=>s.id===context.shotId);
+      if(group?.groupId!==context.groupId||group.selectedPlayerId!==context.playerId||p?.round?.currentHole!==context.hole||h?.completed||h?.lessonStatus==='AWAITING_PUTTING'||
+        !(shot?.status==='PENDING_RESULT'||(shot?.status==='RESULT_CONFIRMED'&&shot.result?.type==='NEXT_SHOT_START')))throw new Error('선택 선수의 현재 홀에 저장된 Shot을 확인하세요.');
       const geometry=options.geometry(p.round,context.hole);
       green={context:{...context},geometry,projector:greenProjector(geometry),ball:null,pin:null,input:'BALL'};
-      el('lessonGreenTitle').textContent=p.profile.name+' · '+context.hole+'번 홀 · Shot '+h.shots.at(-1).shotSequence+' · ON GREEN';
+      el('lessonGreenTitle').textContent=p.profile.name+' · '+context.hole+'번 홀 · Shot '+shot.shotSequence+' · ON GREEN';
       el('lessonGreenStatus').textContent='확대 Green 안에서 볼 위치를 탭하세요. PIN은 건너뛸 수 있습니다.';
       dialog.showModal();document.body.classList.add('lesson-green-open');mountGreenMap();renderGreen();
     }

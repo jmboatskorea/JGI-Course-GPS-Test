@@ -79,7 +79,7 @@
             assert(!h.completed&&entry?.result?.type==='ON_GREEN'&&h.puttingReady.status==='AWAITING_INPUT'&&h.puttingReady.firstPuttDistanceM===null,'Putting 준비 상태가 올바르지 않습니다.');
             validatePosition(h.puttingReady.ballPosition);
           }
-          if(h.lessonStatus==='HOLED')assert(h.completed&&h.shots.at(-1)?.holed===true&&h.score===h.shots.length+(h.putts||0)+(h.penalties||0),'Hole 완료 상태가 일치하지 않습니다.');
+          if(h.lessonStatus==='HOLED')assert(h.completed&&h.shots.some(s=>s.holed===true)&&h.score===h.shots.length+(h.putts||0)+(h.penalties||0),'Hole 완료 상태가 일치하지 않습니다.');
         });
         if(r.pending?.status==='PENDING_RESULT')assert(r.holes.some(h=>h.shots.some(s=>s.id===r.pending.id&&s.status==='PENDING_RESULT')),'Pending Shot 참조를 찾을 수 없습니다.');
       }else assert(player.profile===null&&player.round===null,'미등록 선수의 Round가 올바르지 않습니다.');
@@ -265,8 +265,8 @@
     shot.editHistory.push({at,type:previous.status==='RESULT_CONFIRMED'?'END_POSITION_CORRECTED':type,source:'SCORER_CONFIRMATION',previous,next:{end:clone(shot.end),endLie:shot.endLie,endState:shot.endState}});
   }
   function resultShot(group,playerId,shotId){
-    const p=shotPlayer(group,playerId),h=playableHole(p),shot=h.shots.at(-1);
-    assert(shot?.id===shotId&&shot.status==='PENDING_RESULT','현재 선수/홀의 마지막 Pending Shot을 선택하세요.');
+    const p=shotPlayer(group,playerId),h=playableHole(p),shot=resultTargetShot(p,shotId);
+    assert(shot,'현재 선수/홀의 저장된 Pending Shot 또는 다음 시작으로 연결된 Shot을 선택하세요.');
     return {p,h,shot};
   }
   function onGreen(group,playerId,shotId,point,pin,services){
@@ -302,8 +302,14 @@
     const r=player?.round,h=r?.holes[r.currentHole-1],shots=h?.shots||[],shot=shots[shots.length-1];
     return player?.registered&&h&&!h.completed&&h.lessonStatus!=='AWAITING_PUTTING'&&shot?.status==='PENDING_RESULT'?shot:null;
   }
+  function resultTargetShot(player,shotId){
+    if(!shotId)return pendingResultShot(player);
+    const r=player?.round,h=r?.holes[r.currentHole-1],shot=h?.shots.find(s=>s.id===shotId);
+    return player?.registered&&h&&!h.completed&&h.lessonStatus!=='AWAITING_PUTTING'&&
+      (shot?.status==='PENDING_RESULT'||(shot?.status==='RESULT_CONFIRMED'&&shot.result?.type==='NEXT_SHOT_START'))?shot:null;
+  }
   const api={STORAGE,developmentAllowed,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
-    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot};
+    setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
   let sharedMap=null,mapController=null,mapError=null;
@@ -380,7 +386,9 @@
         <div id="lessonRoundMeta" class="lessonMeta"></div></section>
       <div id="lessonStatus" class="lessonStatus" role="status" aria-live="polite"></div>`;
     document.body.prepend(host);document.body.classList.add('course-lesson-dev');
-    const el=id=>host.querySelector('#'+id);let group=null;
+    const el=id=>host.querySelector('#'+id);let group=null,selectedResult=null;
+    const selectedShot=p=>resultTargetShot(p,selectedResult?.groupId===group?.groupId&&
+      selectedResult.playerId===p?.playerId&&selectedResult.hole===p?.round?.currentHole?selectedResult.shotId:null);
     const status=(message,error=false)=>{el('lessonStatus').textContent=message;el('lessonStatus').dataset.error=String(error);};
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
@@ -424,6 +432,8 @@
         });el('lessonPlayers').append(button);
       });
       const p=group.players.find(p=>p.playerId===group.selectedPlayerId);
+      if(selectedResult&&(selectedResult.groupId!==group.groupId||selectedResult.playerId!==p.playerId||
+        selectedResult.hole!==p.round?.currentHole||!resultTargetShot(p,selectedResult.shotId)))selectedResult=null;
       el('lessonPlayerTitle').textContent='선수 '+(group.players.indexOf(p)+1)+' · '+(p.registered?'등록됨':'미등록');
       for(const [field,key] of [['lessonName','name'],['lessonContact','contact'],['lessonSex','sex'],['lessonHandicap','handicap'],['lessonTee','tee']])el(field).value=p.draft[key];
       el('lessonRoundMeta').textContent='Player ID: '+p.playerId+' · Round ID: '+p.roundId+' · '+(p.round?'독립 Round · '+p.round.lessonRoundStatus:'선수 등록 후 독립 Round 준비');
@@ -436,18 +446,23 @@
         el('lessonHole').value=String(p.round.currentHole);el('lessonShotClub').value=draft.club;
         el('lessonConfirmPosition').disabled=blocked||!draft.position||draft.confirmed;el('lessonShotSave').disabled=blocked||!draft.confirmed;
         el('lessonShotClub').disabled=blocked;el('lessonGetGps').disabled=blocked;
-        const pending=pendingResultShot(p);
+        const pending=selectedShot(p);
         if(pending){
           el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
-          el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 저장된 Shot '+pending.shotSequence+' ('+pending.club+') · PENDING RESULT';
+          el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 선택된 Shot '+pending.shotSequence+' ('+pending.club+') · 결과 선택';
         }
         el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · 다음 홀은 직접 선택하세요.':h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · Putting 준비 상태 저장됨 · 거리/퍼팅 입력은 Phase 3C에서 제공합니다.':'';
         el('lessonPosition').textContent=draft.position?(draft.confirmed?'확인됨':'미확인 후보')+' · '+draft.position.lat.toFixed(6)+', '+draft.position.lng.toFixed(6)+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
         el('lessonShotHistory').replaceChildren();
         h.shots.forEach(shot=>{
-          const row=document.createElement('div');
+          const row=document.createElement('button');row.type='button';
+          row.disabled=!resultTargetShot(p,shot.id);row.setAttribute('aria-pressed',String(pending?.id===shot.id));
           const label=shot.status==='PENDING_RESULT'?'PENDING RESULT':shot.result?.type==='NEXT_SHOT_START'?'End 연결 · 다음 시작 위치':shot.result?.type||'기존 기록';
           row.textContent='Shot '+shot.shotSequence+' · '+shot.club+' · '+(shot.start?.source==='GPS'?'GPS':'MAP TOUCH')+' · '+label+' · SG 미계산';
+          row.addEventListener('click',()=>{
+            selectedResult={groupId:group.groupId,playerId:p.playerId,hole:h.hole,shotId:shot.id};
+            render();status('Shot '+shot.shotSequence+' 선택 · ON GREEN 또는 HOLED 결과를 선택하세요.');
+          });
           el('lessonShotHistory').append(row);
         });
       }
@@ -477,15 +492,15 @@
     el('lessonShotSave').addEventListener('click',()=>{try{commit(recordShot(currentInput(),group.selectedPlayerId,services),'Physical Shot 1회 저장 · PENDING RESULT · SG 미계산');}catch(e){status('Shot 저장 실패: '+e.message,true);}});
     el('lessonOnGreen').addEventListener('click',()=>{
       try{
-        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=pendingResultShot(p);
-        assert(shot,'선택 선수의 현재 홀에 결과를 확정할 Pending Shot이 없습니다.');
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=selectedShot(p);
+        assert(shot,'선택 선수의 현재 홀에서 결과를 확정할 저장 Shot을 선택하세요.');
         mapController.openGreen({groupId:group.groupId,playerId:p.playerId,hole:p.round.currentHole,shotId:shot.id});
       }catch(e){status(e.message,true);}
     });
     el('lessonHoled').addEventListener('click',()=>{
       try{
-        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=pendingResultShot(p);
-        assert(shot,'선택 선수의 현재 홀에 결과를 확정할 Pending Shot이 없습니다.');
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),shot=selectedShot(p);
+        assert(shot,'선택 선수의 현재 홀에서 결과를 확정할 저장 Shot을 선택하세요.');
         if(!confirm(p.profile.name+' · '+p.round.currentHole+'번 홀 · Shot '+shot.shotSequence+'가 홀인했나요? 추가 타수 없이 이 선수의 홀만 완료합니다.'))return;
         commit(holed(currentInput(),p.playerId,shot.id,services),'HOLED 저장 · 추가 Shot/Putting 없음 · 선택 선수만 Hole 완료');
       }catch(e){status(e.message,true);}

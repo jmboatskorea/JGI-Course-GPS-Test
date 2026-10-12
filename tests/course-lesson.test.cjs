@@ -192,6 +192,42 @@ function physical(group,playerId,point,engine){
 }
 const greenPoint=()=>({...mapPoint(),lat:-6.4555,lng:106.8825});
 const pinPoint=()=>({...greenPoint(),lat:-6.4556,source:'SCORER_MANUAL_MAP'});
+for(const type of ['ON_GREEN','HOLED'])test('과거 Shot 3 (58°) 선택 → '+type+': Shot 4/Pending/다른 선수 보존 및 저장 복원',()=>{
+  const engine=services(),store=memory();engine.clubs.push('58°');
+  let group=registeredGroup(2,engine);const [a,b]=group.players;
+  for(let i=1;i<=4;i++){
+    group=lesson.setShotClub(group,a.playerId,i===3?'58°':'DR',engine);
+    group=physical(group,a.playerId,mapPoint(),engine);
+  }
+  group=physical(group,b.playerId,gpsPoint(),engine);
+  lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  const before=structuredClone(group),p=group.players[0],target=p.round.holes[0].shots[2];
+  assert.equal(target.result.type,'NEXT_SHOT_START');
+  assert.equal(lesson.resultTargetShot(p).shotSequence,4);
+  assert.equal(lesson.resultTargetShot(p,target.id).shotSequence,3);
+  assert.equal(lesson.resultTargetShot(p,target.id).club,'58°');
+  assert.equal(lesson.resultTargetShot(p,'missing'),null);
+  assert.equal(lesson.resultTargetShot(group.players[1],target.id),null);
+  assert.equal(lesson.resultTargetShot(lesson.chooseHole(group,a.playerId,2).players[0],target.id),null);
+  group=type==='ON_GREEN'?lesson.onGreen(group,a.playerId,target.id,greenPoint(),null,engine):lesson.holed(group,a.playerId,target.id,engine);
+  const after=group.players[0],h=after.round.holes[0];
+  assert.equal(h.shots.length,4);assert.equal(h.shots[2].result.type,type);
+  assert.deepEqual(h.shots[3],before.players[0].round.holes[0].shots[3]);
+  assert.deepEqual(h.shots.slice(0,2),before.players[0].round.holes[0].shots.slice(0,2));
+  assert.deepEqual(after.round.pending,before.players[0].round.pending);
+  assert.deepEqual(group.players[1],before.players[1]);
+  assert.deepEqual(h.shots[2].start,target.start);assert.deepEqual(h.shots[2].originalEnd,target.originalEnd);
+  assert.deepEqual(h.shots[2].editHistory.at(-1).previous.result,target.result);
+  assert.ok(h.shots.every(s=>s.sg===null));assert.equal(h.putts,0);
+  if(type==='ON_GREEN')assert.equal(h.puttingReady.entryShotId,target.id);
+  else {assert.equal(h.completed,true);assert.equal(h.score,4);}
+  assert.equal(lesson.resultTargetShot(after,target.id),null);
+  assert.throws(()=>lesson.holed(group,a.playerId,target.id,engine));
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');
+  assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+  assert.deepEqual(before.players[0],p);
+});
 test('Pending 결과 UI: 복원된 Shot 3 (7I)와 선택 선수의 Raw Shot을 대상으로 타수 없이 확정',()=>{
   const engine=services(),store=memory();let group=registeredGroup(2,engine);const [a,b]=group.players;
   for(let i=0;i<3;i++){
@@ -377,14 +413,18 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
     onSave:(ctx,point,pin)=>{saved={ctx,point,pin};group=lesson.onGreen(group,ctx.playerId,ctx.shotId,point,pin,engine);controller.render();}
   });
   controller.attach(map);controller.attach(map);assert.equal(map.listeners.length,1);el('lessonSatellite').emit('click');
-  const open=()=>controller.openGreen({groupId:group.groupId,playerId:pid,hole:group.players[0].round.currentHole,shotId:group.players[0].round.pending.id});
+  const open=(shotId=group.players[0].round.pending.id)=>controller.openGreen({groupId:group.groupId,playerId:pid,hole:group.players[0].round.currentHole,shotId});
   const click=point=>map.listeners[0]({latLng:{lat:()=>point.lat,lng:()=>point.lng}});
   const before=structuredClone(group);open();click(greenPoint());el('lessonGreenPin').emit('click');click(pinPoint());
   assert.equal(el('googleMap').parentElement.id,'lessonGreenSatellite');assert.deepEqual(group,before);
   el('lessonGreenCancel').emit('click');assert.equal(el('googleMap').parentElement.id,'lessonSatelliteMap');
   assert.equal(el('lessonSatelliteMap').hidden,false);assert.ok(polygons.every(p=>p.map===null));assert.deepEqual(group,before);
   // Reopen a different hole before old close and resize callbacks are dispatched.
-  group=lesson.chooseHole(group,pid,2);group=physical(group,pid,mapPoint(),engine);open();
+  group=lesson.chooseHole(group,pid,2);
+  for(let i=0;i<4;i++)group=physical(group,pid,mapPoint(),engine);
+  const historicalId=group.players[0].round.holes[1].shots[2].id;
+  assert.throws(()=>open('missing'),/저장된 Shot/);
+  open(historicalId);assert.match(el('lessonGreenTitle').textContent,/Shot 3/);
   for(const event of closed.splice(0))event();assert.equal(el('lessonGreenDialog').open,true);
   const priorFits=map.fits.length;for(const frame of frames.splice(0))frame();assert.equal(map.fits.length,priorFits+1);
   const beforeSave=structuredClone(group);click(mapPoint());assert.equal(el('lessonGreenSave').disabled,true);
@@ -393,5 +433,8 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
   assert.equal(saved.pin,null);assert.equal(saved.point.source,'MANUAL_DROP');assert.equal(saved.point.accuracy,null);
   assert.equal(el('lessonGreenDialog').open,false);assert.equal(el('googleMap').parentElement.id,'lessonSatelliteMap');
   assert.equal(el('lessonSatelliteMap').hidden,false);assert.equal(classes.size,0);assert.equal(map.listeners.length,1);assert.ok(polygons.every(p=>p.map===null));
-  assert.deepEqual(group.players[1],beforeSave.players[1]);assert.equal(group.players[0].round.holes[1].shots.length,1);
+  assert.deepEqual(group.players[1],beforeSave.players[1]);assert.equal(group.players[0].round.holes[1].shots.length,4);
+  assert.equal(saved.ctx.shotId,historicalId);
+  assert.deepEqual(group.players[0].round.holes[1].shots[3],beforeSave.players[0].round.holes[1].shots[3]);
+  assert.deepEqual(group.players[0].round.pending,beforeSave.players[0].round.pending);
 });
