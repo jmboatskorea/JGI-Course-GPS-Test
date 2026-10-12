@@ -735,7 +735,11 @@ test('Round/Course Lesson은 동일 기존 Google Map 초기화 설정을 사용
     context.window=lessonMode?{google:context.google,JGI_COURSE_LESSON_MAP:{onReady:map=>calls.push(map)}}:{google:context.google};
     vm.createContext(context);vm.runInContext(source,context);context.window.initGoogleMap();
     assert.equal(created.length,1);assert.equal(created[0].el,node);assert.equal(created[0].options.mapTypeId,'satellite');
-    if(lessonMode)assert.deepEqual(calls,[context.googleMap]);else assert.deepEqual(calls,['click','player','round']);
+    if(lessonMode){
+      assert.deepEqual(calls,[context.googleMap]);const session=context.googleMap;
+      context.window.initGoogleMap();assert.equal(created.length,1);assert.equal(context.googleMap,session);
+      assert.deepEqual(calls,[session,session]);
+    }else assert.deepEqual(calls,['click','player','round']);
   }
 });
 test('Satellite 준비 연결: SDK 선로딩/기존 Session/콜백 전후/오류 유지와 복구 — 중복 Map 생성 없음',()=>{
@@ -757,6 +761,24 @@ test('Satellite 준비 연결: SDK 선로딩/기존 Session/콜백 전후/오류
     assert.equal(calls.filter(c=>c[0]==='init').length,scenario==='preloaded'?1:0);
     assert.equal(calls.filter(c=>c[0]==='attach').length,1);assert.equal(calls.at(-1)[1],session);
   }
+});
+test('실제 gm_authFailure 경로 뒤에는 중복 init/onReady가 인증 실패를 지우거나 새 Map을 만들지 않음',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),html=fs.readFileSync(require.resolve('../index.html'),'utf8'),source=fs.readFileSync(require.resolve('../course-lesson.js'),'utf8');
+  const events=[],node={};let constructions=0;
+  class Map{constructor(){constructions++;}}
+  const context={google:{maps:{Map,RenderingType:{VECTOR:'VECTOR'}}},googleMap:null,googleMapsRequested:true,
+    JAGORAWI_OLD_CENTER:{lat:1,lng:2},$:id=>id==='googleMap'?node:null,window:{google:{maps:{Map}}},
+    controller:{attach:map=>events.push(['attach',map]),unavailable:message=>events.push(['error',message])}};
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('  let sharedMap=null'),source.indexOf('  function boot(){')),context);
+  vm.runInContext('mapController=controller;',context);
+  vm.runInContext(html.slice(html.indexOf('window.initGoogleMap=function(){'),html.indexOf('function loadGoogleMaps(){')),context);
+  context.window.initGoogleMap();const session=context.googleMap;context.window.gm_authFailure();
+  context.window.initGoogleMap();context.window.JGI_COURSE_LESSON_MAP.onReady(session);
+  context.window.JGI_COURSE_LESSON_MAP.onError('TEST_LOAD_ERROR');vm.runInContext('attachExistingMap();',context);
+  assert.equal(constructions,1);assert.equal(events.filter(e=>e[0]==='attach').length,1);
+  assert.ok(events.filter(e=>e[0]==='error').every(e=>e[1].includes('Google Maps 인증 오류')));
+  assert.equal(vm.runInContext('mapAuthFailed',context),true);
 });
 test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 제거/데이터 없음, Raw Data 불변',()=>{
   const vm=require('node:vm'),fs=require('node:fs'),nodes=new Map(),projected=[];

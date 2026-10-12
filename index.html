@@ -3819,6 +3819,7 @@ function renderCourseHole(){
 window.initGoogleMap=function(){
   const el=$('googleMap');
   if(!el||!window.google?.maps)return;
+  if(window.JGI_COURSE_LESSON_MAP&&googleMap){window.JGI_COURSE_LESSON_MAP.onReady(googleMap);return;}
   googleMap=new google.maps.Map(el,{
     center:JAGORAWI_OLD_CENTER,
     zoom:16,
@@ -3852,7 +3853,7 @@ window.initGoogleMap=function(){
 };
 
 window.gm_authFailure=function(){
-  if(window.JGI_COURSE_LESSON_MAP){window.JGI_COURSE_LESSON_MAP.onError('Google Maps 인증 오류 · JGI 코스 지도를 사용하세요.');return;}
+  if(window.JGI_COURSE_LESSON_MAP){window.JGI_COURSE_LESSON_MAP.onError('Google Maps 인증 오류 · JGI 코스 지도를 사용하세요.','AUTH_FAILURE');return;}
   const status=$('mapLoadStatus');
   if(status){
     status.classList.remove('ready');

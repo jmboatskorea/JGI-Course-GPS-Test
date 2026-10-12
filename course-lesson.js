@@ -486,10 +486,18 @@
     setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot,setPuttDistance,recordPutt,advanceCompletedHole,saveHoleCompletion};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   if(!developmentAllowed(window.location))return;
-  let sharedMap=null,mapController=null,mapError=null;
+  let sharedMap=null,mapController=null,mapError=null,mapAuthFailed=false;
   // Installed before the Player script loads Maps, so its listeners never own lesson clicks.
-  window.JGI_COURSE_LESSON_MAP={onReady:map=>{sharedMap=map;mapError=null;mapController?.attach(map);},
-    onError:message=>{mapError=message;mapController?.unavailable(message);}};
+  window.JGI_COURSE_LESSON_MAP={onReady:map=>{
+      sharedMap=map;
+      if(mapAuthFailed){mapController?.unavailable(mapError);return;}
+      mapError=null;mapController?.attach(map);
+    },onError:(message,kind)=>{
+      // A Map constructor/ready callback does not establish successful SDK authorization.
+      if(kind==='AUTH_FAILURE')mapAuthFailed=true;
+      if(!mapAuthFailed||kind==='AUTH_FAILURE')mapError=message;
+      mapController?.unavailable(mapError);
+    }};
   function attachExistingMap(){
     if(mapError){mapController.unavailable(mapError);return;}
     const existing=sharedMap||(typeof googleMap!=='undefined'?googleMap:null);
