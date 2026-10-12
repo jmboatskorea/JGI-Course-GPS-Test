@@ -1654,9 +1654,12 @@ body.round-active .modal .sheet .puttHistoryRow{
   display:block;margin-top:7px;color:#95a199;font-size:9px;font-weight:800;line-height:1.42
 }
 .introV2Actions{
-  display:grid;grid-template-columns:1.28fr 1fr;gap:11px;margin-top:24px;
+  display:grid;grid-template-columns:1.28fr 1fr;grid-template-areas:"round results" "lesson .";gap:11px;margin-top:24px;
   animation:jgiIntroRise .58s .76s cubic-bezier(.2,.8,.2,1) both
 }
+#enterRoundBtn{grid-area:round}
+#enterCourseLessonBtn{grid-area:lesson}
+#enterResultsBtn{grid-area:results}
 .introV2Action{
   position:relative;overflow:hidden;
   min-height:92px;padding:16px 17px;border-radius:22px;text-align:left;
@@ -1665,6 +1668,9 @@ body.round-active .modal .sheet .puttHistoryRow{
   transition:transform .16s ease,border-color .16s ease,background .16s ease
 }
 .introV2Action:active{transform:scale(.985)}
+.introV2Action:disabled{cursor:not-allowed;opacity:.65}
+.introV2Action:disabled:active{transform:none}
+.introV2Action .introV2Unavailable{color:#b9c8bf;font-size:9px}
 .introV2Action.primary{
   border-color:rgba(34,232,121,.64);
   background:
@@ -1749,6 +1755,9 @@ body.round-active .modal .sheet .puttHistoryRow{
   .introV2Action{min-height:86px;padding:14px 12px}
   .introV2Action strong{font-size:17px}
 }
+@media(max-width:520px){
+  .introV2Actions{grid-template-columns:1fr;grid-template-areas:"round" "lesson" "results"}
+}
 @media(prefers-reduced-motion:reduce){
   #introScreen.introV2 *,
   #introScreen.introV2 *::before,
@@ -1821,6 +1830,11 @@ body.round-active .modal .sheet .puttHistoryRow{
         <button id="enterRoundBtn" class="introV2Action primary">
           <strong>⛳ 라운드 시작</strong>
           <span>JGI와 지금 플레이 시작</span>
+        </button>
+        <button id="enterCourseLessonBtn" class="introV2Action" type="button" disabled>
+          <strong>🏌️ 코스레슨</strong>
+          <span>인증 코치 전용 · 1~4명 코스 레슨</span>
+          <span class="introV2Unavailable">준비 중 · 코치 인증 연결 후 이용 가능</span>
         </button>
         <button id="enterResultsBtn" class="introV2Action">
           <strong>📊 내 경기</strong>
