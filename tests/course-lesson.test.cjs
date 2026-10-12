@@ -6,6 +6,10 @@ function services(){
   let sequence=0;
   return {uuid:()=>String(++sequence),now:()=>1234,courseVersion:'TEST_COURSE',dataVersion:'TEST_SG',
     clubs:['DR','7I'],shotContext:r=>({holeId:r.currentHole+100,courseId:22987,sgBenchmarkVersion:'TEST_SG',startGreenDistanceM:100}),
+    distance:(a,b)=>Math.hypot(a.lat-b.lat,a.lng-b.lng)*111320,
+    greenGeometry:(r,hole)=>({hole,holeId:hole+100,courseId:22987,geometryVersion:'TEST_GREEN',polygons:[[
+      {lat:-6.455,lng:106.882},{lat:-6.456,lng:106.882},{lat:-6.456,lng:106.883},{lat:-6.455,lng:106.883}
+    ]]}),
     benchmark:r=>({handicap:r.playerHandicap,label:r.sgBenchmarkMode+' '+r.playerHandicap,type:'MODELED',fallback:false}),
     hydrate:r=>r};
 }
@@ -131,7 +135,7 @@ for(const count of [1,2,3,4])test('Phase 3A '+count+'명: 자유 순서에서 �
   }
   assert.ok(original.players.every(p=>p.round.holes[0].shots.length===0));
 });
-test('A → B → A: 클럽/위치/Pending 독립, 다음 Shot이 이전 End를 확정하지 않음',()=>{
+test('A → B → A: 클럽/위치 독립, 확인한 다음 시작 위치만 직전 End로 연결',()=>{
   const engine=services();let group=registeredGroup(2,engine);const [a,b]=group.players;
   group=lesson.stagePosition(group,a.playerId,mapPoint());group=lesson.confirmPosition(group,a.playerId,engine);group=lesson.recordShot(group,a.playerId,engine);
   const first=structuredClone(group.players[0].round.holes[0].shots[0]);
@@ -140,10 +144,11 @@ test('A → B → A: 클럽/위치/Pending 독립, 다음 Shot이 이전 End를 
   const bRound=structuredClone(group.players[1].round);
   group=lesson.selectPlayer(group,a.playerId);assert.equal(group.players[0].shotDraft.club,'DR');
   group=lesson.stagePosition(group,a.playerId,{...mapPoint(),lng:106.879});group=lesson.confirmPosition(group,a.playerId,engine);group=lesson.recordShot(group,a.playerId,engine);
-  assert.deepEqual(group.players[0].round.holes[0].shots[0],first);assert.deepEqual(group.players[1].round,bRound);
+  const connected=group.players[0].round.holes[0].shots[0];
+  assert.deepEqual(connected.start,first.start);assert.equal(connected.end.lng,106.879);assert.equal(connected.result.type,'NEXT_SHOT_START');assert.deepEqual(group.players[1].round,bRound);
   assert.deepEqual(group.players[0].round.holes[0].shots.map(s=>s.shotSequence),[1,2]);
   assert.equal(group.players[1].shotDraft.club,'7I');assert.equal(group.players[1].round.holes[0].shots[0].club,'7I');
-  assert.ok(group.players[0].round.holes[0].shots.every(s=>s.end===null&&s.sg===null));
+  assert.ok(group.players[0].round.holes[0].shots.every(s=>s.sg===null));assert.equal(group.players[0].round.holes[0].shots[1].end,null);
 });
 test('Pending·후보·확인 상태·마커 위치를 Phase 2 Group 저장 키로 정확히 복원',()=>{
   const engine=services(),store=memory();let group=registeredGroup(3,engine);const [a,b,c]=group.players;
@@ -181,4 +186,178 @@ test('같은 확인 상태의 재시도는 같은 Shot ID를 사용하고 저장
   const firstAttempt=lesson.recordShot(group,p.playerId,engine),retry=lesson.recordShot(group,p.playerId,engine);
   assert.equal(firstAttempt.players[0].round.holes[0].shots[0].id,retry.players[0].round.holes[0].shots[0].id);
   assert.throws(()=>lesson.recordShot(firstAttempt,p.playerId,engine),/확인/);
+});
+function physical(group,playerId,point,engine){
+  return lesson.recordShot(lesson.confirmPosition(lesson.stagePosition(group,playerId,point),playerId,engine),playerId,engine);
+}
+const greenPoint=()=>({...mapPoint(),lat:-6.4555,lng:106.8825});
+const pinPoint=()=>({...greenPoint(),lat:-6.4556,source:'SCORER_MANUAL_MAP'});
+test('Phase 3B: Shot 1→2→3→4는 같은 선수의 확인 좌표만 연결하며 Physical Shot을 추가하지 않음',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,gpsPoint(),engine);
+  for(let i=2;i<=4;i++){
+    const point={...mapPoint(),lng:106.878+i/1000};
+    const pending=structuredClone(group.players[0].round.holes[0].shots.at(-1));
+    group=lesson.stagePosition(group,pid,point);
+    assert.deepEqual(group.players[0].round.holes[0].shots.at(-1),pending);
+    group=lesson.confirmPosition(group,pid,engine);
+    const h=group.players[0].round.holes[0],last=h.shots.at(-1);
+    assert.equal(h.shots.length,i-1);assert.equal(last.status,'RESULT_CONFIRMED');
+    assert.deepEqual(last.end,{...point,confirmedAt:engine.now()});assert.equal(last.positionSource.end,'MANUAL_DROP');
+    assert.deepEqual(last.start,pending.start);assert.equal(group.players[0].round.pending,null);
+    group=lesson.recordShot(group,pid,engine);
+    assert.equal(group.players[0].round.holes[0].shots[i-2].result.nextShotId,group.players[0].round.holes[0].shots[i-1].id);
+  }
+  assert.deepEqual(group.players[0].round.holes[0].shots.map(s=>s.shotSequence),[1,2,3,4]);
+  assert.equal(group.players[0].round.holes[0].shots.at(-1).status,'PENDING_RESULT');
+});
+test('Phase 3B: End 재확인 시 원본 GPS/정확도와 첫 End, 수정 이력 및 연결을 복원',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,gpsPoint(),engine);const start=structuredClone(group.players[0].round.holes[0].shots[0].start);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,gpsPoint()),pid,engine);
+  const originalEnd=structuredClone(group.players[0].round.holes[0].shots[0].end);
+  lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,mapPoint()),pid,engine);
+  const s=group.players[0].round.holes[0].shots[0];
+  assert.deepEqual(s.start,start);assert.equal(s.start.accuracy,7);assert.deepEqual(s.originalEnd,originalEnd);
+  assert.equal(s.positionSource.end,'MANUAL_DROP');assert.equal(s.end.accuracy,null);
+  assert.equal(s.editHistory.length,2);assert.deepEqual(s.editHistory[1].previous.end,originalEnd);
+  assert.equal(s.editHistory[1].type,'END_POSITION_CORRECTED');
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  group=lesson.recordShot(group,pid,engine);assert.equal(group.players[0].round.holes[0].shots.length,2);
+});
+test('Phase 3B: 과거 여러 Pending/기존 확인 Draft의 누락 End를 역추정하지 않음',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,mapPoint(),engine);const first=structuredClone(group.players[0].round.holes[0].shots[0]);
+  group=physical(group,pid,gpsPoint(),engine);
+  group.players[0].round.holes[0].shots[0]=first; // A saved Phase 3A backlog.
+  group=lesson.confirmPosition(lesson.stagePosition(group,pid,{...mapPoint(),lng:106.879}),pid,engine);
+  assert.deepEqual(group.players[0].round.holes[0].shots[0],first);
+  assert.equal(group.players[0].round.holes[0].shots[1].end.lng,106.879);
+  group=lesson.recordShot(group,pid,engine);lesson.saveGroup(store,group);
+  const restored=lesson.restoreGroup(store);assert.deepEqual(restored.players[0].round.holes[0].shots[0],first);
+  let oldDraft=registeredGroup(1,engine);const oldPid=oldDraft.players[0].playerId;
+  oldDraft=lesson.confirmPosition(lesson.stagePosition(oldDraft,oldPid,mapPoint()),oldPid,engine);
+  oldDraft=lesson.recordShot(oldDraft,oldPid,engine);
+  const unchanged=structuredClone(oldDraft.players[0].round.holes[0].shots[0]);
+  oldDraft.players[0].shotDraft={hole:1,club:'DR',position:{...gpsPoint(),confirmedAt:1234},confirmed:true,confirmationId:'clpos_LEGACY'};
+  oldDraft=lesson.recordShot(oldDraft,oldPid,engine);assert.deepEqual(oldDraft.players[0].round.holes[0].shots[0],unchanged);
+});
+test('Phase 3B: ON GREEN은 선수 A만 변경하고 End/Putting 준비만 저장, PIN 없음 허용',()=>{
+  const engine=services();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  group=physical(group,a.playerId,mapPoint(),engine);group=physical(group,b.playerId,gpsPoint(),engine);
+  const before=structuredClone(group),shotId=group.players[0].round.pending.id;
+  group=lesson.onGreen(group,a.playerId,shotId,greenPoint(),null,engine);
+  const p=group.players[0],h=p.round.holes[0],s=h.shots[0];
+  assert.deepEqual(group.players[1],before.players[1]);assert.equal(h.shots.length,1);assert.equal(h.putts,0);assert.equal(h.completed,false);
+  assert.equal(s.endLie,'GREEN');assert.equal(s.endState,'ON_GREEN');assert.equal(s.holed,false);assert.equal(s.sg,null);
+  assert.equal(h.puttingReady.firstPuttDistanceM,null);assert.equal(h.puttingState,null);assert.equal(h.lessonStatus,'AWAITING_PUTTING');
+  assert.equal(p.round.pending,null);assert.deepEqual(p.ballPosition,s.end);assert.equal(group.holePins,undefined);
+  assert.throws(()=>lesson.recordShot(group,a.playerId,engine),/Phase 3C/);
+  assert.throws(()=>lesson.stagePosition(group,a.playerId,mapPoint()),/Phase 3C/);
+  assert.throws(()=>lesson.onGreen(group,a.playerId,shotId,greenPoint(),null,engine));
+  assert.equal(before.players[0].round.holes[0].shots[0].status,'PENDING_RESULT');
+});
+test('Phase 3B: 공유 수동 PIN은 홀별 저장, B의 PIN 건너뛰기는 기존 PIN과 퍼팅 거리 규칙 유지',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  group=physical(group,a.playerId,mapPoint(),engine);group=physical(group,b.playerId,gpsPoint(),engine);
+  group=lesson.onGreen(group,a.playerId,group.players[0].round.pending.id,greenPoint(),pinPoint(),engine);
+  const shared=structuredClone(group.holePins['1']),aBefore=structuredClone(group.players[0]);
+  assert.equal(shared.source,'SCORER_MANUAL_MAP');assert.equal(shared.isSurveyed,false);assert.equal(shared.groupId,group.groupId);
+  group=lesson.selectPlayer(group,b.playerId);
+  group=lesson.onGreen(group,b.playerId,group.players[1].round.pending.id,{...greenPoint(),lat:-6.4557},null,engine);
+  assert.deepEqual(group.holePins['1'],shared);assert.deepEqual(group.players[0],aBefore);
+  assert.ok(group.players.every(p=>p.round.holes[0].puttingReady.firstPuttDistanceM===null&&p.round.holes[0].shots[0].courseContext.endGreenDistanceM===null));
+  group=lesson.chooseHole(group,b.playerId,2);group=physical(group,b.playerId,mapPoint(),engine);
+  group=lesson.onGreen(group,b.playerId,group.players[1].round.pending.id,greenPoint(),null,engine);
+  assert.equal(group.holePins['2'],undefined);assert.deepEqual(group.holePins['1'],shared);
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+});
+test('Phase 3B: Green/PIN 밖 좌표, 없는 GI Green, 잘못된 PIN Source와 오래된 Shot ID 저장 거부',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,mapPoint(),engine);const shotId=group.players[0].round.pending.id,before=structuredClone(group);
+  assert.throws(()=>lesson.onGreen(group,pid,shotId,mapPoint(),null,engine),/GI Green 안/);
+  assert.throws(()=>lesson.onGreen(group,pid,shotId,gpsPoint(),null,engine));
+  assert.throws(()=>lesson.onGreen(group,pid,shotId,greenPoint(),{...pinPoint(),lat:-6.5},engine),/PIN/);
+  assert.throws(()=>lesson.onGreen(group,pid,shotId,greenPoint(),{...pinPoint(),source:'GPS'},engine),/SCORER_MANUAL_MAP/);
+  assert.throws(()=>lesson.onGreen(group,pid,shotId,greenPoint(),null,{...engine,greenGeometry:()=>null}),/GI Green Polygon/);
+  assert.throws(()=>lesson.onGreen(group,pid,'stale',greenPoint(),null,engine),/Pending Shot/);
+  assert.deepEqual(group,before);
+});
+for(const club of ['DR','7I','PW','SW'])test('Phase 3B '+club+' HOLED: 추가 타수/Putting/좌표 추정 없이 선택 선수만 완료',()=>{
+  const engine=services();engine.clubs.push('PW','SW');let group=registeredGroup(2,engine);const [a,b]=group.players;
+  group=lesson.setShotClub(group,a.playerId,club,engine);group=physical(group,a.playerId,gpsPoint(),engine);
+  const beforeB=structuredClone(group.players[1]),shotId=group.players[0].round.pending.id;
+  group=lesson.holed(group,a.playerId,shotId,engine);
+  const p=group.players[0],h=p.round.holes[0],s=h.shots[0];
+  assert.equal(h.shots.length,1);assert.equal(h.putts,0);assert.equal(h.score,1);assert.equal(h.completed,true);
+  assert.equal(s.holed,true);assert.equal(s.endLie,'HOLED');assert.equal(s.endState,'HOLED');assert.equal(s.end,null);assert.equal(s.distanceM,null);
+  assert.equal(s.result.endExpectedStrokes,0);assert.equal(s.courseContext.endGreenDistanceM,0);assert.equal(s.sg,null);
+  assert.equal(p.round.pending,null);assert.deepEqual(group.players[1],beforeB);
+  assert.throws(()=>lesson.holed(group,a.playerId,shotId,engine),/완료/);
+  assert.throws(()=>lesson.recordShot(group,a.playerId,engine),/완료/);
+  group=lesson.chooseHole(group,a.playerId,2);group=physical(group,a.playerId,mapPoint(),engine);
+  assert.equal(group.players[0].round.holes[1].shots[0].shotSequence,1);
+});
+test('Phase 3B: HOLED Score는 기존 Physical Shot + Putting + Penalty 규칙 유지, 완료 상태 저장/복원',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);const [a,b]=group.players;
+  group=physical(group,a.playerId,mapPoint(),engine);group=physical(group,a.playerId,gpsPoint(),engine);
+  group.players[0].round.holes[0].penalties=1;
+  group=lesson.holed(group,a.playerId,group.players[0].round.pending.id,engine);
+  group=physical(group,b.playerId,mapPoint(),engine);
+  group=lesson.onGreen(group,b.playerId,group.players[1].round.pending.id,greenPoint(),pinPoint(),engine);
+  assert.equal(group.players[0].round.holes[0].score,3);assert.equal(group.players[0].round.holes[0].shots.length,2);
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+  const wrong=structuredClone(group);wrong.players[0].round.holes[0].score=2;assert.throws(()=>lesson.validateGroup(wrong));
+});
+test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/resize 무시, 저장 후 원래 위성 화면 복귀',()=>{
+  const vm=require('node:vm'),fs=require('node:fs');
+  const engine=services();let group=registeredGroup(2,engine);const pid=group.players[0].playerId;
+  group=physical(group,pid,mapPoint(),engine);
+  const frames=[],closed=[],polygons=[],nodes=new Map(),classes=new Set();
+  class Element{
+    constructor(id){this.id=id;this.events={};this.children=[];this.open=false;}
+    addEventListener(type,fn){(this.events[type]||=[]).push(fn);}
+    emit(type,event={}){for(const fn of this.events[type]||[])fn(event);}
+    append(n){if(n.parentElement)n.parentElement.children=n.parentElement.children.filter(x=>x!==n);this.children.push(n);n.parentElement=this;}
+    replaceChildren(){this.children=[];}
+    setAttribute(){}
+    showModal(){this.open=true;}
+    close(){this.open=false;closed.push(()=>this.emit('close'));}
+  }
+  const el=id=>{if(!nodes.has(id))nodes.set(id,new Element(id));return nodes.get(id);};
+  class Marker{setMap(m){this.map=m;}setPosition(){}setLabel(){}setZIndex(){}setIcon(){}}
+  class Polygon{constructor(options){this.paths=options.paths;this.map=options.map;polygons.push(this);}setMap(m){this.map=m;}}
+  class Bounds{constructor(){this.points=[];}extend(p){this.points.push(p);}}
+  const map={listeners:[],fits:[],addListener(type,fn){this.listeners.push(fn);},fitBounds(bounds){this.fits.push(bounds.points);}};
+  const context={window:{JGI_COURSE_LESSON_MAP:{},activeCourseData:()=>({holes:{'1':{t:[0,0],g:[1,1]},'2':{t:[0,0],g:[2,2]}}}),
+      courseViewProjector:()=>({shapes:[],project:p=>({x:p.lng,y:p.lat,inside:true})}),
+      courseLocalProjector:()=>({toXY:p=>({x:p.lng,y:p.lat}),toLatLng:p=>({lat:p.y,lng:p.x})}),svgPath:()=>''},
+    document:{getElementById:el,createElementNS:()=>new Element(),body:{classList:{add:v=>classes.add(v),remove:v=>classes.delete(v)}}},
+    google:{maps:{Marker,Polygon,LatLngBounds:Bounds,SymbolPath:{CIRCLE:0},event:{trigger(){}}}},requestAnimationFrame:fn=>frames.push(fn),Date};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../course-lesson-map.js'),'utf8'),context);
+  let saved=null;
+  const controller=context.window.JGICourseLessonMapController({querySelector:s=>el(s.slice(1))},()=>group,()=>assert.fail('Popup click must not stage a main-map position'),{
+    geometry:(r,hole)=>lesson.greenGeometry(r,hole,engine),contains:lesson.pointInGreen,
+    onSave:(ctx,point,pin)=>{saved={ctx,point,pin};group=lesson.onGreen(group,ctx.playerId,ctx.shotId,point,pin,engine);controller.render();}
+  });
+  controller.attach(map);controller.attach(map);assert.equal(map.listeners.length,1);el('lessonSatellite').emit('click');
+  const open=()=>controller.openGreen({groupId:group.groupId,playerId:pid,hole:group.players[0].round.currentHole,shotId:group.players[0].round.pending.id});
+  const click=point=>map.listeners[0]({latLng:{lat:()=>point.lat,lng:()=>point.lng}});
+  const before=structuredClone(group);open();click(greenPoint());el('lessonGreenPin').emit('click');click(pinPoint());
+  assert.equal(el('googleMap').parentElement.id,'lessonGreenSatellite');assert.deepEqual(group,before);
+  el('lessonGreenCancel').emit('click');assert.equal(el('googleMap').parentElement.id,'lessonSatelliteMap');
+  assert.equal(el('lessonSatelliteMap').hidden,false);assert.ok(polygons.every(p=>p.map===null));assert.deepEqual(group,before);
+  // Reopen a different hole before old close and resize callbacks are dispatched.
+  group=lesson.chooseHole(group,pid,2);group=physical(group,pid,mapPoint(),engine);open();
+  for(const event of closed.splice(0))event();assert.equal(el('lessonGreenDialog').open,true);
+  const priorFits=map.fits.length;for(const frame of frames.splice(0))frame();assert.equal(map.fits.length,priorFits+1);
+  const beforeSave=structuredClone(group);click(mapPoint());assert.equal(el('lessonGreenSave').disabled,true);
+  click(greenPoint());el('lessonGreenPin').emit('click');click(pinPoint());el('lessonGreenSkipPin').emit('click');
+  el('lessonGreenSave').emit('click');
+  assert.equal(saved.pin,null);assert.equal(saved.point.source,'MANUAL_DROP');assert.equal(saved.point.accuracy,null);
+  assert.equal(el('lessonGreenDialog').open,false);assert.equal(el('googleMap').parentElement.id,'lessonSatelliteMap');
+  assert.equal(el('lessonSatelliteMap').hidden,false);assert.equal(classes.size,0);assert.equal(map.listeners.length,1);assert.ok(polygons.every(p=>p.map===null));
+  assert.deepEqual(group.players[1],beforeSave.players[1]);assert.equal(group.players[0].round.holes[1].shots.length,1);
 });
