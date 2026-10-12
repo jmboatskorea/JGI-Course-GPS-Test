@@ -548,7 +548,6 @@
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
     // Reuse Player's distance controls and PIN scale without its global Round/draft handlers.
     const greenPicker=document.getElementById('puttGreen').cloneNode(true);
-    greenPicker.querySelector('#puttBall').remove();greenPicker.querySelector('#puttLine').remove();
     const distanceRow=document.getElementById('puttDistanceInput').closest('.puttDistanceRow').cloneNode(true);
     for(const root of [greenPicker,distanceRow]){
       for(const node of [root,...root.querySelectorAll('[id]')])if(node.id)node.id='lesson'+node.id[0].toUpperCase()+node.id.slice(1);
@@ -558,6 +557,10 @@
     el('lessonPuttDistancePicker').append(greenPicker);el('lessonPuttDistanceRow').append(distanceRow);
     el('lessonPuttDistanceInput').setAttribute('inputmode','decimal');
     let puttRangeLong=false;
+    // PIN-relative diagram selections only; never save these as GPS/Raw Shot positions.
+    const puttMarkers=new Map();
+    const puttMarkerKey=(p,h)=>JSON.stringify([group.groupId,p.playerId,p.roundId,h.hole,
+      h.puttingReady.entryShotId,h.puttingReady.preparedAt,h.puttsDetail.length+1]);
     function renderPutting(){
       const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),h=p?.round?.holes[p.round.currentHole-1],ready=h?.puttingReady;
       el('lessonPutting').hidden=!ready;if(!ready)return;
@@ -567,6 +570,15 @@
       el('lessonPuttInputPanel').hidden=h.completed;
       el('lessonPuttDistanceInput').value=ready.distanceInput||'';
       const rings=puttRangeLong?[5,10,15,20]:[0.5,1,2,3,5],max=puttRangeLong?20:5;
+      const marker=puttMarkers.get(puttMarkerKey(p,h)),scale=marker?marker.rangeM/max:1;
+      const ball=marker?{x:180+(marker.x-180)*scale,y:180+(marker.y-180)*scale}:null;
+      const visible=!h.completed&&ball&&Math.hypot(ball.x-180,ball.y-180)<=140;
+      el('lessonPuttBall').setAttribute('visibility',visible?'visible':'hidden');
+      el('lessonPuttLine').setAttribute('visibility',visible?'visible':'hidden');
+      if(ball){
+        el('lessonPuttBall').setAttribute('cx',ball.x);el('lessonPuttBall').setAttribute('cy',ball.y);
+        for(const [key,value] of [['x1',180],['y1',180],['x2',ball.x],['y2',ball.y]])el('lessonPuttLine').setAttribute(key,value);
+      }
       el('lessonPuttRings').innerHTML=rings.map(m=>'<circle cx="180" cy="180" r="'+(140*m/max)+'" fill="none" stroke="#8cc6ad" stroke-dasharray="4 5"/><text x="180" y="'+(195-140*m/max)+'" text-anchor="middle">'+m+'m</text>').join('');
       el('lessonPuttScaleLabel').textContent='PIN 기준 · '+rings.join('m / ')+'m';
       el('lessonPuttRangeToggle').textContent=puttRangeLong?'0–5m':'5m+';
@@ -603,7 +615,12 @@
       const ctm=greenPicker.getScreenCTM();if(!ctm)return;
       const point=greenPicker.createSVGPoint();point.x=event.clientX;point.y=event.clientY;
       const q=point.matrixTransform(ctm.inverse()),radius=Math.hypot(q.x-180,q.y-180);
-      if(radius<=140)savePuttDistance(Math.max(0.1,Math.round(radius*(puttRangeLong?20:5)/140*10)/10).toFixed(1));
+      if(radius<=140){
+        const p=group?.players.find(p=>p.playerId===group.selectedPlayerId),h=p?.round?.holes[p.round.currentHole-1];
+        if(!h?.puttingReady||h.completed)return;
+        puttMarkers.set(puttMarkerKey(p,h),{x:q.x,y:q.y,rangeM:puttRangeLong?20:5});
+        savePuttDistance(Math.max(0.1,Math.round(radius*(puttRangeLong?20:5)/140*10)/10).toFixed(1));
+      }
     });
     for(let i=1;i<=18;i++){const option=document.createElement('option');option.value=String(i);option.textContent=i+'번 홀';el('lessonHole').append(option);}
     services.clubs.forEach(club=>{const option=document.createElement('option');option.value=club;option.textContent=club;el('lessonShotClub').append(option);});
