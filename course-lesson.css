@@ -23,4 +23,11 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonStatus[data-error="true"]{color:#ff9ba4}
 .courseLessonDev .lessonBench{margin-top:12px;padding:12px;background:#08131b;border-radius:12px;font-size:13px;line-height:1.5}
 .courseLessonDev a{color:#91f4ad}
+.courseLessonDev .lessonMapHost{height:440px;position:relative;margin:12px 0;background:#07130d;border:1px solid #315168;border-radius:14px;overflow:hidden}
+.courseLessonDev #lessonCourseSvg{width:100%;height:100%;display:block;cursor:crosshair;touch-action:manipulation}
+.courseLessonDev #lessonCourseSvg[hidden]{display:none}
+.courseLessonDev #lessonSatelliteMap{position:absolute;inset:0}
+.courseLessonDev #googleMap{display:block;position:absolute;inset:0;width:100%;height:100%}
+.courseLessonDev .lessonShotHistory{display:grid;gap:8px;font-size:12px;line-height:1.5;margin-top:12px}
+.courseLessonDev .lessonShotHistory>div{padding:10px;background:#08131b;border:1px solid #315168;border-radius:10px}
 @media(max-width:520px){.courseLessonDev{padding:16px 12px}.courseLessonDev .lessonFields{grid-template-columns:1fr}.courseLessonDev .lessonPanel{padding:12px}.courseLessonDev .lessonActions button{flex:1 1 100%}.courseLessonDev h1{font-size:22px}}

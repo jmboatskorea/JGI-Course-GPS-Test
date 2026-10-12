@@ -13,6 +13,7 @@ const files = [
   'whoop-pilot.js', 'whoop-pilot.css',
   'target-score-coach.js', 'target-score-coach.css',
   'course-lesson.js', 'course-lesson.css',
+  'course-lesson-map.js',
   'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
   'ora-south-left-course-data.js',
