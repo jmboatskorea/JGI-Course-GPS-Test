@@ -74,6 +74,11 @@ FIXTURE_SCRIPT = r"""({source, count, scenario}) => {
   let g=E.createGroup(count,services);
   for(const [i,p] of g.players.entries())g=E.registerPlayer(g,p.playerId,
     {name:'TEST 선수 '+String.fromCharCode(65+i),contact:'TEST-WA-00'+(i+1),sex:i%2?'MALE':'FEMALE',handicap:String(i+5),tee:i%2?'Blue':'Red'},services);
+  if(scenario==='par3'){
+    const hole=g.players[0].round.holes.find(h=>h.par===3&&activeCourseData(g.players[0].round).holes[String(h.hole)]?.g)?.hole;
+    if(!hole)throw Error('No actual PAR3 hole available');
+    for(const p of g.players)g=E.chooseHole(g,p.playerId,hole);
+  }
   const physical=(pid,offset=0)=>{
     const p=g.players.find(p=>p.playerId===pid),h=activeCourseData(p.round).holes[String(p.round.currentHole)];
     const t=h.t||h.g;
@@ -112,11 +117,11 @@ FIXTURE_SCRIPT = r"""({source, count, scenario}) => {
   personal.playerName='TEST PERSONAL ROUND SENTINEL';
   localStorage.setItem('agi_player_v1_round',JSON.stringify(personal));
   localStorage.setItem('jgi_completed_rounds_v1','[]');
-  const gp=inside(g.players[0]),geo=geometry(g.players[0].round,1);
+  const hole=g.players[0].round.currentHole,gp=inside(g.players[0]),geo=geometry(g.players[0].round,hole);
   let gp2=point(gp.lat+0.000005,gp.lng+0.000005);
   if(!E.pointInGreen(gp2,geo))gp2=point(gp.lat-0.000005,gp.lng-0.000005);
   if(!E.pointInGreen(gp2,geo))throw Error('No second synthetic Green point');
-  return {group:g,greenPoint:gp,greenPoint2:gp2};
+  return {group:g,greenPoint:gp,greenPoint2:gp2,hole};
 }"""
 
 
@@ -286,8 +291,8 @@ def mixed_flow(page, source, url, out, label):
     if page.locator('#lessonManageDialog').count() and page.locator('#lessonManageDialog').is_visible():
         click(page,'#lessonManageClose')
     select_player(page,group,1)
-    expect(page.locator('#lessonPuttTitle')).to_contain_text('TEST 선수 B')
     expect(reveal(page,'#lessonPuttDistanceInput')).to_have_value('8')
+    expect(page.locator('#lessonPuttTitle')).to_contain_text('TEST 선수 B')
     reveal(page,'#lessonPuttDistanceInput').fill('7.5')
     select_player(page,group,2)
     expect(page.locator('#lessonHoleState')).to_contain_text('HOLED')
@@ -421,6 +426,148 @@ def auto_next_flow(page,source,url):
     expect(page.locator('#lessonStatus')).to_contain_text('HOLE 1 COMPLETE')
     assert_personal(page,personal)
     return {'all_player_auto_next_selected_player_retained':'PASS'}
+
+
+def putting_collapsed(page):
+    """Ready is persisted state; opening its input is an explicit scorer action."""
+    expect(page.locator('#lessonPutting')).not_to_be_visible()
+    expect(page.locator('#lessonPuttingToggle')).to_be_visible()
+    expect(page.locator('#lessonPuttingToggle')).to_have_attribute('aria-expanded','false')
+
+
+def open_putting(page,name):
+    putting_collapsed(page)
+    click(page,'#lessonPuttingToggle')
+    expect(page.locator('#lessonPutting')).to_be_visible()
+    expect(page.locator('#lessonPuttingToggle')).to_have_attribute('aria-expanded','true')
+    expect(page.locator('#lessonPuttTitle')).to_contain_text(name)
+
+
+def hole_for(group,index,hole):
+    return group['players'][index]['round']['holes'][hole-1]
+
+
+def on_green_ui(page,point,index,hole):
+    click(page,'#lessonOnGreen')
+    green_click(page,point)
+    click(page,'#lessonGreenSkipPin')
+    click(page,'#lessonGreenSave')
+    expect(page.locator('#lessonGreenDialog')).not_to_be_visible()
+    putting_collapsed(page)
+    state=hole_for(storage_group(page),index,hole)
+    assert len(state['shots'])==1 and state['shots'][0]['result']['type']=='ON_GREEN'
+    assert state['putts']==0 and state['puttsDetail']==[] and not state['completed']
+    return state
+
+
+def marker_attributes(page):
+    expect(page.locator('#lessonPuttBall')).to_have_attribute('visibility','visible')
+    expect(page.locator('#lessonPuttLine')).to_have_attribute('visibility','visible')
+    return page.evaluate('''()=>({
+      ball:['cx','cy'].map(k=>document.querySelector('#lessonPuttBall').getAttribute(k)),
+      line:['x1','y1','x2','y2'].map(k=>document.querySelector('#lessonPuttLine').getAttribute(k))
+    })''')
+
+
+def explicit_putting_free_order_flow(page,source,url,out,label):
+    """Actual PAR3: A ON GREEN -> B ON GREEN -> B putt -> A putt."""
+    data,personal=fixture(page,source,url,'par3',count=2)
+    group=data['group'];hole=data['hole']
+    assert hole_for(group,0,hole)['par']==3
+    on_green_ui(page,data['greenPoint'],0,hole)
+    ready_a=storage_group(page)['players'][0]
+    page.screenshot(path=str(out/f'lesson-{label}-par3-on-green-ready.png'),full_page=False)
+    select_player(page,group,1)
+    assert storage_group(page)['players'][0]==ready_a
+    on_green_ui(page,data['greenPoint2'],1,hole)
+    assert storage_group(page)['players'][0]==ready_a
+
+    open_putting(page,'TEST 선수 B')
+    putt_diagram_click(page,250,180)
+    b_marker=marker_attributes(page)
+    reveal(page,'#lessonPuttDistanceInput').fill('8.0')
+    select_player(page,group,0)
+    open_putting(page,'TEST 선수 A')
+    putt_diagram_click(page,180,250)
+    a_marker=marker_attributes(page)
+    assert a_marker!=b_marker
+    reveal(page,'#lessonPuttDistanceInput').fill('1.5')
+    select_player(page,group,1)
+    open_putting(page,'TEST 선수 B')
+    assert float(page.locator('#lessonPuttDistanceInput').input_value())==8
+    assert marker_attributes(page)==b_marker
+    select_player(page,group,0)
+    open_putting(page,'TEST 선수 A')
+    assert float(page.locator('#lessonPuttDistanceInput').input_value())==1.5
+    assert marker_attributes(page)==a_marker
+
+    # Refresh preserves the original persisted distance drafts and keeps inputs closed.
+    # Diagram markers remain intentionally page-memory-only, never Raw/GPS positions.
+    select_player(page,group,1)
+    before_raw=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
+    page.reload(wait_until='domcontentloaded')
+    expect(page.locator('#lessonPlayers .lessonPlayer')).to_have_count(2)
+    putting_collapsed(page)
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==before_raw
+    open_putting(page,'TEST 선수 B')
+    assert float(page.locator('#lessonPuttDistanceInput').input_value())==8
+    before_a=storage_group(page)['players'][0]
+    click(page,'#lessonPuttHoled')
+    waiting=storage_group(page)
+    assert waiting['players'][0]==before_a
+    assert waiting['selectedPlayerId']==group['players'][1]['playerId']
+    assert all(p['round']['currentHole']==hole for p in waiting['players'])
+    assert hole_for(waiting,1,hole)['completed'] and hole_for(waiting,1,hole)['score']==2
+    assert hole_for(waiting,1,hole)['putts']==1
+    select_player(page,group,0)
+    open_putting(page,'TEST 선수 A')
+    assert float(page.locator('#lessonPuttDistanceInput').input_value())==1.5
+    click(page,'#lessonPuttHoled')
+    advanced=storage_group(page)
+    assert advanced['selectedPlayerId']==group['players'][0]['playerId']
+    assert all(p['round']['currentHole']==hole+1 for p in advanced['players'])
+    for i in [0,1]:
+        h=hole_for(advanced,i,hole)
+        assert h['completed'] and h['score']==2 and h['putts']==1 and len(h['shots'])==1
+    assert_personal(page,personal)
+    return {'explicit_putting_par3_A_green_B_green_B_putt_A_putt':'PASS',
+      'explicit_putting_drafts_markers_switch_refresh':'PASS','explicit_putting_par3_hole':hole}
+
+
+def explicit_putting_interleaved_short_flow(page,source,url):
+    """Actual PAR3: A ON GREEN -> A SHORT -> B ON GREEN -> B putt."""
+    data,personal=fixture(page,source,url,'par3',count=2)
+    group=data['group'];hole=data['hole']
+    on_green_ui(page,data['greenPoint'],0,hole)
+    open_putting(page,'TEST 선수 A')
+    reveal(page,'#lessonPuttDistanceInput').fill('8.0')
+    click(page,'#lessonPuttShort')
+    a=hole_for(storage_group(page),0,hole)
+    assert a['putts']==1 and a['score']==2 and a['puttsDetail'][0]['result']=='SHORT' and not a['completed']
+    reveal(page,'#lessonPuttDistanceInput').fill('1.0')
+    before_a=storage_group(page)['players'][0]
+    select_player(page,group,1)
+    on_green_ui(page,data['greenPoint2'],1,hole)
+    assert storage_group(page)['players'][0]==before_a
+    open_putting(page,'TEST 선수 B')
+    reveal(page,'#lessonPuttDistanceInput').fill('2.0')
+    click(page,'#lessonPuttHoled')
+    waiting=storage_group(page)
+    assert waiting['players'][0]==before_a
+    assert all(p['round']['currentHole']==hole for p in waiting['players'])
+    assert hole_for(waiting,1,hole)['completed'] and hole_for(waiting,1,hole)['putts']==1
+    select_player(page,group,0)
+    open_putting(page,'TEST 선수 A')
+    assert float(page.locator('#lessonPuttDistanceInput').input_value())==1
+    click(page,'#lessonPuttHoled')
+    advanced=storage_group(page)
+    assert all(p['round']['currentHole']==hole+1 for p in advanced['players'])
+    a=hole_for(advanced,0,hole);b=hole_for(advanced,1,hole)
+    assert a['completed'] and a['putts']==2 and a['score']==3 and len(a['shots'])==1
+    assert [p['result'] for p in a['puttsDetail']]==['SHORT','HOLED']
+    assert b['completed'] and b['putts']==1 and b['score']==2 and len(b['shots'])==1
+    assert_personal(page,personal)
+    return {'explicit_putting_par3_A_green_A_short_B_green_B_putt':'PASS'}
 
 
 def registration_flow(page,url,out,label):
@@ -593,6 +740,8 @@ def main():
                 run.update(marker_flow(page,source,url))
                 run.update(hole_map_flow(page,source,url))
                 run.update(registration_flow(page,url,out,label))
+                run.update(explicit_putting_free_order_flow(page,source,url,out,label))
+                run.update(explicit_putting_interleaved_short_flow(page,source,url))
                 assert not errors,errors
                 run['uncaught_page_errors']=errors
                 results['runs'].append(run)
