@@ -9,6 +9,9 @@
 <meta name="theme-color" content="#06110c">
 <title>JGI · AGI 플레이어 V1</title>
 <script src="runtime-config.js"></script>
+<script src="course-lesson.js"></script>
+<script src="course-lesson-map.js"></script>
+<link rel="stylesheet" href="course-lesson.css">
 <style>
 :root{
   --bg:#050c12;--panel:#0b1822;--panel2:#102330;--line:#284153;
@@ -1654,9 +1657,12 @@ body.round-active .modal .sheet .puttHistoryRow{
   display:block;margin-top:7px;color:#95a199;font-size:9px;font-weight:800;line-height:1.42
 }
 .introV2Actions{
-  display:grid;grid-template-columns:1.28fr 1fr;gap:11px;margin-top:24px;
+  display:grid;grid-template-columns:1.28fr 1fr;grid-template-areas:"round results" "lesson .";gap:11px;margin-top:24px;
   animation:jgiIntroRise .58s .76s cubic-bezier(.2,.8,.2,1) both
 }
+#enterRoundBtn{grid-area:round}
+#enterCourseLessonBtn{grid-area:lesson}
+#enterResultsBtn{grid-area:results}
 .introV2Action{
   position:relative;overflow:hidden;
   min-height:92px;padding:16px 17px;border-radius:22px;text-align:left;
@@ -1665,6 +1671,9 @@ body.round-active .modal .sheet .puttHistoryRow{
   transition:transform .16s ease,border-color .16s ease,background .16s ease
 }
 .introV2Action:active{transform:scale(.985)}
+.introV2Action:disabled{cursor:not-allowed;opacity:.65}
+.introV2Action:disabled:active{transform:none}
+.introV2Action .introV2Unavailable{color:#b9c8bf;font-size:9px}
 .introV2Action.primary{
   border-color:rgba(34,232,121,.64);
   background:
@@ -1749,6 +1758,9 @@ body.round-active .modal .sheet .puttHistoryRow{
   .introV2Action{min-height:86px;padding:14px 12px}
   .introV2Action strong{font-size:17px}
 }
+@media(max-width:520px){
+  .introV2Actions{grid-template-columns:1fr;grid-template-areas:"round" "lesson" "results"}
+}
 @media(prefers-reduced-motion:reduce){
   #introScreen.introV2 *,
   #introScreen.introV2 *::before,
@@ -1821,6 +1833,11 @@ body.round-active .modal .sheet .puttHistoryRow{
         <button id="enterRoundBtn" class="introV2Action primary">
           <strong>⛳ 라운드 시작</strong>
           <span>JGI와 지금 플레이 시작</span>
+        </button>
+        <button id="enterCourseLessonBtn" class="introV2Action" type="button" disabled>
+          <strong>🏌️ 코스레슨</strong>
+          <span>인증 코치 전용 · 1~4명 코스 레슨</span>
+          <span class="introV2Unavailable">준비 중 · 코치 인증 연결 후 이용 가능</span>
         </button>
         <button id="enterResultsBtn" class="introV2Action">
           <strong>📊 내 경기</strong>
@@ -3070,11 +3087,11 @@ function unpackCourseShape(item){
   const names={H:'HOLE_BOUNDARY',F:'FAIRWAY',B:'BUNKER',G:'GREEN',W:'WATER',P:'WATER_PATH',T:'TEE'};
   return {type:names[item[0]]||item[0],line:item[1]===1,path:(item[2]||[]).map(p=>({lat:p[0],lng:p[1]}))};
 }
-function courseShapes(h){
+function courseShapes(h,r=round){
   if(!h)return [];
   const raw=Array.isArray(h.localS)?h.localS.map(i=>h.s?.[i]).filter(Boolean):(h.s||[]);
   const own=raw.map(unpackCourseShape);
-  const water=(h.w||[]).map(i=>activeCourseData()?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
+  const water=(h.w||[]).map(i=>activeCourseData(r)?.waters?.[i]).filter(Boolean).map(unpackCourseShape);
   return own.concat(water);
 }
 
@@ -3157,14 +3174,14 @@ function smoothCenterlinePoints(points,radius=1){
     return {...p,x:x/n,y:y/n};
   });
 }
-function buildCourseIntelligenceModel(h,holePar=null){
+function buildCourseIntelligenceModel(h,holePar=null,r=round){
   if(!h?.t||!h?.g)return null;
-  const key=String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'');
+  const key=String(activeCourseData(r)?.courseId??'')+'|'+String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'');
   if(courseIntelligenceCache.has(key))return courseIntelligenceCache.get(key);
 
   const tee={lat:h.t[0],lng:h.t[1]};
   const green={lat:h.g[0],lng:h.g[1]};
-  const shapes=courseShapes(h);
+  const shapes=courseShapes(h,r);
   const fairways=shapes.filter(s=>s.type==='FAIRWAY'&&s.path?.length>=3);
   if(!fairways.length)return null;
   const fairway=fairways.slice().sort((a,b)=>b.path.length-a.path.length)[0];
@@ -3293,8 +3310,8 @@ function riskSide(start,landing,centroidLL){
   const cross=(b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
   return cross>0?'LEFT':cross<0?'RIGHT':'CENTER';
 }
-function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null,holePar=null){
-  const model=buildCourseIntelligenceModel(h,holePar);
+function deriveCourseIntelligence(h,start,clubCarryM,targetSnapshot=null,holePar=null,r=round){
+  const model=buildCourseIntelligenceModel(h,holePar,r);
   if(!model||!start)return {
     fairwayWidth:null,dogleg:null,hazardDistance:null,landingZoneWidth:null,
     courseRisk:{left:null,right:null,narrowness:null,dogleg:null,source:'UNAVAILABLE',version:COURSE_INTELLIGENCE_VERSION}
@@ -3535,8 +3552,8 @@ function teeShotCoordinateRows(rows){
   }).filter(Boolean);
 }
 
-function courseViewProjector(h){
-  const shapes=courseShapes(h);
+function courseViewProjector(h,r=round,extraPoints=[]){
+  const shapes=courseShapes(h,r);
   const points=shapes.flatMap(s=>s.path||[]);
   if(h?.t)points.push({lat:h.t[0],lng:h.t[1]});
   if(h?.g)points.push({lat:h.g[0],lng:h.g[1]});
@@ -3552,7 +3569,7 @@ function courseViewProjector(h){
   const a=Math.atan2(dx,dy),ca=Math.cos(a),sa=Math.sin(a);
   const rotate=p=>{const q=local(p);return {x:q.x*ca-q.y*sa,y:q.x*sa+q.y*ca}};
   const boundary=shapes.filter(s=>s.type==='HOLE_BOUNDARY').flatMap(s=>s.path||[]);
-  const fitPoints=(boundary.length?boundary:points).map(rotate);
+  const fitPoints=(boundary.length?boundary:points).concat(extraPoints).map(rotate);
   let minX=Math.min(...fitPoints.map(p=>p.x)),maxX=Math.max(...fitPoints.map(p=>p.x));
   let minY=Math.min(...fitPoints.map(p=>p.y)),maxY=Math.max(...fitPoints.map(p=>p.y));
   if(!Number.isFinite(minX)||!Number.isFinite(maxX)||maxX===minX||maxY===minY)return null;
@@ -3567,7 +3584,12 @@ function courseViewProjector(h){
       inside:q.x>=minX&&q.x<=maxX&&q.y>=minY&&q.y<=maxY
     };
   };
-  return {project,shapes};
+  const unproject=p=>{
+    const x=minX+(p.x-padX)/(W-padX*2)*(maxX-minX);
+    const y=minY+(H-padBottom-p.y)/(H-padTop-padBottom)*(maxY-minY);
+    return {lat:origin.lat+(-x*sa+y*ca)/mLat,lng:origin.lng+(x*ca+y*sa)/mLng};
+  };
+  return {project,unproject,shapes};
 }
 function svgPath(points,project){
   if(!points?.length)return '';
@@ -3795,8 +3817,10 @@ function renderCourseHole(){
 }
 
 window.initGoogleMap=function(){
+  window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('Maps.init');
   const el=$('googleMap');
   if(!el||!window.google?.maps)return;
+  if(window.JGI_COURSE_LESSON_MAP&&googleMap){window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('Maps.reuse');window.JGI_COURSE_LESSON_MAP.onReady(googleMap);return;}
   googleMap=new google.maps.Map(el,{
     center:JAGORAWI_OLD_CENTER,
     zoom:16,
@@ -3816,6 +3840,7 @@ window.initGoogleMap=function(){
   });
   const status=$('mapLoadStatus');
   if(status)status.classList.add('ready');
+  if(window.JGI_COURSE_LESSON_MAP){window.JGI_COURSE_LESSON_MAP.onReady(googleMap);return;}
   googleMap.addListener('click',e=>{
     if(roundEditMapActive){roundEditChooseMapPoint(e.latLng);return}
     if(reviewSatelliteActive)return;
@@ -3829,6 +3854,8 @@ window.initGoogleMap=function(){
 };
 
 window.gm_authFailure=function(){
+  window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('gm_authFailure');
+  if(window.JGI_COURSE_LESSON_MAP){window.JGI_COURSE_LESSON_MAP.onError('Google Maps 인증 오류 · JGI 코스 지도를 사용하세요.','AUTH_FAILURE');return;}
   const status=$('mapLoadStatus');
   if(status){
     status.classList.remove('ready');
@@ -3842,11 +3869,13 @@ window.gm_authFailure=function(){
 function loadGoogleMaps(){
   if(googleMapsRequested||window.google?.maps)return;
   googleMapsRequested=true;
+  window.JGI_COURSE_LESSON_DIAGNOSTICS?.record('Maps.load');
   const s=document.createElement('script');
   s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_MAPS_API_KEY)+'&callback=initGoogleMap&v=weekly';
   s.async=true;
   s.defer=true;
   s.onerror=()=>{
+    if(window.JGI_COURSE_LESSON_MAP){window.JGI_COURSE_LESSON_MAP.onError('Google Maps 로드 실패 · JGI 코스 지도를 사용하세요.');return;}
     const status=$('mapLoadStatus');
     if(status){
       status.classList.add('error');

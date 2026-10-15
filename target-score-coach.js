@@ -1239,6 +1239,7 @@
   }
 
   function installPendingTargetMapHook(){
+    if(window.JGI_COURSE_LESSON_MAP)return;
     const attach=()=>{
       if(typeof googleMap==='undefined'||!googleMap||googleMap.__jgiPendingTargetHook)return;
       googleMap.__jgiPendingTargetHook=true;
