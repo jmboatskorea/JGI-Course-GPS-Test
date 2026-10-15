@@ -97,7 +97,7 @@ FIXTURE_SCRIPT = r"""({source, count, scenario}) => {
   };
   const green=(pid)=>{const p=g.players.find(p=>p.playerId===pid);g=E.onGreen(g,pid,p.round.holes[p.round.currentHole-1].shots.at(-1).id,inside(p),null,services);};
   const holed=(pid)=>{const p=g.players.find(p=>p.playerId===pid);g=E.holed(g,pid,p.round.holes[p.round.currentHole-1].shots.at(-1).id,services);};
-  for(const p of g.players)physical(p.playerId);
+  if(scenario!=='empty')for(const p of g.players)physical(p.playerId);
   if(scenario==='mixed'){
     green(g.players[1].playerId);
     g=E.selectPlayer(g,g.players[1].playerId);
@@ -247,6 +247,29 @@ def putt_diagram_click(page,x,y):
       const screen=q.matrixTransform(svg.getScreenCTM()),r=svg.getBoundingClientRect();return {x:screen.x-r.x,y:screen.y-r.y};}''',{'x':x,'y':y})
     # Scroll the actual target point into nested panels, then perform an ordinary hit-tested click.
     svg.click(position=xy)
+
+
+def main_map_click(page,point):
+    """Hit-test an actual GI map point through the same existing projector."""
+    svg=reveal(page,'#lessonCourseSvg')
+    xy=svg.evaluate(r'''(svg,point)=>{
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+        p=g.players.find(p=>p.playerId===g.selectedPlayerId),r=p.round,hole=r.currentHole,
+        h=activeCourseData(r).holes[String(hole)],positions=g.players.map(player=>{
+          if(!player.registered||player.round.currentHole!==hole)return null;
+          const data=player.round.holes[hole-1],last=data.shots.at(-1),draft=player.shotDraft;
+          return draft?.hole===hole&&draft.confirmed?draft.position:data.puttingReady?.ballPosition||last?.end||last?.start||null;
+        }).filter(Boolean);
+      if(p.shotDraft?.hole===hole&&p.shotDraft.position)positions.push(p.shotDraft.position);
+      const q=courseViewProjector(h,r,positions).project(point),sp=svg.createSVGPoint();sp.x=q.x;sp.y=q.y;
+      const screen=sp.matrixTransform(svg.getScreenCTM()),rect=svg.getBoundingClientRect();
+      return {x:screen.x-rect.x,y:screen.y-rect.y};
+    }''',point)
+    svg.click(position=xy)
+
+
+def displayed_metres(page,value):
+    return page.evaluate('n=>Math.round(n)+"m"',value)
 
 
 def fixture(page, source, url, scenario, count=4):
@@ -570,6 +593,143 @@ def explicit_putting_interleaved_short_flow(page,source,url):
     return {'explicit_putting_par3_A_green_A_short_B_green_B_putt':'PASS'}
 
 
+def shot_distances_full_hole_flow(page,source,url,out,label):
+    """Map Touch -> linked physical distances -> ON GREEN -> full putting history."""
+    data,personal=fixture(page,source,url,'empty',count=2)
+    group=data['group'];hole=data['hole']
+    points=page.evaluate('''()=>{
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+        r=g.players[0].round,h=activeCourseData(r).holes[String(r.currentHole)];
+      return {first:{lat:h.t[0],lng:h.t[1]},second:{lat:(h.t[0]+h.g[0])/2,lng:(h.t[1]+h.g[1])/2}};
+    }''')
+    main_map_click(page,points['first'])
+    click(page,'#lessonConfirmPosition')
+    click(page,'#lessonShotSave')
+    first=hole_for(storage_group(page),0,hole)['shots'][0]
+    assert first['start']['source']=='MANUAL_DROP' and first['status']=='PENDING_RESULT' and first['distanceM'] is None
+    expect(page.locator('#lessonShotDistance')).to_contain_text('TEST 선수 A')
+    expect(page.locator('#lessonShotDistance')).to_contain_text('거리 미확정')
+    expect(page.locator('#lessonShotDistance')).not_to_contain_text(' · 0m')
+    rows=reveal(page,'#lessonShotHistory').locator('button')
+    expect(rows.nth(0)).to_contain_text('거리 미확정')
+
+    main_map_click(page,points['second'])
+    candidate=hole_for(storage_group(page),0,hole)['shots'][0]
+    assert candidate==first, 'An unconfirmed candidate changed the prior physical Shot'
+    expect(page.locator('#lessonShotDistance')).to_contain_text('거리 미확정')
+    click(page,'#lessonConfirmPosition')
+    confirmed=hole_for(storage_group(page),0,hole)['shots'][0]
+    assert confirmed['result']['type']=='NEXT_SHOT_START' and confirmed['distanceM']>10
+    distance1=displayed_metres(page,confirmed['distanceM'])
+    expect(page.locator('#lessonShotDistance')).to_contain_text(distance1)
+    click(page,'#lessonShotSave')
+    a=hole_for(storage_group(page),0,hole)
+    assert len(a['shots'])==2 and a['shots'][1]['distanceM'] is None
+    assert a['shots'][0]['distanceM']==confirmed['distanceM']
+    expect(page.locator('#lessonShotDistance')).to_contain_text('Shot 1 → Shot 2')
+    expect(page.locator('#lessonShotDistance')).to_contain_text(distance1)
+    rows=reveal(page,'#lessonShotHistory').locator('button')
+    expect(rows).to_have_count(2)
+    expect(rows.nth(0)).to_contain_text(distance1)
+    expect(rows.nth(1)).to_contain_text('거리 미확정')
+
+    # Another player's pending Shot must not borrow A's known distance.
+    before_a=storage_group(page)['players'][0]
+    select_player(page,group,1)
+    main_map_click(page,points['first'])
+    click(page,'#lessonConfirmPosition')
+    click(page,'#lessonShotSave')
+    expect(page.locator('#lessonShotDistance')).to_contain_text('TEST 선수 B')
+    expect(page.locator('#lessonShotDistance')).to_contain_text('거리 미확정')
+    assert storage_group(page)['players'][0]==before_a
+    before_b=storage_group(page)['players'][1]
+    select_player(page,group,0)
+    expect(page.locator('#lessonShotDistance')).to_contain_text(distance1)
+    before_raw=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
+    page.reload(wait_until='domcontentloaded')
+    expect(page.locator('#lessonPlayers .lessonPlayer')).to_have_count(2)
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==before_raw
+    expect(page.locator('#lessonShotDistance')).to_contain_text('Shot 1 → Shot 2')
+    expect(page.locator('#lessonShotDistance')).to_contain_text(distance1)
+
+    click(page,'#lessonUndoShot')
+    undone=hole_for(storage_group(page),0,hole)
+    assert len(undone['shots'])==1 and undone['shots'][0]['status']=='PENDING_RESULT'
+    assert undone['shots'][0]['end'] is None and undone['shots'][0]['distanceM'] is None
+    assert storage_group(page)['players'][1]==before_b
+    expect(page.locator('#lessonShotDistance')).to_contain_text('거리 미확정')
+    rows=reveal(page,'#lessonShotHistory').locator('button')
+    expect(rows).to_have_count(1)
+    expect(rows.nth(0)).to_contain_text('거리 미확정')
+
+    # Recreate Shot2 through the ordinary UI, then finish its saved End on the Green.
+    main_map_click(page,points['second'])
+    click(page,'#lessonConfirmPosition')
+    click(page,'#lessonShotSave')
+    click(page,'#lessonOnGreen')
+    green_click(page,data['greenPoint'])
+    click(page,'#lessonGreenSkipPin')
+    click(page,'#lessonGreenSave')
+    putting_collapsed(page)
+    ongreen=hole_for(storage_group(page),0,hole)
+    assert len(ongreen['shots'])==2 and ongreen['putts']==0
+    assert ongreen['shots'][1]['result']['type']=='ON_GREEN' and ongreen['shots'][1]['distanceM']>10
+    distance1=displayed_metres(page,ongreen['shots'][0]['distanceM'])
+    distance2=displayed_metres(page,ongreen['shots'][1]['distanceM'])
+    expect(page.locator('#lessonShotDistance')).to_contain_text('Shot 2 → ON GREEN')
+    expect(page.locator('#lessonShotDistance')).to_contain_text(distance2)
+    rows=reveal(page,'#lessonShotHistory').locator('button')
+    expect(rows.nth(0)).to_contain_text(distance1)
+    expect(rows.nth(1)).to_contain_text(distance2)
+    open_putting(page,'TEST 선수 A')
+    reveal(page,'#lessonPuttDistanceInput').fill('8.0')
+    click(page,'#lessonPuttShort')
+    expect(page.locator('#lessonShotDistance')).to_contain_text('1 PUTT · 8.0m · SHORT')
+    short=hole_for(storage_group(page),0,hole)
+    assert short['putts']==1 and short['score']==3 and len(short['shots'])==2
+    history=reveal(page,'#lessonShotHistory')
+    expect(history.locator('div[data-putt-number="1"]')).to_contain_text('1 PUTT · 8.0m · SHORT')
+    expect(history.locator('button')).to_have_count(2)
+    reveal(page,'#lessonPuttDistanceInput').fill('1.0')
+    click(page,'#lessonPuttHoled')
+    complete=storage_group(page);a=hole_for(complete,0,hole)
+    assert a['completed'] and a['score']==4 and a['putts']==2 and len(a['shots'])==2
+    assert [(p['distanceM'],p['result']) for p in a['puttsDetail']]==[(8,'SHORT'),(1,'HOLED')]
+    assert complete['players'][1]==before_b and complete['players'][0]['round']['currentHole']==hole
+    expect(page.locator('#lessonShotDistance')).to_contain_text('2 PUTT · 1.0m · HOLED')
+    history=reveal(page,'#lessonShotHistory')
+    expect(history.locator('button')).to_have_count(2)
+    expect(history.locator('div[data-putt-number]')).to_have_count(2)
+    expect(history.locator('button').nth(0)).to_contain_text(distance1)
+    expect(history.locator('button').nth(1)).to_contain_text(distance2)
+    expect(history.locator('div[data-putt-number="1"]')).to_contain_text('8.0m · SHORT')
+    expect(history.locator('div[data-putt-number="2"]')).to_contain_text('1.0m · HOLED')
+    page.screenshot(path=str(out/f'lesson-{label}-complete-distances.png'),full_page=False)
+    expect(reveal(page,'#lessonPuttHistory')).to_contain_text('8.0m · SHORT')
+    expect(page.locator('#lessonPuttHistory')).to_contain_text('1.0m · HOLED')
+    before_raw=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
+    page.reload(wait_until='domcontentloaded')
+    expect(page.locator('#lessonPlayers .lessonPlayer')).to_have_count(2)
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==before_raw
+    expect(page.locator('#lessonShotDistance')).to_contain_text('2 PUTT · 1.0m · HOLED')
+    expect(reveal(page,'#lessonShotHistory').locator('div[data-putt-number]')).to_have_count(2)
+    assert_personal(page,personal)
+
+    # Physical HOLED has no measured End; it must remain explicitly unknown.
+    data,personal=fixture(page,source,url,'plain',count=2)
+    before_b=storage_group(page)['players'][1]
+    click(page,'#lessonHoled')
+    direct=storage_group(page);h=hole_for(direct,0,data['hole'])
+    assert h['completed'] and h['score']==1 and h['shots'][0]['end'] is None and h['shots'][0]['distanceM'] is None
+    assert direct['players'][1]==before_b
+    expect(page.locator('#lessonShotDistance')).to_contain_text('HOLED · 거리 미확정')
+    expect(page.locator('#lessonShotDistance')).not_to_contain_text(' · 0m')
+    expect(reveal(page,'#lessonShotHistory').locator('button').nth(0)).to_contain_text('거리 미확정')
+    assert_personal(page,personal)
+    return {'shot_distance_map_touch_confirm_link_history_undo_restore':'PASS',
+      'shot_distance_ongreen_putting_full_hole_history':'PASS','shot_distance_player_isolation_unknown_direct_holed':'PASS'}
+
+
 def registration_flow(page,url,out,label):
     outcomes=[]
     for count in [1,2,3,4]:
@@ -742,6 +902,7 @@ def main():
                 run.update(registration_flow(page,url,out,label))
                 run.update(explicit_putting_free_order_flow(page,source,url,out,label))
                 run.update(explicit_putting_interleaved_short_flow(page,source,url))
+                run.update(shot_distances_full_hole_flow(page,source,url,out,label))
                 assert not errors,errors
                 run['uncaught_page_errors']=errors
                 results['runs'].append(run)

@@ -584,7 +584,7 @@
       <div class="lessonMapReadout"><div id="lessonMapStatus" class="lessonMeta" role="status"></div></div>
       <section id="lessonShotPanel" class="mapFirstCockpit lessonCockpit" hidden>
         <div class="lessonTargetRow"><h2 id="lessonShotPlayer">선수별 샷 기록</h2><button type="button" id="lessonHistoryOpen" aria-controls="lessonHistoryDialog">이력 · 취소</button></div>
-        <div id="lessonHoleState" class="lessonMeta" role="status"></div><div id="lessonPosition" class="lessonMeta" aria-live="polite"></div>
+        <div id="lessonHoleState" class="lessonMeta" role="status"></div><div id="lessonPosition" class="lessonMeta" aria-live="polite"></div><div id="lessonShotDistance" class="lessonShotDistance" aria-live="polite"></div>
         <div class="mapFirstQuickActions lessonPositionActions"><button type="button" id="lessonGetGps"><span data-round-icon="mapFirstCenter"></span>GPS 후보</button><button type="button" id="lessonConfirmPosition" disabled><span data-round-icon="mapFirstDrop"></span>볼 위치 확인</button></div>
         <div class="mapFirstMainRow lessonMainRow"><label class="mapFirstHoleSummary"><span>HOLE</span><select id="lessonHole" aria-label="선택 선수의 현재 홀"></select><small id="lessonHoleMeta"></small></label>
           <div id="lessonShotControls"><button type="button" id="lessonClubOpen" class="mapFirstClubTrack" aria-controls="lessonClubDialog" aria-label="선택 선수의 클럽 선택"><strong id="lessonClubCurrent">DR</strong></button><button type="button" id="lessonShotSave" class="mapFirstNextShot" disabled>SHOT SAVE</button><select id="lessonShotClub" hidden aria-label="사용 클럽"></select></div>
@@ -601,7 +601,7 @@
         <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>가상 선수 이름<input id="lessonName" maxlength="60" placeholder="TEST 선수 A" autocomplete="off" required></label><label>전화번호 / WhatsApp (가상)<input id="lessonContact" maxlength="32" placeholder="TEST-WA-001" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
         <div class="lessonNotice">개발 테스트 전용 · 가상 선수만 사용하세요. 인증/실서비스가 아닙니다. 실제 개인정보 입력 금지. Group은 이 브라우저에만 임시 저장됩니다. Penalty·SG 종합 검증·DB/Guest Claim·자동 폐기는 아직 제공하지 않습니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
       </dialog>
-      <dialog id="lessonHistoryDialog" class="lessonSheet sheet" aria-labelledby="lessonHistoryTitle"><div class="sheetHead"><h2 id="lessonHistoryTitle">샷 이력 · 취소</h2><button type="button" id="lessonHistoryClose" class="x" aria-label="이력 닫기">✕</button></div><p class="lessonMeta">과거 Shot을 선택하면 해당 선수·샷의 결과를 입력할 수 있습니다. 같은 선수의 다음 시작 위치는 직전 Shot의 End로 연결됩니다. 과거 누락 위치는 추정하지 않습니다.</p><div id="lessonShotHistory" class="lessonShotHistory" aria-live="polite"></div><div class="lessonBench"><strong id="lessonCancelTarget"></strong><div class="lessonActions"><button type="button" id="lessonUndoShot" disabled>UNDO LAST SHOT</button><button type="button" id="lessonCancelResult" disabled>RESULT CANCEL</button></div><p class="lessonMeta" id="lessonCancelInfo"></p></div><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
+      <dialog id="lessonHistoryDialog" class="lessonSheet sheet" aria-labelledby="lessonHistoryTitle"><div class="sheetHead"><h2 id="lessonHistoryTitle">샷 이력 · 취소</h2><button type="button" id="lessonHistoryClose" class="x" aria-label="이력 닫기">✕</button></div><p class="lessonMeta">과거 Shot을 선택하면 해당 선수·샷의 결과를 입력할 수 있습니다. 같은 선수의 다음 시작 위치는 직전 Shot의 End로 연결됩니다. 일반 샷은 확정 위치 기준 거리, 퍼팅은 기록원이 입력한 PIN까지의 거리입니다. 과거 누락 위치는 추정하지 않습니다.</p><div id="lessonShotHistory" class="lessonShotHistory" aria-live="polite"></div><div class="lessonBench"><strong id="lessonCancelTarget"></strong><div class="lessonActions"><button type="button" id="lessonUndoShot" disabled>UNDO LAST SHOT</button><button type="button" id="lessonCancelResult" disabled>RESULT CANCEL</button></div><p class="lessonMeta" id="lessonCancelInfo"></p></div><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
       <dialog id="lessonClubDialog" class="lessonSheet sheet" aria-labelledby="lessonClubTitle"><div class="sheetHead"><h2 id="lessonClubTitle">클럽 선택</h2><button type="button" id="lessonClubClose" class="x" aria-label="클럽 선택 닫기">✕</button></div><div id="lessonClubList" class="allClubList"></div><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
       <dialog id="lessonGreenDialog" class="lessonGreenDialog sheet" aria-labelledby="lessonGreenTitle"><div class="lessonGreenHeader sheetHead"><h2 id="lessonGreenTitle">Green Detail</h2><button type="button" id="lessonGreenCancel">취소</button></div><p id="lessonGreenMapInfo" class="lessonMeta"></p><div class="lessonGreenMap"><div id="lessonGreenSatellite" hidden></div><svg id="lessonGreenSvg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid meet" aria-label="확대 GI Green · 볼 또는 PIN 위치를 탭하세요"></svg></div><div class="lessonActions"><button type="button" id="lessonGreenBall">볼 위치 지정</button><button type="button" id="lessonGreenPin">PIN 지정 · 선택 사항</button><button type="button" id="lessonGreenSkipPin">PIN 건너뛰기</button></div><p id="lessonGreenPinInfo" class="lessonMeta"></p><p id="lessonGreenStatus" class="lessonMeta" role="status" aria-live="polite">Green 안에서 볼 위치를 탭하세요.</p><button type="button" id="lessonGreenSave" disabled>볼 위치 확인 · ON GREEN 저장</button></dialog>`;
     document.body.prepend(host);document.body.classList.add('course-lesson-dev');
@@ -627,6 +627,8 @@
       return selectedResult?.groupId===group?.groupId&&selectedResult.playerId===p?.playerId&&
         selectedResult.hole===p?.round?.currentHole?h?.shots.find(s=>s.id===selectedResult.shotId):h?.shots.at(-1);
     };
+    // Read the existing confirmed distance only; missing endpoints are never zero or inferred PINs.
+    const shotDistanceLabel=shot=>shot?.end&&Number.isFinite(shot.distanceM)&&shot.distanceM>=0?Math.round(shot.distanceM)+'m':'거리 미확정';
     const status=(message,error=false)=>{for(const node of [el('lessonStatus'),...host.querySelectorAll('[data-lesson-status]')]){node.textContent=message;node.dataset.error=String(error);}};
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
@@ -826,16 +828,30 @@
         if(last){try{cancellationContext(clone(group),p.playerId,last.id,true);el('lessonUndoShot').disabled=false;}catch(e){el('lessonCancelInfo').textContent='UNDO 차단: '+e.message;}}
         if(terminalResult(pending)){try{cancellationContext(clone(group),p.playerId,pending.id,false);el('lessonCancelResult').disabled=false;}catch(e){el('lessonCancelInfo').textContent+=' · RESULT CANCEL 차단: '+e.message;}}
         el('lessonPosition').textContent=draft.position?(draft.confirmed?'확인됨':'미확인 후보')+' · '+draft.position.lat.toFixed(6)+', '+draft.position.lng.toFixed(6)+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
+        const previous=h.shots.at(-2),distanceShot=draft.linkedShotId?h.shots.find(shot=>shot.id===draft.linkedShotId):
+          last?.status==='PENDING_RESULT'&&previous?.result?.nextShotId===last.id?previous:last;
+        const latestPutt=h.puttsDetail.at(-1);
+        const nextShot=h.shots.find(shot=>shot.id===distanceShot?.result?.nextShotId);
+        const endLabel=distanceShot?.result?.type==='NEXT_SHOT_START'?(nextShot?' → Shot '+nextShot.shotSequence:' → 확인 위치'):
+          distanceShot?.result?.type==='ON_GREEN'?' → ON GREEN':distanceShot?.result?.type==='HOLED'?' · HOLED':'';
+        el('lessonShotDistance').textContent=p.profile.name+' · '+(latestPutt?latestPutt.number+' PUTT · '+latestPutt.distanceM.toFixed(1)+'m · '+latestPutt.result+' · 입력 거리':
+          distanceShot?'Shot '+distanceShot.shotSequence+endLabel+' · '+shotDistanceLabel(distanceShot)+' · 위치 기준':
+          '첫 샷 저장 후 다음 볼 위치를 확인하면 샷간 거리가 표시됩니다.');
         el('lessonShotHistory').replaceChildren();
         h.shots.forEach(shot=>{
           const row=document.createElement('button');row.type='button';
           row.disabled=!['PENDING_RESULT','RESULT_CONFIRMED'].includes(shot.status);row.setAttribute('aria-pressed',String(pending?.id===shot.id));
           const label=shot.status==='PENDING_RESULT'?'PENDING RESULT':shot.result?.type==='NEXT_SHOT_START'?'End 연결 · 다음 시작 위치':shot.result?.type||'기존 기록';
-          row.textContent='Shot '+shot.shotSequence+' · '+shot.club+' · '+(shot.start?.source==='GPS'?'GPS':'MAP TOUCH')+' · '+label+' · SG 미계산';
+          row.textContent='Shot '+shot.shotSequence+' · '+shot.club+' · '+shotDistanceLabel(shot)+' · '+(shot.start?.source==='GPS'?'GPS':'MAP TOUCH')+' · '+label+' · SG 미계산';
           row.addEventListener('click',()=>{
             selectedResult={groupId:group.groupId,playerId:p.playerId,hole:h.hole,shotId:shot.id};
             el('lessonHistoryDialog').close();render();status(p.profile.name+' · Shot '+shot.shotSequence+' 선택 · 결과 입력 또는 저장된 결과 취소');
           });
+          el('lessonShotHistory').append(row);
+        });
+        h.puttsDetail.forEach(putt=>{
+          const row=document.createElement('div');row.dataset.puttNumber=String(putt.number);
+          row.textContent=putt.number+' PUTT · '+putt.distanceM.toFixed(1)+'m · '+putt.result+' · 입력 거리 · SG 미계산';
           el('lessonShotHistory').append(row);
         });
       }
