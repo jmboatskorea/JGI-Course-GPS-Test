@@ -20,7 +20,7 @@ from urllib.parse import urlparse, unquote
 from playwright.sync_api import sync_playwright, expect
 
 REPO = Path(__file__).resolve().parents[1]
-GROUP_KEY = 'jgi_course_lesson_dev_group_v1'
+GROUP_KEY = 'jgi_course_lesson_group_v1'
 PLAYER_KEYS = ['agi_player_v1_round', 'jgi_completed_rounds_v1']
 
 
@@ -203,7 +203,7 @@ def assert_inside_viewport(page, selector, minimum=44):
 
 def assert_map_tee_green_reachable(page):
     observations=page.evaluate(r'''() => {
-      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),
         selected=g.players.find(p=>p.playerId===g.selectedPlayerId),r=selected.round,hole=r.currentHole,
         h=activeCourseData(r).holes[String(hole)],
         positions=g.players.map(p=>{
@@ -226,7 +226,7 @@ def assert_map_tee_green_reachable(page):
 
 def green_click(page, point):
     xy=page.evaluate(r'''p=>{
-      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),
         r=g.players.find(p=>p.playerId===g.selectedPlayerId).round,
         ch=activeCourseData(r).holes[String(r.currentHole)],
         pts=courseShapes(ch,r).filter(s=>s.type==='GREEN'&&!s.line&&s.path.length>=3).flatMap(s=>s.path),
@@ -254,7 +254,7 @@ def main_map_click(page,point):
     """Hit-test an actual GI map point through the same existing projector."""
     svg=reveal(page,'#lessonCourseSvg')
     xy=svg.evaluate(r'''(svg,point)=>{
-      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),
         p=g.players.find(p=>p.playerId===g.selectedPlayerId),r=p.round,hole=r.currentHole,
         h=activeCourseData(r).holes[String(hole)],positions=g.players.map(player=>{
           if(!player.registered||player.round.currentHole!==hole)return null;
@@ -599,7 +599,7 @@ def shot_distances_full_hole_flow(page,source,url,out,label):
     data,personal=fixture(page,source,url,'empty',count=2)
     group=data['group'];hole=data['hole']
     points=page.evaluate('''()=>{
-      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),
+      const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),
         r=g.players[0].round,h=activeCourseData(r).holes[String(r.currentHole)];
       return {first:{lat:h.t[0],lng:h.t[1]},second:{lat:(h.t[0]+h.g[0])/2,lng:(h.t[1]+h.g[1])/2}};
     }''')
@@ -975,6 +975,22 @@ def gate(route,base):
     route.continue_()
 
 
+def home_entry_and_reset_flow(page, base):
+    """HOME opens a fresh real-test lesson; only the old Course Lesson Group is cleared."""
+    page.goto(base+'/', wait_until='domcontentloaded')
+    button=page.locator('#enterCourseLessonBtn')
+    expect(button).to_be_enabled()
+    before=page.evaluate("localStorage.getItem('agi_player_v1_round')")
+    page.evaluate("localStorage.setItem('jgi_course_lesson_dev_group_v1', 'OLD_TEST_ONLY')")
+    button.click()
+    page.wait_for_url(re.compile(r'\\?courseLesson=1'))
+    expect(page.locator('#courseLessonDev')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('jgi_course_lesson_dev_group_v1')") is None
+    assert page.evaluate("localStorage.getItem('agi_player_v1_round')") == before
+    assert page.locator('#lessonManageDialog').count() == 1
+    return {'home_entry_and_test_reset': 'PASS'}
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--base-url',default='',help='Optional already-running localhost server; otherwise starts a read-only local server.')
@@ -1019,6 +1035,7 @@ def main():
                 run.update(explicit_putting_interleaved_short_flow(page,source,url))
                 run.update(shot_distances_full_hole_flow(page,source,url,out,label))
                 run.update(penalty_flow(page,source,url,out,label))
+                run.update(home_entry_and_reset_flow(page,base))
                 assert not errors,errors
                 run['uncaught_page_errors']=errors
                 results['runs'].append(run)
