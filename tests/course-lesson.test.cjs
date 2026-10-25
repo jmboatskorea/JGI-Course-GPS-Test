@@ -845,7 +845,8 @@ test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 �
   assert.equal(el('lessonCourseSvg').attrs['data-hole'],'1');
   assert.equal(el('lessonCourseSvg').children.filter(node=>node.attrs['data-player-marker']).length,1);
   group=lesson.chooseHole(group,b.playerId,2);group=physical(group,b.playerId,mapPoint(),engine);controller.render();
-  assert.equal(el('lessonCourseSvg').children.filter(node=>node.attrs['data-player-marker']).length,1);
+  assert.equal(el('lessonCourseSvg').children.filter(node=>node.attrs['data-player-marker']).length,0); // Off-hole ball must not expand/reset the camera.
+  assert.match(el('lessonMarkerLegend').textContent,/화면 밖/);
   const raw=context.JGI_OLD_COURSE_DATA.holes['2'],before=structuredClone(group);
   delete context.JGI_OLD_COURSE_DATA.holes['2'];controller.render();
   assert.equal(el('lessonCourseSvg').children.length,0);assert.equal(el('lessonCourseSvg').attrs['data-hole-id'],'');
@@ -876,7 +877,7 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
   class Marker{setMap(m){this.map=m;}setPosition(){}setLabel(){}setZIndex(){}setIcon(){}}
   class Polygon{constructor(options){this.paths=options.paths;this.map=options.map;polygons.push(this);}setMap(m){this.map=m;}}
   class Bounds{constructor(){this.points=[];}extend(p){this.points.push(p);}}
-  const map={listeners:[],fits:[],addListener(type,fn){this.listeners.push(fn);},fitBounds(bounds){this.fits.push(bounds.points);}};
+  const map={listeners:[],fits:[],addListener(type,fn){if(type==='click')this.listeners.push(fn);},fitBounds(bounds){this.fits.push(bounds.points);}};
   const context={window:{JGI_COURSE_LESSON_MAP:{},activeCourseData:()=>({holes:{'1':{t:[0,0],g:[1,1]},'2':{t:[0,0],g:[2,2]}}}),
       courseViewProjector:()=>({shapes:[{type:'GREEN',path:[{lat:0,lng:0},{lat:1,lng:0},{lat:1,lng:1}]}],project:p=>({x:p.lng,y:p.lat,inside:true})}),
       courseLocalProjector:()=>({toXY:p=>({x:p.lng,y:p.lat}),toLatLng:p=>({lat:p.y,lng:p.x})}),svgPath:()=>''},
