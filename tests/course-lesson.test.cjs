@@ -844,7 +844,7 @@ test('Course Map: 실제 GI 1→2→3→1, 선수별 현재 홀, 이전 마커 �
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(require.resolve('../jagorawi-old-course-data.js'),'utf8'),context);
   const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
-  for(const name of ['isOraSouthLeft','activeCourseData','unpackCourseShape','courseShapes','courseViewProjector','svgPath']){
+  for(const name of ['isOraSouthLeft','activeCourseData','unpackCourseShape','courseShapes','courseLocalProjector','courseViewProjector','svgPath']){
     const source=html.match(new RegExp('^function '+name+'\\([^]*?^}','m'))?.[0];assert.ok(source,name);vm.runInContext(source,context);
   }
   const project=context.courseViewProjector;
@@ -909,6 +909,7 @@ test('Green Popup: 같은 Map/이벤트 재사용, 후보 취소, 늦은 close/r
   class Bounds{constructor(){this.points=[];}extend(p){this.points.push(p);}}
   const map={listeners:[],fits:[],addListener(type,fn){if(type==='click')this.listeners.push(fn);},fitBounds(bounds){this.fits.push(bounds.points);}};
   const context={window:{JGI_COURSE_LESSON_MAP:{},activeCourseData:()=>({holes:{'1':{t:[0,0],g:[1,1]},'2':{t:[0,0],g:[2,2]}}}),
+      courseShapes:()=>[{type:'GREEN',path:[{lat:0,lng:0},{lat:1,lng:0},{lat:1,lng:1}]}],
       courseViewProjector:()=>({shapes:[{type:'GREEN',path:[{lat:0,lng:0},{lat:1,lng:0},{lat:1,lng:1}]}],project:p=>({x:p.lng,y:p.lat,inside:true})}),
       courseLocalProjector:()=>({toXY:p=>({x:p.lng,y:p.lat}),toLatLng:p=>({lat:p.y,lng:p.x})}),svgPath:()=>''},
     document:{getElementById:el,createElementNS:()=>new Element(),body:{classList:{add:v=>classes.add(v),remove:v=>classes.delete(v)}}},
