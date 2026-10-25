@@ -975,6 +975,22 @@ def gate(route,base):
     route.continue_()
 
 
+def home_entry_and_reset_flow(page, base):
+    """HOME opens a fresh real-test lesson; only the old Course Lesson Group is cleared."""
+    page.goto(base+'/', wait_until='domcontentloaded')
+    button=page.locator('#enterCourseLessonBtn')
+    expect(button).to_be_enabled()
+    before=page.evaluate("localStorage.getItem('agi_player_v1_round')")
+    page.evaluate("localStorage.setItem('jgi_course_lesson_dev_group_v1', 'OLD_TEST_ONLY')")
+    button.click()
+    page.wait_for_url(re.compile(r'\\?courseLesson=1'))
+    expect(page.locator('#courseLessonDev')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('jgi_course_lesson_dev_group_v1')") is None
+    assert page.evaluate("localStorage.getItem('agi_player_v1_round')") == before
+    assert page.locator('#lessonManageDialog').count() == 1
+    return {'home_entry_and_test_reset': 'PASS'}
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--base-url',default='',help='Optional already-running localhost server; otherwise starts a read-only local server.')
@@ -1019,6 +1035,7 @@ def main():
                 run.update(explicit_putting_interleaved_short_flow(page,source,url))
                 run.update(shot_distances_full_hole_flow(page,source,url,out,label))
                 run.update(penalty_flow(page,source,url,out,label))
+                run.update(home_entry_and_reset_flow(page,base))
                 assert not errors,errors
                 run['uncaught_page_errors']=errors
                 results['runs'].append(run)
