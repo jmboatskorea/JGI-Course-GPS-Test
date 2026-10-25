@@ -16,7 +16,7 @@ function services(){
 const draft=(name='TEST 선수 A',sex='FEMALE',handicap='5',tee='Red')=>({name,contact:'TEST-WA-001',sex,handicap,tee});
 function memory(){
   const values=new Map([['agi_player_v1_round','unchanged-player'],['jgi_completed_rounds_v1','unchanged-history']]);
-  return {values,getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,v)};
+  return {values,getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
 }
 for(const count of [1,2,3,4])test(count+'명 등록: 독립 ID와 Round, 기존 Group 불변',()=>{
   const engine=services(),group=lesson.createGroup(count,engine);let next=group;
@@ -52,10 +52,15 @@ test('Group 저장/복원은 별도 namespace만 사용하고 참조를 공유�
   assert.equal(group.players[0].round.holes[0].shots.length,0);
   assert.equal(store.values.get('agi_player_v1_round'),'unchanged-player');assert.equal(store.values.get('jgi_completed_rounds_v1'),'unchanged-history');
 });
-test('지원 범위 밖 Handicap과 실제 연락처 입력을 저장하지 않음',()=>{
+test('실명 등록은 허용하고 실제 연락처·허용 범위 밖 Handicap은 저장하지 않음',()=>{
   const engine=services(),group=lesson.createGroup(1,engine),p=group.players[0];
-  for(const bad of [draft('실제 이름'),{...draft(),contact:'+82 10 1234 5678'},draft('TEST A','FEMALE','29'),draft('TEST A','MALE','26'),draft('TEST A','MALE','-1'),draft('TEST A','MALE','')])
+  for(const bad of [{...draft(),name:'<script>'},{...draft(),name:' '},{...draft(),name:'A'.repeat(61)},
+    {...draft(),contact:'+82 10 1234 5678'},draft('TEST A','FEMALE','29'),draft('TEST A','MALE','26'),draft('TEST A','MALE','-1'),draft('TEST A','MALE','')])
     assert.throws(()=>lesson.registerPlayer(group,p.playerId,bad,engine));
+  for(const name of ['홍길동','Jimmy Oh','TEST 선수 A']){
+    const registered=lesson.registerPlayer(group,p.playerId,{...draft(name),contact:''},engine);
+    assert.equal(registered.players[0].round.playerName,name);
+  }
   for(const [sex,h] of [['MALE','0'],['MALE','25'],['FEMALE','0'],['FEMALE','28']])
     assert.equal(lesson.registerPlayer(group,p.playerId,draft('TEST A',sex,h),engine).players[0].round.playerHandicap,Number(h));
   for(const n of [0,5,1.5])assert.throws(()=>lesson.createGroup(n,engine));
@@ -103,12 +108,25 @@ test('미등록 Draft 전환/저장에도 연락처 정규화를 적용하며 �
   for(const contact of ['TEST-WA-00','TEST-WA-0001','TEST WA 001','TEST-WA-001x','+82-10-1234-5678'])
     assert.throws(()=>lesson.registerPlayer(group,a.playerId,{...draft(),contact},engine));
 });
-test('개발 진입점은 명시적 query + localhost/지정 branch Preview에서만 허용',()=>{
+test('운영 HOME 진입과 Preview 기존 개발 진입은 분리하고 허용된 origin 외는 차단',()=>{
   const check=(hostname,search)=>lesson.developmentAllowed({hostname,search});
+  for(const hostname of ['localhost','jgi-course-gps-test.vercel.app','jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app'])
+    assert.equal(check(hostname,'?courseLesson=1'),true);
   assert.equal(check('localhost','?courseLessonDev=1'),true);
   assert.equal(check('jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app','?courseLessonDev=1'),true);
-  for(const hostname of ['jgi-course-gps-test.vercel.app','example.com','localhost.example.com'])assert.equal(check(hostname,'?courseLessonDev=1'),false);
-  assert.equal(check('localhost',''),false);
+  assert.equal(check('jgi-course-gps-test.vercel.app','?courseLessonDev=1'),false);
+  for(const hostname of ['jgi-course-gps-test.vercel.app','example.com','localhost.example.com'])assert.equal(check(hostname,''),false);
+  assert.equal(check('example.com','?courseLesson=1'),false);
+});
+test('이전 코스레슨 테스트 그룹만 초기화하고 개인 ROUND와 새 저장소는 보존',()=>{
+  const store=memory(),legacy=lesson.LEGACY_TEST_STORAGE;
+  assert.equal(lesson.STORAGE,'jgi_course_lesson_group_v1');
+  store.setItem(legacy,'OLD TEST GROUP');store.setItem(lesson.STORAGE,'CURRENT GROUP');
+  assert.equal(lesson.clearLegacyTestGroup(store),true);
+  assert.equal(store.getItem(legacy),null);assert.equal(store.getItem(lesson.STORAGE),'CURRENT GROUP');
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');
+  assert.equal(store.getItem('jgi_completed_rounds_v1'),'unchanged-history');
+  assert.equal(lesson.clearLegacyTestGroup(store),false);
 });
 const mapPoint=()=>({lat:-6.45336,lng:106.878002,accuracy:null,time:1000,source:'MANUAL_DROP',inputMethod:'MAP_TOUCH'});
 const gpsPoint=()=>({lat:-6.4534,lng:106.8781,accuracy:7,time:1100,source:'GPS'});
