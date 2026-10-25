@@ -37,7 +37,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonMapReadout .lessonMeta{width:fit-content;max-width:100%;margin-top:3px;padding:5px 8px;border:1px solid #c8cdca;border-radius:10px;background:rgba(255,255,255,.94);color:#234536;font-size:9px}
 .courseLessonDev .lessonMapReadout .lessonMeta:empty{display:none}
 .courseLessonDev #lessonMarkerLegend{white-space:normal;overflow-wrap:anywhere}
-.courseLessonDev .lessonCockpit.mapFirstCockpit{max-height:calc(100vh - var(--lesson-map-top,165px) - 60px);max-height:calc(100dvh - var(--lesson-map-top,165px) - 60px);overflow-y:auto;overscroll-behavior:contain;background:rgba(255,255,255,.985);color:#111;border-top-color:#c8cdca;border-radius:27px 27px 0 0;box-shadow:0 -14px 38px rgba(0,0,0,.22);scrollbar-width:thin}
+.courseLessonDev .lessonCockpit.mapFirstCockpit{max-height:calc(100vh - var(--lesson-map-top,165px) - 60px);max-height:calc(100dvh - var(--lesson-map-top,165px) - 60px);padding:6px 10px env(safe-area-inset-bottom);overflow-y:auto;overscroll-behavior:contain;background:rgba(255,255,255,.985);color:#111;border-top-color:#c8cdca;border-radius:27px 27px 0 0;box-shadow:0 -14px 38px rgba(0,0,0,.22);scrollbar-width:thin}
 .courseLessonDev .lessonTargetRow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0 6px}
 .courseLessonDev .lessonTargetRow h2{flex:1;min-width:0;font-size:13px}
 .courseLessonDev .lessonTargetRow button{flex-shrink:0;min-height:44px;padding:5px 10px;border:1px solid #c7ccca;border-radius:14px;background:#f5f6f4;color:#111;font-size:11px;font-weight:950}
@@ -68,9 +68,9 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev #lessonPendingResultLabel{display:block;font-size:10px;color:#385748;line-height:1.4}
 .courseLessonDev .mapFirstPendingActions{grid-template-columns:repeat(2,minmax(0,1fr));padding:6px 0 3px;border-bottom:0}
 .courseLessonDev .mapFirstPendingActions button{font-size:12px}
-.courseLessonDev .lessonStatus{padding:6px 0 0;font-size:10px;line-height:1.4;color:#08783d;overflow-wrap:anywhere}
+.courseLessonDev .lessonStatus{padding:3px 0 0;font-size:10px;line-height:1.4;color:#08783d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .courseLessonDev .lessonStatus:empty{display:none}
-.courseLessonDev .lessonStatus[data-error="true"]{color:#b51f2d}
+.courseLessonDev .lessonStatus[data-error="true"]{color:#b51f2d;white-space:normal;overflow-wrap:anywhere}
 .courseLessonDev .lessonPutting{max-height:50vh;max-height:50dvh;margin-top:7px;padding:10px 0 2px;border-top:1px solid #d8dcda;overflow:auto;overscroll-behavior:contain;background:#fff;color:#111}
 .courseLessonDev .lessonPutting .sheetHead{margin-bottom:5px;gap:8px}
 .courseLessonDev .lessonPutting .sheetHead h2{font-size:14px}

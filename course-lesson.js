@@ -923,13 +923,13 @@
           el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
           el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 선택된 Shot '+pending.shotSequence+' ('+pending.club+') · 결과 선택';
         }
-        el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · Putts '+h.putts+(roundComplete?' · ROUND COMPLETE':' · 등록 선수 전원 완료 후 다음 홀로 자동 이동'):h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · PUTTING READY · 원하는 순서에 PUTTING 입력을 누르세요.':'';
+        el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · Putts '+h.putts+(roundComplete?' · ROUND COMPLETE':''):h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · PUTTING READY':'';
         const last=h.shots.at(-1),target=letter+' · '+p.profile.name+' · '+h.hole+'번 홀';
         el('lessonCancelTarget').textContent=target+' · 마지막 Shot '+(last?.shotSequence||'없음')+' · 선택 Shot '+(pending?.shotSequence||'없음');
         el('lessonCancelInfo').textContent='샷 취소: 마지막 Shot만 제거 · 결과 취소: 선택 Shot 유지 · 공유 PIN 보존';
         if(last){try{cancellationContext(clone(group),p.playerId,last.id,true);el('lessonUndoShot').disabled=false;}catch(e){el('lessonCancelInfo').textContent='UNDO 차단: '+e.message;}}
         if(terminalResult(pending)){try{cancellationContext(clone(group),p.playerId,pending.id,false);el('lessonCancelResult').disabled=false;}catch(e){el('lessonCancelInfo').textContent+=' · RESULT CANCEL 차단: '+e.message;}}
-        el('lessonPosition').textContent=draft.position?(draft.confirmed?'확인됨':'미확인 후보')+' · '+draft.position.lat.toFixed(6)+', '+draft.position.lng.toFixed(6)+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
+        el('lessonPosition').textContent=draft.position?(draft.confirmed?'볼 위치 확인됨':'볼 위치 미확인 후보')+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
         const previous=h.shots.at(-2),distanceShot=draft.linkedShotId?h.shots.find(shot=>shot.id===draft.linkedShotId):
           last?.status==='PENDING_RESULT'&&previous?.result?.nextShotId===last.id?previous:last;
         const latestPutt=h.puttsDetail.at(-1);
@@ -938,7 +938,7 @@
           distanceShot?.result?.type==='ON_GREEN'?' → ON GREEN':distanceShot?.result?.type==='HOLED'?' · HOLED':'';
         el('lessonShotDistance').textContent=p.profile.name+' · '+(latestPutt?latestPutt.number+' PUTT · '+latestPutt.distanceM.toFixed(1)+'m · '+latestPutt.result+' · 입력 거리':
           distanceShot?'Shot '+distanceShot.shotSequence+endLabel+' · '+shotDistanceLabel(distanceShot)+' · 위치 기준':
-          '첫 샷 저장 후 다음 볼 위치를 확인하면 샷간 거리가 표시됩니다.');
+          '첫 샷 · 다음 볼 위치 확인 후 거리 표시');
         el('lessonShotHistory').replaceChildren();
         h.shots.forEach(shot=>{
           const row=document.createElement('button');row.type='button';
