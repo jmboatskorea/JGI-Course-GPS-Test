@@ -100,7 +100,7 @@
   }
 
   let dialog=null;
-  function open(player){
+  function open(player,options={}){
     if(dialog?.open)return;
     const snapshot=build(player);
     dialog?.remove();
@@ -129,13 +129,13 @@
       const putts=view.round.holes.reduce((sum,h)=>sum+(h.putts||0),0),penalties=view.round.holes.reduce((sum,h)=>sum+(h.penalties||0),0);
       for(const id of ['ovPutts','statPutts'])view.get(id).textContent=putts;
       view.get('statPen').textContent=penalties;
-      view.get('overviewEyebrow').textContent=snapshot.complete?'JGI · FINAL ROUND REPORT':'JGI · 진행 중인 개인 라운드';
+      view.get('overviewEyebrow').textContent=snapshot.complete?'JGI · FINAL ROUND REPORT':options.archived?'JGI · 중도 종료 라운드':'JGI · 진행 중인 개인 라운드';
       root.querySelector('#lessonReportTitle').textContent=player.profile.name+' · REPORT';
-      root.querySelector('#lessonReportStatus').textContent=(snapshot.complete?'18홀 완료':'진행 중 · '+snapshot.round.holes.filter(h=>h.completed).length+'/18홀 완료')+' · '+snapshot.sg.info.label;
+      root.querySelector('#lessonReportStatus').textContent=(snapshot.complete?'18홀 완료':(options.archived?'중도 종료':'진행 중')+' · '+snapshot.round.holes.filter(h=>h.completed).length+'/18홀 완료')+' · '+snapshot.sg.info.label;
       const coach=view.get('targetScoreCoachOverviewBody');
       if(coach)coach.textContent=window.JGICourseLessonPrivate?.isRound(snapshot.round)?'Target Score 미계산 · 공식 Scorecard/목표 입력 근거 부족':'저장된 목표 스코어 · 샷 의사결정 데이터 부족';
       window.JGI_ROUND_REPORT_RENDERERS.renderFinalReport(view);
-      if(!snapshot.complete)view.get('finalRoundReportCard').querySelector('.title').textContent='JGI ROUND REPORT · 진행 중';
+      if(!snapshot.complete)view.get('finalRoundReportCard').querySelector('.title').textContent='JGI ROUND REPORT · '+(options.archived?'중도 종료':'진행 중');
       const note=document.createElement('div');note.className='dataNote';note.setAttribute('data-report-missing','');
       const missing=snapshot.records.filter(x=>x.reason),reasons=[...new Set(missing.map(x=>x.reason))];
       note.textContent='SG '+(snapshot.records.length-missing.length)+'/'+snapshot.records.length+'개 계산 · '+(missing.length?reasons.join(' · '):snapshot.records.length?'기존 ROUND 공식과 Benchmark 적용':'기록 데이터 부족')+' · 벌타 '+(-snapshot.sg.totals.penalty)+'타는 Total에 1회만 반영하며 샷 범주에 배분하지 않습니다. Lie 분류는 리포트 사본에만 적용합니다.';
@@ -155,7 +155,7 @@
       if(button.dataset.reportTab){
         const showSummary=button.dataset.reportTab==='summaryScreen';
         if(showSummary&&!summary){
-          try{summary=window.JGICourseLessonSummary.mount(root,player);}
+          try{summary=window.JGICourseLessonSummary.mount(root,player,options);}
           catch(error){root.querySelector('#lessonReportStatus').textContent='종합 리포트 열기: '+error.message;return;}
         }
         if(summary)summary.classList.toggle('hidden',!showSummary);

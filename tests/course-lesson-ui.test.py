@@ -737,6 +737,11 @@ def registration_flow(page,url,out,label):
         page.goto(url,wait_until='domcontentloaded')
         page.wait_for_selector('#lessonPlayerCount',state='attached')
         personal=personal_storage(page)
+        # A registered group must be archived through the real finish flow before replacement.
+        current=storage_group(page)
+        if current and any(p['registered'] for p in current['players']):
+            click(page,'#lessonFinishRound');page.locator('#lessonFinishConfirm').click()
+            assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY) is None
         reveal(page,'#lessonPlayerCount').select_option(str(count))
         click(page,'#lessonCreateGroup')
         g=storage_group(page)
