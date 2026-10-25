@@ -1836,10 +1836,10 @@ body.round-active .modal .sheet .puttHistoryRow{
           <strong>⛳ 라운드 시작</strong>
           <span>JGI와 지금 플레이 시작</span>
         </button>
-        <button id="enterCourseLessonBtn" class="introV2Action" type="button" disabled>
+        <button id="enterCourseLessonBtn" class="introV2Action" type="button">
           <strong>🏌️ 코스레슨</strong>
-          <span>인증 코치 전용 · 1~4명 코스 레슨</span>
-          <span class="introV2Unavailable">준비 중 · 코치 인증 연결 후 이용 가능</span>
+          <span>기록원용 1~4명 라운드 · 실전 테스트</span>
+          <span>인증 전 · 기록은 이 기기에만 저장</span>
         </button>
         <button id="enterResultsBtn" class="introV2Action">
           <strong>📊 내 경기</strong>
@@ -9871,6 +9871,11 @@ $('enterRoundBtn').onclick=()=>{
   showScreen('setup');
   startGPS();
   window.scrollTo({top:0,behavior:'smooth'});
+};
+$('enterCourseLessonBtn').onclick=()=>{
+  const url=new URL(window.location.href);
+  url.search='?courseLesson=1';url.hash='';
+  window.location.assign(url.href);
 };
 $('enterResultsBtn').onclick=showRoundResults;
 
