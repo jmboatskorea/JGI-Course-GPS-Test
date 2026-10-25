@@ -130,6 +130,36 @@ test('이전 코스레슨 테스트 그룹만 초기화하고 개인 ROUND와 �
 });
 const mapPoint=()=>({lat:-6.45336,lng:106.878002,accuracy:null,time:1000,source:'MANUAL_DROP',inputMethod:'MAP_TOUCH'});
 const gpsPoint=()=>({lat:-6.4534,lng:106.8781,accuracy:7,time:1100,source:'GPS'});
+test('실제 연결된 코스만 새 Group에서 선택하고 골프장·코스 조합을 검증',()=>{
+  const engine={...services(),courses:[{course:'Jagorawi Golf & Country Club',nine:'Old Course',version:null},
+    {course:'Ora Country Club',nine:'South Left',version:'GI_ORA_SOUTH_LEFT_2026_10_09_V1'}]};
+  for(const c of engine.courses){
+    const group=lesson.createGroup(2,engine,c);assert.equal(group.course,c.course);assert.equal(group.nine,c.nine);
+  }
+  for(const selection of [{course:'Emeralda Golf Club',nine:'Old Course'},{course:'Ora Country Club',nine:'Old Course'},
+    {course:'Jagorawi Golf & Country Club',nine:'South Left'}])assert.throws(()=>lesson.createGroup(2,engine,selection),/실제 GI/);
+  assert.throws(()=>lesson.createGroup(1,{...engine,courses:[]}),/실제 GI/);
+});
+test('선택 코스/Version은 모든 선수에 공통 적용하고 Tee·Benchmark·저장 복원은 독립 유지',()=>{
+  const course={course:'Ora Country Club',nine:'South Left',version:'GI_ORA_SOUTH_LEFT_2026_10_09_V1'};
+  const engine={...services(),courses:[course]},store=memory();let group=lesson.createGroup(4,engine,course);
+  for(const [i,p] of group.players.entries())group=lesson.registerPlayer(group,p.playerId,
+    draft('TEST 선수 '+i,i%2?'MALE':'FEMALE',String(i+5),['Red','Blue','White','Red'][i]),engine);
+  for(const p of group.players){
+    assert.equal(p.round.course,course.course);assert.equal(p.round.nine,course.nine);assert.equal(p.round.courseVersion,course.version);
+    assert.equal(p.round.tee,p.profile.tee);assert.equal(p.round.playerHandicap,p.profile.handicap);
+  }
+  lesson.saveGroup(store,group);assert.deepEqual(lesson.restoreGroup(store),group);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');
+});
+test('샷이 있는 Group에서 다른 코스의 선수 Round를 섞으면 저장을 차단하고 원본 유지',()=>{
+  const engine=services(),store=memory();let group=registeredGroup(2,engine);
+  group=physical(group,group.players[0].playerId,mapPoint(),engine);lesson.saveGroup(store,group);
+  const before=store.getItem(lesson.STORAGE),mixed=structuredClone(group);
+  mixed.players[0].round.course='Ora Country Club';mixed.players[0].round.nine='South Left';
+  assert.throws(()=>lesson.saveGroup(store,mixed),/Group의 골프장·코스가 일치/);
+  assert.equal(store.getItem(lesson.STORAGE),before);assert.deepEqual(lesson.restoreGroup(store),group);
+});
 function registeredGroup(count,engine){
   let group=lesson.createGroup(count,engine);
   for(const [i,p] of group.players.entries())group=lesson.registerPlayer(group,p.playerId,draft('TEST 선수 '+i),engine);
