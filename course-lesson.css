@@ -192,3 +192,11 @@ body.course-lesson-dev.lesson-green-open{overflow:hidden}
 .lessonReportDialog .sgTotal,.lessonReportDialog .sgMetric .v{overflow-wrap:anywhere}
 .lessonReportDialog .sgHead .lessonSgPending{font-size:24px;white-space:nowrap;flex-shrink:0}
 .lessonReportDialog .liveThrough{flex-shrink:0;white-space:nowrap}
+
+/* Single-round content retains the cumulative report's actual component CSS. */
+.lessonReportDialog.lessonSummaryOpen{width:min(1120px,100%);background:#001a13}
+.lessonReportDialog .lessonReportTabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lessonReportDialog.lessonSummaryOpen .multiCockpitSummary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.lessonReportDialog.lessonSummaryOpen .multiCoreInsights{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lessonReportDialog.lessonSummaryOpen .multiDashboardTabs button,.lessonReportDialog.lessonSummaryOpen .multiCategoryTabs button{min-height:44px}
+@media(max-width:760px){.lessonReportDialog.lessonSummaryOpen .multiCoreInsights{grid-template-columns:1fr}}

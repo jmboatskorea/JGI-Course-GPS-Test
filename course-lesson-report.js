@@ -104,7 +104,7 @@
     const snapshot=build(player);
     dialog?.remove();
     const root=document.createElement('dialog');dialog=root;root.className='lessonReportDialog';root.setAttribute('aria-labelledby','lessonReportTitle');
-    root.innerHTML='<div class="app"><header class="lessonReportHeader"><div><h2 id="lessonReportTitle"></h2><p class="sub" id="lessonReportStatus"></p></div><button type="button" class="x" data-report-close aria-label="선수 리포트 닫기">✕</button></header><nav class="perfTabs lessonReportTabs" aria-label="선수 리포트 화면"><button type="button" class="sel" data-report-tab="overviewScreen">라운드 리뷰</button><button type="button" data-report-tab="performanceScreen">퍼포먼스 · SG</button></nav><div data-report-content></div></div>';
+    root.innerHTML='<div class="app"><header class="lessonReportHeader"><div><h2 id="lessonReportTitle"></h2><p class="sub" id="lessonReportStatus"></p></div><button type="button" class="x" data-report-close aria-label="선수 리포트 닫기">✕</button></header><nav class="perfTabs lessonReportTabs" aria-label="선수 리포트 화면"><button type="button" class="sel" data-report-tab="overviewScreen">라운드 리뷰</button><button type="button" data-report-tab="performanceScreen">퍼포먼스 · SG</button><button type="button" data-report-tab="summaryScreen">종합 리포트</button></nav><div data-report-content></div></div>';
     const ids=new Map(),content=root.querySelector('[data-report-content]');
     for(const name of ['overviewScreen','performanceScreen']){
       const section=document.getElementById(name).cloneNode(true);section.classList.toggle('hidden',name!=='overviewScreen');
@@ -118,6 +118,7 @@
       section.querySelector('[data-review-map="SAT"]')?.remove(); // Keep the shared live map session in place.
       content.append(section);
     }
+    let summary=null;
     const view={...snapshot,get:id=>ids.get(id),performanceView:'CLUB',selectedClub:null,selectedDistance:null,selectedReviewHole:null,analysis:analysis(snapshot.round)};
     document.body.append(root);
     try{
@@ -150,6 +151,13 @@
       const button=event.target.closest('button,[data-performance-club],[data-performance-distance]');if(!button)return;
       if(button.hasAttribute('data-report-close')){root.close();return;}
       if(button.dataset.reportTab){
+        const showSummary=button.dataset.reportTab==='summaryScreen';
+        if(showSummary&&!summary){
+          try{summary=window.JGICourseLessonSummary.mount(root,player);}
+          catch(error){root.querySelector('#lessonReportStatus').textContent='종합 리포트 열기: '+error.message;return;}
+        }
+        if(summary)summary.classList.toggle('hidden',!showSummary);
+        root.classList.toggle('lessonSummaryOpen',showSummary);
         for(const name of ['overviewScreen','performanceScreen'])view.get(name).classList.toggle('hidden',name!==button.dataset.reportTab);
         root.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('sel',b===button));root.scrollTop=0;
       }

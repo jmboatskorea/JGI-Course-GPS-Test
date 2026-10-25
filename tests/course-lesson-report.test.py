@@ -134,8 +134,8 @@ def main():
     styles=page.evaluate("""()=>['scoreBig','sgTotal','sgOtt','statFir'].map(id=>{const s=getComputedStyle(document.getElementById('lessonReport-'+id));return {id,font:s.fontFamily,size:s.fontSize,color:s.color,border:s.borderRadius};})""")
     page.locator('[data-report-close]').click()
     # A separate personal ROUND page avoids moving the Lesson's shared map for the comparison.
-    personal_page=context.new_page();personal_page.on('pageerror',lambda e:errors.append(str(e)));personal_page.on('dialog',lambda d:d.accept());personal_page.goto(base+'/',wait_until='domcontentloaded')
-    personal_page.evaluate('p=>{round=p.round;round.completedAt=Date.now();showScreen("overview");}',calc['knownPlayer'])
+    personal_page=context.new_page();personal_page.on('pageerror',lambda e:errors.append(str(e)));personal_page.on('dialog',lambda d:d.accept());personal_page.goto(base+'/',wait_until='domcontentloaded');personal_page.locator('#enterRoundBtn').click()
+    personal_page.evaluate('p=>{startRoundWithCondition();round=p.round;round.completedAt=Date.now();showScreen("overview");window.scrollTo({top:0,behavior:"instant"});}',calc['knownPlayer'])
     assert personal_page.locator('#ovFlo').count()==1;assert personal_page.locator('#floScreen').count()==1;assert '멘탈 상태 분석' in personal_page.locator('#liveCategoryCards').inner_text();personal_page.screenshot(path=str(out/f'round-overview-{label}.png'));personal_page.evaluate('showScreen("performance")');personal_page.screenshot(path=str(out/f'round-performance-{label}.png'))
     round_styles=personal_page.evaluate("""()=>['scoreBig','sgTotal','sgOtt','statFir'].map(id=>{const s=getComputedStyle(document.getElementById(id));return {id,font:s.fontFamily,size:s.fontSize,color:s.color,border:s.borderRadius};})""")
     assert styles==round_styles, (styles,round_styles)

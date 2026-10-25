@@ -12,6 +12,7 @@
 <script src="course-lesson.js"></script>
 <script src="course-lesson-map.js"></script>
 <script src="course-lesson-report.js"></script>
+<script src="course-lesson-summary.js"></script>
 <link rel="stylesheet" href="course-lesson.css">
 <style>
 :root{
@@ -5995,14 +5996,14 @@ function multiShotSgBadge(value){
   const cls=value>0.005?'positive':value<-0.005?'negative':'neutral';
   return '<span class="multiShotSg '+cls+'">SG '+multiSigned(value)+'</span>';
 }
-function multiShotHoleDetailHtml(r,h,open=false){
+function multiShotHoleDetailHtml(r,h,open=false,view=null){
   const shots=h?.shots||[],putts=h?.puttsDetail||[];
   const score=storedHoleScore(h),par=Number(h?.par),delta=Number.isFinite(score)&&Number.isFinite(par)?score-par:null;
   const scoreText=Number.isFinite(score)?String(score)+(delta===null?'':(' · '+(delta===0?'E':(delta>0?'+':'')+delta))):'—';
   const penalty=Number(h?.penalties||0);
   const cards=[
     ...shots.map((s,i)=>{
-      const sg=multiShotSg({r,h,s,si:i});
+      const sg=view?view.records.find(x=>x.hole===h.hole&&x.kind==='SHOT'&&x.number===i+1)?.value:multiShotSg({r,h,s,si:i});
       const targetRaw=s?.targetZone||s?.target?.zone;
       const meta=[];
       if(s?.shotIntent)meta.push(intentLabel(s.shotIntent));
@@ -6012,20 +6013,20 @@ function multiShotHoleDetailHtml(r,h,open=false){
       const remaining=Number(s?.courseContext?.endGreenDistanceM);
       if(Number.isFinite(remaining))meta.push('남은 거리 '+Math.round(remaining)+'m');
       return '<div class="multiShotCard"><div class="multiShotSeq">'+(i+1)+'</div><div>'+
-        '<div class="multiShotTop"><strong>'+safeText(playerShotLabel(h,s,i))+' · '+safeText(s?.club||'클럽 미확인')+'</strong><span>'+safeText(distanceLabel(s?.distanceM))+'</span></div>'+
+        '<div class="multiShotTop"><strong>'+safeText(playerShotLabel(h,s,i,view?r:round))+' · '+safeText(s?.club||'클럽 미확인')+'</strong><span>'+safeText(distanceLabel(s?.distanceM))+'</span></div>'+
         '<div class="multiShotRoute">'+safeText(lieDisplayLabel(s?.startLie))+' → '+safeText(lieDisplayLabel(s?.endLie))+'</div>'+
         (meta.length?'<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>':'')+
-        '</div>'+multiShotSgBadge(sg)+'</div>';
+        '</div>'+(view&&!Number.isFinite(sg)?'<span class="multiShotSg pending">SG 미계산</span>':multiShotSgBadge(sg))+'</div>';
     }),
     ...putts.map((p,i)=>{
-      const sg=multiPuttSg({r,h,p,pi:i});
+      const sg=view?view.records.find(x=>x.hole===h.hole&&x.kind==='PUTT'&&x.number===i+1)?.value:multiPuttSg({r,h,p,pi:i});
       const meta=[multiPuttSlopeLabel(p?.slope),multiPuttBreakLabel(p?.break),puttResultLabel(p?.result)].filter(Boolean);
       const d=Number(p?.distanceM);
       return '<div class="multiShotCard"><div class="multiShotSeq">'+(shots.length+i+1)+'</div><div>'+
         '<div class="multiShotTop"><strong>퍼트 '+(i+1)+' · Putter</strong><span>'+(Number.isFinite(d)?d.toFixed(1)+'m':'—')+'</span></div>'+
         '<div class="multiShotRoute">GREEN → '+safeText(String(p?.result||'').toUpperCase()==='HOLED'?'HOLED':'GREEN')+'</div>'+
         '<div class="multiShotMeta">'+meta.map(safeText).join(' · ')+'</div>'+
-        '</div>'+multiShotSgBadge(sg)+'</div>';
+        '</div>'+(view&&!Number.isFinite(sg)?'<span class="multiShotSg pending">SG 미계산</span>':multiShotSgBadge(sg))+'</div>';
     })
   ].join('');
   return '<details class="multiShotHole" '+(open?'open':'')+'><summary><span>HOLE '+safeText(h?.hole??'—')+(Number.isFinite(par)?' · PAR '+par:'')+'</span><b>'+safeText(scoreText)+' · 샷 '+shots.length+' · 퍼트 '+putts.length+(penalty?' · 벌타 '+penalty:'')+'</b></summary>'+
