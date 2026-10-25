@@ -46,6 +46,7 @@
   function validateGroup(group){
     assert(group&&group.version===1&&group.mode==='COURSE_LESSON_DEV','지원하지 않는 Group 저장 형식입니다.');
     assert(typeof group.groupId==='string'&&group.groupId.startsWith('clg_'),'Group ID가 올바르지 않습니다.');
+    assert(typeof group.course==='string'&&group.course.length>0&&typeof group.nine==='string'&&group.nine.length>0,'Group의 골프장·코스를 확인하세요.');
     assert(Array.isArray(group.players)&&group.players.length>=1&&group.players.length<=4,'선수는 1~4명이어야 합니다.');
     for(const [hole,pin] of Object.entries(group.holePins||{})){
       assert(/^(?:[1-9]|1[0-8])$/.test(hole),'PIN의 홀 정보가 올바르지 않습니다.');validatePin(pin);
@@ -64,6 +65,7 @@
         const p=profileFromDraft({...player.profile,handicap:String(player.profile?.handicap??'')});
         const r=player.round;
         assert(r&&r.id===player.roundId&&r.playerId===player.playerId&&r.groupId===group.groupId,'Round 소유자 정보가 일치하지 않습니다.');
+        assert(r.course===group.course&&r.nine===group.nine,'선수 Round와 Group의 골프장·코스가 일치하지 않습니다.');
         assert(r.playerName===p.name&&r.playerSex===p.sex&&r.playerHandicap===p.handicap&&r.tee===p.tee,'선수 정보와 Round 정보가 일치하지 않습니다.');
         assert(r.sgBenchmarkMode===(p.sex==='FEMALE'?'FEMALE_PLAYER':'PLAYER'),'Benchmark 설정이 일치하지 않습니다.');
         assert(Array.isArray(r.holes)&&r.holes.length===18&&r.holes.every((h,i)=>h.hole===i+1&&Array.isArray(h.shots)&&Array.isArray(h.puttsDetail)&&Array.isArray(h.penaltyEvents)),'Round의 홀 상태가 올바르지 않습니다.');
@@ -126,8 +128,11 @@
     assert(group.players.some(p=>p.playerId===group.selectedPlayerId),'선택된 선수가 Group에 없습니다.');
     return group;
   }
-  function createGroup(count,services){
+  function createGroup(count,services,selection){
     assert(Number.isInteger(count)&&count>=1&&count<=4,'선수는 1~4명이어야 합니다.');
+    const selected=selection||{course:'Jagorawi Golf & Country Club',nine:'Old Course'};
+    const available=services.courses||[{course:'Jagorawi Golf & Country Club',nine:'Old Course'}];
+    assert(available.some(c=>c.course===selected.course&&c.nine===selected.nine),'실제 GI·스코어카드 데이터가 연결된 코스를 선택하세요.');
     const players=Array.from({length:count},()=>({
       playerId:id('clp',services),roundId:id('clr',services),
       identity:{kind:'LOCAL_TEST_GUEST',sharedPlayerId:null,claimStatus:'NOT_CONNECTED'},
@@ -136,7 +141,7 @@
     }));
     return validateGroup({version:1,mode:'COURSE_LESSON_DEV',groupId:id('clg',services),
       tournamentId:null,coachId:null,createdAt:services.now(),updatedAt:services.now(),
-      course:'Jagorawi Golf & Country Club',nine:'Old Course',selectedPlayerId:players[0].playerId,players});
+      course:selected.course,nine:selected.nine,selectedPlayerId:players[0].playerId,players});
   }
   function updateDraft(group,playerId,draft){
     draft=normalizeContactDraft(draft);
@@ -151,12 +156,14 @@
   }
   function registerPlayer(group,playerId,draft,services){
     const next=updateDraft(group,playerId,draft),player=next.players.find(p=>p.playerId===playerId);
+    const course=services.courses?.find(c=>c.course===next.course&&c.nine===next.nine);
+    assert(!services.courses||course,'이 Group의 실제 코스 데이터를 확인하지 못했습니다. 기존 기록은 유지됩니다.');
     const profile=profileFromDraft(draft);
     const mode=profile.sex==='FEMALE'?'FEMALE_PLAYER':'PLAYER';
     const info=services.benchmark({sgBenchmarkMode:mode,playerHandicap:profile.handicap,playerSex:profile.sex});
     assert(info&&!info.fallback&&info.handicap===profile.handicap,'기존 SG 엔진에서 Benchmark를 확인하지 못했습니다.');
     const base=player.round||{version:9,id:player.roundId,playerId,groupId:next.groupId,
-      course:next.course,nine:next.nine,courseVersion:services.courseVersion||null,
+      course:next.course,nine:next.nine,courseVersion:services.courses?course.version||null:services.courseVersion||null,
       lessonRoundStatus:'REGISTERED',startedAt:null,completedAt:null,currentHole:1,pending:null,
       holes:Array.from({length:18},(_,i)=>({hole:i+1,par:null,teeDistanceM:null,strokeIndexMen:null,strokeIndexLadies:null,
         shots:[],putts:0,puttsDetail:[],puttingState:null,penalties:0,penaltyEvents:[],completed:false,review:null})),
@@ -607,9 +614,22 @@
   }
   function boot(){
     try{clearLegacyTestGroup(localStorage);}catch(e){console.warn('Course Lesson legacy test data cleanup failed',e);}
+    // Reuse ROUND's loaded datasets and round-scoped resolvers; never accept its fallback for an unknown course.
+    const roundCourses=Array.from(document.querySelectorAll('#courseSelect option'),option=>option.value);
+    const courses=[window.JGI_OLD_COURSE_DATA,window.JGI_ORA_SOUTH_LEFT_DATA].filter(data=>{
+      if(!data||!roundCourses.includes(data.course)||window.activeCourseData(data)!==data)return false;
+      const card=window.activeCourseScorecard(data);
+      if(card?.course!==data.course||card.courseName!==data.nine||card.courseId!==data.courseId)return false;
+      return Array.from({length:18},(_,i)=>i+1).every(hole=>{
+        const h=data.holes?.[hole],s=card.holes?.[hole];
+        return h&&[h.t,h.g].every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite))&&
+          window.courseShapes(h,data).some(shape=>!shape.line&&shape.path.length>=3)&&
+          s&&[3,4,5].includes(s.par)&&['Blue','White','Red'].every(tee=>Number.isFinite(s[tee])&&s[tee]>0);
+      });
+    }).map(data=>({course:data.course,nine:data.nine,version:data.version||null}));
     const services={uuid:()=>crypto.randomUUID(),now:()=>Date.now(),
       benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>window.hydrateRoundCourseTruth(r),
-      courseVersion:window.JGI_OLD_COURSE_DATA?.version||null,dataVersion:window.JGI_SG_BENCHMARK_DATA?.version,
+      courses,dataVersion:window.JGI_SG_BENCHMARK_DATA?.version,
       clubs:DEFAULT_MASTER_CLUBS.filter(c=>c.name!=='Putter').map(c=>c.name),
       distance:(a,b)=>window.hav(a,b),
       greenGeometry:(r,hole)=>{
@@ -652,7 +672,7 @@
         </section><div id="lessonStatus" class="lessonStatus" role="status" aria-live="polite"></div>
       </section>
       <dialog id="lessonManageDialog" class="lessonSheet sheet" aria-labelledby="lessonManageTitle"><div class="sheetHead"><h2 id="lessonManageTitle">COURSE LESSON · 선수 / Group</h2><button type="button" id="lessonManageClose" class="x" aria-label="선수 관리 닫기">✕</button></div>
-        <section class="lessonPanel"><h3>코스레슨 Group</h3><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
+        <section class="lessonPanel"><h3>새 Group 생성</h3><div class="lessonFields"><label>골프장<select id="lessonCourseSelect" aria-label="새 Group 골프장"></select></label><label>코스<select id="lessonCourseNine" aria-label="새 Group 코스"></select></label></div><p id="lessonCourseSelectionInfo" class="lessonMeta"></p><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
         <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>선수 이름<input id="lessonName" maxlength="60" placeholder="선수 이름" autocomplete="off" required></label><label>연락처 (선택 · 실번호 입력 금지)<input id="lessonContact" maxlength="32" placeholder="비워두세요" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
         <div class="lessonNotice">코스레슨 실전 테스트 · 코치 인증/중앙 DB는 아직 연결되지 않았습니다. 선수 이름과 샷 기록은 이 기기 브라우저에만 저장됩니다. 실제 연락처는 입력하지 마세요. 브라우저 데이터 삭제 시 기록이 사라질 수 있습니다. 선수별 SG는 REPORT에서 확인합니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
       </dialog>
@@ -693,6 +713,18 @@
     // Read the existing confirmed distance only; missing endpoints are never zero or inferred PINs.
     const shotDistanceLabel=shot=>shot?.end&&Number.isFinite(shot.distanceM)&&shot.distanceM>=0?Math.round(shot.distanceM)+'m':'거리 미확정';
     const status=(message,error=false)=>{for(const node of [el('lessonStatus'),...host.querySelectorAll('[data-lesson-status]')]){node.textContent=message;node.dataset.error=String(error);}};
+    function syncCourseSelection(){
+      el('lessonCourseNine').replaceChildren();
+      for(const c of courses.filter(c=>c.course===el('lessonCourseSelect').value)){
+        const option=document.createElement('option');option.value=c.nine;option.textContent=c.nine;el('lessonCourseNine').append(option);
+      }
+      el('lessonCreateGroup').disabled=!el('lessonCourseNine').value;
+      el('lessonCourseSelectionInfo').textContent=courses.length?'골프장 → 코스 → 선수 수 선택 후 새 Group을 생성하세요. 기존 Group의 코스·기록에는 적용되지 않습니다.':'선택 가능한 실제 GI·스코어카드 데이터가 없습니다.';
+    }
+    for(const course of new Set(courses.map(c=>c.course))){
+      const option=document.createElement('option');option.value=course;option.textContent=course;el('lessonCourseSelect').append(option);
+    }
+    el('lessonCourseSelect').onchange=syncCourseSelection;syncCourseSelection();
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
     // Reuse Player's distance controls and PIN scale without its global Round/draft handlers.
@@ -888,7 +920,7 @@
       el('lessonPlayerCount').value=String(group.players.length);
       const registered=group.players.filter(p=>p.registered).length;
       const roundComplete=registered>0&&group.players.filter(p=>p.registered).every(p=>p.round.lessonRoundStatus==='COMPLETED'&&p.round.holes[17].completed);
-      el('lessonGroupMeta').textContent=(roundComplete?'ROUND COMPLETE · ':'')+'Group ID: '+group.groupId+' · 등록 '+registered+'/'+group.players.length+' · '+group.course+' / '+group.nine;
+      el('lessonGroupMeta').textContent=(roundComplete?'ROUND COMPLETE · ':'')+'현재 Group: '+group.course+' / '+group.nine+' · 코스 고정 · 등록 '+registered+'/'+group.players.length+' · Group ID: '+group.groupId;
       group.players.forEach((player,i)=>{
         const button=document.createElement('button');button.type='button';button.className='lessonPlayer';button.dataset.playerId=player.playerId;
         button.setAttribute('aria-pressed',String(player.playerId===group.selectedPlayerId));
@@ -995,12 +1027,22 @@
       group=saved.group;render();status(saved.message||message,saved.error===true);
     }
     el('lessonCreateGroup').addEventListener('click',()=>{
-      try{if(localStorage.getItem(STORAGE)!==null&&!confirm('현재 코스레슨 Group을 새 Group으로 바꿀까요? 기존 개인 ROUND 기록은 유지됩니다.'))return;
-        commit(createGroup(Number(el('lessonPlayerCount').value),services),'새 코스레슨 Group 생성 · 각 선수를 등록하세요.');
+      try{
+        const selection={course:el('lessonCourseSelect').value,nine:el('lessonCourseNine').value};
+        const next=createGroup(Number(el('lessonPlayerCount').value),services,selection);
+        if(localStorage.getItem(STORAGE)!==null&&!confirm('현재 코스레슨 Group의 기기 저장을 새 Group ('+selection.course+' / '+selection.nine+')으로 바꿀까요? 기존 개인 ROUND 기록은 유지됩니다.'))return;
+        mapController.closeGreen();selectedResult=null;
+        commit(next,selection.course+' / '+selection.nine+' · 새 Group 생성 완료 · 각 선수를 등록하세요.');
       }catch(e){status('Group 생성 실패: '+e.message,true);}
     });
     function restore(){
-      try{const saved=restoreGroup(localStorage);group=saved;render();status(saved?'저장된 Group 복원 완료':'저장된 코스레슨 Group이 없습니다.');}
+      try{
+        const saved=restoreGroup(localStorage);group=saved;
+        if(courses.some(c=>c.course===group?.course&&c.nine===group.nine)){
+          el('lessonCourseSelect').value=group.course;syncCourseSelection();el('lessonCourseNine').value=group.nine;
+        }
+        render();status(saved?'저장된 Group 복원 완료':'저장된 코스레슨 Group이 없습니다.');
+      }
       catch(e){status('Group 복원 실패 · 원본 저장은 유지됩니다: '+e.message,true);}
     }
     el('lessonRestoreGroup').addEventListener('click',()=>{if(group&&!confirm('저장하지 않은 입력을 저장된 Group으로 복원할까요?'))return;restore();});

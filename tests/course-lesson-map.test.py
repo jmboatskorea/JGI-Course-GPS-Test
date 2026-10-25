@@ -21,13 +21,13 @@ FAKE=r"""type=>{
  window.__cameraMap=map;JGI_COURSE_LESSON_MAP.onReady(map);JGI_COURSE_LESSON_MAP.onReady(map);return true;
 }"""
 GEOMETRY=r"""()=>{
- const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),p=g.players.find(p=>p.playerId===g.selectedPlayerId),r=p.round,h=activeCourseData(r).holes[String(r.currentHole)],svg=document.getElementById('lessonCourseSvg');
+ const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),p=g.players.find(p=>p.playerId===g.selectedPlayerId),r=p.round,h=activeCourseData(r).holes[String(r.currentHole)],svg=document.getElementById('lessonCourseSvg');
  const m=courseViewProjector(h,r,[]),t=m.project({lat:h.t[0],lng:h.t[1]}),e=m.project({lat:h.g[0],lng:h.g[1]});
  const matrix=svg.getScreenCTM(),T=new DOMPoint(t.x,t.y).matrixTransform(matrix),G=new DOMPoint(e.x,e.y).matrixTransform(matrix),rect=svg.getBoundingClientRect();
  return {tee:{x:T.x,y:T.y},green:{x:G.x,y:G.y},rect:{x:rect.x,y:rect.y,w:rect.width,h:rect.height},bearing:Number(svg.dataset.alignmentBearing),expected:bearingDeg({lat:h.t[0],lng:h.t[1]},{lat:h.g[0],lng:h.g[1]}),frame:svg.getAttribute('viewBox')};
 }"""
 RAW_CAMERA=r"""()=>{
- const g=JSON.parse(localStorage.getItem('jgi_course_lesson_dev_group_v1')),p=g.players.find(p=>p.playerId===g.selectedPlayerId),h=activeCourseData(p.round).holes[String(p.round.currentHole)],shapes=courseShapes(h,p.round),boundary=shapes.filter(s=>s.type==='HOLE_BOUNDARY').flatMap(s=>s.path);
+ const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),p=g.players.find(p=>p.playerId===g.selectedPlayerId),h=activeCourseData(p.round).holes[String(p.round.currentHole)],shapes=courseShapes(h,p.round),boundary=shapes.filter(s=>s.type==='HOLE_BOUNDARY').flatMap(s=>s.path);
  return {camera:__cameraMap.snapshot(),points:[{lat:h.t[0],lng:h.t[1]},{lat:h.g[0],lng:h.g[1]},...(boundary.length?boundary:shapes.flatMap(s=>s.path))],expected:bearingDeg({lat:h.t[0],lng:h.t[1]},{lat:h.g[0],lng:h.g[1]}),rect:(()=>{const r=document.getElementById('lessonSatelliteMap').getBoundingClientRect();return {width:r.width,height:r.height}})()};
 }"""
 PURE=r"""()=>{
@@ -83,7 +83,7 @@ def main():
     page.locator('#lessonJgiMap').click();page.locator('#lessonCourseSvg').evaluate('el=>el.setAttribute("viewBox","60 80 280 480")');viewbox=page.locator('#lessonCourseSvg').get_attribute('viewBox')
     page.locator('#lessonShotClub').evaluate('el=>{el.value="7I";el.dispatchEvent(new Event("change"));}');assert page.locator('#lessonCourseSvg').get_attribute('viewBox')==viewbox
     page.locator('#lessonSatellite').click();frames(page);assert snapshot(page)==manual and moves(page)==count
-    page.evaluate('()=>{const g=JSON.parse(localStorage.getItem("jgi_course_lesson_dev_group_v1")),r=g.players[0].round,t=activeCourseData(r).holes["3"].t;__cameraMap.emit("click",{latLng:{lat:()=>t[0],lng:()=>t[1]}});}');page.locator('#lessonConfirmPosition').click();page.locator('#lessonShotSave').click();frames(page);assert snapshot(page)==manual and moves(page)==count
+    page.evaluate('()=>{const g=JSON.parse(localStorage.getItem("jgi_course_lesson_group_v1")),r=g.players[0].round,t=activeCourseData(r).holes["3"].t;__cameraMap.emit("click",{latLng:{lat:()=>t[0],lng:()=>t[1]}});}');page.locator('#lessonConfirmPosition').click();page.locator('#lessonShotSave').click();frames(page);assert snapshot(page)==manual and moves(page)==count
     raw_before=ui.storage_group(page);page.locator('#lessonOnGreen').click();frames(page);assert page.locator('#googleMap').evaluate('el=>el.parentElement.id')=='lessonGreenSatellite';page.locator('#lessonGreenCancel').click();frames(page);assert snapshot(page)==manual;assert ui.storage_group(page)==raw_before
     page.locator('#lessonJgiMap').click();page.locator('#lessonSatellite').click();frames(page);assert snapshot(page)==manual
     assert '회전 적용 확인 실패' not in page.locator('#lessonMapStatus').inner_text()
