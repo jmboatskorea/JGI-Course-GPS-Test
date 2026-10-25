@@ -853,7 +853,8 @@ def penalty_flow(page,source,url,out,label):
         click(page,'#lessonSavePenaltyBtn')
         expect(page.locator('#lessonPenaltyDialog')).not_to_be_visible()
     for selector in ['#lessonShotSave','#lessonPenaltyOpen']:assert_inside_viewport(page,selector)
-    boxes=page.locator('#lessonPenaltyOpen').evaluate('''el=>{let a=el.getBoundingClientRect(),b=document.querySelector('#lessonShotSave').getBoundingClientRect(),c=getComputedStyle(el);return {right:a.x>=b.right-1,sameRow:Math.abs(a.y-b.y)<1,bg:c.backgroundColor,color:c.color};}''')
+    # 9bc3e3b intentionally centers the smaller 44px button beside SHOT SAVE.
+    boxes=page.locator('#lessonPenaltyOpen').evaluate('''el=>{let a=el.getBoundingClientRect(),b=document.querySelector('#lessonShotSave').getBoundingClientRect(),c=getComputedStyle(el);return {right:a.x>=b.right-1,sameRow:Math.abs((a.y+a.height/2)-(b.y+b.height/2))<1,bg:c.backgroundColor,color:c.color};}''')
     assert boxes=={'right':True,'sameRow':True,'bg':'rgb(198, 40, 54)','color':'rgb(255, 255, 255)'},boxes
     raw=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
     open_penalty('TEST 선수 A')

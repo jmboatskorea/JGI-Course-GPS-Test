@@ -977,7 +977,7 @@
     const rows=[];
     (r.holes||[]).forEach(h=>{
       (h.shots||[]).forEach((s,i)=>{
-        const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info):null;
+        const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info,r):null;
         if(!sg||!Number.isFinite(Number(sg.value)))return;
         rows.push({
           kind:'SHOT',hole:h.hole,index:i+1,club:s.club||'—',
@@ -1002,19 +1002,19 @@
     return rows.sort((a,b)=>a.sg-b.sg);
   }
 
-  function reportDecisionRows(r=safeRound()){
+  function reportDecisionRows(r=safeRound(),strict=false){
     if(!r)return [];
     const info=typeof sgBenchmarkInfo==='function'?sgBenchmarkInfo(r):null;
     const rows=[];
     (r.holes||[]).forEach(h=>(h.shots||[]).forEach((s,i)=>{
       const c=s?.targetScoreCoach;
       if(!c?.recommendedTarget||!c?.selectedTarget||c.recommendedTarget===c.selectedTarget)return;
-      const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info):null;
+      const sg=typeof computeShotSG==='function'?computeShotSG(h,s,i,info,r):null;
       rows.push({
         hole:h.hole,index:i+1,club:s.club||'—',
         selected:c.selectedTarget,recommended:c.recommendedTarget,
         result:String(s.direction||s.endLie||'—'),
-        sg:Number.isFinite(Number(sg?.value))?Number(sg.value):null,
+        sg:(!strict||sg)&&Number.isFinite(Number(sg?.value))?Number(sg.value):null,
         reason:c.reason||''
       });
     }));
@@ -1044,8 +1044,8 @@
     return actions.slice(0,3);
   }
 
-  function reportHoleFlow(r=safeRound()){
-    const plan=ensurePlan(r);if(!r||!plan)return '';
+  function reportHoleFlow(r=safeRound(),view=null){
+    const plan=view?r?.targetScorePlan:ensurePlan(r);if(!r||!plan)return view?'<div class="finalReportEmpty">저장된 목표 스코어 데이터 부족</div>':'';
     const completed=(r.holes||[]).filter(h=>h.completed);
     return completed.map(h=>{
       const target=plan.holeTargets?.[h.hole];
@@ -1069,32 +1069,33 @@
       '</div><div class="dataNote">WHOOP 수치는 당시 상태 참고값이며 Shot 결과의 원인으로 단정하지 않습니다.</div>';
   }
 
-  function renderFinalReport(){
-    const r=safeRound(),card=byId('finalRoundReportCard'),host=byId('finalRoundReportBody');
+  function renderFinalReport(view=null){
+    const get=view?.get||byId,r=view?.round||safeRound(),card=get('finalRoundReportCard'),host=get('finalRoundReportBody');
     if(!card||!host)return;
-    if(!r?.completedAt){
+    if(!r||(!view&&!r.completedAt)){
       card.classList.add('hidden');
       host.innerHTML='';
       return;
     }
     card.classList.remove('hidden');
 
-    const plan=ensurePlan(r);
+    const plan=view?r.targetScorePlan:ensurePlan(r);
     const completed=(r.holes||[]).filter(h=>h.completed);
     const actual=completed.reduce((sum,h)=>sum+(num(typeof holeScore==='function'?holeScore(h):null)||0),0);
     const planned=completed.reduce((sum,h)=>sum+(num(plan?.holeTargets?.[h.hole])||num(h.par)||0),0);
     const full=completed.length>=18;
-    const targetRef=full?(num(r.targetScore)??plan?.targetScore):planned;
+    const targetRef=view&&!plan?null:(full?(num(r.targetScore)??plan?.targetScore):planned);
     const targetDelta=Number.isFinite(targetRef)?actual-targetRef:null;
     const targetLabel=targetDelta===null?'—':targetDelta===0?'ON TARGET':targetDelta>0?'+'+targetDelta+' vs Target':targetDelta+' vs Target';
 
-    const sg=typeof sgRoundSummary==='function'?sgRoundSummary():null;
+    const sg=typeof sgRoundSummary==='function'?sgRoundSummary(r):null;
+    const display=(key,fallback)=>view?(view.sgValues[key]==null?'미계산':formatSg(view.sgValues[key])):formatSg(fallback);
     const sgHtml=sg?'<div class="finalReportMetrics">'+
-      '<div class="finalReportMetric"><span>SG Total</span><b>'+formatSg(sg.total)+'</b></div>'+
-      '<div class="finalReportMetric"><span>Tee</span><b>'+formatSg(sg.totals.ott)+'</b></div>'+
-      '<div class="finalReportMetric"><span>Approach</span><b>'+formatSg(sg.totals.app)+'</b></div>'+
-      '<div class="finalReportMetric"><span>Around Green</span><b>'+formatSg(sg.totals.arg)+'</b></div>'+
-      '<div class="finalReportMetric"><span>Putting</span><b>'+formatSg(sg.totals.putt)+'</b></div>'+
+      '<div class="finalReportMetric"><span>SG Total</span><b>'+display('sgTotal',sg.total)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Tee</span><b>'+display('sgOtt',sg.totals.ott)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Approach</span><b>'+display('sgApp',sg.totals.app)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Around Green</span><b>'+display('sgArg',sg.totals.arg)+'</b></div>'+
+      '<div class="finalReportMetric"><span>Putting</span><b>'+display('sgPutt',sg.totals.putt)+'</b></div>'+
       '</div><div class="dataNote">SG Benchmark · '+sg.info.label+'</div>':'<div class="finalReportEmpty">SG 계산 대기</div>';
 
     const losses=roundLossRows(r).slice(0,3);
@@ -1102,33 +1103,34 @@
       '<div class="finalReportListRow"><b>'+(i+1)+'. H'+x.hole+' '+(x.kind==='PUTT'?'Putt '+x.index:'Shot '+x.index+' · '+x.club)+'</b><span>SG '+(x.sg>0?'+':'')+x.sg.toFixed(2)+(x.kind==='SHOT'?' · '+x.startLie+' → '+x.endLie:'')+'</span></div>'
     ).join(''):'<div class="finalReportEmpty">계산 가능한 SG 손실 샷 없음</div>';
 
-    const decisions=reportDecisionRows(r).slice(0,3);
+    const decisions=reportDecisionRows(r,!!view).slice(0,3);
     const decisionHtml=decisions.length?decisions.map(x=>
       '<div class="finalReportListRow"><b>H'+x.hole+' Shot '+x.index+' · '+x.club+'</b><span>Player '+x.selected+' / JGI '+x.recommended+' · Result '+x.result+(Number.isFinite(x.sg)?' · SG '+(x.sg>0?'+':'')+x.sg.toFixed(2):'')+'</span><small>'+x.reason+'</small></div>'
     ).join(''):'<div class="finalReportEmpty">Player Target과 JGI Target이 달랐던 저장 샷 없음</div>';
 
     const patt=reportPatterns(r);
     const patternHtml='<div class="finalReportPattern">'+
-      '<b>Driver LEFT</b><span>'+patt.driverLeft+'/'+patt.drivers+'</span>'+
-      '<b>Long Iron LEFT</b><span>'+patt.longLeft+'/'+patt.longIrons+'</span>'+
-      '<b>Target mismatch</b><span>'+patt.mismatch+'</span>'+
+      '<b>Driver LEFT</b><span>'+(view&&!r.holes.some(h=>h.shots.some(s=>s.club==='DR'&&s.direction))?'미계산':patt.driverLeft+'/'+patt.drivers)+'</span>'+
+      '<b>Long Iron LEFT</b><span>'+(view&&!r.holes.some(h=>h.shots.some(s=>['5I','6I'].includes(s.club)&&s.direction))?'미계산':patt.longLeft+'/'+patt.longIrons)+'</span>'+
+      '<b>Target mismatch</b><span>'+(view&&!r.holes.some(h=>h.shots.some(s=>s.targetScoreCoach?.recommendedTarget&&s.targetScoreCoach?.selectedTarget))?'미계산':patt.mismatch)+'</span>'+
       '<b>Penalty / 3-putt</b><span>'+patt.penalties+' / '+patt.threePutts+'</span>'+
       '</div><div class="dataNote">이번 라운드에서 관찰된 결과이며 개인 Baseline이나 원인으로 단정하지 않습니다.</div>';
 
     const actions=reportNextActions(r);
     const actionHtml=actions.map((x,i)=>'<div class="finalReportAction"><b>'+(i+1)+'</b><span>'+x+'</span></div>').join('');
 
+    const playerName=view?String(r.playerName||'Player').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])):(r.playerName||'Player');
     host.innerHTML=
       '<div class="finalReportHero">'+
-        '<div><span>'+(full?'FINAL ROUND REPORT':'PARTIAL ROUND REPORT')+'</span><h3>'+(r.playerName||'Player')+'</h3><p>'+r.course+' · '+r.nine+' · '+String(r.tee||'—')+' Tee · '+completed.length+'H</p></div>'+
-        '<div class="finalReportScore"><span>Target '+(full?(r.targetScore??'—'):planned)+'</span><b>'+actual+'</b><small>'+targetLabel+'</small></div>'+
+        '<div><span>'+(full?'FINAL ROUND REPORT':view?'ROUND IN PROGRESS · 진행 중':'PARTIAL ROUND REPORT')+'</span><h3>'+playerName+'</h3><p>'+r.course+' · '+r.nine+' · '+String(r.tee||'—')+' Tee · '+completed.length+'H</p></div>'+
+        '<div class="finalReportScore"><span>Target '+(view&&!plan?'미계산':full?(r.targetScore??'—'):planned)+'</span><b>'+(view&&!completed.length?'—':actual)+'</b><small>'+targetLabel+'</small></div>'+
       '</div>'+
-      '<div class="finalReportSection"><h4>TARGET SCORE FLOW</h4><div class="finalHoleGrid">'+reportHoleFlow(r)+'</div></div>'+
+      '<div class="finalReportSection"><h4>TARGET SCORE FLOW</h4><div class="finalHoleGrid">'+reportHoleFlow(r,view)+'</div></div>'+
       '<div class="finalReportSection"><h4>STROKES GAINED</h4>'+sgHtml+'</div>'+
       '<div class="finalReportSection"><h4>BIGGEST LOSSES</h4>'+lossHtml+'</div>'+
       '<div class="finalReportSection"><h4>KEY DECISIONS</h4>'+decisionHtml+'</div>'+
       '<div class="finalReportSection"><h4>OBSERVED PATTERN</h4>'+patternHtml+'</div>'+
-      '<div class="finalReportSection"><h4>WHOOP CONDITION</h4>'+reportWhoop(r)+'</div>'+
+      (view?'':'<div class="finalReportSection"><h4>WHOOP CONDITION</h4>'+reportWhoop(r)+'</div>')+
       '<div class="finalReportSection finalReportNext"><h4>NEXT ROUND · ACTIONS</h4>'+actionHtml+'</div>';
   }
 
@@ -1457,8 +1459,10 @@
 
   wrap('renderRound',function(){enablePendingTargetEditing();renderBar()});
   wrap('syncMapFirstUI',function(){enablePendingTargetEditing();renderBar()});
-  wrap('renderOverview',function(){renderOverviewCoach();renderFinalReport()});
-  wrap('renderHoleReview',function(out,pre,holeNo){appendHoleReview(holeNo)});
+  wrap('renderOverview',function(out,pre,view){if(!view){renderOverviewCoach();renderFinalReport()}});
+  wrap('renderHoleReview',function(out,pre,holeNo,view){if(!view)appendHoleReview(holeNo)});
+  // Same report renderer, scoped to a read-only Lesson snapshot; never swaps the personal round.
+  window.JGI_ROUND_REPORT_RENDERERS=Object.freeze({renderFinalReport});
 
   const targetSeg=byId('targetZoneSegment');
   if(targetSeg)targetSeg.addEventListener('click',()=>setTimeout(renderBar,0));
