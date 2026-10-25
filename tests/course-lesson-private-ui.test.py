@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Private local-file test. Provider data is supplied outside the repo; never a committed fixture."""
+"""Default Gunung Geulis flow, checked against the supplied original package; no UI file import."""
 import argparse,functools,hashlib,http.server,importlib.util,json,threading,zipfile
 from pathlib import Path
 
@@ -12,6 +12,17 @@ KEY='jgi_course_lesson_private_courses_v1'
 def cache_version_flow(page,text):
     return page.evaluate('''async text=>{
       const P=JGICourseLessonPrivate,r={course:'Gunung Geulis',nine:'East Course'};
+      const builtin=P.builtins()[0]?.data;
+      if(builtin){
+        const a=buildCourseIntelligenceModel(P.data(r).holes['1'],4,r);
+        await P.importText(text+' ',{storage:localStorage,rights:true});
+        const hash=(await P.decode(text+' ')).hash,legacy={...r,courseVersion:'PRIVATE_GI_'+hash};
+        const b=buildCourseIntelligenceModel(P.data(legacy).holes['1'],4,legacy);
+        if(P.data(r)!==builtin||!a||!b||a===b)throw Error('Built-in/legacy version routing mixed');
+        P.forget(localStorage);
+        if(P.data(r)!==builtin)throw Error('Cache removal removed the default course');
+        return 'PASS: default course needs no cache; earlier file versions remain isolated';
+      }
       await P.importText(text,{storage:localStorage,rights:true});
       const h1=P.data(r).holes['1'],v1=P.data(r).version,a=buildCourseIntelligenceModel(h1,4,r);
       await P.importText(text+' ',{storage:localStorage,rights:true});
@@ -71,7 +82,12 @@ def flow(page,base,path,entry,count,out,label):
     ui.expect(page.locator('#enterCourseLessonBtn')).to_be_enabled();page.locator('#enterCourseLessonBtn').click()
     page.wait_for_selector('#lessonPrivateFile',state='attached')
     personal=ui.personal_storage(page)
-    import_file(page,path)
+    builtin=page.evaluate('JGICourseLessonPrivate.builtins().length===2')
+    if builtin:
+        ui.expect(page.locator('#lessonPrivateData')).not_to_be_visible()
+        ui.reveal(page,'#lessonCourseSelect')
+        assert 'Gunung Geulis' in page.locator('#lessonCourseSelect option').all_text_contents()
+    else:import_file(page,path)
     page.locator('#lessonCourseSelect').select_option('Gunung Geulis')
     assert page.locator('#lessonCourseNine option').all_text_contents()==['East Course','West Course']
     page.locator('#lessonCourseNine').select_option(entry['data']['nine'])
@@ -142,16 +158,22 @@ def flow(page,base,path,entry,count,out,label):
     assert page.locator('#lessonCourseSvg').get_attribute('data-hole-id')==str(entry['data']['holes']['2']['i'])
     assert ui.personal_storage(page)==personal
     page.screenshot(path=str(out/(label+'-'+str(entry['data']['courseId'])+'-map.png')))
-    # Removing the private file never changes Group records and never falls back to Jagorawi.
-    ui.click(page,'#lessonPrivateForget');assert ui.storage_group(page)==saved
-    ui.click(page,'#lessonManageClose');ui.expect(page.locator('#lessonMapStatus')).to_contain_text('GI 지도 데이터가 없습니다')
-    assert page.evaluate('activeCourseData('+json.dumps(saved['players'][0]['round'])+')') is None
-    page.reload(wait_until='domcontentloaded');page.wait_for_selector('#lessonPlayers');assert ui.storage_group(page)==saved
-    import_file(page,path,cache=False);assert ui.storage_group(page)==saved
-    assert page.evaluate('(key)=>localStorage.getItem(key)',KEY) is None
-    ui.click(page,'#lessonManageClose')
+    if builtin:
+        assert cache is None,'A fresh default course must not require a device data cache'
+        page.evaluate('(key)=>localStorage.removeItem(key)',KEY)
+        page.reload(wait_until='domcontentloaded');page.wait_for_selector('#lessonPlayers')
+        assert ui.storage_group(page)==saved
+        ui.expect(page.locator('#lessonPrivateData')).not_to_be_visible()
+    else:
+        ui.click(page,'#lessonPrivateForget');assert ui.storage_group(page)==saved
+        ui.click(page,'#lessonManageClose');ui.expect(page.locator('#lessonMapStatus')).to_contain_text('GI 지도 데이터가 없습니다')
+        assert page.evaluate('activeCourseData('+json.dumps(saved['players'][0]['round'])+')') is None
+        page.reload(wait_until='domcontentloaded');page.wait_for_selector('#lessonPlayers');assert ui.storage_group(page)==saved
+        import_file(page,path,cache=False);assert ui.storage_group(page)==saved
+        assert page.evaluate('(key)=>localStorage.getItem(key)',KEY) is None
+        ui.click(page,'#lessonManageClose')
     assert page.locator('#lessonCourseSvg').get_attribute('data-hole-id')==str(entry['data']['holes']['2']['i'])
-    return {'course':entry['data']['nine'],'holes':18,'players':count,'checks':'original mapping/GPS/18 JGI+simulated Satellite/auto alignment/free putting/penalty/report/score/SG guard/offline/cache refresh/file removal/reimport PASS','cache_bytes':len(cache)}
+    return {'course':entry['data']['nine'],'holes':18,'players':count,'checks':'default course/36 original IDs+GPS/auto alignment/free putting/penalty/report/score/SG/offline/reload PASS','no_manual_import':builtin,'cache_bytes':len(cache) if cache else 0}
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--data',required=True);parser.add_argument('--zip',required=True);parser.add_argument('--out',default='/tmp/jgi-private-course-test');args=parser.parse_args()

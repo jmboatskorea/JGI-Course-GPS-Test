@@ -102,3 +102,21 @@ test('공식 Par/거리/Handicap이 null이어도 Raw Shot/Green/Putt/Penalty와
   assert.deepEqual([h.par,h.teeDistanceM,h.strokeIndexMen,h.strokeIndexLadies],[null,null,null,null]);
   assert.deepEqual([h.shots.length,h.putts,h.penalties,h.score,h.completed],[1,2,1,4,true]);
 });
+test('Gunung Geulis는 파일·체크박스·캐시 없이 기본 등록되고 기존 버전/미확정 값을 유지',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),context={window:{}};vm.createContext(context);
+  vm.runInContext(fs.readFileSync(require.resolve('../gunung-geulis-course-data.js'),'utf8'),context);
+  window.JGI_GUNUNG_GEULIS_COURSES=context.window.JGI_GUNUNG_GEULIS_COURSES;
+  try{
+    const s=storage();P.forget(s);assert.equal(s.getItem(P.KEY),null);
+    assert.deepEqual(Array.from(P.catalog(),c=>c.nine),['East Course','West Course']);
+    const ids=new Set();let conflicts=0;
+    for(const e of window.JGI_GUNUNG_GEULIS_COURSES){
+      assert.equal(Object.keys(e.data.holes).length,18);
+      assert.equal(P.data({course:'Gunung Geulis',nine:e.data.nine}),e.data);
+      assert.equal(P.data({course:'Gunung Geulis',nine:e.data.nine,courseVersion:e.data.version}),e.data);
+      for(const m of e.mapping){assert.ok(!ids.has(m.holeId));ids.add(m.holeId);conflicts+=m.unresolvedFields.length;}
+    }
+    assert.equal(ids.size,36);assert.equal(conflicts,35);assert.ok(P.catalog().every(c=>c.privateLocal===false));
+    assert.equal(s.getItem('jgi_course_lesson_group_v1'),'original-group');
+  }finally{delete window.JGI_GUNUNG_GEULIS_COURSES;}
+});
