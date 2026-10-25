@@ -84,7 +84,7 @@
     const style=document.createElement('style');style.textContent=css;root.append(style);
   }
 
-  function mount(root,player){
+  function mount(root,player,options={}){
     const data=build(player),{view,round:r}=data;
     const original=document.getElementById('resultsMultiView'),pane=original.cloneNode(false);pane.id='lessonReport-summaryScreen';pane.className='screen hidden';
     // Clone the real component shells, leaving multi-round controls and state analysis out.
@@ -103,8 +103,8 @@
     pane.querySelector('.multiPageHead h1').textContent='JGI · 개인별 종합 리포트';
     pane.querySelector('.multiPageHead p').textContent='선택 선수의 단일 라운드 · 완료한 홀 기준';
     get('multiReviewTitle').textContent=player.profile.name;
-    get('multiReviewSub').textContent=(data.full.complete?'18홀 완료 · FINAL ROUND REPORT':'진행 중 · 완료 '+r.holes.length+'/18홀')+' · '+r.course+' · '+r.nine+' · '+r.tee+' Tee';
-    const labels=[data.full.complete?'FINAL SCORE':'CURRENT SCORE','TO PAR','TOTAL PUTTS','PLAYER HCP'];
+    get('multiReviewSub').textContent=(data.full.complete?'18홀 완료 · FINAL ROUND REPORT':(options.archived?'중도 종료':'진행 중')+' · 완료 '+r.holes.length+'/18홀')+' · '+r.course+' · '+r.nine+' · '+r.tee+' Tee';
+    const labels=[data.full.complete?'FINAL SCORE':options.archived?'SCORE · 완료 홀':'CURRENT SCORE','TO PAR','TOTAL PUTTS','PLAYER HCP'];
     const values=[data.score??'—',data.toPar===null?'데이터 부족':data.toPar===0?'E':(data.toPar>0?'+':'')+data.toPar,data.puttCount,data.handicap.toFixed(1)];
     pane.querySelectorAll('.multiCockpitSummary>.resultsMetric').forEach((card,i)=>{card.querySelector('b').textContent=values[i];card.querySelector('span').textContent=labels[i];card.dataset.summaryMetric=['score','toPar','putts','hcp'][i];});
     get('multiCoreRateCards').innerHTML=window.multiCoreRateCardsHtml([r]);
@@ -130,7 +130,7 @@
     const clubHtml=()=>'<div class="multiTeeGrid"><div class="multiVizCard"><h4>클럽 사용 빈도</h4>'+window.multiClubUsageBarsHtml(data.clubs)+'</div><div class="multiVizCard"><h4>클럽별 방향 결과</h4>'+window.multiClubMissSplitHtml(data.clubs)+'</div></div>'+table(['클럽','Shot','기록 거리 범위','SG Total'],data.clubs.map(g=>[esc(g.key),g.n,g.dist.length?Math.round(Math.min(...g.dist))+'–'+Math.round(Math.max(...g.dist))+'m':'데이터 부족',sg(!g.missing&&g.sg.length?g.sg.reduce((sum,n)=>sum+n,0):null)]))+table(['시작 거리 구간','Shot','SG Total'],data.distances.map(g=>[esc(g.label),g.n,sg(!g.missing&&g.sg.length?g.sg.reduce((sum,n)=>sum+n,0):null)]));
     const penaltyRows=r.holes.flatMap(h=>(h.penaltyEvents||[]).map(p=>['H'+h.hole,esc(window.multiPenaltyLabel(p.type)),p.strokes]));
     const penaltyHtml=()=>'<div class="multiTeeKpis">'+tile('Penalty Total',data.penalties,'완료한 홀')+'</div>'+table(['홀','유형','벌타'],penaltyRows)+'<div class="analysisNote">벌타는 홀 단위 이벤트이며 원인 클럽이나 SG 범주를 임의로 지정하지 않습니다.</div>';
-    const holeTable=()=>table(['Hole','Par','Score','To Par','Putts','Penalty','상태'],data.full.round.holes.filter(h=>h.completed||h.shots.length||h.puttsDetail.length||h.penalties).map(h=>['H'+h.hole,h.par??'데이터 부족',h.completed?window.storedHoleScore(h):'합산 제외',h.completed&&finite(h.par)?window.multiSigned(window.storedHoleScore(h)-h.par,0):'데이터 부족',h.puttsDetail.length,h.penalties||0,h.completed?'완료':'진행 중']));
+    const holeTable=()=>table(['Hole','Par','Score','To Par','Putts','Penalty','상태'],data.full.round.holes.filter(h=>h.completed||h.shots.length||h.puttsDetail.length||h.penalties).map(h=>['H'+h.hole,h.par??'데이터 부족',h.completed?window.storedHoleScore(h):'합산 제외',h.completed&&finite(h.par)?window.multiSigned(window.storedHoleScore(h)-h.par,0):'데이터 부족',h.puttsDetail.length,h.penalties||0,h.completed?'완료':options.archived?'미완료 · 중도 종료':'진행 중']));
     get('multiDashboardTabs').querySelectorAll('button').forEach(b=>{b.dataset.summaryDashboard=b.dataset.multiDashboard;delete b.dataset.multiDashboard;});
     let dashboard='PERFORMANCE',performance='SCORING';
     function primary(){
@@ -143,7 +143,7 @@
     primary();
     const extra=document.createElement('div');extra.innerHTML=[['Hole-by-Hole',holeTable()+data.full.round.holes.filter(h=>h.completed||h.shots.length||h.puttsDetail.length).map((h,i)=>window.multiShotHoleDetailHtml(data.full.round,h,i===0,data.full)).join('')],['Club / Distance 분석',clubHtml()],['Putting 분석',puttingHtml()],['Penalty 분석',penaltyHtml()]].map(([title,html])=>'<div class="card"><div class="title">'+title+'</div>'+html+'</div>').join('');pane.append(extra);
     // Make the incomplete-hole label explicit in the original Shot/Hole component shells.
-    extra.querySelectorAll('.multiShotHole').forEach((node,i)=>{const h=data.full.round.holes.filter(h=>h.completed||h.shots.length||h.puttsDetail.length)[i];if(!h.completed)node.querySelector('summary b').textContent='진행 중 · 종합 통계 합산 제외';});
+    extra.querySelectorAll('.multiShotHole').forEach((node,i)=>{const h=data.full.round.holes.filter(h=>h.completed||h.shots.length||h.puttsDetail.length)[i];if(!h.completed)node.querySelector('summary b').textContent=(options.archived?'미완료 · 중도 종료':'진행 중')+' · 종합 통계 합산 제외';});
     styles(root,ids);root.querySelector('[data-report-content]').append(pane);
     pane.addEventListener('click',event=>{
       const b=event.target.closest('button');if(!b)return;

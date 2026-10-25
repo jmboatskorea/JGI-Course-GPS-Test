@@ -48,6 +48,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonShotDistance:empty{display:none}
 .courseLessonDev .lessonShotDistance[data-initial="true"]{display:none}
 .courseLessonDev #lessonPosition{margin:2px 0;font-size:10px;line-height:1.3}
+.courseLessonDev #lessonPosition:empty,.courseLessonDev #lessonPuttHistory:empty{display:none}
 .courseLessonDev .mapFirstQuickActions,.courseLessonDev .mapFirstPendingActions,.courseLessonDev .mapFirstMainRow{border-color:#d8dcda}
 .courseLessonDev .lessonPositionActions{grid-template-columns:repeat(2,minmax(0,1fr))}
 .courseLessonDev .lessonPositionActions{padding-bottom:3px}
@@ -104,6 +105,16 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonNotice{padding:12px;border:1px solid #efd59d;border-radius:14px;background:#fff4de;color:#755313;font-size:11px;line-height:1.5}
 .courseLessonDev .lessonPanel{margin-top:14px;padding:12px;border:1px solid #d2e1d8;border-radius:16px;background:#f6faf7}
 .courseLessonDev .lessonPanel h2{margin-bottom:10px}
+.courseLessonDev #lessonManageDialog .sheetHead h2{font-size:18px;line-height:1.25}
+.courseLessonDev #lessonManageDialog .lessonPanel{margin-top:10px;padding:10px}
+.courseLessonDev #lessonManageDialog .lessonPanel h3{margin:0 0 8px;font-size:14px;line-height:1.3}
+.courseLessonDev #lessonManageDialog label:has(>#lessonManagePlayer:empty){display:none}
+.courseLessonDev:not([data-development="true"]) .lessonNotice,.courseLessonDev:not([data-development="true"]) #lessonRoundMeta,.courseLessonDev:not([data-development="true"]) #lessonMapDiagnostics{display:none!important}
+.courseLessonDev:not([data-development="true"]) .lessonGuidance:not([data-error="true"]):not([data-important="true"]),.courseLessonDev #lessonCourseSelectionInfo:not([data-error="true"]){display:none}
+.courseLessonDev:not([data-development="true"]) .lessonPanel:has(#lessonMarkerLegend)>p{display:none}
+.courseLessonDev #lessonCourseSelectionInfo[data-error="true"]{margin:6px 0;color:#b51f2d}
+.courseLessonDev .lessonPanelStatus:not([data-error="true"]):not([data-important="true"]){display:none}
+.courseLessonDev #lessonManageDialog .lessonPanel:has(>#lessonMarkerLegend:empty){display:none}
 .courseLessonDev .lessonControls{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
 .courseLessonDev .lessonControls label{display:grid;gap:6px;min-width:120px;flex:1;font-size:12px}
 .courseLessonDev .lessonSheet input,.courseLessonDev .lessonSheet select{width:100%;min-width:0;min-height:46px;padding:10px;background:#fff;color:#111;border:1px solid #aeb5b1;border-radius:14px;font-size:16px}
@@ -122,6 +133,18 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev #lessonMapDiagnosticText{font-size:10px;line-height:1.5;color:#385748}
 .courseLessonDev .lessonPanelStatus{margin-top:8px;font-size:12px;line-height:1.5;color:#08783d;overflow-wrap:anywhere}
 .courseLessonDev .lessonPanelStatus[data-error="true"]{color:#b51f2d}
+.courseLessonDev #lessonFinishRound,.courseLessonDev .lessonFinishConfirm{min-height:48px;padding:10px 12px;border:1px solid #b51f2d;border-radius:14px;background:#c62836;color:#fff;font-weight:950}
+.courseLessonDev #lessonFinishDialog h2{font-size:18px;line-height:1.3}
+.courseLessonDev #lessonFinishDialog .lessonActions>button{min-height:48px}
+.courseLessonDev #lessonFinishStatus{margin:8px 0;font-size:12px;line-height:1.5;color:#385748}
+.courseLessonDev #lessonFinishStatus:empty{display:none}
+.courseLessonDev #lessonFinishPanel:has(>#lessonFinishRound[hidden]):has(>#lessonFinishStatus:empty){display:none}
+.courseLessonDev #lessonArchiveList{display:grid;gap:8px}
+.courseLessonDev .lessonArchiveGroup{padding:10px;border:1px solid #cdd2cf;border-radius:12px;background:#fff}
+.courseLessonDev .lessonArchiveGroup>strong{display:block;margin-bottom:6px;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.courseLessonDev .lessonArchivePlayer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px;font-size:12px;line-height:1.4}
+.courseLessonDev .lessonArchivePlayer>span{min-width:0;overflow-wrap:anywhere}
+.courseLessonDev #lessonArchiveList button[data-archive-group][data-archive-player]{flex-shrink:0;min-height:44px;min-width:78px;padding:8px;border:1px solid #bfc5c1;border-radius:12px;background:#f3f4f2;color:#111;font-size:11px;font-weight:950}
 .courseLessonDev .lessonShotHistory{display:grid;gap:8px;margin-top:12px;font-size:12px;line-height:1.5}
 .courseLessonDev .lessonShotHistory>button{min-height:52px;padding:10px;border:1px solid #c7ccca;border-radius:14px;background:#f5f6f4;color:#111;text-align:left;font:inherit}
 .courseLessonDev .lessonShotHistory>button[aria-pressed="true"]{border-color:#08783d;background:#e4f8ed;color:#087a44;box-shadow:inset 0 0 0 1px #08783d}
