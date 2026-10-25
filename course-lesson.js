@@ -725,7 +725,7 @@
     };
     // Read the existing confirmed distance only; missing endpoints are never zero or inferred PINs.
     const shotDistanceLabel=shot=>shot?.end&&Number.isFinite(shot.distanceM)&&shot.distanceM>=0?Math.round(shot.distanceM)+'m':'거리 미확정';
-    const status=(message,error=false)=>{for(const node of [el('lessonStatus'),...host.querySelectorAll('[data-lesson-status]')]){node.textContent=message;node.dataset.error=String(error);}};
+    const status=(message,error=false)=>{for(const node of [el('lessonStatus'),...host.querySelectorAll('[data-lesson-status]')]){node.textContent=message;node.dataset.error=String(error);node.dataset.important=String(/HOLE \d+ COMPLETE|ROUND COMPLETE/.test(message));}};
     function syncCourseSelection(){
       el('lessonCourseNine').replaceChildren();
       for(const c of courses.filter(c=>c.course===el('lessonCourseSelect').value)){
@@ -940,10 +940,11 @@
     function fitMapViewport(){
       const bounds=host.getBoundingClientRect(),header=host.querySelector('.lessonHeader').getBoundingClientRect();
       const readout=host.querySelector('.lessonMapReadout');readout.style.top=(header.bottom-bounds.top+8)+'px';
-      const top=Math.ceil(readout.getBoundingClientRect().bottom-bounds.top+6);
+      const readoutBounds=readout.getBoundingClientRect();
+      const top=Math.ceil(Math.max(header.bottom,readoutBounds.height?readoutBounds.bottom:header.bottom)-bounds.top+6);
       const bottom=el('lessonShotPanel').hidden?0:Math.ceil(bounds.bottom-el('lessonShotPanel').getBoundingClientRect().top);
-      const insets=top+':'+bottom;if(mapInsets===insets)return false;mapInsets=insets;
-      host.style.setProperty('--lesson-map-top',top+'px');host.style.setProperty('--lesson-map-bottom',Math.min(bottom,Math.max(0,bounds.height-top-60))+'px');return true;
+      const insets=Math.round(bounds.width)+':'+Math.round(bounds.height)+':'+top+':'+bottom;if(mapInsets===insets)return false;mapInsets=insets;
+      host.style.setProperty('--lesson-map-top',top+'px');host.style.setProperty('--lesson-map-bottom',Math.max(0,bottom)+'px');return true;
     }
     const mapLayoutObserver=new ResizeObserver(()=>{if(fitMapViewport())mapController.render();});
     for(const node of [host,host.querySelector('.lessonHeader'),host.querySelector('.lessonMapReadout'),el('lessonShotPanel')])mapLayoutObserver.observe(node);
@@ -1000,7 +1001,7 @@
         el('lessonHistoryTitle').textContent=p.profile.name+' · '+h.hole+'번 홀 · 이력 / 취소';
         el('lessonHoleMeta').textContent='PAR '+(h.par??'미확정')+' · '+p.profile.tee+(privateCourses?.isRound(p.round)&&!Number.isFinite(h.teeDistanceM)?' · 공식 거리 미확정':'');
         el('lessonPenaltyOpen').disabled=false;el('lessonPenaltyOpen').setAttribute('aria-label',p.profile.name+' · '+h.hole+'번 홀 · PENALTY 입력');
-        el('lessonPenaltyMeta').textContent=p.profile.name+' · '+h.hole+'번 홀 · Score '+(h.shots.length+h.putts+(h.penalties||0))+' · Putts '+h.putts+' · 벌타 '+h.penalties+' · 선수 벌타 합계 '+p.round.holes.reduce((sum,h)=>sum+(h.penalties||0),0);
+        el('lessonPenaltyMeta').textContent='Score '+(h.shots.length+h.putts+(h.penalties||0))+' · Putts '+h.putts+' · 벌타 '+h.penalties;
         el('lessonClubCurrent').textContent=draft.club;el('lessonClubOpen').disabled=blocked;
         el('lessonShotControls').hidden=blocked;el('lessonCompleted').hidden=!h.completed||!!h.puttingReady;
         host.classList.toggle('lessonPuttingMode',!!h.puttingReady);host.classList.toggle('lessonHoleOut',h.completed);
@@ -1015,16 +1016,18 @@
           el('lessonPendingResult').hidden=false;el('lessonOnGreen').disabled=false;el('lessonHoled').disabled=false;
           el('lessonPendingResultLabel').textContent=letter+' · '+p.profile.name+' · '+h.hole+'번 홀 · 선택된 Shot '+pending.shotSequence+' ('+pending.club+') · 결과 선택';
         }
-        el('lessonHoleState').textContent=h.completed?'HOLED · 이 선수의 '+h.hole+'번 홀 완료 · Score '+h.score+' · Putts '+h.putts+(roundComplete?' · ROUND COMPLETE':''):h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · PUTTING READY':'';
+        el('lessonHoleState').textContent=h.completed?'HOLED · H'+h.hole+(roundComplete?' · ROUND COMPLETE':''):h.lessonStatus==='AWAITING_PUTTING'?'ON GREEN · PUTTING READY':'';
         const last=h.shots.at(-1),target=letter+' · '+p.profile.name+' · '+h.hole+'번 홀';
         el('lessonCancelTarget').textContent=target+' · 마지막 Shot '+(last?.shotSequence||'없음')+' · 선택 Shot '+(pending?.shotSequence||'없음');
         el('lessonCancelInfo').textContent='샷 취소: 마지막 Shot만 제거 · 결과 취소: 선택 Shot 유지 · 공유 PIN 보존';
         if(last){try{cancellationContext(clone(group),p.playerId,last.id,true);el('lessonUndoShot').disabled=false;}catch(e){el('lessonCancelInfo').textContent='UNDO 차단: '+e.message;}}
         if(terminalResult(pending)){try{cancellationContext(clone(group),p.playerId,pending.id,false);el('lessonCancelResult').disabled=false;}catch(e){el('lessonCancelInfo').textContent+=' · RESULT CANCEL 차단: '+e.message;}}
-        el('lessonPosition').textContent=draft.position?(draft.confirmed?'볼 위치 확인됨':'볼 위치 미확인 후보')+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH · GPS 정확도 없음'):'볼 위치 후보를 지정하세요.';
+        el('lessonPosition').textContent=draft.position?(draft.confirmed?'볼 위치 확인됨':'볼 위치 미확인 후보')+' · '+(draft.position.source==='GPS'?'GPS ±'+draft.position.accuracy+'m':'MAP TOUCH'):'';
         const previous=h.shots.at(-2),distanceShot=draft.linkedShotId?h.shots.find(shot=>shot.id===draft.linkedShotId):
           last?.status==='PENDING_RESULT'&&previous?.result?.nextShotId===last.id?previous:last;
         const latestPutt=h.puttsDetail.at(-1);
+        el('lessonShotDistance').dataset.initial=String(!distanceShot&&!latestPutt);
+        el('lessonShotDistance').dataset.measured=String(!!latestPutt||!!distanceShot?.end&&Number.isFinite(distanceShot.distanceM));
         const nextShot=h.shots.find(shot=>shot.id===distanceShot?.result?.nextShotId);
         const endLabel=distanceShot?.result?.type==='NEXT_SHOT_START'?(nextShot?' → Shot '+nextShot.shotSequence:' → 확인 위치'):
           distanceShot?.result?.type==='ON_GREEN'?' → ON GREEN':distanceShot?.result?.type==='HOLED'?' · HOLED':'';

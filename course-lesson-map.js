@@ -25,7 +25,53 @@
     const zoom=Math.min(21,Math.max(1,Math.log2(Math.min((width-padding*2)/(256*Math.max(maxX-minX,1e-12)),(height-padding*2)/(256*Math.max(maxY-minY,1e-12))))));
     return {center:geographic({x:anchor.x+x*c-y*s,y:anchor.y+x*s+y*c}),zoom,heading,tilt:0};
   }
-  window.JGICourseLessonMapAlignment=Object.freeze({alignment,bearing,camera});
+  function fitPoints(h,r){
+    const shapes=window.courseShapes(h,r),anchors=[coordinate(h?.t),coordinate(h?.g)].filter(Boolean);
+    // ROUND fits the selected boundary and Tee/Green. Include its actual fairway/green/tees too.
+    const core=anchors.concat(shapes.filter(s=>['HOLE_BOUNDARY','FAIRWAY','GREEN','TEE'].includes(s.type)).flatMap(s=>s.path||[]));
+    if(!core.length)return [];
+    const local=window.courseLocalProjector(core[0]),direction=anchors.length===2?local.toXY(anchors[1]):{x:0,y:1};
+    const angle=Math.atan2(direction.x,direction.y),c=Math.cos(angle),s=Math.sin(angle);
+    // Clip nearby hazards in the same Tee→Green frame as ROUND, including diagonal holes.
+    const toXY=p=>{const q=local.toXY(p);return {x:q.x*c-q.y*s,y:q.x*s+q.y*c};};
+    const toLatLng=q=>local.toLatLng({x:q.x*c+q.y*s,y:-q.x*s+q.y*c});
+    const xy=core.map(toXY);
+    const box={minX:Math.min(...xy.map(p=>p.x))-30,maxX:Math.max(...xy.map(p=>p.x))+30,minY:Math.min(...xy.map(p=>p.y))-30,maxY:Math.max(...xy.map(p=>p.y))+30};
+    const clipped=[];
+    for(const shape of shapes.filter(s=>['BUNKER','WATER','WATER_PATH'].includes(s.type))){
+      let polygon=shape.path.map(toXY);
+      if(shape.line){
+        for(let i=1;i<polygon.length;i++){
+          const a=polygon[i-1],b=polygon[i],dx=b.x-a.x,dy=b.y-a.y;let low=0,high=1,valid=true;
+          for(const [p,q] of [[-dx,a.x-box.minX],[dx,box.maxX-a.x],[-dy,a.y-box.minY],[dy,box.maxY-a.y]]){
+            if(p===0){if(q<0){valid=false;break;}}
+            else if(p<0)low=Math.max(low,q/p);else high=Math.min(high,q/p);
+          }
+          if(valid&&low<=high)clipped.push(toLatLng({x:a.x+low*dx,y:a.y+low*dy}),toLatLng({x:a.x+high*dx,y:a.y+high*dy}));
+        }
+        continue;
+      }
+      // Only the near-hole part affects fitting; original hazard GPS paths remain unchanged.
+      for(const [axis,limit,lower] of [['x',box.minX,true],['x',box.maxX,false],['y',box.minY,true],['y',box.maxY,false]]){
+        const input=polygon;polygon=[];if(!input.length)break;
+        for(let i=0;i<input.length;i++){
+          const a=input[i],b=input[(i+1)%input.length],inside=p=>lower?p[axis]>=limit:p[axis]<=limit;
+          if(inside(a))polygon.push(a);
+          if(inside(a)!==inside(b)){const t=(limit-a[axis])/(b[axis]-a[axis]);polygon.push({x:a.x+t*(b.x-a.x),y:a.y+t*(b.y-a.y)});}
+        }
+      }
+      clipped.push(...polygon.map(toLatLng));
+    }
+    return core.concat(clipped);
+  }
+  function svgFrame(project,points,width,height){
+    if(!points.length||width<=0||height<=0)return null;
+    const q=points.map(project),xs=q.map(p=>p.x),ys=q.map(p=>p.y),left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
+    const pad=Math.min(16,width*.05,height*.08),scale=Math.min((width-2*pad)/Math.max(right-left,1e-9),(height-2*pad)/Math.max(bottom-top,1e-9));
+    const w=width/scale,h=height/scale;
+    return [(left+right-w)/2,(top+bottom-h)/2,w,h].join(' ');
+  }
+  window.JGICourseLessonMapAlignment=Object.freeze({alignment,bearing,camera,fitPoints,svgFrame});
   window.JGICourseLessonMapController=function(host,getGroup,onCandidate,options){
     const el=id=>host.querySelector('#'+id),svg=el('lessonCourseSvg');
     const colors=['#ffb648','#67d7ff','#dc9cff','#70ef9f'];
@@ -33,14 +79,23 @@
     const dialog=el('lessonGreenDialog'),greenSvg=el('lessonGreenSvg');
     let green=null,greenBallMarker=null,pinMarker=null,greenOverlays=[];
     const markers=new Map();
-    let viewKey=null,appliedKey=null,viewPoints=[],viewAlignment=null,rotationIssue='',mapListeners=[],restoreCamera=null,verifyPending=false,userCamera=false,interactionCleanup=null,baseStatus='';
+    let viewKey=null,appliedKey=null,viewPoints=[],viewAlignment=null,rotationIssue='',mapListeners=[],restoreCamera=null,verifyPending=false,userCamera=false,interactionCleanup=null,baseStatus='',svgAutoBox=null,svgManual=false,svgSize='',satSize='',fittedCamera=null;
+    function showMapStatus(message){
+      const node=el('lessonMapStatus');node.textContent=message;
+      node.setAttribute?.('data-error',String(!!mapFailure||/실패|오류|없|불가|미지원|RASTER/.test(message)));
+    }
     const angleError=(a,b)=>Math.abs(((a-b+540)%360)-180);
     function markManual(){
       userCamera=true;
-      if(verifyPending){rotationIssue='수동 지도 유지';el('lessonMapStatus').textContent=baseStatus+' · '+rotationIssue;}
+      if(verifyPending){rotationIssue='수동 지도 유지';showMapStatus(baseStatus+' · '+rotationIssue);}
       verifyPending=false;
     }
     const readCamera=()=>{const center=map?.getCenter?.(),zoom=map?.getZoom?.(),heading=map?.getHeading?.(),tilt=map?.getTilt?.();return center&&Number.isFinite(zoom)?{center:{lat:typeof center.lat==='function'?center.lat():center.lat,lng:typeof center.lng==='function'?center.lng():center.lng},zoom,...(Number.isFinite(heading)?{heading}:{}),...(Number.isFinite(tilt)?{tilt}:{})}:null;};
+    function cameraChanged(){
+      const current=readCamera();if(!current||!fittedCamera)return false;
+      return Math.abs(current.center.lat-fittedCamera.center.lat)>1e-7||Math.abs(current.center.lng-fittedCamera.center.lng)>1e-7||
+        Math.abs(current.zoom-fittedCamera.zoom)>1e-4||angleError(current.heading||0,fittedCamera.heading||0)>0.01||Math.abs((current.tilt||0)-(fittedCamera.tilt||0))>0.01;
+    }
     function writeCamera(value){
       if(map.moveCamera)map.moveCamera(value);else{map.setCenter?.(value.center);map.setZoom?.(value.zoom);if(Number.isFinite(value.heading))map.setHeading?.(value.heading);if(Number.isFinite(value.tilt))map.setTilt?.(value.tilt);}
     }
@@ -57,22 +112,25 @@
         if(revision!==renderRevision||instance!==map||!available||mode!=='SAT'||green||key!==viewKey)return;
         google.maps.event.trigger(map,'resize');if(map.getMapTypeId?.()!=='satellite')map.setMapTypeId?.('satellite');
         if(restoreCamera){
-          verifyPending=false;try{writeCamera(restoreCamera);}catch{rotationIssue='Satellite 카메라 복원 실패';el('lessonMapStatus').textContent=baseStatus+' · '+rotationIssue;diagnostic?.record('camera.RESTORE_FAILED');}
+          verifyPending=false;try{writeCamera(restoreCamera);fittedCamera=readCamera();}catch{rotationIssue='Satellite 카메라 복원 실패';showMapStatus(baseStatus+' · '+rotationIssue);diagnostic?.record('camera.RESTORE_FAILED');}
           restoreCamera=null;diagnose();return;
         }
-        if(appliedKey===key)return;
         const type=map.getRenderingType?.(),rotates=viewAlignment?.heading!=null&&type==='VECTOR'&&typeof map.getHeading==='function'&&(typeof map.moveCamera==='function'||typeof map.setHeading==='function');
         const rect=el('lessonSatelliteMap').getBoundingClientRect?.();
         if(rect&&(!rect.width||!rect.height)){rotationIssue='Satellite 화면 크기 확인 대기';return;}
+        const size=rect?Math.round(rect.width)+':'+Math.round(rect.height):'';
+        if(appliedKey===key&&!userCamera&&cameraChanged())markManual();
+        if(appliedKey===key&&(satSize===size||userCamera))return;
+        const previousIssue=rotationIssue;
         const value=rect?camera(viewPoints,rotates?viewAlignment.heading:0,rect.width,rect.height,Math.min(24,rect.width/10,rect.height/10)):null;
         verifyPending=rotates;
         try{
           if(value&&(map.moveCamera||(map.setCenter&&map.setZoom)))writeCamera(value);
           else{const bounds=new google.maps.LatLngBounds();viewPoints.forEach(p=>bounds.extend(p));map.fitBounds(bounds,30);}
-        }catch{appliedKey=key;verifyPending=false;rotationIssue='Satellite 카메라 적용 실패';el('lessonMapStatus').textContent=baseStatus+' · '+rotationIssue;diagnostic?.record('camera.APPLY_FAILED');return;}
-        appliedKey=key;rotationIssue=viewAlignment?.heading==null?'자동 정렬 불가':rotates?'Satellite 회전 확인 대기':type==='RASTER'?'Satellite RASTER · 임의 각도 회전 미지원':'Satellite 회전 지원 확인 불가';
+        }catch{appliedKey=key;satSize=size;verifyPending=false;rotationIssue='Satellite 카메라 적용 실패';showMapStatus(baseStatus+' · '+rotationIssue);diagnostic?.record('camera.APPLY_FAILED');return;}
+        fittedCamera=readCamera();appliedKey=key;satSize=size;rotationIssue=viewAlignment?.heading==null?'자동 정렬 불가':rotates?(previousIssue==='Satellite 회전 적용 확인 실패'?previousIssue:'Satellite 회전 확인 대기'):type==='RASTER'?'Satellite RASTER · 임의 각도 회전 미지원':'Satellite 회전 지원 확인 불가';
         verifyHeading();diagnose();
-        el('lessonMapStatus').textContent=baseStatus+(rotationIssue?' · '+rotationIssue:'');
+        showMapStatus(baseStatus+(rotationIssue?' · '+rotationIssue:''));
       });
     }
     const style={HOLE_BOUNDARY:['#102319','#31583e'],FAIRWAY:['#24643c','#3d9a5d'],GREEN:['#38e77b','#8affb0'],BUNKER:['#cdbb85','#ecdca9'],WATER:['#184f78','#3389bd'],WATER_PATH:['none','#3389bd'],TEE:['#365f43','#77a781']};
@@ -106,25 +164,27 @@
       const draft=selected.shotDraft;
       const nextKey=JSON.stringify([group.groupId,r.course,r.nine,data?.version||null,hole,h?.t,h?.g]);
       const resetView=nextKey!==viewKey;
-      if(resetView){viewKey=nextKey;appliedKey=null;rotationIssue='';restoreCamera=null;verifyPending=false;userCamera=false;svg.setAttribute('viewBox','0 0 400 700');}
+      if(svgAutoBox&&svg.getAttribute?.('viewBox')!==svgAutoBox)svgManual=true;
+      if(resetView){viewKey=nextKey;appliedKey=null;rotationIssue='';restoreCamera=null;verifyPending=false;userCamera=false;fittedCamera=null;svgAutoBox=null;svgManual=false;svgSize='';satSize='';svg.setAttribute('viewBox','0 0 400 700');}
       viewAlignment=alignment(h,r);
       // Ball/candidate updates never change the hole's orientation or fitting bounds.
       if(h)projector=window.courseViewProjector(viewAlignment.heading==null?{...h,t:undefined,g:undefined}:h,r,[]);
-      const boundary=projector?.shapes.filter(shape=>shape.type==='HOLE_BOUNDARY').flatMap(shape=>shape.path)||[];
-      viewPoints=[viewAlignment.tee,viewAlignment.green,...(boundary.length?boundary:projector?.shapes.flatMap(shape=>shape.path)||[])].filter(Boolean);
+      viewPoints=h?fitPoints(h,r):[];
       svg.setAttribute('data-alignment-bearing',viewAlignment.heading??'');svg.setAttribute('data-tee-reference','COMMON_GI');
       if(!projector||!projector.shapes.some(shape=>shape.path.length>=3)){
         projector=null;mode='JGI';svg.toggleAttribute('hidden',false);el('lessonSatelliteMap').hidden=true;el('lessonSatellite').disabled=true;
         diagnostic?.record('missing.GI');diagnose('MISSING_GI');
-        el('lessonMapStatus').textContent=hole+'번 홀 GI 지도 데이터가 없습니다.';return;
+        showMapStatus(hole+'번 홀 GI 지도 데이터가 없습니다.');return;
       }
       svg.setAttribute('data-hole-id',h.i??h.id??'');
-      if(resetView&&viewPoints.length){
-        const q=viewPoints.map(projector.project),xs=q.map(p=>p.x),ys=q.map(p=>p.y),left=Math.min(...xs)-16,top=Math.min(...ys)-16;
-        svg.setAttribute('viewBox',[left,top,Math.max(...xs)-left+16,Math.max(...ys)-top+16].join(' '));
+      const rect=host.querySelector('.lessonMapHost')?.getBoundingClientRect?.()||svg.getBoundingClientRect?.()||{width:400,height:700};
+      const size=Math.round(rect.width)+':'+Math.round(rect.height);
+      if(!svgManual&&(resetView||size!==svgSize||!svgAutoBox)){
+        const frame=svgFrame(projector.project,viewPoints,rect.width,rect.height);
+        if(frame){svg.setAttribute('viewBox',frame);svgAutoBox=frame;svgSize=size;}
       }
       baseStatus=(mapFailure?mapFailure+' · ':'')+hole+'번 홀 · '+viewAlignment.warning;
-      el('lessonMapStatus').textContent=baseStatus+(mode==='SAT'&&rotationIssue?' · '+rotationIssue:'');
+      showMapStatus(baseStatus+(mode==='SAT'&&rotationIssue?' · '+rotationIssue:''));
       const node=(tag,attrs,text)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text)n.textContent=text;svg.append(n);return n;};
       const order={HOLE_BOUNDARY:0,WATER:1,WATER_PATH:2,FAIRWAY:3,BUNKER:4,TEE:5,GREEN:6};
       projector.shapes.slice().sort((a,b)=>(order[a.type]??9)-(order[b.type]??9)).forEach(shape=>{
@@ -174,9 +234,9 @@
       const q=screen.matrixTransform(ctm.inverse());if(!Number.isFinite(q.x)||!Number.isFinite(q.y))return;
       onCandidate({...projector.unproject(q),accuracy:null,time:Date.now(),source:'MANUAL_DROP',inputMethod:'MAP_TOUCH'});
     });
-    el('lessonJgiMap').addEventListener('click',()=>{mode='JGI';diagnostic?.record('mode.JGI');diagnose('USER_JGI');el('lessonMapStatus').textContent='JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
-    el('lessonSatellite').addEventListener('click',()=>{if(!available)return;mode='SAT';diagnostic?.record('mode.SAT');el('lessonMapStatus').textContent='공통 위성 지도 · 선택 선수의 볼 위치를 탭하세요.';render();});
-    el('lessonMapStatus').textContent='JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.';
+    el('lessonJgiMap').addEventListener('click',()=>{mode='JGI';diagnostic?.record('mode.JGI');diagnose('USER_JGI');showMapStatus('JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.');render();});
+    el('lessonSatellite').addEventListener('click',()=>{if(!available)return;mode='SAT';diagnostic?.record('mode.SAT');showMapStatus('공통 위성 지도 · 선택 선수의 볼 위치를 탭하세요.');render();});
+    showMapStatus('JGI 코스 지도 · 선택 선수의 볼 위치를 탭하세요.');
     function greenProjector(geometry){
       const points=geometry.polygons.flat(),local=window.courseLocalProjector(points[0]),xy=points.map(local.toXY);
       const minX=Math.min(...xy.map(p=>p.x)),maxX=Math.max(...xy.map(p=>p.x)),minY=Math.min(...xy.map(p=>p.y)),maxY=Math.max(...xy.map(p=>p.y));
@@ -244,7 +304,7 @@
       green={context:{...context},geometry,projector:greenProjector(geometry),ball:null,pin:null,input:'BALL',camera:appliedKey===viewKey?(restoreCamera||readCamera()):null,map,viewKey};
       el('lessonGreenTitle').textContent=p.profile.name+' · '+context.hole+'번 홀 · Shot '+shot.shotSequence+' · ON GREEN';
       el('lessonGreenStatus').textContent='확대 Green 안에서 볼 위치를 탭하세요. PIN은 건너뛸 수 있습니다.';
-      verifyPending=false;diagnostic?.record('Green.open');dialog.showModal();document.body.classList.add('lesson-green-open');mountGreenMap();renderGreen();
+      verifyPending=false;fittedCamera=null;diagnostic?.record('Green.open');dialog.showModal();document.body.classList.add('lesson-green-open');mountGreenMap();renderGreen();
     }
     greenSvg.addEventListener('click',event=>{
       if(!green)return;const ctm=greenSvg.getScreenCTM();if(!ctm)return;
@@ -265,10 +325,10 @@
       diagnostic?.record('attach');map=instance;available=true;mapFailure=null;
       el('lessonSatelliteMap').append(mapElement);
       if(!same){
-        appliedKey=null;restoreCamera=null;mapListeners.forEach(listener=>listener?.remove?.());mapListeners=[];
+        appliedKey=null;restoreCamera=null;fittedCamera=null;mapListeners.forEach(listener=>listener?.remove?.());mapListeners=[];
         if(map.addListener){
           mapListeners.push(map.addListener('dragstart',()=>{if(!green)markManual();}));
-          mapListeners.push(map.addListener('idle',()=>{const before=rotationIssue;verifyHeading(true);if(before!==rotationIssue&&!green)render();}));
+          mapListeners.push(map.addListener('idle',()=>{if(!green&&!userCamera&&appliedKey===viewKey&&cameraChanged())markManual();const before=rotationIssue;verifyHeading(true);if(before!==rotationIssue&&!green)render();}));
           mapListeners.push(map.addListener('renderingtype_changed',()=>{
             if(green||mode!=='SAT')return;const type=map.getRenderingType?.();
             if(type!=='VECTOR'){rotationIssue=type==='RASTER'?'Satellite RASTER · 임의 각도 회전 미지원':'Satellite 회전 지원 확인 불가';render();}
