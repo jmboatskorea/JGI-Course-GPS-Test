@@ -44,13 +44,18 @@ test('동서 ID 혼합·누락·좌표 불일치·충돌값 채우기·인증정
   ];
   for(const change of cases){const x=fixture();change(x);assert.throws(()=>P.validate(x,'a'.repeat(64)));}
 });
-test('가져오기는 기본 세션 전용이며 Preview/local에서만 허용',async()=>{
+test('가져오기는 기본 세션 전용이며 허용된 Production/Preview/local에서만 사용',async()=>{
   const s=storage();await assert.rejects(P.importText(text(),{storage:s}),/사용 권한/);
   await P.importText(text(),{storage:s,rights:true});assert.equal(s.getItem(P.KEY),null);
   assert.equal(P.catalog().length,2);
-  for(const host of ['jgi-course-gps-test.vercel.app','example.com'])assert.equal(P.allowed({hostname:host}),false);
+  for(const host of ['jgi-course-gps-test.vercel.app','jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app','localhost'])assert.equal(P.allowed({hostname:host}),true);
+  for(const host of ['example.com','jgi-course-gps-test.vercel.app.example.com'])assert.equal(P.allowed({hostname:host}),false);
   window.location.hostname='jgi-course-gps-test.vercel.app';
-  await assert.rejects(P.importText(text(),{storage:s,rights:true}),/비공개 Preview/);window.location.hostname='localhost';
+  await P.importText(text(),{storage:s,rights:true,cache:true});
+  const cached=s.getItem(P.KEY);P.forget(s);s.setItem(P.KEY,cached);await P.restore(s,window.location);
+  assert.equal(P.catalog().length,2);
+  window.location.hostname='example.com';
+  await assert.rejects(P.importText(text(),{storage:s,rights:true}),/허용된 JGI/);window.location.hostname='localhost';
   assert.equal(s.getItem('jgi_course_lesson_group_v1'),'original-group');assert.equal(s.getItem('agi_player_v1_round'),'original-personal');
 });
 test('명시적 기기 저장/압축 복원·변조 검출·다른 버전 차단과 원본 기록 보존',async()=>{

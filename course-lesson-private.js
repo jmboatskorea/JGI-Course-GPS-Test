@@ -8,7 +8,7 @@
   const point=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=90&&Math.abs(p[1])<=180;
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const known=n=>typeof n==='number'&&Number.isFinite(n)&&n>0;
-  const allowed=location=>['localhost','127.0.0.1','[::1]','jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app'].includes(location?.hostname);
+  const allowed=location=>['localhost','127.0.0.1','[::1]','jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app','jgi-course-gps-test.vercel.app'].includes(location?.hostname);
   const isRound=r=>r?.course===CLUB;
   let loaded=[],fingerprint=null;
   function validate(value,version){
@@ -75,7 +75,7 @@
   function data(r){return isRound(r)?entry(r)?.data||null:null;}
   function scorecard(r){return isRound(r)?entry(r)?.scorecard||null:null;}
   async function importText(text,{storage,cache=false,rights=false,requiredVersions=[]}={}){
-    check(allowed(window.location),'개인용 코스 가져오기는 비공개 Preview 또는 로컬에서만 제공합니다.');
+    check(allowed(window.location),'개인용 코스 가져오기는 허용된 JGI 화면에서만 제공합니다.');
     check(rights,'본인에게 사용 권한이 있는 파일인지 확인하세요.');
     const next=await decode(text);
     const versions=typeof requiredVersions==='function'?requiredVersions():requiredVersions;
