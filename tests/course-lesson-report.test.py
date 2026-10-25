@@ -11,7 +11,7 @@ ui=importlib.util.module_from_spec(spec);spec.loader.exec_module(ui)
 CALCULATIONS=r"""({baseline})=>{
  const eq=(a,b,label)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(label+': '+JSON.stringify([a,b]));};
  const ok=(v,label)=>{if(!v)throw Error(label);};
- const clone=x=>JSON.parse(JSON.stringify(x)),stored=localStorage.getItem('jgi_course_lesson_dev_group_v1'),globalBefore=JSON.stringify(round);
+ const clone=x=>JSON.parse(JSON.stringify(x)),stored=localStorage.getItem('jgi_course_lesson_group_v1'),globalBefore=JSON.stringify(round);
  const g=JSON.parse(stored),p=clone(g.players[0]),base=p.round;
  const reference=new Function('round','sgExpected','sgBenchmarkInfo','sgLieKey','greenPointForHole','activeCourseData','hav',baseline+'\nreturn {summary:sgRoundSummary(),shots:round.holes[0].shots.map((s,i)=>computeShotSG(round.holes[0],s,i,sgBenchmarkInfo())),putts:round.holes[0].puttsDetail.map((p,i)=>computePuttSG(round.holes[0],p,i,sgBenchmarkInfo())),categories:round.holes[0].shots.map((s,i)=>sgShotCategory(round.holes[0],s,i))};');
  const source=activeCourseData(base),ch=source.holes['1'],pos=pair=>({lat:pair[0],lng:pair[1],accuracy:null,source:'MANUAL_DROP'}),start=pos(ch.t),end=pos(ch.g);
@@ -65,7 +65,7 @@ CALCULATIONS=r"""({baseline})=>{
  }
  player=known();h=player.round.holes[0];h.shots[0].start={...teePoint,accuracy:1000};h.shots[0].startLie='UNKNOWN';v=JGICourseLessonReport.build(player);eq(v.records[0].value,null,'uncertain GPS not a reliable Lie');
  player=known();h=player.round.holes[0];h.shots[0].start=teePoint;h.shots[0].startLie='UNKNOWN';h.shots[0].courseContext.geometryVersion='DIFFERENT';v=JGICourseLessonReport.build(player);eq(v.records[0].value,null,'geometry mismatch not reliable');
- eq(localStorage.getItem('jgi_course_lesson_dev_group_v1'),stored,'group storage untouched');eq(JSON.stringify(round),globalBefore,'personal global untouched');
+ eq(localStorage.getItem('jgi_course_lesson_group_v1'),stored,'group storage untouched');eq(JSON.stringify(round),globalBefore,'personal global untouched');
  return {parity,checks:'categories/score/penalty/putts/direct hole-out/unknown/null/GI/GPS/version/immutability PASS',points:{teePoint,fairwayPoint,bunkerPoint},knownPlayer:known()};
 }"""
 
@@ -108,7 +108,7 @@ def main():
     assert not page.locator('.lessonReportDialog').inner_text().__contains__('멘탈');assert page.locator('#ovFlo').count()==1
     assert page.locator('#lessonReport-ovFlo').count()==0;assert 'WHOOP' not in page.locator('.lessonReportDialog').inner_text()
     page.screenshot(path=str(out/f'lesson-overview-{label}.png'))
-    page.locator('[data-report-tab="performanceScreen"]').click();expected=page.evaluate('()=>JGICourseLessonReport.build(JSON.parse(localStorage.getItem("jgi_course_lesson_dev_group_v1")).players[0]).sgValues')
+    page.locator('[data-report-tab="performanceScreen"]').click();expected=page.evaluate('()=>JGICourseLessonReport.build(JSON.parse(localStorage.getItem("jgi_course_lesson_group_v1")).players[0]).sgValues')
     assert expected['sgTotal'] is not None, expected
     for key,value in expected.items():
      ui.expect(page.locator('#lessonReport-'+key)).to_have_text('미계산' if value is None else page.evaluate('v=>formatSg(v)',value))
