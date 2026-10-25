@@ -58,7 +58,7 @@ def flow(page, url, course, nine, course_id, out, label, dialogs):
     page.wait_for_selector('#lessonCourseSelect', state='attached')
     before = ui.personal_storage(page)
     options = page.locator('#lessonCourseSelect option').all_text_contents()
-    assert options == [c[0] for c in COURSES], options
+    assert options == [c[0] for c in COURSES]+['Gunung Geulis'], options
     ui.reveal(page, '#lessonCourseSelect').select_option(course)
     ui.expect(page.locator('#lessonCourseNine')).to_have_value(nine)
     assert page.locator('#lessonCourseNine option').all_text_contents() == [nine]
@@ -198,7 +198,7 @@ def main():
             context.route('**/*', lambda route: ui.gate(route, base))
             page = context.new_page(); page.goto(base+'/?courseLesson=1', wait_until='domcontentloaded')
             page.wait_for_selector('#lessonCourseSelect option', state='attached')
-            assert page.locator('#lessonCourseSelect option').all_text_contents() == [COURSES[0][0]]
+            assert page.locator('#lessonCourseSelect option').all_text_contents() == [COURSES[0][0], 'Gunung Geulis']
             result['missing_scorecard_excluded'] = 'PASS'
             context.close(); browser.close()
         result['status'] = 'PASS'

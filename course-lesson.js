@@ -745,7 +745,7 @@
       syncCourseSelection();
     }
     el('lessonCourseSelect').onchange=syncCourseSelection;refreshCourseChoices();
-    el('lessonPrivateData').hidden=!privateCourses?.allowed(window.location);
+    el('lessonPrivateData').hidden=!!privateCourses?.builtins().length||!privateCourses?.allowed(window.location);
     el('lessonPrivateStatus').textContent=privateError||(!privateCourses?.catalog().length?'개인용 JSON 파일을 선택하세요.':'East / West 각 18홀 · 개인 기기 코스 복원 완료 · Scorecard 미확정 35개');
     let privateBusy=false;
     const privateButton=()=>{

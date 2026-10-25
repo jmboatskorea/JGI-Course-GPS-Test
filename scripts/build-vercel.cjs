@@ -16,7 +16,7 @@ const files = [
   'course-lesson-map.js', 'course-lesson-report.js', 'course-lesson-summary.js', 'course-lesson-private.js',
   'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
-  'ora-south-left-course-data.js',
+  'ora-south-left-course-data.js', 'gunung-geulis-course-data.js',
   'jgi-strokes-gained-data.js'
 ];
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');

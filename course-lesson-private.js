@@ -1,4 +1,4 @@
-/* Device-imported Course Lesson data. This file contains no provider GPS data. */
+/* Built-in Course Lesson course routing with compatibility for earlier device imports. */
 (function(){
   'use strict';
   const KEY='jgi_course_lesson_private_courses_v1',FORMAT='JGI_PRIVATE_COURSES_V1';
@@ -70,8 +70,12 @@
       if(size>12000000){await reader.cancel();fail('기기 코스 저장 크기를 확인하세요.');}chunks.push(value);}
     return new Blob(chunks).text();
   }
-  function catalog(){return loaded.map(x=>({course:CLUB,nine:x.data.nine,version:x.data.version,privateLocal:true}));}
-  function entry(r){return loaded.find(x=>x.data.nine===r?.nine&&(!r.courseVersion||r.courseVersion===x.data.version));}
+  function builtins(){return typeof window==='undefined'?[]:window.JGI_GUNUNG_GEULIS_COURSES||[];}
+  function catalog(){
+    const defaults=builtins(),entries=defaults.concat(loaded.filter(x=>!defaults.some(b=>b.data.nine===x.data.nine)));
+    return entries.map(x=>({course:CLUB,nine:x.data.nine,version:x.data.version,privateLocal:!defaults.includes(x)}));
+  }
+  function entry(r){return builtins().concat(loaded).find(x=>x.data.nine===r?.nine&&(!r.courseVersion||r.courseVersion===x.data.version));}
   function data(r){return isRound(r)?entry(r)?.data||null:null;}
   function scorecard(r){return isRound(r)?entry(r)?.scorecard||null:null;}
   async function importText(text,{storage,cache=false,rights=false,requiredVersions=[]}={}){
@@ -106,10 +110,10 @@
   function description(r){
     if(!isRound(r))return '';
     const e=entry(r),missing=e?.mapping.reduce((sum,m)=>sum+m.unresolvedFields.length,0);
-    return !e?'개인용 코스 파일을 다시 불러오세요. 기록은 보존됩니다.':
-      '개인 기기 테스트 · 문서 교차검증 18홀 · 현장/색상별 Tee GPS 미검증 · 공식 Scorecard 미확정 '+missing+'개';
+    return !e?'코스 데이터 버전을 확인하세요. 기록은 보존됩니다.':
+      (builtins().includes(e)?'기본 등록 코스':'기존 기기 코스')+' · 문서 교차검증 18홀 · 현장/색상별 Tee GPS 미검증 · 공식 Scorecard 미확정 '+missing+'개';
   }
-  const api={KEY,FORMAT,allowed,isRound,validate,decode,catalog,data,scorecard,importText,restore,forget,sgMissing,description};
+  const api={KEY,FORMAT,allowed,isRound,validate,decode,builtins,catalog,data,scorecard,importText,restore,forget,sgMissing,description};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
   window.JGICourseLessonPrivate=Object.freeze(api);
 })();
