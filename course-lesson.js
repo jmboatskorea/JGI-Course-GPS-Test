@@ -1,24 +1,35 @@
-/* Course Lesson development: isolated registration, physical shots and results. */
+/* Course Lesson: device-local scorer registration, physical shots and reports. */
 (function(){
   'use strict';
-  const STORAGE='jgi_course_lesson_dev_group_v1';
+  const STORAGE='jgi_course_lesson_group_v1';
+  const LEGACY_TEST_STORAGE='jgi_course_lesson_dev_group_v1';
   const PREVIEW_HOST='jgi-course-gps-test-git-ui-course-less-faefbe-jmboatskorea-9766.vercel.app';
+  const PRODUCTION_HOST='jgi-course-gps-test.vercel.app';
   const clone=value=>JSON.parse(JSON.stringify(value));
   const assert=(condition,message)=>{if(!condition)throw new Error(message);};
   const id=(prefix,services)=>prefix+'_'+services.uuid();
   const isLessonPenalty=event=>typeof event?.id==='string'&&event.id.startsWith('clpen_');
-  const testName=value=>typeof value==='string'&&value.length<=60&&(value===''||/^TEST\s+\S.*$/.test(value));
+  const validPlayerName=value=>typeof value==='string'&&value.length<=60&&
+    (value.trim()===''||/^[\p{L}\p{M}\p{N} .·()-]+$/u.test(value.trim()));
   const testContact=value=>typeof value==='string'&&(value===''||/^TEST-(?:TEL|WA)-\d{3}$/.test(value));
   // Pasted text / iPad smart punctuation can contain visually identical dashes.
   const normalizeContactDraft=draft=>({...draft,contact:typeof draft?.contact==='string'
     ?draft.contact.trim().replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g,'-'):draft?.contact});
   function developmentAllowed(location){
-    return ['localhost','127.0.0.1','[::1]',PREVIEW_HOST].includes(location.hostname)&&
-      new URLSearchParams(location.search).get('courseLessonDev')==='1';
+    const host=location.hostname,query=new URLSearchParams(location.search);
+    const local=['localhost','127.0.0.1','[::1]'].includes(host);
+    if(!(local||host===PREVIEW_HOST||host===PRODUCTION_HOST))return false;
+    return query.get('courseLesson')==='1'||(host!==PRODUCTION_HOST&&query.get('courseLessonDev')==='1');
+  }
+  function clearLegacyTestGroup(storage){
+    if(storage.getItem(LEGACY_TEST_STORAGE)===null)return false;
+    storage.removeItem(LEGACY_TEST_STORAGE);
+    assert(storage.getItem(LEGACY_TEST_STORAGE)===null,'이전 코스레슨 테스트 기록을 초기화하지 못했습니다.');
+    return true;
   }
   function validateDraft(draft){
-    assert(draft&&testName(draft.name),'이름은 TEST 선수 A처럼 가상 이름을 사용하세요.');
-    assert(testContact(draft.contact),'연락처는 TEST-WA-001 또는 TEST-TEL-001 형식만 사용하세요.');
+    assert(draft&&validPlayerName(draft.name),'선수 이름은 60자 이내의 실제 이름으로 입력하세요.');
+    assert(testContact(draft.contact),'중앙 DB 연결 전에는 실제 연락처를 저장하지 마세요. 비워두거나 TEST-WA-001 형식만 입력하세요.');
     assert(['FEMALE','MALE'].includes(draft.sex),'성별을 선택하세요.');
     assert(['Blue','White','Red'].includes(draft.tee),'지원하는 티를 선택하세요.');
     assert(typeof draft.handicap==='string'&&draft.handicap.length<=8,'Handicap 입력을 확인하세요.');
@@ -26,7 +37,7 @@
   function profileFromDraft(draft){
     draft=normalizeContactDraft(draft);
     validateDraft(draft);
-    assert(draft.name.trim()!=='','가상 선수 이름을 입력하세요.');
+    assert(draft.name.trim()!=='','선수 이름을 입력하세요.');
     assert(draft.handicap.trim()!=='','Handicap을 입력하세요.');
     const handicap=Number(draft.handicap),max=draft.sex==='FEMALE'?28:25;
     assert(Number.isFinite(handicap)&&handicap>=0&&handicap<=max,'Handicap은 0~'+max+' 범위여야 합니다.');
@@ -523,7 +534,7 @@
     h.shots.pop();recoverHole(p,h);
     next.updatedAt=services.now();return validateGroup(next);
   }
-  const api={STORAGE,developmentAllowed,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
+  const api={STORAGE,LEGACY_TEST_STORAGE,developmentAllowed,clearLegacyTestGroup,createGroup,updateDraft,selectPlayer,registerPlayer,validateGroup,saveGroup,restoreGroup,
     recordPenalty,cancelPenalty,
     setShotClub,chooseHole,stagePosition,confirmPosition,recordShot,greenGeometry,pointInGreen,onGreen,holed,pendingResultShot,resultTargetShot,cancelResult,undoLastShot,setPuttDistance,recordPutt,advanceCompletedHole,saveHoleCompletion};
   if(typeof module!=='undefined'&&module.exports){module.exports=api;return;}
@@ -595,6 +606,7 @@
       typeof window.initGoogleMap==='function')window.initGoogleMap();
   }
   function boot(){
+    try{clearLegacyTestGroup(localStorage);}catch(e){console.warn('Course Lesson legacy test data cleanup failed',e);}
     const services={uuid:()=>crypto.randomUUID(),now:()=>Date.now(),
       benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>window.hydrateRoundCourseTruth(r),
       courseVersion:window.JGI_OLD_COURSE_DATA?.version||null,dataVersion:window.JGI_SG_BENCHMARK_DATA?.version,
@@ -640,9 +652,9 @@
         </section><div id="lessonStatus" class="lessonStatus" role="status" aria-live="polite"></div>
       </section>
       <dialog id="lessonManageDialog" class="lessonSheet sheet" aria-labelledby="lessonManageTitle"><div class="sheetHead"><h2 id="lessonManageTitle">COURSE LESSON · 선수 / Group</h2><button type="button" id="lessonManageClose" class="x" aria-label="선수 관리 닫기">✕</button></div>
-        <section class="lessonPanel"><h3>테스트 Group</h3><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
-        <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>가상 선수 이름<input id="lessonName" maxlength="60" placeholder="TEST 선수 A" autocomplete="off" required></label><label>전화번호 / WhatsApp (가상)<input id="lessonContact" maxlength="32" placeholder="TEST-WA-001" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
-        <div class="lessonNotice">개발 테스트 전용 · 가상 선수만 사용하세요. 인증/실서비스가 아닙니다. 실제 개인정보 입력 금지. Group은 이 브라우저에만 임시 저장됩니다. SG는 선수별 REPORT에서 확인합니다. DB/Guest Claim·자동 폐기는 아직 제공하지 않습니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
+        <section class="lessonPanel"><h3>코스레슨 Group</h3><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
+        <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>선수 이름<input id="lessonName" maxlength="60" placeholder="선수 이름" autocomplete="off" required></label><label>연락처 (선택 · 실번호 입력 금지)<input id="lessonContact" maxlength="32" placeholder="비워두세요" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
+        <div class="lessonNotice">코스레슨 실전 테스트 · 코치 인증/중앙 DB는 아직 연결되지 않았습니다. 선수 이름과 샷 기록은 이 기기 브라우저에만 저장됩니다. 실제 연락처는 입력하지 마세요. 브라우저 데이터 삭제 시 기록이 사라질 수 있습니다. 선수별 SG는 REPORT에서 확인합니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
       </dialog>
       <dialog id="lessonHistoryDialog" class="lessonSheet sheet" aria-labelledby="lessonHistoryTitle"><div class="sheetHead"><h2 id="lessonHistoryTitle">샷 이력 · 취소</h2><button type="button" id="lessonHistoryClose" class="x" aria-label="이력 닫기">✕</button></div><p class="lessonMeta">과거 Shot을 선택하면 해당 선수·샷의 결과를 입력할 수 있습니다. 같은 선수의 다음 시작 위치는 직전 Shot의 End로 연결됩니다. 일반 샷은 확정 위치 기준 거리, 퍼팅은 기록원이 입력한 PIN까지의 거리입니다. 과거 누락 위치는 추정하지 않습니다.</p><div id="lessonShotHistory" class="lessonShotHistory" aria-live="polite"></div><section class="lessonBench"><h3>벌타 이력 · 이벤트별 취소</h3><div id="lessonPenaltyHistory" class="lessonPenaltyHistory" aria-live="polite"></div></section><div class="lessonBench"><strong id="lessonCancelTarget"></strong><div class="lessonActions"><button type="button" id="lessonUndoShot" disabled>UNDO LAST SHOT</button><button type="button" id="lessonCancelResult" disabled>RESULT CANCEL</button></div><p class="lessonMeta" id="lessonCancelInfo"></p></div><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
       <dialog id="lessonClubDialog" class="lessonSheet sheet" aria-labelledby="lessonClubTitle"><div class="sheetHead"><h2 id="lessonClubTitle">클럽 선택</h2><button type="button" id="lessonClubClose" class="x" aria-label="클럽 선택 닫기">✕</button></div><div id="lessonClubList" class="allClubList"></div><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
@@ -871,7 +883,7 @@
       el('lessonPendingResult').hidden=true;el('lessonOnGreen').disabled=true;el('lessonHoled').disabled=true;
       el('lessonUndoShot').disabled=true;el('lessonCancelResult').disabled=true;
       el('lessonPenaltyHistory').replaceChildren();
-      if(!group){el('lessonGroupMeta').textContent='선수 1~4명의 테스트 Group을 만드세요.';el('lessonShotPanel').hidden=true;el('lessonStateLabel').textContent='COURSE LESSON';el('lessonStateButton').disabled=true;mapController.render();return;}
+      if(!group){el('lessonGroupMeta').textContent='선수 1~4명의 코스레슨 Group을 만드세요.';el('lessonShotPanel').hidden=true;el('lessonStateLabel').textContent='COURSE LESSON';el('lessonStateButton').disabled=true;mapController.render();return;}
       el('lessonStateButton').disabled=false;
       el('lessonPlayerCount').value=String(group.players.length);
       const registered=group.players.filter(p=>p.registered).length;
@@ -983,12 +995,12 @@
       group=saved.group;render();status(saved.message||message,saved.error===true);
     }
     el('lessonCreateGroup').addEventListener('click',()=>{
-      try{if(localStorage.getItem(STORAGE)!==null&&!confirm('기존 테스트 Group 임시 저장을 새 Group으로 바꿀까요? 기존 Player Round는 유지됩니다.'))return;
-        commit(createGroup(Number(el('lessonPlayerCount').value),services),'새 테스트 Group 생성 · 각 선수를 등록하세요.');
+      try{if(localStorage.getItem(STORAGE)!==null&&!confirm('현재 코스레슨 Group을 새 Group으로 바꿀까요? 기존 개인 ROUND 기록은 유지됩니다.'))return;
+        commit(createGroup(Number(el('lessonPlayerCount').value),services),'새 코스레슨 Group 생성 · 각 선수를 등록하세요.');
       }catch(e){status('Group 생성 실패: '+e.message,true);}
     });
     function restore(){
-      try{const saved=restoreGroup(localStorage);group=saved;render();status(saved?'저장된 Group 복원 완료':'저장된 테스트 Group이 없습니다.');}
+      try{const saved=restoreGroup(localStorage);group=saved;render();status(saved?'저장된 Group 복원 완료':'저장된 코스레슨 Group이 없습니다.');}
       catch(e){status('Group 복원 실패 · 원본 저장은 유지됩니다: '+e.message,true);}
     }
     el('lessonRestoreGroup').addEventListener('click',()=>{if(group&&!confirm('저장하지 않은 입력을 저장된 Group으로 복원할까요?'))return;restore();});
