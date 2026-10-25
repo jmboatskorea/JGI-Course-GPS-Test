@@ -929,3 +929,86 @@ test('Preview 지도 진단: 로딩 전 순서/크기, 실제 오류 코드만 �
   assert.equal(output.textContent.split('\n').filter(line=>/^\d+ ·/.test(line)).length,100);
   assert.ok(source.indexOf('window.JGI_COURSE_LESSON_DIAGNOSTICS=installMapDiagnostics()')>source.indexOf('if(!developmentAllowed(window.location))return;'));
 });
+
+test('Penalty: A OB1 → B HAZARD2 → A LOST BALL1, 선수별 Score/위치/기록 독립',()=>{
+  const engine=services();let group=registeredGroup(4,engine);
+  for(const p of group.players)group=physical(group,p.playerId,mapPoint(),engine);
+  const original=structuredClone(group),[a,b]=group.players;
+  group=lesson.recordPenalty(group,a.playerId,1,'clpen_a1','OB',1,engine);
+  assert.deepEqual(group.players.slice(1),original.players.slice(1));
+  group=lesson.selectPlayer(group,b.playerId);const aBefore=structuredClone(group.players[0]);
+  group=lesson.recordPenalty(group,b.playerId,1,'clpen_b1','HAZARD',2,engine);
+  assert.deepEqual(group.players[0],aBefore);
+  group=lesson.selectPlayer(group,a.playerId);
+  group=lesson.recordPenalty(group,a.playerId,1,'clpen_a2','LOST_BALL',1,engine);
+  for(const [i,total] of [[0,2],[1,2],[2,0],[3,0]]){
+    const p=group.players[i],before=original.players[i],h=p.round.holes[0];assert.equal(h.penalties,total);
+    if(total)assert.equal(h.score,3);
+    for(const key of ['shots','putts','puttsDetail'])assert.deepEqual(h[key],before.round.holes[0][key]);
+    for(const key of ['shotDraft','ballPosition','profile','playerId','roundId'])assert.deepEqual(p[key],before[key]);
+    assert.deepEqual(p.round.pending,before.round.pending);assert.deepEqual(p.round.holes.slice(1),before.round.holes.slice(1));
+  }
+  assert.deepEqual(group.players[0].round.holes[0].penaltyEvents.map(e=>[e.type,e.strokes,e.hole,e.at]),[['OB',1,1,1234],['LOST_BALL',1,1,1234]]);
+  const store=memory();lesson.saveGroup(store,group);const restored=lesson.restoreGroup(store);assert.deepEqual(restored,group);
+  assert.equal(store.getItem('agi_player_v1_round'),'unchanged-player');
+  assert.throws(()=>lesson.recordPenalty(restored,a.playerId,1,'clpen_a1','OB',1,engine),/이미 저장/);
+  const beforeCancel=structuredClone(group);group=lesson.cancelPenalty(group,a.playerId,1,'clpen_a1',engine);
+  assert.equal(group.players[0].round.holes[0].penalties,1);assert.equal(group.players[0].round.holes[0].score,2);
+  assert.deepEqual(group.players.slice(1),beforeCancel.players.slice(1));
+  assert.deepEqual(group.players[0].round.holes[0].penaltyEvents,[beforeCancel.players[0].round.holes[0].penaltyEvents[1]]);
+  assert.throws(()=>lesson.cancelPenalty(group,a.playerId,1,'clpen_a1',engine),/찾을 수/);
+  assert.deepEqual(original.players[0].round.holes[0].penaltyEvents,[]);
+});
+
+test('Penalty: 1~9 규칙과 선수/홀/ID/중복 검증은 원본을 변경하지 않음',()=>{
+  const engine=services(),group=registeredGroup(2,engine),[a,b]=group.players,before=JSON.stringify(group);
+  for(const strokes of [0,10,-1,1.5,'1',null,NaN])assert.throws(()=>lesson.recordPenalty(group,a.playerId,1,'clpen_bad','OB',strokes,engine),/1~9/);
+  assert.throws(()=>lesson.recordPenalty(group,a.playerId,1,'clpen_bad','OTHER',1,engine),/선택/);
+  assert.throws(()=>lesson.recordPenalty(group,a.playerId,2,'clpen_bad','OB',1,engine),/선수\/홀/);
+  assert.throws(()=>lesson.recordPenalty(group,b.playerId,1,'clpen_bad','OB',1,engine),/선택 선수/);
+  assert.throws(()=>lesson.recordPenalty(group,a.playerId,1,'bad','OB',1,engine),/ID/);
+  const nine=lesson.recordPenalty(group,a.playerId,1,'clpen_nine','OB',9,engine);assert.equal(nine.players[0].round.holes[0].score,9);
+  assert.throws(()=>lesson.cancelPenalty(nine,b.playerId,1,'clpen_nine',engine),/선택 선수/);
+  assert.throws(()=>lesson.cancelPenalty(nine,a.playerId,2,'clpen_nine',engine),/선수\/홀/);
+  assert.throws(()=>lesson.cancelPenalty(nine,a.playerId,1,'missing',engine),/찾을 수/);
+  assert.throws(()=>lesson.recordPenalty(lesson.selectPlayer(nine,b.playerId),b.playerId,1,'clpen_nine','OB',1,engine),/이미 저장/);
+  assert.equal(JSON.stringify(group),before);
+});
+
+test('Penalty: 벌타 먼저 입력한 뒤 SHOT SAVE/HOLED 및 취소도 Score 일관성 유지',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.selectedPlayerId;
+  group=lesson.recordPenalty(group,pid,1,'clpen_first','OB',2,engine);assert.equal(group.players[0].round.holes[0].score,2);
+  group=physical(group,pid,mapPoint(),engine);assert.equal(group.players[0].round.holes[0].score,3);
+  group=lesson.holed(group,pid,group.players[0].round.holes[0].shots[0].id,engine);
+  const before=structuredClone(group.players[0]);group=lesson.cancelPenalty(group,pid,1,'clpen_first',engine);
+  const h=group.players[0].round.holes[0];assert.equal(h.penalties,0);assert.equal(h.score,1);assert.equal(h.completed,true);
+  for(const key of ['shots','puttsDetail','completedAt','lessonStatus'])assert.deepEqual(h[key],before.round.holes[0][key]);
+  const undone=lesson.undoLastShot(group,pid,h.shots[0].id,engine);assert.equal(undone.players[0].round.holes[0].shots.length,0);
+});
+
+test('Penalty: Putting Draft/마커 좌표/HOLED 유지, 후속 홀 기록 뒤 벌타만 안전 취소',()=>{
+  const fixture=puttingFixture(2),engine=fixture.engine;let group=fixture.group,pid=group.selectedPlayerId;
+  group=lesson.setPuttDistance(group,pid,1,'8',engine);const before=structuredClone(group.players[0]);
+  group=lesson.recordPenalty(group,pid,1,'clpen_putt','HAZARD',2,engine);
+  assert.deepEqual(group.players[0].round.holes[0].puttingReady,before.round.holes[0].puttingReady);
+  assert.deepEqual(group.players[0].shotDraft,before.shotDraft);assert.deepEqual(group.players[0].ballPosition,before.ballPosition);
+  group=putt(group,pid,8,'SHORT',engine);assert.equal(group.players[0].round.holes[0].score,6);
+  group=putt(group,pid,1,'HOLED',engine);assert.equal(group.players[0].round.holes[0].score,7);
+  const other=group.players[1].playerId;group=putt(group,other,1,'HOLED',engine);
+  group=lesson.saveHoleCompletion(memory(),group,1,engine).group;assert.ok(group.players.every(p=>p.round.currentHole===2));
+  group=physical(group,pid,mapPoint(),engine);group=lesson.chooseHole(group,pid,1);group=lesson.selectPlayer(group,pid);
+  const saved=structuredClone(group);group=lesson.cancelPenalty(group,pid,1,'clpen_putt',engine);
+  const h=group.players[0].round.holes[0];assert.equal(h.score,5);assert.equal(h.putts,2);assert.equal(h.completed,true);
+  assert.deepEqual(h.shots,saved.players[0].round.holes[0].shots);assert.deepEqual(h.puttsDetail,saved.players[0].round.holes[0].puttsDetail);
+  assert.deepEqual(group.players[0].round.holes.slice(1),saved.players[0].round.holes.slice(1));assert.deepEqual(group.players[1],saved.players[1]);
+});
+
+test('Penalty: 기존 네 필드 이벤트와 Group version1 호환, 불일치 시 임의 합계 덮어쓰기 금지',()=>{
+  const engine=services();let group=registeredGroup(1,engine);const pid=group.selectedPlayerId;
+  const legacy={type:'OB',strokes:1,hole:1,at:1000};group.players[0].round.holes[0].penaltyEvents=[legacy];group.players[0].round.holes[0].penalties=1;
+  const store=memory();lesson.saveGroup(store,group);group=lesson.restoreGroup(store);
+  group=lesson.recordPenalty(group,pid,1,'clpen_new','LOST_BALL',1,engine);assert.equal(group.version,1);
+  group=lesson.cancelPenalty(group,pid,1,'clpen_new',engine);assert.deepEqual(group.players[0].round.holes[0].penaltyEvents,[legacy]);
+  const bad=structuredClone(group);bad.players[0].round.holes[0].penalties=4;
+  const raw=JSON.stringify(bad);assert.throws(()=>lesson.recordPenalty(bad,pid,1,'clpen_bad','OB',1,engine),/일치하지/);assert.equal(JSON.stringify(bad),raw);
+});

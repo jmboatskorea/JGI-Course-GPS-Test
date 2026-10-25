@@ -141,7 +141,7 @@ def reveal(page, selector):
     """Use real panel buttons/details; never override CSS or hidden state."""
     loc = page.locator(selector)
     # Close auxiliary panels through their real controls before reaching the cockpit.
-    for dialog_id,close_id in [('lessonManageDialog','lessonManageClose'),('lessonHistoryDialog','lessonHistoryClose'),('lessonClubDialog','lessonClubClose')]:
+    for dialog_id,close_id in [('lessonManageDialog','lessonManageClose'),('lessonHistoryDialog','lessonHistoryClose'),('lessonClubDialog','lessonClubClose'),('lessonPenaltyDialog','lessonPenaltyClose')]:
         dialog=page.locator('#'+dialog_id)
         if dialog.count() and dialog.is_visible() and not loc.evaluate('(el,id)=>!!el.closest("#"+id)',dialog_id):
             page.locator('#'+close_id).click()
@@ -156,6 +156,7 @@ def reveal(page, selector):
       'lessonManageDialog':'lessonManageOpen',
       'lessonHistoryDialog':'lessonHistoryOpen',
       'lessonClubDialog':'lessonClubOpen',
+      'lessonPenaltyDialog':'lessonPenaltyOpen',
       'lessonPutting':'lessonPuttingToggle',
     }
     for panel_id,trigger_id in navigation.items():
@@ -828,6 +829,119 @@ def hole_map_flow(page,source,url):
     return {'hole_maps_1_2_3_1_and_historical_records':'PASS'}
 
 
+def penalty_flow(page,source,url,out,label):
+    data,personal=fixture(page,source,url,'plain',count=2)
+    group=data['group']
+    original=storage_group(page)
+    def unaffected(player):
+        copy=json.loads(json.dumps(player))
+        for h in copy['round']['holes']:
+            for key in ['penalties','penaltyEvents','score']:h.pop(key,None)
+        copy['round'].pop('analysisSnapshot',None)
+        return copy
+    def open_penalty(name):
+        click(page,'#lessonPenaltyOpen')
+        expect(page.locator('#lessonPenaltyDialog')).to_be_visible()
+        expect(page.locator('#lessonPenaltyTarget')).to_contain_text(name)
+        expect(page.locator('#lessonPenaltyStrokeValue')).to_have_text('1')
+        expect(page.locator('#lessonPenaltyMinus')).to_be_disabled()
+        expect(page.locator('#lessonSavePenaltyBtn')).to_be_disabled()
+    def save_penalty(name,kind,strokes):
+        open_penalty(name)
+        page.locator('#lessonPenaltyTypeChoice [data-v="'+kind+'"]').click()
+        for _ in range(strokes-1):click(page,'#lessonPenaltyPlus')
+        click(page,'#lessonSavePenaltyBtn')
+        expect(page.locator('#lessonPenaltyDialog')).not_to_be_visible()
+    for selector in ['#lessonShotSave','#lessonPenaltyOpen']:assert_inside_viewport(page,selector)
+    boxes=page.locator('#lessonPenaltyOpen').evaluate('''el=>{let a=el.getBoundingClientRect(),b=document.querySelector('#lessonShotSave').getBoundingClientRect(),c=getComputedStyle(el);return {right:a.x>=b.right-1,sameRow:Math.abs(a.y-b.y)<1,bg:c.backgroundColor,color:c.color};}''')
+    assert boxes=={'right':True,'sameRow':True,'bg':'rgb(198, 40, 54)','color':'rgb(255, 255, 255)'},boxes
+    raw=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
+    open_penalty('TEST 선수 A')
+    expect(page.locator('#lessonPenaltyTypeChoice button')).to_have_count(3)
+    page.locator('#lessonPenaltyTypeChoice [data-v="OB"]').click()
+    for _ in range(8):click(page,'#lessonPenaltyPlus')
+    expect(page.locator('#lessonPenaltyStrokeValue')).to_have_text('9')
+    expect(page.locator('#lessonPenaltyPlus')).to_be_disabled()
+    click(page,'#lessonPenaltyClose')
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==raw
+    open_penalty('TEST 선수 A')
+    page.keyboard.press('Escape')
+    expect(page.locator('#lessonPenaltyDialog')).not_to_be_visible()
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==raw
+
+    # Late native close events cannot erase a newly opened draft; repeated save is one event.
+    page.evaluate('''()=>{const q=id=>document.getElementById(id);q('lessonPenaltyOpen').click();q('lessonPenaltyClose').click();q('lessonPenaltyOpen').click();q('lessonPenaltyTypeChoice').querySelector('[data-v="OB"]').click();}''')
+    expect(page.locator('#lessonSavePenaltyBtn')).to_be_enabled()
+    # A programmatic player switch is explicitly blocked while this target is locked.
+    page.locator('#lessonPlayers [data-player-id="'+group['players'][1]['playerId']+'"]').evaluate('(el)=>el.click()')
+    assert selected(storage_group(page))['playerId']==group['players'][0]['playerId']
+    page.locator('#lessonSavePenaltyBtn').evaluate('(el)=>{el.click();el.click();}')
+    expect(page.locator('#lessonPenaltyDialog')).not_to_be_visible()
+    a=hole_for(storage_group(page),0,1)
+    assert a['penalties']==1 and a['score']==2 and len(a['penaltyEvents'])==1
+    first=a['penaltyEvents'][0]
+    assert first['type']=='OB' and first['strokes']==1 and first['hole']==1 and first['at']>0 and first['id'].startswith('clpen_')
+    select_player(page,group,1)
+    save_penalty('TEST 선수 B','HAZARD',2)
+    select_player(page,group,0)
+    page.context.set_offline(True)
+    try:save_penalty('TEST 선수 A','LOST_BALL',1)
+    finally:page.context.set_offline(False)
+    state=storage_group(page)
+    for i in [0,1]:
+        h=hole_for(state,i,1)
+        assert h['penalties']==2 and h['score']==3 and len(h['shots'])==1 and h['putts']==0
+        assert unaffected(state['players'][i])==unaffected(original['players'][i])
+        expect(page.locator('#lessonPlayers [data-player-id="'+state['players'][i]['playerId']+'"]')).to_contain_text('벌 2')
+    history=reveal(page,'#lessonPenaltyHistory')
+    expect(history.locator('button')).to_have_count(2)
+    assert_inside_viewport(page,'#lessonPenaltyHistory [data-penalty-id="'+first['id']+'"]')
+    page.screenshot(path=str(out/f'lesson-{label}-penalty-history.png'),full_page=False)
+    history.locator('[data-penalty-id="'+first['id']+'"]').click()
+    state=storage_group(page)
+    assert hole_for(state,0,1)['penalties']==1 and hole_for(state,0,1)['score']==2
+    assert hole_for(state,1,1)['penalties']==2 and hole_for(state,1,1)['score']==3
+    before=page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)
+    page.reload(wait_until='domcontentloaded')
+    expect(page.locator('#lessonPenaltyMeta')).to_contain_text('벌타 1')
+    assert page.evaluate('(key)=>localStorage.getItem(key)',GROUP_KEY)==before
+    expect(reveal(page,'#lessonPenaltyHistory')).to_contain_text('LOST BALL')
+    assert_personal(page,personal)
+    open_penalty('TEST 선수 A')
+    for selector in ['#lessonPenaltyMinus','#lessonPenaltyPlus','#lessonSavePenaltyBtn','#lessonPenaltyClose']:assert_inside_viewport(page,selector)
+    page.screenshot(path=str(out/f'lesson-{label}-penalty-dialog.png'),full_page=False)
+    click(page,'#lessonPenaltyClose')
+    # Smaller iPhones keep both primary actions tappable and in the requested order.
+    old=page.viewport_size
+    page.set_viewport_size({'width':320,'height':740})
+    for selector in ['#lessonShotSave','#lessonPenaltyOpen']:assert_inside_viewport(page,selector)
+    open_penalty('TEST 선수 A')
+    for selector in ['#lessonPenaltyMinus','#lessonPenaltyPlus','#lessonSavePenaltyBtn']:assert_inside_viewport(page,selector)
+    click(page,'#lessonPenaltyClose');page.set_viewport_size(old)
+
+    # Penalties during putting preserve the exact draft and normal Score/HOLED behavior.
+    data,personal=fixture(page,source,url,'mixed',count=4);group=data['group']
+    select_player(page,group,1)
+    before=storage_group(page);ready=hole_for(before,1,1)['puttingReady']
+    save_penalty('TEST 선수 B','HAZARD',1)
+    state=storage_group(page)
+    assert hole_for(state,1,1)['puttingReady']==ready
+    assert unaffected(state['players'][1])==unaffected(before['players'][1])
+    for i in [0,2,3]:assert state['players'][i]==before['players'][i]
+    event=hole_for(state,1,1)['penaltyEvents'][0]
+    open_putting(page,'TEST 선수 B')
+    click(page,'#lessonPuttShort')
+    assert hole_for(storage_group(page),1,1)['score']==3
+    reveal(page,'#lessonPuttDistanceInput').fill('1.0');click(page,'#lessonPuttHoled')
+    completed=storage_group(page);assert hole_for(completed,1,1)['completed'] and hole_for(completed,1,1)['score']==4
+    click(page,'#lessonPenaltyHistory [data-penalty-id="'+event['id']+'"]')
+    after=storage_group(page);h=hole_for(after,1,1)
+    assert h['completed'] and h['score']==3 and h['putts']==2 and len(h['shots'])==1 and h['penalties']==0
+    assert h['shots']==hole_for(completed,1,1)['shots'] and h['puttsDetail']==hole_for(completed,1,1)['puttsDetail']
+    assert_personal(page,personal)
+    return {'penalty_A_OB1_B_HAZARD2_A_LOST1_score_cancel_restore':'PASS','penalty_bounds_cancel_no_write_duplicate_target_lock':'PASS','penalty_putting_holeout_positions_and_other_players_preserved':'PASS','penalty_primary_actions_mobile_320_and_current_viewport':'PASS'}
+
+
 def round_screenshot(browser,base,out,width,height,label):
     context=browser.new_context(viewport={'width':width,'height':height},device_scale_factor=1)
     context.add_init_script(INIT_SCRIPT)
@@ -903,6 +1017,7 @@ def main():
                 run.update(explicit_putting_free_order_flow(page,source,url,out,label))
                 run.update(explicit_putting_interleaved_short_flow(page,source,url))
                 run.update(shot_distances_full_hole_flow(page,source,url,out,label))
+                run.update(penalty_flow(page,source,url,out,label))
                 assert not errors,errors
                 run['uncaught_page_errors']=errors
                 results['runs'].append(run)

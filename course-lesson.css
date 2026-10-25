@@ -52,7 +52,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .mapFirstQuickActions button.active{background:#08783d;color:#fff;border-color:#08783d}
 .courseLessonDev .actionIcon{width:21px;height:21px;display:inline-grid;place-items:center;vertical-align:middle}
 .courseLessonDev .actionIcon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
-.courseLessonDev .lessonMainRow{grid-template-columns:.78fr 1.14fr 1.30fr;gap:8px;min-height:74px;padding:8px 0 2px;border-bottom:0}
+.courseLessonDev .lessonMainRow{grid-template-columns:.68fr .82fr 1fr .9fr;gap:8px;min-height:74px;padding:8px 0 2px;border-bottom:0}
 .courseLessonDev #lessonShotControls{display:contents}
 .courseLessonDev .mapFirstHoleSummary{display:block;color:#111;padding:2px 0}
 .courseLessonDev .mapFirstHoleSummary>span{display:block;color:#58615c;font-size:9px;font-weight:850}
@@ -147,7 +147,7 @@ body.course-lesson-dev.lesson-green-open{overflow:hidden}
   .courseLessonDev .lessonPlayer strong{font-size:11px}
   .courseLessonDev .lessonPlayerStage{font-size:9px}
   .courseLessonDev .lessonPlayerCounts{font-size:8px}
-  .courseLessonDev .lessonMainRow{grid-template-columns:.74fr 1.10fr 1.28fr;gap:6px;min-height:70px;padding-top:7px}
+  .courseLessonDev .lessonMainRow{grid-template-columns:.68fr .82fr 1fr .9fr;gap:6px;min-height:70px;padding-top:7px}
   .courseLessonDev .mapFirstClubTrack{height:55px}
   .courseLessonDev .mapFirstClubTrack strong{font-size:22px}
   .courseLessonDev .mapFirstNextShot{height:55px;font-size:14px}
@@ -163,3 +163,17 @@ body.course-lesson-dev.lesson-green-open{overflow:hidden}
   .courseLessonDev .lessonPlayer{min-height:57px;padding-top:5px;padding-bottom:5px}
   .courseLessonDev .lessonPutting{max-height:45vh;max-height:45dvh}
 }
+
+/* ROUND penalty choices/stepper, scoped to the scorer's selected player and hole. */
+.courseLessonDev #lessonPenaltyOpen{background:#c62836;color:#fff;box-shadow:0 8px 20px rgba(198,40,54,.18);font-size:12px;padding:5px 3px}
+.courseLessonDev #lessonPenaltyMeta{margin:4px 0;color:#385748;font-weight:850}
+.courseLessonDev #lessonPenaltyDialog .penaltyTypeChoice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}
+.courseLessonDev #lessonPenaltyDialog .choice button{min-width:0;min-height:54px;border:1px solid #aeb5b1;border-radius:14px;background:#fff;color:#111;font-size:12px;font-weight:950;padding:8px 4px}
+.courseLessonDev #lessonPenaltyDialog .choice button.sel{background:#111;color:#fff;border-color:#111}
+.courseLessonDev #lessonPenaltyDialog .penaltyStepBtn,.courseLessonDev #lessonPenaltyDialog .penaltyStrokeDisplay{background:#fff;color:#111;border-color:#aeb5b1}
+.courseLessonDev #lessonPenaltyDialog .penaltyStrokeDisplay span{color:#58615c}
+.courseLessonDev #lessonSavePenaltyBtn{min-height:54px;margin-top:16px;background:#08783d;color:#fff;border:0;border-radius:18px;font-weight:950}
+.courseLessonDev .lessonPenaltyHistory{display:grid;gap:8px}
+.courseLessonDev .lessonPenaltyHistory>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.courseLessonDev .lessonPenaltyHistory button{flex-shrink:0;min-height:44px;min-width:76px;padding:8px;border:1px solid #dca1a6;border-radius:14px;background:#fff4f4;color:#b51f2d;font-weight:950}
+@media(max-width:350px){.courseLessonDev .mapFirstHoleSummary select{font-size:14px}.courseLessonDev .mapFirstClubTrack strong{font-size:18px;padding-right:22px;padding-left:6px}.courseLessonDev .mapFirstClubTrack::after{right:6px}}
