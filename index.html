@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#06110c">
 <title>JGI · AGI 플레이어 V1</title>
 <script src="runtime-config.js"></script>
+<script src="course-lesson-private.js"></script>
 <script src="course-lesson.js"></script>
 <script src="course-lesson-map.js"></script>
 <script src="course-lesson-report.js"></script>
@@ -3028,9 +3029,11 @@ function isOraSouthLeft(r=round){
   return r?.course==='Ora Country Club'&&r?.nine==='South Left';
 }
 function activeCourseData(r=round){
+  if(window.JGICourseLessonPrivate?.isRound(r))return window.JGICourseLessonPrivate.data(r);
   return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_DATA:window.JGI_OLD_COURSE_DATA;
 }
 function activeCourseScorecard(r=round){
+  if(window.JGICourseLessonPrivate?.isRound(r))return window.JGICourseLessonPrivate.scorecard(r);
   return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA:window.JGI_OLD_SCORECARD_DATA;
 }
 function syncSetupCourseSelection(){
@@ -3178,7 +3181,7 @@ function smoothCenterlinePoints(points,radius=1){
 }
 function buildCourseIntelligenceModel(h,holePar=null,r=round){
   if(!h?.t||!h?.g)return null;
-  const key=String(activeCourseData(r)?.courseId??'')+'|'+String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'');
+  const key=String(activeCourseData(r)?.courseId??'')+'|'+String(h.i??h.id??h.holeId??JSON.stringify(h.t))+'|'+String(holePar??'')+(window.JGICourseLessonPrivate?.isRound(r)?'|'+String(activeCourseData(r)?.version||''):'');
   if(courseIntelligenceCache.has(key))return courseIntelligenceCache.get(key);
 
   const tee={lat:h.t[0],lng:h.t[1]};
@@ -8478,6 +8481,7 @@ function shotEndDistanceToHoleM(h,s,index,r=round){
   return g&&s.end?hav(s.end,g):null;
 }
 function computeShotSG(h,s,index,info=sgBenchmarkInfo(),r=round){
+  if(window.JGICourseLessonPrivate?.sgMissing(r,h,s,index))return null;
   const startD=shotStartDistanceToHoleM(h,s,index,r);
   if(!Number.isFinite(startD))return null;
   const a=sgExpected(startD,s.startLie,info);
@@ -8529,6 +8533,7 @@ function distanceToGreenEdgeM(h,s,r=round){
   return Number.isFinite(best)?best:null;
 }
 function sgShotCategory(h,s,index,r=round){
+  if(window.JGICourseLessonPrivate?.isRound(r)&&![3,4,5].includes(h?.par))return 'unknown';
   const lie=sgLieKey(s?.startLie);
   if(lie==='green')return 'putt';
   if(index===0&&lie==='tee')return Number(h?.par)>=4?'ott':'app';

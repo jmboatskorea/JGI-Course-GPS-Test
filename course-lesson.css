@@ -109,6 +109,8 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .courseLessonDev .lessonFields label{display:grid;gap:6px;min-width:0;font-size:12px}
 .courseLessonDev .lessonFields .lessonWide{grid-column:1/-1}
+.courseLessonDev .lessonPrivateChoice{display:flex;align-items:flex-start;gap:8px;margin:12px 0;font-size:12px;line-height:1.5}
+.courseLessonDev .lessonPrivateChoice input[type="checkbox"]{width:22px;min-height:22px;flex:0 0 22px;margin:0;padding:0;accent-color:#08783d}
 .courseLessonDev .lessonBench{margin-top:12px;padding:12px;border:1px solid #cdd2cf;border-radius:12px;background:#f6f7f5;color:#111;font-size:12px;line-height:1.5}
 .courseLessonDev #lessonGroupMeta,.courseLessonDev #lessonRoundMeta{margin-top:10px}
 .courseLessonDev #lessonMapDiagnostics summary{min-height:44px;display:list-item;padding:10px 0;cursor:pointer;font-size:13px;font-weight:950}

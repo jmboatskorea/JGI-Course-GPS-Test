@@ -613,7 +613,13 @@
       typeof window.initGoogleMap==='function')window.initGoogleMap();
   }
   function boot(){
+    const local=window.JGICourseLessonPrivate;
+    if(local?.allowed(window.location))local.restore(localStorage,window.location).then(()=>bootUI()).catch(()=>bootUI('기기 코스 파일 복원 실패 · 원래 개인용 JSON을 다시 불러오세요. 선수 기록은 보존됩니다.'));
+    else bootUI();
+  }
+  function bootUI(privateError){
     try{clearLegacyTestGroup(localStorage);}catch(e){console.warn('Course Lesson legacy test data cleanup failed',e);}
+    const privateCourses=window.JGICourseLessonPrivate;
     // Reuse ROUND's loaded datasets and round-scoped resolvers; never accept its fallback for an unknown course.
     const roundCourses=Array.from(document.querySelectorAll('#courseSelect option'),option=>option.value);
     const courses=[window.JGI_OLD_COURSE_DATA,window.JGI_ORA_SOUTH_LEFT_DATA].filter(data=>{
@@ -627,8 +633,13 @@
           s&&[3,4,5].includes(s.par)&&['Blue','White','Red'].every(tee=>Number.isFinite(s[tee])&&s[tee]>0);
       });
     }).map(data=>({course:data.course,nine:data.nine,version:data.version||null}));
+    const builtinCourseCount=courses.length;
+    courses.push(...(privateCourses?.catalog()||[]));
     const services={uuid:()=>crypto.randomUUID(),now:()=>Date.now(),
-      benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>window.hydrateRoundCourseTruth(r),
+      benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>{
+        assert(!privateCourses?.isRound(r)||privateCourses.data(r),'이 Group과 같은 버전의 개인용 코스 파일을 불러오세요.');
+        return window.hydrateRoundCourseTruth(r);
+      },
       courses,dataVersion:window.JGI_SG_BENCHMARK_DATA?.version,
       clubs:DEFAULT_MASTER_CLUBS.filter(c=>c.name!=='Putter').map(c=>c.name),
       distance:(a,b)=>window.hav(a,b),
@@ -638,6 +649,7 @@
           polygons:window.courseShapes(h,r).filter(shape=>shape.type==='GREEN'&&!shape.line&&shape.path.length>=3).map(shape=>shape.path)};
       },
       shotContext:(r,start,club)=>{
+        assert(!privateCourses?.isRound(r)||privateCourses.data(r),'개인용 코스 파일이 없습니다. 같은 버전 파일을 다시 불러오세요.');
         const data=window.activeCourseData(r),ch=data?.holes?.[String(r.currentHole)],h=r.holes[r.currentHole-1];
         const carry=r.clubProfile?.find(c=>c.name===club)?.carry??null;
         const distance=ch?.g?window.hav(start,{lat:ch.g[0],lng:ch.g[1]}):null;
@@ -672,6 +684,7 @@
         </section><div id="lessonStatus" class="lessonStatus" role="status" aria-live="polite"></div>
       </section>
       <dialog id="lessonManageDialog" class="lessonSheet sheet" aria-labelledby="lessonManageTitle"><div class="sheetHead"><h2 id="lessonManageTitle">COURSE LESSON · 선수 / Group</h2><button type="button" id="lessonManageClose" class="x" aria-label="선수 관리 닫기">✕</button></div>
+        <section id="lessonPrivateData" class="lessonPanel" hidden><h3>개인용 코스 파일 · 비공개 테스트</h3><p class="lessonMeta">개인용 JSON을 이 기기에서 불러옵니다. 서버로 전송하지 않습니다. 기본은 현재 세션에서만 사용합니다.</p><label>코스 파일<input id="lessonPrivateFile" type="file" accept=".json,application/json"></label><label class="lessonPrivateChoice"><input id="lessonPrivateRights" type="checkbox">본인에게 사용 권한이 있는 파일이며 본인 기기 테스트에만 사용합니다.</label><label class="lessonPrivateChoice"><input id="lessonPrivateCache" type="checkbox">이 기기에 보관할 권한이 확인됨 · 새로고침용 코스 저장</label><div class="lessonControls"><button type="button" id="lessonPrivateImport" disabled>코스 파일 불러오기</button><button type="button" id="lessonPrivateForget">기기 코스 파일 제거</button></div><p id="lessonPrivateStatus" class="lessonMeta" role="status"></p></section>
         <section class="lessonPanel"><h3>새 Group 생성</h3><div class="lessonFields"><label>골프장<select id="lessonCourseSelect" aria-label="새 Group 골프장"></select></label><label>코스<select id="lessonCourseNine" aria-label="새 Group 코스"></select></label></div><p id="lessonCourseSelectionInfo" class="lessonMeta"></p><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
         <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>선수 이름<input id="lessonName" maxlength="60" placeholder="선수 이름" autocomplete="off" required></label><label>연락처 (선택 · 실번호 입력 금지)<input id="lessonContact" maxlength="32" placeholder="비워두세요" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
         <div class="lessonNotice">코스레슨 실전 테스트 · 코치 인증/중앙 DB는 아직 연결되지 않았습니다. 선수 이름과 샷 기록은 이 기기 브라우저에만 저장됩니다. 실제 연락처는 입력하지 마세요. 브라우저 데이터 삭제 시 기록이 사라질 수 있습니다. 선수별 SG는 REPORT에서 확인합니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
@@ -721,10 +734,45 @@
       el('lessonCreateGroup').disabled=!el('lessonCourseNine').value;
       el('lessonCourseSelectionInfo').textContent=courses.length?'골프장 → 코스 → 선수 수 선택 후 새 Group을 생성하세요. 기존 Group의 코스·기록에는 적용되지 않습니다.':'선택 가능한 실제 GI·스코어카드 데이터가 없습니다.';
     }
-    for(const course of new Set(courses.map(c=>c.course))){
-      const option=document.createElement('option');option.value=course;option.textContent=course;el('lessonCourseSelect').append(option);
+    function refreshCourseChoices(){
+      const selected=el('lessonCourseSelect').value;
+      courses.splice(builtinCourseCount,courses.length-builtinCourseCount,...(privateCourses?.catalog()||[]));
+      el('lessonCourseSelect').replaceChildren();
+      for(const course of new Set(courses.map(c=>c.course))){
+        const option=document.createElement('option');option.value=course;option.textContent=course;el('lessonCourseSelect').append(option);
+      }
+      if(courses.some(c=>c.course===selected))el('lessonCourseSelect').value=selected;
+      syncCourseSelection();
     }
-    el('lessonCourseSelect').onchange=syncCourseSelection;syncCourseSelection();
+    el('lessonCourseSelect').onchange=syncCourseSelection;refreshCourseChoices();
+    el('lessonPrivateData').hidden=!privateCourses?.allowed(window.location);
+    el('lessonPrivateStatus').textContent=privateError||(!privateCourses?.catalog().length?'개인용 JSON 파일을 선택하세요.':'East / West 각 18홀 · 개인 기기 코스 복원 완료 · Scorecard 미확정 35개');
+    let privateBusy=false;
+    const privateButton=()=>{
+      el('lessonPrivateImport').disabled=privateBusy||!el('lessonPrivateFile').files.length||!el('lessonPrivateRights').checked;
+      for(const id of ['lessonPrivateFile','lessonPrivateRights','lessonPrivateCache','lessonPrivateForget'])el(id).disabled=privateBusy;
+    };
+    el('lessonPrivateFile').onchange=privateButton;el('lessonPrivateRights').onchange=privateButton;
+    el('lessonPrivateImport').onclick=async()=>{
+      if(privateBusy)return;
+      privateBusy=true;privateButton();
+      try{
+        assert(!greenLocked(),'Green Popup을 먼저 저장하거나 취소하세요.');
+        const file=el('lessonPrivateFile').files[0];assert(file&&file.size<=12000000,'12MB 이하의 개인용 JSON 파일을 선택하세요.');
+        await privateCourses.importText(await file.text(),{storage:localStorage,rights:el('lessonPrivateRights').checked,cache:el('lessonPrivateCache').checked,
+          requiredVersions:()=>group?.players.filter(p=>privateCourses.isRound(p.round)).map(p=>p.round.courseVersion)||[]});
+        refreshCourseChoices();
+        if(!group){el('lessonCourseSelect').value='Gunung Geulis';syncCourseSelection();}
+        render();el('lessonPrivateStatus').textContent='East / West 각 18홀 준비 · Scorecard 미확정 35개 · '+(el('lessonPrivateCache').checked?'기기 저장 완료':'현재 세션 전용 · 새로고침 후 파일을 다시 불러오세요.');
+        el('lessonPrivateFile').value='';
+      }catch(e){el('lessonPrivateStatus').textContent='코스 파일 불러오기 실패: '+e.message;}
+      finally{privateBusy=false;privateButton();}
+    };
+    el('lessonPrivateForget').onclick=()=>{
+      if(privateBusy||!confirm('개인용 코스 파일만 제거할까요? 선수·샷·퍼팅·벌타 기록은 보존되며 지도 사용 시 파일을 다시 불러와야 합니다.'))return;
+      try{privateCourses.forget(localStorage);refreshCourseChoices();render();el('lessonPrivateStatus').textContent='개인용 코스 파일 제거 완료 · 선수 기록 보존';}
+      catch{el('lessonPrivateStatus').textContent='기기 코스 파일을 제거하지 못했습니다. 저장 권한을 확인하세요.';}
+    };
     const readDraft=()=>({name:el('lessonName').value,contact:el('lessonContact').value,sex:el('lessonSex').value,handicap:el('lessonHandicap').value,tee:el('lessonTee').value});
     const currentInput=()=>updateDraft(group,group.selectedPlayerId,readDraft());
     // Reuse Player's distance controls and PIN scale without its global Round/draft handlers.
@@ -920,7 +968,7 @@
       el('lessonPlayerCount').value=String(group.players.length);
       const registered=group.players.filter(p=>p.registered).length;
       const roundComplete=registered>0&&group.players.filter(p=>p.registered).every(p=>p.round.lessonRoundStatus==='COMPLETED'&&p.round.holes[17].completed);
-      el('lessonGroupMeta').textContent=(roundComplete?'ROUND COMPLETE · ':'')+'현재 Group: '+group.course+' / '+group.nine+' · 코스 고정 · 등록 '+registered+'/'+group.players.length+' · Group ID: '+group.groupId;
+      el('lessonGroupMeta').textContent=(roundComplete?'ROUND COMPLETE · ':'')+'현재 Group: '+group.course+' / '+group.nine+' · 코스 고정 · 등록 '+registered+'/'+group.players.length+' · Group ID: '+group.groupId+(privateCourses?.isRound(group)?' · '+privateCourses.description(group):'');
       group.players.forEach((player,i)=>{
         const button=document.createElement('button');button.type='button';button.className='lessonPlayer';button.dataset.playerId=player.playerId;
         button.setAttribute('aria-pressed',String(player.playerId===group.selectedPlayerId));
@@ -950,7 +998,7 @@
         const h=p.round.holes[p.round.currentHole-1],blocked=h.completed||h.lessonStatus==='AWAITING_PUTTING';
         el('lessonShotPlayer').textContent=letter+' · '+p.profile.name+' · '+(h.completed?'HOLE OUT':h.puttingReady?'PUTTING READY':'SHOT '+(h.shots.length+1));
         el('lessonHistoryTitle').textContent=p.profile.name+' · '+h.hole+'번 홀 · 이력 / 취소';
-        el('lessonHoleMeta').textContent='PAR '+h.par+' · '+p.profile.tee;
+        el('lessonHoleMeta').textContent='PAR '+(h.par??'미확정')+' · '+p.profile.tee+(privateCourses?.isRound(p.round)&&!Number.isFinite(h.teeDistanceM)?' · 공식 거리 미확정':'');
         el('lessonPenaltyOpen').disabled=false;el('lessonPenaltyOpen').setAttribute('aria-label',p.profile.name+' · '+h.hole+'번 홀 · PENALTY 입력');
         el('lessonPenaltyMeta').textContent=p.profile.name+' · '+h.hole+'번 홀 · Score '+(h.shots.length+h.putts+(h.penalties||0))+' · Putts '+h.putts+' · 벌타 '+h.penalties+' · 선수 벌타 합계 '+p.round.holes.reduce((sum,h)=>sum+(h.penalties||0),0);
         el('lessonClubCurrent').textContent=draft.club;el('lessonClubOpen').disabled=blocked;
