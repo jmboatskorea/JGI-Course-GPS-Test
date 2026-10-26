@@ -79,6 +79,22 @@
     const dialog=el('lessonGreenDialog'),greenSvg=el('lessonGreenSvg');
     let green=null,greenBallMarker=null,pinMarker=null,greenOverlays=[];
     const markers=new Map();
+    let controlOwner=null,originalControls=null;
+    const lessonControls={cameraControl:false,scaleControl:false,keyboardShortcuts:false};
+    function restoreControls(){
+      if(controlOwner&&originalControls)controlOwner.setOptions?.(originalControls);
+      controlOwner=null;originalControls=null;
+    }
+    function applyControls(){
+      if(!map?.setOptions)return;
+      if(controlOwner!==map){
+        restoreControls();controlOwner=map;
+        originalControls=Object.fromEntries(Object.keys(lessonControls).map(key=>[key,map.get?.(key)]));
+      }
+      map.setOptions(lessonControls);
+    }
+    window.addEventListener?.('pagehide',restoreControls);
+    window.addEventListener?.('pageshow',()=>{if(available)applyControls();});
     let viewKey=null,appliedKey=null,viewPoints=[],viewAlignment=null,rotationIssue='',mapListeners=[],restoreCamera=null,verifyPending=false,userCamera=false,interactionCleanup=null,baseStatus='',svgAutoBox=null,svgManual=false,svgSize='',satSize='',fittedCamera=null;
     function showMapStatus(message){
       const node=el('lessonMapStatus');node.textContent=message;
@@ -322,7 +338,8 @@
     const controller={render,attach:instance=>{
       const same=map===instance,mapElement=instance?.getDiv?.()||document.getElementById('googleMap');
       if(!instance||!mapElement){controller.unavailable('기존 Google Map 인스턴스/화면 연결을 확인하세요.');return;}
-      diagnostic?.record('attach');map=instance;available=true;mapFailure=null;
+      if(!same)restoreControls();
+      diagnostic?.record('attach');map=instance;available=true;mapFailure=null;applyControls();
       el('lessonSatelliteMap').append(mapElement);
       if(!same){
         appliedKey=null;restoreCamera=null;fittedCamera=null;mapListeners.forEach(listener=>listener?.remove?.());mapListeners=[];
