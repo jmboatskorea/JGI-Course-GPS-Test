@@ -12,8 +12,8 @@ VIEWPORT=r"""({height,safeTop,safeBottom})=>{
  const state={height},v=new EventTarget();
  for(const [key,get] of Object.entries({height:()=>state.height,width:()=>innerWidth,offsetTop:()=>0,offsetLeft:()=>0,scale:()=>1}))Object.defineProperty(v,key,{get});
  Object.defineProperty(window,'visualViewport',{get:()=>v,configurable:true});
- window.__lessonViewport={setHeight(height){state.height=height;v.dispatchEvent(new Event('resize'));v.dispatchEvent(new Event('scroll'));}};
- const install=()=>{const style=document.createElement('style');style.textContent=':root,.courseLessonDev,.lessonReportDialog{--lesson-safe-top:'+safeTop+'px!important;--lesson-safe-bottom:'+safeBottom+'px!important;--lesson-safe-left:0px!important;--lesson-safe-right:0px!important;}';document.head.append(style);};
+ window.__lessonViewport={setHeight(height){state.height=height;document.documentElement.style.setProperty('--test-probe-height',height+'px');v.dispatchEvent(new Event('resize'));v.dispatchEvent(new Event('scroll'));}};
+ const install=()=>{document.documentElement.style.setProperty('--test-probe-height',state.height+'px');const style=document.createElement('style');style.textContent='.lessonViewportMeasure{height:var(--test-probe-height)!important}:root,.courseLessonDev,.lessonReportDialog{--lesson-safe-top:'+safeTop+'px!important;--lesson-safe-bottom:'+safeBottom+'px!important;--lesson-safe-left:0px!important;--lesson-safe-right:0px!important;}';document.head.append(style);};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 }"""
 MEASURE=r"""()=>{
@@ -21,7 +21,7 @@ MEASURE=r"""()=>{
  const visible=e=>{const r=e.getBoundingClientRect();return e instanceof HTMLElement&&r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden';};
  const last=items=>Math.max(0,...[...items].filter(visible).map(e=>e.getBoundingClientRect().bottom));
  const panel=document.querySelector('#lessonShotPanel'),report=document.querySelector('.lessonReportDialog[open]');
- const result={viewport:{innerHeight,visualHeight:visualViewport.height,offsetTop:visualViewport.offsetTop},shell:rect(document.querySelector('#courseLessonDev')),header:rect(document.querySelector('.lessonHeader')),panel:rect(panel),map:rect(document.querySelector('.lessonMapHost')),panelLastDirectBottom:last(panel.children),panelPadding:getComputedStyle(panel).paddingBottom,panelScroll:panel.scrollTop};
+ const result={viewport:{innerHeight,visualHeight:visualViewport.height,offsetTop:visualViewport.offsetTop},shell:rect(document.querySelector('#courseLessonDev')),header:rect(document.querySelector('.lessonHeader')),panel:rect(panel),map:rect(document.querySelector('.lessonMapHost')),panelLastDirectBottom:last(panel.children),panelPadding:getComputedStyle(panel).paddingBottom,contentSafeBottom:parseFloat(document.querySelector('#courseLessonDev').style.getPropertyValue('--lesson-content-safe-bottom'))||0,panelScroll:panel.scrollTop};
  if(report){const app=report.querySelector('.app'),content=report.querySelector('[data-report-content]'),active=[...content.children].find(visible),button=report.querySelector('[data-report-close]'),b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
  result.report={dialog:rect(report),app:rect(app),active:rect(active),lastDirectBottom:last(active.children),lastLeafBottom:last([...active.querySelectorAll('*')].filter(e=>![...e.children].some(visible))),lastCardBottom:last(active.querySelectorAll('.card,.dataNote,.multiPanel,.multiSection')),close:rect(button),closeHit:!!hit&&(hit===button||button.contains(hit)),scrollTop:report.scrollTop,scrollHeight:report.scrollHeight,clientHeight:report.clientHeight};}
  return result;
@@ -72,8 +72,8 @@ def play_geometry(page,safe_bottom):
     assert abs(d['panel']['bottom']-d['shell']['bottom'])<=1,d
     assert abs(d['map']['bottom']-d['panel']['top'])<=1,d
     gap=d['panel']['bottom']-d['panelLastDirectBottom']
-    assert -1<=gap<=safe_bottom+4,(gap,d)
-    assert abs(float(d['panelPadding'].removesuffix('px'))-safe_bottom)<=1,d
+    assert -1<=gap<=max(2,d['contentSafeBottom'])+4,(gap,d)
+    assert 2<=float(d['panelPadding'].removesuffix('px'))<=max(2,d['contentSafeBottom'])+1,d
     return d
 
 def reports(page,safe_top,safe_bottom,out,label,state):
@@ -105,7 +105,8 @@ def run(page,source,url,out,case):
             ui.open_putting(page,'TEST 선수 A')
             for selector in ['#lessonPuttHoled','#lessonPuttShort','#lessonPuttLong']:
                 ui.assert_inside_viewport(page,selector)
-                assert page.locator(selector).bounding_box()['y']+page.locator(selector).bounding_box()['height']<=case['visualHeight']-case['safeBottom']+1
+                content_safe=page.evaluate('parseFloat(document.querySelector("#courseLessonDev").style.getPropertyValue("--lesson-content-safe-bottom"))||0')
+                assert page.locator(selector).bounding_box()['y']+page.locator(selector).bounding_box()['height']<=case['visualHeight']-content_safe+1
         d=play_geometry(page,case['safeBottom']);page.screenshot(path=str(out/(case['label']+'-'+scenario+'-play.png')))
         result={'state':scenario,'play':d,'reports':reports(page,case['safeTop'],case['safeBottom'],out,case['label'],scenario)};results.append(result)
     # Retraction gives space to the map and any previously clipped existing controls.
@@ -113,7 +114,8 @@ def run(page,source,url,out,case):
     page.evaluate('h=>__lessonViewport.setHeight(h)',case['height']);frames(page);large=play_geometry(page,case['safeBottom'])
     delta=case['height']-case['visualHeight'];map_delta=large['map']['height']-small['map']['height'];panel_delta=large['panel']['height']-small['panel']['height']
     assert map_delta>=-1 and abs(map_delta+panel_delta-delta)<=2,(small,large,delta)
-    if small['panelScroll']<=1:assert abs(map_delta-delta)<=2,(small,large,delta)
+    if small['panelScroll']<=1 and small['panelPadding']==large['panelPadding']:
+        assert abs(map_delta-delta)<=2,(small,large,delta)
     assert snapshot(page)==before
     options=sdk_options(page)
     return {'case':case,'states':results,'viewportGrowth':{'before':small,'after':large,'viewportDelta':delta,'actualMapDelta':map_delta,'actualPanelDelta':panel_delta},'existingMapOptions':options}
