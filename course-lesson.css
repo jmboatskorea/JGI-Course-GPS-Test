@@ -4,6 +4,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev,.lessonReportDialog{--lesson-safe-top:env(safe-area-inset-top,0px);--lesson-safe-bottom:env(safe-area-inset-bottom,0px);--lesson-safe-left:env(safe-area-inset-left,0px);--lesson-safe-right:env(safe-area-inset-right,0px)}
 .courseLessonDev{box-sizing:border-box;color:#111;font-family:inherit}
 .courseLessonDev.lessonRoundShell{position:fixed;top:var(--lesson-viewport-top,0px);bottom:auto;left:0;right:0;width:100%;max-width:480px;height:100vh;height:var(--lesson-viewport-height,100dvh);margin:0 auto;padding:0;overflow:hidden;background:#06110c}
+.courseLessonDev .lessonViewportMeasure{position:fixed;top:0;left:0;width:0;height:100vh;height:100dvh;visibility:hidden;pointer-events:none}
 .courseLessonDev *{box-sizing:border-box}
 .courseLessonDev [hidden]{display:none!important}
 .courseLessonDev button{cursor:pointer;font-family:inherit}
@@ -39,7 +40,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev .lessonMapReadout .lessonMeta:empty{display:none}
 .courseLessonDev .lessonMapReadout .lessonMeta:not([data-error="true"]){display:none}
 .courseLessonDev #lessonMarkerLegend{white-space:normal;overflow-wrap:anywhere}
-.courseLessonDev .lessonCockpit.mapFirstCockpit{bottom:0;min-height:0;max-height:calc(100vh - var(--lesson-map-top,125px) - 80px);max-height:calc(var(--lesson-viewport-height,100dvh) - var(--lesson-map-top,125px) - 80px);margin:0;padding:4px 8px var(--lesson-safe-bottom);overflow-y:auto;overscroll-behavior:contain;background:rgba(255,255,255,.985);color:#111;border-top-color:#c8cdca;border-radius:20px 20px 0 0;box-shadow:0 -14px 38px rgba(0,0,0,.22);scrollbar-width:thin}
+.courseLessonDev .lessonCockpit.mapFirstCockpit{bottom:0;min-height:0;max-height:calc(100vh - var(--lesson-map-top,125px) - 80px);max-height:calc(var(--lesson-viewport-height,100dvh) - var(--lesson-map-top,125px) - 80px);margin:0;padding:4px 8px var(--lesson-cockpit-bottom,2px);overflow-y:auto;overscroll-behavior:contain;background:rgba(255,255,255,.985);color:#111;border-top-color:#c8cdca;border-radius:20px 20px 0 0;box-shadow:0 -14px 38px rgba(0,0,0,.22);scrollbar-width:thin}
 .courseLessonDev .lessonTargetRow{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:0 0 3px}
 .courseLessonDev .lessonTargetRow h2{flex:1;min-width:0;font-size:13px}
 .courseLessonDev .lessonTargetRow button{flex-shrink:0;min-height:44px;padding:5px 10px;border:1px solid #c7ccca;border-radius:14px;background:#f5f6f4;color:#111;font-size:11px;font-weight:950}

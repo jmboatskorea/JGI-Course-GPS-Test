@@ -736,22 +736,40 @@
       <dialog id="lessonPenaltyDialog" class="lessonSheet sheet penaltySheet" aria-labelledby="lessonPenaltyTitle"><div class="sheetHead"><h2 id="lessonPenaltyTitle">PENALTY</h2><button type="button" id="lessonPenaltyClose" class="x" aria-label="벌타 입력 취소">×</button></div><strong id="lessonPenaltyTarget"></strong><p class="lessonMeta">원인 선택 · 기본 1벌타 · 1~9타 조정. Shot / Putts와 위치는 유지됩니다.</p><div id="lessonPenaltyChoices"></div><div id="lessonPenaltyStrokeControls"></div><button type="button" id="lessonSavePenaltyBtn" class="btn primary full" disabled>PENALTY SAVE</button><div class="lessonPanelStatus" data-lesson-status role="status"></div></dialog>
       <dialog id="lessonGreenDialog" class="lessonGreenDialog sheet" aria-labelledby="lessonGreenTitle"><div class="lessonGreenHeader sheetHead"><h2 id="lessonGreenTitle">Green Detail</h2><button type="button" id="lessonGreenCancel">취소</button></div><p id="lessonGreenMapInfo" class="lessonMeta"></p><div class="lessonGreenMap"><div id="lessonGreenSatellite" hidden></div><svg id="lessonGreenSvg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid meet" aria-label="확대 GI Green · 볼 또는 PIN 위치를 탭하세요"></svg></div><div class="lessonActions"><button type="button" id="lessonGreenBall">볼 위치 지정</button><button type="button" id="lessonGreenPin">PIN 지정 · 선택 사항</button><button type="button" id="lessonGreenSkipPin">PIN 건너뛰기</button></div><p id="lessonGreenPinInfo" class="lessonMeta"></p><p id="lessonGreenStatus" class="lessonMeta" role="status" aria-live="polite">Green 안에서 볼 위치를 탭하세요.</p><button type="button" id="lessonGreenSave" disabled>볼 위치 확인 · ON GREEN 저장</button></dialog>`;
     document.body.prepend(host);document.body.classList.add('course-lesson-dev');
-    // ROUND's viewport-height correction, scoped to Lesson and its report dialogs.
+    // A closed keyboard must not leave a stale, shorter visual viewport below the app.
+    const viewportMeasure=document.createElement('div');viewportMeasure.className='lessonViewportMeasure';viewportMeasure.setAttribute('aria-hidden','true');host.append(viewportMeasure);
+    let viewportDidChange=null,viewportRecovery=null,viewportKey='';
     const fitLessonViewport=()=>{
       const viewport=window.visualViewport,normal=!viewport||!viewport.scale||Math.abs(viewport.scale-1)<.01;
-      const height=normal&&viewport?.height||window.innerHeight||document.documentElement.clientHeight;
-      const top=normal?viewport?.offsetTop||0:0;
+      const layoutHeight=(window.CSS?.supports?.('height','100dvh')&&viewportMeasure.getBoundingClientRect().height)||window.innerHeight||document.documentElement.clientHeight;
+      const editable=document.activeElement?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]),textarea,[contenteditable="true"]');
+      const keyboard=normal&&editable&&viewport?.height>0&&viewport.height<layoutHeight-1;
+      const height=keyboard?viewport.height:layoutHeight,top=keyboard?viewport.offsetTop||0:0;
       if(height>0){
+        const safe=parseFloat(getComputedStyle(host).getPropertyValue('--lesson-safe-bottom'))||0;
+        const below=Math.max(0,(document.documentElement.clientHeight||window.innerHeight)-height-top);
+        const contentSafe=Math.max(0,safe-below),key=[height,top,contentSafe].join(':');
+        if(key===viewportKey)return;viewportKey=key;
         document.documentElement.style.setProperty('--lesson-viewport-height',height+'px');
         document.documentElement.style.setProperty('--lesson-viewport-top',top+'px');
+        host.style.setProperty('--lesson-content-safe-bottom',contentSafe+'px');
+        viewportDidChange?.();
       }
+    };
+    const recoverLessonViewport=()=>{
+      fitLessonViewport();requestAnimationFrame(fitLessonViewport);
+      clearTimeout(viewportRecovery);viewportRecovery=setTimeout(fitLessonViewport,250);
     };
     fitLessonViewport();
     window.addEventListener('resize',fitLessonViewport,{passive:true});
-    window.addEventListener('orientationchange',fitLessonViewport,{passive:true});
-    window.addEventListener('pageshow',fitLessonViewport,{passive:true});
+    window.addEventListener('orientationchange',recoverLessonViewport,{passive:true});
+    window.addEventListener('pageshow',recoverLessonViewport,{passive:true});
     window.visualViewport?.addEventListener('resize',fitLessonViewport,{passive:true});
     window.visualViewport?.addEventListener('scroll',fitLessonViewport,{passive:true});
+    document.addEventListener('focusin',recoverLessonViewport,true);
+    document.addEventListener('focusout',recoverLessonViewport,true);
+    document.addEventListener('close',recoverLessonViewport,true);
+    new ResizeObserver(fitLessonViewport).observe(viewportMeasure);
     const el=id=>host.querySelector('#'+id);let group=null,selectedResult=null,puttingViewKey=null,puttingExpanded=false,penaltyInput=null;
     const panelIds=['lessonManageDialog','lessonHistoryDialog','lessonClubDialog','lessonPenaltyDialog'];
     const greenLocked=()=>el('lessonGreenDialog').open;
@@ -998,6 +1016,19 @@
     // Fit the unchanged map projection between the scorer controls, including on rotation.
     let mapInsets='';
     function fitMapViewport(){
+      const panel=el('lessonShotPanel');
+      if(!panel.hidden){
+        const safe=parseFloat(host.style.getPropertyValue('--lesson-content-safe-bottom'))||0;
+        const current=parseFloat(getComputedStyle(panel).paddingBottom)||0,box=panel.getBoundingClientRect();
+        const controls=[...panel.querySelectorAll('button,input,select,a')].map(node=>node.getBoundingClientRect()).filter(r=>r.width&&r.height);
+        const lastControl=Math.max(box.top,...controls.map(r=>r.bottom));
+        const contentEnd=box.top+panel.clientTop+panel.scrollHeight-panel.scrollTop-current;
+        // Passive footer text already separates the last touch target from the home gesture.
+        const afterControl=Math.max(0,contentEnd-lastControl);
+        const textReserve=Math.min(safe,parseFloat(getComputedStyle(el('lessonPenaltyMeta')).lineHeight)||0);
+        const padding=Math.ceil(Math.max(2,textReserve,safe-22,safe-afterControl));
+        if(panel.style.getPropertyValue('--lesson-cockpit-bottom')!==padding+'px')panel.style.setProperty('--lesson-cockpit-bottom',padding+'px');
+      }
       const bounds=host.getBoundingClientRect(),header=host.querySelector('.lessonHeader').getBoundingClientRect();
       const readout=host.querySelector('.lessonMapReadout');readout.style.top=(header.bottom-bounds.top+8)+'px';
       const readoutBounds=readout.getBoundingClientRect();
@@ -1006,6 +1037,7 @@
       const insets=Math.round(bounds.width)+':'+Math.round(bounds.height)+':'+top+':'+bottom;if(mapInsets===insets)return false;mapInsets=insets;
       host.style.setProperty('--lesson-map-top',top+'px');host.style.setProperty('--lesson-map-bottom',Math.max(0,bottom)+'px');return true;
     }
+    viewportDidChange=()=>{if(fitMapViewport())mapController.render();};
     const mapLayoutObserver=new ResizeObserver(()=>{if(fitMapViewport())mapController.render();});
     for(const node of [host,host.querySelector('.lessonHeader'),host.querySelector('.lessonMapReadout'),el('lessonShotPanel')])mapLayoutObserver.observe(node);
     function previewBenchmark(){
