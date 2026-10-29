@@ -21,7 +21,7 @@ MEASURE=r"""()=>{
  const visible=e=>{const r=e.getBoundingClientRect();return e instanceof HTMLElement&&r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden';};
  const last=items=>Math.max(0,...[...items].filter(visible).map(e=>e.getBoundingClientRect().bottom));
  const panel=document.querySelector('#lessonShotPanel'),report=document.querySelector('.lessonReportDialog[open]');
- const result={viewport:{innerHeight,visualHeight:visualViewport.height,offsetTop:visualViewport.offsetTop},shell:rect(document.querySelector('#courseLessonDev')),header:rect(document.querySelector('.lessonHeader')),panel:rect(panel),map:rect(document.querySelector('.lessonMapHost')),panelLastDirectBottom:last(panel.children),panelPadding:getComputedStyle(panel).paddingBottom,contentSafeBottom:parseFloat(document.querySelector('#courseLessonDev').style.getPropertyValue('--lesson-content-safe-bottom'))||0,panelScroll:panel.scrollTop};
+ const result={viewport:{innerHeight,visualHeight:visualViewport.height,offsetTop:visualViewport.offsetTop},shell:rect(document.querySelector('#courseLessonDev')),header:rect(document.querySelector('.lessonHeader')),panel:rect(panel),map:rect(document.querySelector('.lessonMapHost')),panelLastDirectBottom:last(panel.children),panelPadding:getComputedStyle(panel).paddingBottom,contentSafeBottom:parseFloat(getComputedStyle(document.querySelector('#courseLessonDev')).getPropertyValue('--lesson-content-safe-bottom'))||0,panelScroll:panel.scrollTop};
  if(report){const app=report.querySelector('.app'),content=report.querySelector('[data-report-content]'),active=[...content.children].find(visible),button=report.querySelector('[data-report-close]'),b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
  result.report={dialog:rect(report),app:rect(app),active:rect(active),lastDirectBottom:last(active.children),lastLeafBottom:last([...active.querySelectorAll('*')].filter(e=>![...e.children].some(visible))),lastCardBottom:last(active.querySelectorAll('.card,.dataNote,.multiPanel,.multiSection')),close:rect(button),closeHit:!!hit&&(hit===button||button.contains(hit)),scrollTop:report.scrollTop,scrollHeight:report.scrollHeight,clientHeight:report.clientHeight};}
  return result;
@@ -90,7 +90,7 @@ def reports(page,safe_top,safe_bottom,out,label,state):
         assert button['top']>=safe_top-1 and button['bottom']<=d['viewport']['visualHeight']-safe_bottom+1,d
         assert r['closeHit'],d
         gap=r['app']['bottom']-r['lastDirectBottom']
-        assert abs(gap-safe_bottom)<=2,(gap,d)
+        assert abs(gap-d['contentSafeBottom'])<=2,(gap,d)
         page.screenshot(path=str(out/(label+'-'+state+'-'+tab+'.png')))
         page.locator('[data-report-close]').click();ui.expect(page.locator('.lessonReportDialog')).not_to_be_visible()
         assert snapshot(page)==original,'Report changed original records, selected player, personal ROUND or archives'
@@ -105,7 +105,7 @@ def run(page,source,url,out,case):
             ui.open_putting(page,'TEST 선수 A')
             for selector in ['#lessonPuttHoled','#lessonPuttShort','#lessonPuttLong']:
                 ui.assert_inside_viewport(page,selector)
-                content_safe=page.evaluate('parseFloat(document.querySelector("#courseLessonDev").style.getPropertyValue("--lesson-content-safe-bottom"))||0')
+                content_safe=page.evaluate('parseFloat(getComputedStyle(document.querySelector("#courseLessonDev")).getPropertyValue("--lesson-content-safe-bottom"))||0')
                 assert page.locator(selector).bounding_box()['y']+page.locator(selector).bounding_box()['height']<=case['visualHeight']-content_safe+1
         d=play_geometry(page,case['safeBottom']);page.screenshot(path=str(out/(case['label']+'-'+scenario+'-play.png')))
         result={'state':scenario,'play':d,'reports':reports(page,case['safeTop'],case['safeBottom'],out,case['label'],scenario)};results.append(result)
