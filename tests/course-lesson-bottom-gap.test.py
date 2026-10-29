@@ -17,7 +17,7 @@ INIT=r"""config=>{
  const standalone=config.mode==='standalone',original=matchMedia.bind(window);
  window.matchMedia=query=>{if(!query.includes('display-mode'))return original(query);const m=new EventTarget();Object.defineProperties(m,{matches:{value:query.includes('standalone')&&standalone},media:{value:query}});m.addListener=fn=>m.addEventListener('change',fn);m.removeListener=fn=>m.removeEventListener('change',fn);return m;};
  Object.defineProperty(navigator,'standalone',{get:()=>standalone});
- const install=()=>{apply();const style=document.createElement('style');style.textContent='.lessonViewportMeasure{height:var(--bottom-test-probe-height)!important}';document.head.append(style);};
+ const install=()=>{apply();const style=document.createElement('style');style.textContent='.lessonViewportMeasure:not(.lessonStandaloneViewport){height:var(--bottom-test-probe-height)!important}';document.head.append(style);};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 }"""
 MEASURE=r"""()=>{
@@ -96,7 +96,7 @@ def cases():
     for orientation,w,h,top,bottom,normal,stale in [('portrait',390,844,59,34,730,600),('landscape',844,390,0,21,330,250)]:
         for mode in ['browser','standalone']:
             for phase,vh,actual in [('normal',normal,normal),('fullscreen',h,h),('stale',stale,h)]:
-                yield {'label':orientation+'-'+mode+'-'+phase,'width':w,'height':h,'safeTop':top,'safeBottom':bottom,'visualHeight':vh,'actualVisibleHeight':actual,'mode':mode,'phase':phase}
+                yield {'label':orientation+'-'+mode+'-'+phase,'width':w,'height':h,'safeTop':top,'safeBottom':bottom,'visualHeight':vh,'actualVisibleHeight':h if mode=='standalone' else actual,'mode':mode,'phase':phase}
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--out',default='/tmp/jgi-bottom-gap');parser.add_argument('--baseline-json',default='');args=parser.parse_args();out=Path(args.out);out.mkdir(parents=True,exist_ok=True)

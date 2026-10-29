@@ -5,6 +5,7 @@ body.course-lesson-dev>.app{display:none}
 .courseLessonDev{box-sizing:border-box;color:#111;font-family:inherit}
 .courseLessonDev.lessonRoundShell{position:fixed;top:var(--lesson-viewport-top,0px);bottom:auto;left:0;right:0;width:100%;max-width:480px;height:100vh;height:var(--lesson-viewport-height,100dvh);margin:0 auto;padding:0;overflow:hidden;background:#06110c}
 .courseLessonDev .lessonViewportMeasure{position:fixed;top:0;left:0;width:0;height:100vh;height:100dvh;visibility:hidden;pointer-events:none}
+.courseLessonDev .lessonViewportMeasure.lessonStandaloneViewport{bottom:0;height:auto}
 .courseLessonDev *{box-sizing:border-box}
 .courseLessonDev [hidden]{display:none!important}
 .courseLessonDev button{cursor:pointer;font-family:inherit}
@@ -230,7 +231,7 @@ body.course-lesson-dev.lesson-green-open{overflow:hidden}
 .lessonReportDialog{position:fixed;top:var(--lesson-viewport-top,0px);bottom:auto;left:0;right:0;width:min(480px,100%);max-width:100%;height:100vh;height:var(--lesson-viewport-height,100dvh);max-height:var(--lesson-viewport-height,100dvh);margin:0 auto;padding:0;border:0;overflow:auto;background:var(--bg);color:inherit;overscroll-behavior:contain}
 .lessonReportDialog:not([open]){display:none}
 .lessonReportDialog::backdrop{background:rgba(9,24,16,.48)}
-.lessonReportDialog>.app{box-sizing:border-box;min-height:0;height:auto;max-width:none;width:100%;margin:0;padding:0 0 var(--lesson-safe-bottom);border:0;border-radius:0;overflow:visible}
+.lessonReportDialog>.app{box-sizing:border-box;min-height:0;height:auto;max-width:none;width:100%;margin:0;padding:0 0 var(--lesson-content-safe-bottom,var(--lesson-safe-bottom));border:0;border-radius:0;overflow:visible}
 .lessonReportDialog [data-report-content]>.screen{padding-bottom:0}
 .lessonReportDialog [data-report-content]>.screen>:last-child,.lessonReportDialog [data-report-content]>.screen>:last-child>.card:last-child,.lessonReportDialog #lessonReport-summaryScreen>:last-child>.card:last-child{margin-bottom:0}
 .lessonReportHeader{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(12px + var(--lesson-safe-top)) max(16px,var(--lesson-safe-right)) 12px max(16px,var(--lesson-safe-left));background:var(--bg);border-bottom:1px solid var(--line)}
