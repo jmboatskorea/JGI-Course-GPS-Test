@@ -56,7 +56,8 @@
         const category=window.sgLieKey(s.startLie)?window.sgShotCategory(h,s,i,r):'unknown';
         let reason=null;
         if(!value){
-          if(window.JGICourseLessonPrivate?.sgMissing(r,h,s,i))reason=window.JGICourseLessonPrivate.sgMissing(r,h,s,i);
+          if(window.JGIEmeraldaCourses?.sgMissing(r,h,s,i))reason=window.JGIEmeraldaCourses.sgMissing(r,h,s,i);
+          else if(window.JGICourseLessonPrivate?.sgMissing(r,h,s,i))reason=window.JGICourseLessonPrivate.sgMissing(r,h,s,i);
           else if(!window.sgLieKey(s.startLie))reason='시작 Lie 미확인';
           else if(!Number.isFinite(window.shotStartDistanceToHoleM(h,s,i,r)))reason='시작 거리 미확정';
           else if(!knownLie(s.endLie))reason='종료 Lie 미확인';
@@ -75,6 +76,7 @@
     }
     const sgValues={sgTotal:records.length&&!sg.counts.missing?sg.total:null};
     for(const [id,key] of [['sgOtt','ott'],['sgApp','app'],['sgArg','arg'],['sgPutt','putt']])sgValues[id]=sg.counts[key]&&!missing[key]?sg.totals[key]:null;
+    if(window.JGIEmeraldaCourses?.isRound(r))Object.assign(sgValues,window.JGIEmeraldaCourses.sgValues(r,sg));
     return {round:r,sg,sgValues,records,lies,complete:r.holes.length===18&&r.holes.every(h=>h.completed)};
   }
 
@@ -133,7 +135,7 @@
       root.querySelector('#lessonReportTitle').textContent=player.profile.name+' · REPORT';
       root.querySelector('#lessonReportStatus').textContent=(snapshot.complete?'18홀 완료':(options.archived?'중도 종료':'진행 중')+' · '+snapshot.round.holes.filter(h=>h.completed).length+'/18홀 완료')+' · '+snapshot.sg.info.label;
       const coach=view.get('targetScoreCoachOverviewBody');
-      if(coach)coach.textContent=window.JGICourseLessonPrivate?.isRound(snapshot.round)?'Target Score 미계산 · 공식 Scorecard/목표 입력 근거 부족':'저장된 목표 스코어 · 샷 의사결정 데이터 부족';
+      if(coach)coach.textContent=window.JGICourseLessonPrivate?.isRound(snapshot.round)||window.JGIEmeraldaCourses?.isRound(snapshot.round)?'Target Score 미계산 · 공식 Scorecard/목표 입력 근거 부족':'저장된 목표 스코어 · 샷 의사결정 데이터 부족';
       window.JGI_ROUND_REPORT_RENDERERS.renderFinalReport(view);
       if(!snapshot.complete)view.get('finalRoundReportCard').querySelector('.title').textContent='JGI ROUND REPORT · '+(options.archived?'중도 종료':'진행 중');
       const note=document.createElement('div');note.className='dataNote';note.setAttribute('data-report-missing','');
@@ -142,6 +144,7 @@
       view.get('sgPenaltyNote').after(note);
       const quality=document.createElement('div');quality.className='dataNote';quality.textContent='종료 Lie · 방향 · 탄도 · 목표 결정이 저장되지 않은 항목은 확인 또는 분석할 수 없습니다. Score / To Par / 적중률은 기존 ROUND의 완료 홀 기준이며, Total Putts / Penalty / SG는 현재 저장된 기록을 포함합니다.';
       if(window.JGICourseLessonPrivate?.isRound(snapshot.round))quality.textContent+=' '+window.JGICourseLessonPrivate.description(snapshot.round);
+      if(window.JGIEmeraldaCourses?.isRound(snapshot.round))quality.textContent+=' '+window.JGIEmeraldaCourses.description(snapshot.round);
       view.get('liveCategoryCards').after(quality);
       const status=view.get('performanceScreen').querySelector('.sgStatus');
       status.textContent=snapshot.sg.info.label+' · '+(snapshot.round.sgProfileVersion||snapshot.round.sgDataVersion||'기존 ROUND Benchmark')+' · 기존 ROUND 적용 범위를 벗어난 항목은 미계산';

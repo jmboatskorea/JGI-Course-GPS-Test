@@ -1897,6 +1897,10 @@ body.round-active .modal .sheet .puttHistoryRow{
         <div class="field">
           <label>코스</label>
           <input id="courseNine" value="Old Course" placeholder="Old Course / River / Lake ...">
+          <div id="setupEmeraldaNines" class="grid2 hidden" hidden>
+            <label>전반 9홀<select id="courseFrontNine" aria-label="Emeralda 전반 9홀"></select></label>
+            <label>후반 9홀<select id="courseBackNine" aria-label="Emeralda 후반 9홀"></select></label>
+          </div>
         </div>
         <div class="field">
           <label>티</label>
@@ -2877,6 +2881,8 @@ body.round-active .modal .sheet .puttHistoryRow{
 <script src="jagorawi-old-scorecard-data.js"></script>
 <script src="ora-south-left-course-data.js"></script>
 <script src="gunung-geulis-course-data.js"></script>
+<script src="emeralda-course-data.js"></script>
+<script src="emeralda-courses.js"></script>
 <script src="jgi-strokes-gained-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -3030,21 +3036,34 @@ function isOraSouthLeft(r=round){
   return r?.course==='Ora Country Club'&&r?.nine==='South Left';
 }
 function activeCourseData(r=round){
+  if(window.JGIEmeraldaCourses?.isRound(r))return window.JGIEmeraldaCourses.data(r);
   if(window.JGICourseLessonPrivate?.isRound(r))return window.JGICourseLessonPrivate.data(r);
   return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_DATA:window.JGI_OLD_COURSE_DATA;
 }
 function activeCourseScorecard(r=round){
+  if(window.JGIEmeraldaCourses?.isRound(r))return window.JGIEmeraldaCourses.scorecard(r);
   if(window.JGICourseLessonPrivate?.isRound(r))return window.JGICourseLessonPrivate.scorecard(r);
   return isOraSouthLeft(r)?window.JGI_ORA_SOUTH_LEFT_SCORECARD_DATA:window.JGI_OLD_SCORECARD_DATA;
 }
 function syncSetupCourseSelection(){
   const ora=$('courseSelect')?.value==='Ora Country Club';
+  const emeralda=$('courseSelect')?.value===window.JGIEmeraldaCourses?.CLUB;
   const input=$('courseNine');
-  if(input){input.value=ora?'South Left':PARK_JIEUN_PROFILE.nine;input.readOnly=ora}
+  if(input){input.hidden=emeralda;input.classList.toggle('hidden',emeralda);input.value=emeralda?syncEmeraldaSetupNines():ora?'South Left':PARK_JIEUN_PROFILE.nine;input.readOnly=ora||emeralda}
+  if($('setupEmeraldaNines')){$('setupEmeraldaNines').hidden=!emeralda;$('setupEmeraldaNines').classList.toggle('hidden',!emeralda);}
   $('teeSegment')?.querySelector('[data-v="Gold"]')?.classList.toggle('hidden',!ora);
   if(!ora&&tee==='Gold'){tee='Red';setSelected($('teeSegment'),tee)}
-  if($('setupProfileCourseName'))$('setupProfileCourseName').textContent=ora?'Ora South Left':'Jagorawi Old';
+  if($('setupProfileCourseName'))$('setupProfileCourseName').textContent=emeralda?'Emeralda '+input.value:ora?'Ora South Left':'Jagorawi Old';
   if($('setupProfileTeeName'))$('setupProfileTeeName').textContent=tee.toUpperCase();
+}
+function syncEmeraldaSetupNines(){
+  const api=window.JGIEmeraldaCourses,front=$('courseFrontNine'),back=$('courseBackNine');
+  if(!api||!front||!back)return '';
+  if(!front.options.length)for(const name of api.nines)front.add(new Option(name,name));
+  const selected=back.value;back.replaceChildren();
+  for(const name of api.nines.filter(name=>name!==front.value))back.add(new Option(name,name));
+  if([...back.options].some(o=>o.value===selected))back.value=selected;
+  return api.pair(front.value,back.value)||'';
 }
 function courseHoleData(){
   return activeCourseData()?.holes?.[String(round?.currentHole||1)]||null;
@@ -3061,6 +3080,7 @@ function scorecardHoleData(holeNo,teeName=tee,r=round){
 }
 function hydrateRoundCourseTruth(r){
   if(!r)return r;
+  const emeralda=window.JGIEmeraldaCourses?.isRound(r);
   const scorecard=activeCourseScorecard(r);
   r.courseVersion=r.courseVersion||activeCourseData(r)?.version||null;
   r.tee=normalizeTeeName(r.tee||tee);
@@ -3071,10 +3091,17 @@ function hydrateRoundCourseTruth(r){
     h.teeDistanceM=sc.distanceM;
     h.strokeIndexMen=sc.indexMen;
     h.strokeIndexLadies=sc.indexLadies;
+    if(emeralda){
+      const source=window.JGIEmeraldaCourses.sourceHole(r,h.hole||i+1);
+      Object.assign(h,{sourceCourseId:source?.sourceCourseId??null,sourceHoleId:source?.i??null,
+        sourceHoleNumber:source?.sourceHoleNumber??null,sourceNine:source?.sourceNine??null,
+        sourceHandicap:sc.sourceHandicap??null,scorecardStatus:sc.status??null});
+    }
   });
   r.courseTruth={
-    courseId:scorecard?.courseId??22987,
-    source:scorecard?.source||'Jagorawi Old Course scorecard',
+    courseId:scorecard?.courseId??(emeralda?null:22987),
+    ...(emeralda?{courseIds:scorecard?.courseIds||[],nines:String(r.nine).split(' / '),handicapStatus:scorecard?.handicapStatus||null}:{}),
+    source:scorecard?.source||(emeralda?'Emeralda Scorecard 미확정':'Jagorawi Old Course scorecard'),
     distanceUnit:scorecard?.distanceUnit||'m',
     tee:r.tee,
     rating:scorecard?.tees?.[r.tee]?.rating??null,
@@ -4666,7 +4693,8 @@ function beginPending(club,previousShot=null){
     targetLng:targetSnapshot?.lng??null,
     targetFairwayWidthM:targetSnapshot?.fairwayWidthM??null,
     courseContext:{
-      course:round.course,courseId:activeCourseData()?.courseId??22987,
+      course:round.course,courseId:ch?.sourceCourseId??activeCourseData()?.courseId??(window.JGIEmeraldaCourses?.isRound(round)?null:22987),
+      ...(ch?.sourceNine?{sourceNine:ch.sourceNine,sourceHoleNumber:ch.sourceHoleNumber,sourceHoleId:ch.i}:{}),
       hole:round.currentHole,holeId:ch?.i??ch?.id??ch?.holeId??null,
       greenId:ch?.greenId??null,
       greenDistanceM:startGreenDistanceM,
@@ -5674,6 +5702,7 @@ function resultScore(r){
   return (r?.holes||[]).filter(h=>h.completed).reduce((sum,h)=>sum+storedHoleScore(h),0);
 }
 function resultPar(r){
+  if(window.JGIEmeraldaCourses?.isRound(r)&&(r.holes||[]).some(h=>h.completed&&![3,4,5].includes(h.par)))return null;
   return (r?.holes||[]).filter(h=>h.completed&&Number.isFinite(Number(h.par))).reduce((sum,h)=>sum+Number(h.par),0);
 }
 function resultToPar(r){
@@ -6002,7 +6031,7 @@ function multiShotSgBadge(value){
 }
 function multiShotHoleDetailHtml(r,h,open=false,view=null){
   const shots=h?.shots||[],putts=h?.puttsDetail||[];
-  const score=storedHoleScore(h),par=Number(h?.par),delta=Number.isFinite(score)&&Number.isFinite(par)?score-par:null;
+  const score=storedHoleScore(h),par=window.JGIEmeraldaCourses?.isRound(r)&&h?.par==null?NaN:Number(h?.par),delta=Number.isFinite(score)&&Number.isFinite(par)?score-par:null;
   const scoreText=Number.isFinite(score)?String(score)+(delta===null?'':(' · '+(delta===0?'E':(delta>0?'+':'')+delta))):'—';
   const penalty=Number(h?.penalties||0);
   const cards=[
@@ -6033,7 +6062,7 @@ function multiShotHoleDetailHtml(r,h,open=false,view=null){
         '</div>'+(view&&!Number.isFinite(sg)?'<span class="multiShotSg pending">SG 미계산</span>':multiShotSgBadge(sg))+'</div>';
     })
   ].join('');
-  return '<details class="multiShotHole" '+(open?'open':'')+'><summary><span>HOLE '+safeText(h?.hole??'—')+(Number.isFinite(par)?' · PAR '+par:'')+'</span><b>'+safeText(scoreText)+' · 샷 '+shots.length+' · 퍼트 '+putts.length+(penalty?' · 벌타 '+penalty:'')+'</b></summary>'+
+  return '<details class="multiShotHole" '+(open?'open':'')+'><summary><span>HOLE '+safeText(h?.hole??'—')+(h?.sourceNine?' · '+safeText(h.sourceNine)+' '+safeText(h.sourceHoleNumber):'')+(Number.isFinite(par)?' · PAR '+par:'')+'</span><b>'+safeText(scoreText)+' · 샷 '+shots.length+' · 퍼트 '+putts.length+(penalty?' · 벌타 '+penalty:'')+'</b></summary>'+
     '<div class="multiShotList">'+(cards||'<div class="analysisEmpty">저장된 샷이 없습니다.</div>')+'</div></details>';
 }
 function multiShotRoundDetailHtml(r,open=false){
@@ -6052,12 +6081,16 @@ function multiShotDetailHtml(rounds){
 }
 
 function renderFullMultiAnalysis(rounds){
-  const data=multiRows(rounds),{shots,putts,holes,states}=data;
+  const data=multiRows(rounds),{shots,putts,holes:allHoles,states}=data;
+  const holes=allHoles.filter(({r,h})=>!window.JGIEmeraldaCourses?.isRound(r)||h.completed);
+  const missingEmeraldaPar=({r,h})=>window.JGIEmeraldaCourses?.isRound(r)&&![3,4,5].includes(h.par);
+  const scoringIncomplete=holes.some(missingEmeraldaPar);
   if($('analysisShotDetail'))$('analysisShotDetail').innerHTML=multiShotDetailHtml(rounds);
   const scoreRows=rounds.map(r=>({score:resultScore(r),par:resultPar(r),delta:resultToPar(r)}));
   const scoreVals=scoreRows.map(x=>x.score).filter(Number.isFinite);
   let birdie=0,par=0,bogey=0,doublePlus=0,frontScore=0,frontPar=0,backScore=0,backPar=0;
-  holes.forEach(({h})=>{
+  holes.forEach(({r,h})=>{
+    if(missingEmeraldaPar({r,h}))return;
     const sc=storedHoleScore(h),hp=Number(h.par);if(!Number.isFinite(sc)||!Number.isFinite(hp))return;
     const d=sc-hp;if(d<0)birdie++;else if(d===0)par++;else if(d===1)bogey++;else doublePlus++;
     if(h.hole<=9){frontScore+=sc;frontPar+=hp}else{backScore+=sc;backPar+=hp}
@@ -6066,9 +6099,9 @@ function renderFullMultiAnalysis(rounds){
     '<div class="analysisNote">선택한 라운드 전체를 합산한 실제 저장 데이터입니다.</div>'+
     multiKpis([['라운드',rounds.length],['전체 샷',shots.length],['전체 퍼트',putts.length],['평균 스코어',scoreVals.length?(scoreVals.reduce((a,b)=>a+b,0)/scoreVals.length).toFixed(1):'—'],['최고 스코어',scoreVals.length?Math.min(...scoreVals):'—'],['최저 스코어',scoreVals.length?Math.max(...scoreVals):'—']])+
     multiTable(['구분','결과'],[
-      ['버디 이하',birdie+'홀'],['파',par+'홀'],['보기',bogey+'홀'],['더블보기 이상',doublePlus+'홀'],
-      ['전반 평균',rounds.length?multiSigned((frontScore-frontPar)/rounds.length,1):'—'],
-      ['후반 평균',rounds.length?multiSigned((backScore-backPar)/rounds.length,1):'—']
+      ['버디 이하',scoringIncomplete?'미계산':birdie+'홀'],['파',scoringIncomplete?'미계산':par+'홀'],['보기',scoringIncomplete?'미계산':bogey+'홀'],['더블보기 이상',scoringIncomplete?'미계산':doublePlus+'홀'],
+      ['전반 평균',holes.some(x=>x.h.hole<=9&&missingEmeraldaPar(x))?'미계산':rounds.length?multiSigned((frontScore-frontPar)/rounds.length,1):'—'],
+      ['후반 평균',holes.some(x=>x.h.hole>9&&missingEmeraldaPar(x))?'미계산':rounds.length?multiSigned((backScore-backPar)/rounds.length,1):'—']
     ]);
 
   const sgRows=rounds.map(r=>({r,...multiSgForRound(r)})),sgCategories=multiPlayerFacingSg(rounds);
@@ -6276,24 +6309,27 @@ function renderFullMultiAnalysis(rounds){
   $('analysisPhase').innerHTML=
     '<div class="analysisNote">3홀 단위로 스코어와 벌타 변화를 비교합니다.</div>'+
     multiTable(['구간','평균 스코어','평균 파 대비','벌타'],phases.map(ph=>{
-      let sc=0,pa=0,n=0,pen=0;
-      holes.filter(x=>x.h.hole>=ph.a&&x.h.hole<=ph.b).forEach(x=>{sc+=storedHoleScore(x.h);pa+=Number(x.h.par||0);n++;pen+=Number(x.h.penalties||0)});
+      let sc=0,pa=0,n=0,pen=0,missing=false;
+      holes.filter(x=>x.h.hole>=ph.a&&x.h.hole<=ph.b).forEach(x=>{sc+=storedHoleScore(x.h);pa+=Number(x.h.par||0);n++;pen+=Number(x.h.penalties||0);missing=missing||missingEmeraldaPar(x)});
       const perRound=rounds.length||1;
-      return [ph.name,(sc/perRound).toFixed(1),multiSigned((sc-pa)/perRound,1),pen];
+      const emptyEmeralda=!n&&rounds.some(r=>window.JGIEmeraldaCourses?.isRound(r));
+      return [ph.name,emptyEmeralda?'데이터 부족':(sc/perRound).toFixed(1),missing||emptyEmeralda?'미계산':multiSigned((sc-pa)/perRound,1),pen];
     }));
 
   const courseGroups={},holeGroups={};
   holes.forEach(({r,h})=>{
     const course=(r.course||'골프장')+' · '+(r.nine||'코스'),co=courseGroups[course]||(courseGroups[course]={roundIds:new Set(),score:0,par:0,pen:0});
     co.roundIds.add(r.id);co.score+=storedHoleScore(h);co.par+=Number(h.par||0);co.pen+=Number(h.penalties||0);
+    co.missingPar=co.missingPar||missingEmeraldaPar({r,h});
     const hk=course+' · '+h.hole+'번',ho=holeGroups[hk]||(holeGroups[hk]={n:0,score:0,par:0,pen:0});
     ho.n++;ho.score+=storedHoleScore(h);ho.par+=Number(h.par||0);ho.pen+=Number(h.penalties||0);
+    ho.missingPar=ho.missingPar||missingEmeraldaPar({r,h});
   });
   $('analysisCourseHole').innerHTML=
     '<div class="sectionLabel">코스별</div>'+
-    multiTable(['코스','라운드','평균 스코어','평균 파 대비','벌타'],Object.entries(courseGroups).map(([k,o])=>[safeText(k),o.roundIds.size,(o.score/o.roundIds.size).toFixed(1),multiSigned((o.score-o.par)/o.roundIds.size,1),o.pen]))+
+    multiTable(['코스','라운드','평균 스코어','평균 파 대비','벌타'],Object.entries(courseGroups).map(([k,o])=>[safeText(k),o.roundIds.size,(o.score/o.roundIds.size).toFixed(1),o.missingPar?'미계산':multiSigned((o.score-o.par)/o.roundIds.size,1),o.pen]))+
     '<div class="sectionLabel" style="margin-top:12px">홀별</div>'+
-    multiTable(['코스 · 홀','플레이','평균 타수','평균 파 대비','벌타'],Object.entries(holeGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,(o.score/o.n).toFixed(2),multiSigned((o.score-o.par)/o.n,2),o.pen]));
+    multiTable(['코스 · 홀','플레이','평균 타수','평균 파 대비','벌타'],Object.entries(holeGroups).sort((a,b)=>b[1].n-a[1].n).map(([k,o])=>[safeText(k),o.n,(o.score/o.n).toFixed(2),o.missingPar?'미계산':multiSigned((o.score-o.par)/o.n,2),o.pen]));
 
   const decisions={};
   teeRows.forEach(x=>{
@@ -8330,6 +8366,7 @@ function completeHole(){
 }function holeScore(h){return h.completed?h.shots.length+(h.putts||0)+(h.penalties||0):null}
 function holeAchievementCode(h){
   const score=holeScore(h),par=Number(h?.par);
+  if(window.JGIEmeraldaCourses?.isHole(h)&&h.par==null)return score===1?'HOLE_IN_ONE':null;
   if(!Number.isFinite(Number(score))||!Number.isFinite(par))return null;
   if(Number(score)===1)return 'HOLE_IN_ONE';
   const d=Number(score)-par;
@@ -8366,6 +8403,7 @@ function finalizeHoleFromShot(){
   return true;
 }
 function toPar(r=round){
+  if(window.JGIEmeraldaCourses?.isRound(r)&&r.holes.some(h=>h.completed&&![3,4,5].includes(h.par)))return {s:r.holes.filter(h=>h.completed).reduce((sum,h)=>sum+(holeScore(h)||0),0),p:null,d:null};
   const valid=r.holes.filter(h=>h.completed&&h.par);
   if(!valid.length)return {s:r.holes.filter(h=>h.completed).reduce((a,h)=>a+(holeScore(h)||0),0),p:null,d:null};
   let s=0,p=0;valid.forEach(h=>{s+=holeScore(h);p+=h.par});return {s,p,d:s-p}
@@ -8482,6 +8520,7 @@ function shotEndDistanceToHoleM(h,s,index,r=round){
   return g&&s.end?hav(s.end,g):null;
 }
 function computeShotSG(h,s,index,info=sgBenchmarkInfo(),r=round){
+  if(window.JGIEmeraldaCourses?.sgMissing(r,h,s,index))return null;
   if(window.JGICourseLessonPrivate?.sgMissing(r,h,s,index))return null;
   const startD=shotStartDistanceToHoleM(h,s,index,r);
   if(!Number.isFinite(startD))return null;
@@ -8534,6 +8573,7 @@ function distanceToGreenEdgeM(h,s,r=round){
   return Number.isFinite(best)?best:null;
 }
 function sgShotCategory(h,s,index,r=round){
+  if(window.JGIEmeraldaCourses?.isRound(r)&&![3,4,5].includes(h?.par))return 'unknown';
   if(window.JGICourseLessonPrivate?.isRound(r)&&![3,4,5].includes(h?.par))return 'unknown';
   const lie=sgLieKey(s?.startLie);
   if(lie==='green')return 'putt';
@@ -8621,6 +8661,7 @@ function playerShotLabel(h,s,index,r=round){
 }
 function scoreMarkClass(h){
   const score=holeScore(h),par=Number(h?.par);
+  if(window.JGIEmeraldaCourses?.isHole(h)&&h.par==null)return '';
   if(!Number.isFinite(Number(score))||!Number.isFinite(par))return '';
   const d=Number(score)-par;
   return d<=-2?'eagle':d===-1?'birdie':d===0?'par':d===1?'bogey':'double';
@@ -9257,7 +9298,7 @@ function render퍼포먼스(view=null){
   get('sgBenchmarkLabel').textContent='비교 기준 · '+sg.info.label+' · 라운드 고정';
   get('sgSourcePill').textContent=sg.info.type==='MEASURED'?'공개 실측 기준':'JGI V1 모델링';
   get('sgSourcePill').className='sgSourcePill '+(sg.info.type==='MEASURED'?'measured':'modeled');
-  const values=view?.sgValues||{sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
+  const values=view?.sgValues||window.JGIEmeraldaCourses?.sgValues(source,sg)||{sgTotal:sg.total,sgOtt:sg.totals.ott,sgApp:sg.totals.app,sgArg:sg.totals.arg,sgPutt:sg.totals.putt};
   Object.entries(values).forEach(([id,v])=>{const el=get(id);el.textContent=v==null?'미계산':formatSg(v);el.classList.remove('positive','negative');const cls=v==null?'':sgValueClass(v);if(cls)el.classList.add(cls)});
   get('sgPenaltyNote').textContent=(sg.totals.penalty?('페널티 영향 '+formatSg(sg.totals.penalty)+' · '):'')+(sg.counts.missing?('아직 계산할 수 없는 샷/퍼트 '+sg.counts.missing+'개'):'기록된 위치 데이터 기준으로 계산됨');
   renderClubDistanceSg(view);
@@ -9771,6 +9812,8 @@ function renderStory(){
   if(!round)return;
   const live=buildLiveAnalysis();
   const sg=sgRoundSummary();
+  const emeraldaValues=window.JGIEmeraldaCourses?.sgValues(round,sg),incomplete=!!emeraldaValues&&emeraldaValues.sgTotal===null;
+  const storySg=(key,value)=>emeraldaValues?(emeraldaValues[key]===null?'미계산':formatSg(emeraldaValues[key])):formatSg(value);
   const mental=buildStateResults(round);
   const mentalLead=mentalInsightCandidates(mental)[0]||null;
   const score=toPar();
@@ -9790,8 +9833,9 @@ function renderStory(){
   else if(neg.length)sentence='<span class="loss">'+neg.join('·')+'</span>에서 가장 큰 타수 손실이 기록되었습니다.';
   else if(pos.length)sentence='<span class="gain">'+pos[0]+'</span>에서 가장 큰 타수 이득이 기록되었습니다.';
   else sentence='큰 SG 변화 없이 비교적 균형적인 결과가 기록되었습니다.';
+  if(incomplete)sentence='공식 Scorecard 또는 샷 근거 부족 · 전체 SG 미계산';
 
-  const flow=storyFlowWindows(sg.info,mental);
+  const flow=incomplete?{recovery:null,loss:null}:storyFlowWindows(sg.info,mental);
   const recoveryRange=flow.recovery?[flow.recovery.cur.start,flow.recovery.cur.end]:[];
   const lossRange=flow.loss?[flow.loss.cur.start,flow.loss.cur.end]:[];
   const roleSecond=storyRoleSg('SECOND'),roleApproach=storyRoleSg('APPROACH');
@@ -9804,12 +9848,12 @@ function renderStory(){
   const hero='<div class="storyHero"><div class="date">'+date+'</div><h2>'+safeText(round.course||'골프장')+'</h2><div class="meta">'+safeText(round.nine||'코스')+' · '+resultTeeLabel(round.tee)+' 티 · '+(score.s||'—')+'타'+(score.d!==null?' ('+(score.d===0?'E':(score.d>0?'+':'')+score.d)+')':'')+'</div></div>';
   const one='<div class="storySentence"><div class="label">오늘 경기 한 문장</div><strong>'+sentence+'</strong></div>';
   const sgGrid='<div class="card"><div class="title">주요 결과 요약 · 획득타수</div><div class="sub">라운드 시작 시 고정한 '+safeText(sg.info.label)+' 기준입니다.</div><div class="storySgGrid">'+
-    categories.map(x=>'<div class="storySgCard"><span>'+x.label+'</span><b class="'+sgValueClass(x.v)+'">'+formatSg(x.v)+'</b><small>'+x.count+'개 계산</small></div>').join('')+
+    categories.map(x=>'<div class="storySgCard"><span>'+x.label+'</span><b class="'+sgValueClass(x.v)+'">'+storySg('sg'+x.key[0].toUpperCase()+x.key.slice(1),x.v)+'</b><small>'+x.count+'개 계산</small></div>').join('')+
     '</div></div>';
 
   const keys='<div class="card"><div class="title">오늘의 핵심 3가지</div><div class="storyKeyGrid">'+
-    '<div class="storyKey loss"><div class="n">1 · 가장 큰 손실</div><strong>'+loss.label+' '+formatSg(loss.v)+'</strong><p>'+safeText(live.problem?.why||'오늘 가장 큰 손실 영역입니다.')+'</p></div>'+
-    '<div class="storyKey gain"><div class="n">2 · 가장 큰 강점</div><strong>'+gain.label+' '+formatSg(gain.v)+'</strong><p>'+safeText(live.working?.why||'오늘 상대적으로 좋았던 영역입니다.')+'</p></div>'+
+    '<div class="storyKey loss"><div class="n">1 · 가장 큰 손실</div><strong>'+(incomplete?'미계산':loss.label+' '+formatSg(loss.v))+'</strong><p>'+safeText(incomplete?'비교 가능한 전체 SG 근거 부족':live.problem?.why||'오늘 가장 큰 손실 영역입니다.')+'</p></div>'+
+    '<div class="storyKey gain"><div class="n">2 · 가장 큰 강점</div><strong>'+(incomplete?'미계산':gain.label+' '+formatSg(gain.v))+'</strong><p>'+safeText(incomplete?'비교 가능한 전체 SG 근거 부족':live.working?.why||'오늘 상대적으로 좋았던 영역입니다.')+'</p></div>'+
     '<div class="storyKey mental"><div class="n">3 · 멘탈 인사이트</div><strong>'+safeText(mentalLead?mentalLead.condition:'초기 관찰')+'</strong><p>'+safeText(mentalText)+'</p></div>'+
     '</div></div>';
 
@@ -9824,10 +9868,10 @@ function renderStory(){
     '<div class="storyFlowGrid">'+storyFlowPanel('recovery',flow.recovery)+storyFlowPanel('loss',flow.loss)+'</div></div>';
 
   const types='<div class="card"><div class="title">샷 유형별 결과 한눈에 보기</div><div class="storyTypeGrid">'+
-    '<div class="storyTypeCard"><span>티샷</span><b>'+safeText(cats.tee?.main||'—')+'</b><small>SG '+formatSg(sg.totals.ott)+'</small></div>'+
-    '<div class="storyTypeCard"><span>세컨샷</span><b>'+safeText(cats.second?.samples||0)+'개</b><small>Avg SG '+formatSg(roleSecond.avg)+'</small></div>'+
-    '<div class="storyTypeCard"><span>5~80m 어프로치</span><b>'+safeText(cats.approach?.samples||0)+'개</b><small>Avg SG '+formatSg(roleApproach.avg)+'</small></div>'+
-    '<div class="storyTypeCard"><span>퍼팅</span><b>'+safeText(cats.putting?.main||'—')+'</b><small>SG '+formatSg(sg.totals.putt)+'</small></div>'+
+    '<div class="storyTypeCard"><span>티샷</span><b>'+safeText(cats.tee?.main||'—')+'</b><small>SG '+storySg('sgOtt',sg.totals.ott)+'</small></div>'+
+    '<div class="storyTypeCard"><span>세컨샷</span><b>'+safeText(cats.second?.samples||0)+'개</b><small>Avg SG '+(emeraldaValues&&!roleSecond.n?'미계산':formatSg(roleSecond.avg))+'</small></div>'+
+    '<div class="storyTypeCard"><span>5~80m 어프로치</span><b>'+safeText(cats.approach?.samples||0)+'개</b><small>Avg SG '+(emeraldaValues&&!roleApproach.n?'미계산':formatSg(roleApproach.avg))+'</small></div>'+
+    '<div class="storyTypeCard"><span>퍼팅</span><b>'+safeText(cats.putting?.main||'—')+'</b><small>SG '+storySg('sgPutt',sg.totals.putt)+'</small></div>'+
     '</div></div>';
 
   $('storyContent').innerHTML=hero+one+sgGrid+keys+flowHtml+types;
@@ -10088,6 +10132,8 @@ $('multiAllDetailJump').onclick=()=>{
   const d=$('multiAllDetails');if(!d)return;d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});
 };
 $('courseSelect').addEventListener('change',syncSetupCourseSelection);
+$('courseFrontNine').addEventListener('change',syncSetupCourseSelection);
+$('courseBackNine').addEventListener('change',syncSetupCourseSelection);
 $('teeSegment').addEventListener('click',e=>{if(!e.target.dataset.v)return;tee=e.target.dataset.v;setSelected($('teeSegment'),tee);syncSetupCourseSelection()});
 $('statePlanSegment').addEventListener('click',e=>{
   if(!e.target.dataset.v)return;
@@ -10114,9 +10160,11 @@ if($('resetTestDataBtn'))$('resetTestDataBtn').onclick=()=>{
 };
 function startRoundWithCondition(){
   const isOra=$('courseSelect')?.value==='Ora Country Club';
-  const selectedCourse=isOra?'Ora Country Club':PARK_JIEUN_PROFILE.course;
-  const selectedNine=isOra?'South Left':PARK_JIEUN_PROFILE.nine;
-  tee=isOra&&['Gold','Blue','White','Red'].includes(tee)?tee:PARK_JIEUN_PROFILE.tee;
+  const isEmeralda=$('courseSelect')?.value===window.JGIEmeraldaCourses?.CLUB;
+  const selectedCourse=isEmeralda?window.JGIEmeraldaCourses.CLUB:isOra?'Ora Country Club':PARK_JIEUN_PROFILE.course;
+  const selectedNine=isEmeralda?syncEmeraldaSetupNines():isOra?'South Left':PARK_JIEUN_PROFILE.nine;
+  if(isEmeralda&&!activeCourseData({course:selectedCourse,nine:selectedNine})){alert('Emeralda 전반·후반의 서로 다른 실제 9홀 코스를 선택하세요.');return;}
+  tee=(isOra||isEmeralda)&&['Gold','Blue','White','Red'].includes(tee)?tee:PARK_JIEUN_PROFILE.tee;
   sgBenchmarkMode=PARK_JIEUN_PROFILE.sgBenchmarkMode;
   const targetScore=clampNumber($('targetScoreInput')?.value||PARK_JIEUN_PROFILE.targetScore,50,150)||PARK_JIEUN_PROFILE.targetScore;
   const previousRound=load();

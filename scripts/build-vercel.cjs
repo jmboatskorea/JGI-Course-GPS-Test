@@ -17,6 +17,7 @@ const files = [
   'privacy.html',
   'jagorawi-old-course-data.js', 'jagorawi-old-scorecard-data.js',
   'ora-south-left-course-data.js', 'gunung-geulis-course-data.js',
+  'emeralda-course-data.js', 'emeralda-courses.js',
   'jgi-strokes-gained-data.js'
 ];
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
