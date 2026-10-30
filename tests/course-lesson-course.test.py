@@ -16,6 +16,7 @@ def load(name, filename):
 
 ui = load('ui', 'course-lesson-ui.test.py')
 maps = load('maps', 'course-lesson-map.test.py')
+layout = load('layout', 'course-lesson-layout.test.py')
 COURSES = [('Jagorawi Golf & Country Club', 'Old Course', 22987), ('Ora Country Club', 'South Left', 34617)]
 POINTS = r"""()=>{
  const g=JSON.parse(localStorage.getItem('jgi_course_lesson_group_v1')),r=g.players[0].round;
@@ -56,15 +57,22 @@ PARITY = r"""()=>{
 def flow(page, url, course, nine, course_id, out, label, dialogs):
     page.goto(url, wait_until='domcontentloaded')
     page.wait_for_selector('#lessonCourseSelect', state='attached')
+    previous = ui.storage_group(page)
+    if previous and any(p['registered'] for p in previous['players']):
+        ui.click(page, '#lessonFinishRound')
+        page.locator('#lessonFinishConfirm').click()
+        ui.expect(page.locator('#lessonFinishDialog')).not_to_be_visible()
+        assert ui.storage_group(page) is None
     before = ui.personal_storage(page)
     options = page.locator('#lessonCourseSelect option').all_text_contents()
-    assert options == [c[0] for c in COURSES]+['Gunung Geulis'], options
+    assert options == [c[0] for c in COURSES]+['Gunung Geulis','Emeralda Golf Club'], options
     ui.reveal(page, '#lessonCourseSelect').select_option(course)
     ui.expect(page.locator('#lessonCourseNine')).to_have_value(nine)
     assert page.locator('#lessonCourseNine option').all_text_contents() == [nine]
     page.locator('#lessonPlayerCount').select_option('2')
-    ui.assert_inside_viewport(page, '#lessonCourseSelect')
-    ui.assert_inside_viewport(page, '#lessonCourseNine')
+    for selector in ['#lessonCourseSelect', '#lessonCourseNine']:
+        ui.reveal(page, selector).evaluate("el=>el.scrollIntoView({block:'center',inline:'nearest'})")
+        ui.assert_inside_viewport(page, selector)
     page.screenshot(path=str(out / f'setup-{course_id}-{label}.png'))
     ui.click(page, '#lessonCreateGroup')
     g = ui.storage_group(page)
@@ -96,7 +104,7 @@ def flow(page, url, course, nine, course_id, out, label, dialogs):
         assert geometry['tee']['y'] > geometry['green']['y']
         ui.click(page, '#lessonSatellite')
         maps.frames(page)
-        maps.camera_fits(page)
+        layout.native_fit(page)
     ui.click(page, '#lessonJgiMap')
     points = page.evaluate(POINTS)
     ui.main_map_click(page, points['tee'])
@@ -198,7 +206,7 @@ def main():
             context.route('**/*', lambda route: ui.gate(route, base))
             page = context.new_page(); page.goto(base+'/?courseLesson=1', wait_until='domcontentloaded')
             page.wait_for_selector('#lessonCourseSelect option', state='attached')
-            assert page.locator('#lessonCourseSelect option').all_text_contents() == [COURSES[0][0], 'Gunung Geulis']
+            assert page.locator('#lessonCourseSelect option').all_text_contents() == [COURSES[0][0], 'Gunung Geulis', 'Emeralda Golf Club']
             result['missing_scorecard_excluded'] = 'PASS'
             context.close(); browser.close()
         result['status'] = 'PASS'

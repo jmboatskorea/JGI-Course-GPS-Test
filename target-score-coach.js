@@ -15,6 +15,7 @@
 
   function targetPlan(r=safeRound()){
     if(!r)return null;
+    if(window.JGIEmeraldaCourses&&!window.JGIEmeraldaCourses.targetReady(r))return null;
     const rows=(r.holes||[]).map((h,i)=>({
       hole:Number(h.hole||i+1),
       par:num(h.par),
@@ -58,6 +59,7 @@
 
   function ensurePlan(r=safeRound()){
     if(!r)return null;
+    if(window.JGIEmeraldaCourses&&!window.JGIEmeraldaCourses.targetReady(r))return null;
     const current=r.targetScorePlan;
     const expected=num(r.targetScore);
     if(current?.version===VERSION&&num(current.targetScore)===expected&&current.holeTargets)return current;
@@ -120,6 +122,7 @@
     if(intent==='LAYUP'||intent==='TEE_POSITION')return '페어웨이';
 
     const h=r?.holes?.[(Number(r?.currentHole)||1)-1];
+    if(window.JGIEmeraldaCourses?.isRound(r)&&![3,4,5].includes(h?.par))return '공략 지점';
     if((h?.shots||[]).length===0)return Number(h?.par)===3?'그린':'페어웨이';
 
     const master=(typeof masterClubs!=='undefined'?masterClubs:[]).find(c=>c?.name===ctx?.club);
@@ -943,7 +946,7 @@
     const r=safeRound(),host=byId('targetScoreCoachOverviewBody');
     if(!r||!host)return;
     const p=progress(r),plan=ensurePlan(r);
-    if(!p||!plan){host.innerHTML='목표 스코어 계획 준비 중';return}
+    if(!p||!plan){host.textContent=window.JGIEmeraldaCourses?.isRound(r)?'공식 Scorecard 미확정 · 목표 계획 미계산':'목표 스코어 계획 준비 중';return}
     const status=targetProgressDisplay(p.delta);
     const statusClass=p.delta>0?'behind':p.delta<0?'ahead':'';
     const nextHole=(r.holes||[]).find(h=>!h.completed)?.hole||r.currentHole||18;
@@ -1045,6 +1048,7 @@
   }
 
   function reportHoleFlow(r=safeRound(),view=null){
+    if(window.JGIEmeraldaCourses&&!window.JGIEmeraldaCourses.targetReady(r))return '<div class="finalReportEmpty">공식 Scorecard 미확정 · 목표 계획 미계산</div>';
     const plan=view?r?.targetScorePlan:ensurePlan(r);if(!r||!plan)return view?'<div class="finalReportEmpty">저장된 목표 스코어 데이터 부족</div>':'';
     const completed=(r.holes||[]).filter(h=>h.completed);
     return completed.map(h=>{
@@ -1079,17 +1083,19 @@
     }
     card.classList.remove('hidden');
 
-    const plan=view?r.targetScorePlan:ensurePlan(r);
+    const unavailable=!!window.JGIEmeraldaCourses&&!window.JGIEmeraldaCourses.targetReady(r);
+    const plan=unavailable?null:view?r.targetScorePlan:ensurePlan(r);
     const completed=(r.holes||[]).filter(h=>h.completed);
     const actual=completed.reduce((sum,h)=>sum+(num(typeof holeScore==='function'?holeScore(h):null)||0),0);
     const planned=completed.reduce((sum,h)=>sum+(num(plan?.holeTargets?.[h.hole])||num(h.par)||0),0);
     const full=completed.length>=18;
-    const targetRef=view&&!plan?null:(full?(num(r.targetScore)??plan?.targetScore):planned);
+    const targetRef=unavailable||view&&!plan?null:(full?(num(r.targetScore)??plan?.targetScore):planned);
     const targetDelta=Number.isFinite(targetRef)?actual-targetRef:null;
     const targetLabel=targetDelta===null?'—':targetDelta===0?'ON TARGET':targetDelta>0?'+'+targetDelta+' vs Target':targetDelta+' vs Target';
 
     const sg=typeof sgRoundSummary==='function'?sgRoundSummary(r):null;
-    const display=(key,fallback)=>view?(view.sgValues[key]==null?'미계산':formatSg(view.sgValues[key])):formatSg(fallback);
+    const emeraldaSg=sg&&window.JGIEmeraldaCourses?.sgValues(r,sg);
+    const display=(key,fallback)=>view?(view.sgValues[key]==null?'미계산':formatSg(view.sgValues[key])):emeraldaSg?(emeraldaSg[key]==null?'미계산':formatSg(emeraldaSg[key])):formatSg(fallback);
     const sgHtml=sg?'<div class="finalReportMetrics">'+
       '<div class="finalReportMetric"><span>SG Total</span><b>'+display('sgTotal',sg.total)+'</b></div>'+
       '<div class="finalReportMetric"><span>Tee</span><b>'+display('sgOtt',sg.totals.ott)+'</b></div>'+
@@ -1123,7 +1129,7 @@
     host.innerHTML=
       '<div class="finalReportHero">'+
         '<div><span>'+(full?'FINAL ROUND REPORT':view?'ROUND IN PROGRESS · 진행 중':'PARTIAL ROUND REPORT')+'</span><h3>'+playerName+'</h3><p>'+r.course+' · '+r.nine+' · '+String(r.tee||'—')+' Tee · '+completed.length+'H</p></div>'+
-        '<div class="finalReportScore"><span>Target '+(view&&!plan?'미계산':full?(r.targetScore??'—'):planned)+'</span><b>'+(view&&!completed.length?'—':actual)+'</b><small>'+targetLabel+'</small></div>'+
+        '<div class="finalReportScore"><span>Target '+(unavailable||view&&!plan?'미계산':full?(r.targetScore??'—'):planned)+'</span><b>'+(view&&!completed.length?'—':actual)+'</b><small>'+targetLabel+'</small></div>'+
       '</div>'+
       '<div class="finalReportSection"><h4>TARGET SCORE FLOW</h4><div class="finalHoleGrid">'+reportHoleFlow(r,view)+'</div></div>'+
       '<div class="finalReportSection"><h4>STROKES GAINED</h4>'+sgHtml+'</div>'+

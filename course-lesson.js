@@ -674,9 +674,10 @@
       });
     }).map(data=>({course:data.course,nine:data.nine,version:data.version||null}));
     const builtinCourseCount=courses.length;
-    courses.push(...(privateCourses?.catalog()||[]));
+    courses.push(...(privateCourses?.catalog()||[]),...(window.JGIEmeraldaCourses?.catalog()||[]));
     const services={uuid:()=>crypto.randomUUID(),now:()=>Date.now(),
       benchmark:r=>window.sgBenchmarkInfo(r),hydrate:r=>{
+        assert(!window.JGIEmeraldaCourses?.isRound(r)||window.JGIEmeraldaCourses.data(r),'Emeralda 코스 조합/버전을 확인하세요. 기존 기록은 유지됩니다.');
         assert(!privateCourses?.isRound(r)||privateCourses.data(r),'이 Group과 같은 버전의 개인용 코스 파일을 불러오세요.');
         return window.hydrateRoundCourseTruth(r);
       },
@@ -685,7 +686,7 @@
       distance:(a,b)=>window.hav(a,b),
       greenGeometry:(r,hole)=>{
         const data=window.activeCourseData(r),h=data?.holes?.[String(hole)];
-        return {hole,holeId:h?.i??h?.id??null,courseId:data?.courseId??null,geometryVersion:data?.version||r.courseVersion||null,
+        return {hole,holeId:h?.i??h?.id??null,courseId:h?.sourceCourseId??data?.courseId??null,geometryVersion:data?.version||r.courseVersion||null,
           polygons:window.courseShapes(h,r).filter(shape=>shape.type==='GREEN'&&!shape.line&&shape.path.length>=3).map(shape=>shape.path)};
       },
       shotContext:(r,start,club)=>{
@@ -693,7 +694,8 @@
         const data=window.activeCourseData(r),ch=data?.holes?.[String(r.currentHole)],h=r.holes[r.currentHole-1];
         const carry=r.clubProfile?.find(c=>c.name===club)?.carry??null;
         const distance=ch?.g?window.hav(start,{lat:ch.g[0],lng:ch.g[1]}):null;
-        return {course:r.course,courseId:data?.courseId??null,hole:r.currentHole,holeId:ch?.i??ch?.id??null,
+        return {course:r.course,courseId:ch?.sourceCourseId??data?.courseId??null,hole:r.currentHole,holeId:ch?.i??ch?.id??null,
+          ...(ch?.sourceNine?{sourceNine:ch.sourceNine,sourceHoleNumber:ch.sourceHoleNumber,sourceHoleId:ch.i}:{}),
           geometryVersion:data?.version||r.courseVersion,courseIntelligenceVersion:COURSE_INTELLIGENCE_VERSION,
           tee:r.tee,greenDistanceM:distance,startGreenDistanceM:distance,
           ...window.deriveCourseIntelligence(ch,start,carry,null,h.par,r),
@@ -726,7 +728,7 @@
       </section>
       <dialog id="lessonManageDialog" class="lessonSheet sheet" aria-labelledby="lessonManageTitle"><div class="sheetHead"><h2 id="lessonManageTitle">COURSE LESSON · 선수 / Group</h2><button type="button" id="lessonManageClose" class="x" aria-label="선수 관리 닫기">✕</button></div>
         <section id="lessonPrivateData" class="lessonPanel" hidden><h3>개인용 코스 파일 · 비공개 테스트</h3><p class="lessonMeta">개인용 JSON을 이 기기에서 불러옵니다. 서버로 전송하지 않습니다. 기본은 현재 세션에서만 사용합니다.</p><label>코스 파일<input id="lessonPrivateFile" type="file" accept=".json,application/json"></label><label class="lessonPrivateChoice"><input id="lessonPrivateRights" type="checkbox">본인에게 사용 권한이 있는 파일이며 본인 기기 테스트에만 사용합니다.</label><label class="lessonPrivateChoice"><input id="lessonPrivateCache" type="checkbox">이 기기에 보관할 권한이 확인됨 · 새로고침용 코스 저장</label><div class="lessonControls"><button type="button" id="lessonPrivateImport" disabled>코스 파일 불러오기</button><button type="button" id="lessonPrivateForget">기기 코스 파일 제거</button></div><p id="lessonPrivateStatus" class="lessonMeta" role="status"></p></section>
-        <section class="lessonPanel"><h3>새 Group 생성</h3><div class="lessonFields"><label>골프장<select id="lessonCourseSelect" aria-label="새 Group 골프장"></select></label><label>코스<select id="lessonCourseNine" aria-label="새 Group 코스"></select></label></div><p id="lessonCourseSelectionInfo" class="lessonMeta"></p><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
+        <section class="lessonPanel"><h3>새 Group 생성</h3><div class="lessonFields"><label>골프장<select id="lessonCourseSelect" aria-label="새 Group 골프장"></select></label><label id="lessonCourseNineField">코스<select id="lessonCourseNine" aria-label="새 Group 코스"></select></label><div id="lessonEmeraldaNines" class="lessonFields" style="grid-column:1/-1" hidden><label>전반 9홀<select id="lessonFrontNine" aria-label="Emeralda 전반 9홀"></select></label><label>후반 9홀<select id="lessonBackNine" aria-label="Emeralda 후반 9홀"></select></label></div></div><p id="lessonCourseSelectionInfo" class="lessonMeta"></p><div class="lessonControls"><label>선수 수<select id="lessonPlayerCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button type="button" id="lessonCreateGroup">새 Group</button><button type="button" id="lessonRestoreGroup">저장 Group 복원</button></div><div id="lessonGroupMeta" class="lessonMeta"></div><label>정보를 확인할 선수<select id="lessonManagePlayer" aria-label="선수 정보 대상"></select></label></section>
         <section class="lessonPanel" id="lessonEditor" hidden><h3 id="lessonPlayerTitle">선수 정보</h3><form id="lessonPlayerForm"><div class="lessonFields"><label>선수 이름<input id="lessonName" maxlength="60" placeholder="선수 이름" autocomplete="off" required></label><label>연락처 (선택 · 실번호 입력 금지)<input id="lessonContact" maxlength="32" placeholder="비워두세요" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></label><label>성별<select id="lessonSex"><option value="FEMALE">여성</option><option value="MALE">남성</option></select></label><label>Handicap<input id="lessonHandicap" type="number" min="0" max="28" step="0.1" required></label><label>티<select id="lessonTee"><option value="Red">Red</option><option value="White">White</option><option value="Blue">Blue</option></select></label></div><div class="lessonBench" id="lessonBenchmark"></div><div class="lessonActions"><button type="submit" id="lessonRegisterPlayer">선수 등록 / 변경 저장</button><button type="button" id="lessonSaveGroup">Group 임시 저장</button></div></form><div id="lessonRoundMeta" class="lessonMeta"></div></section>
         <section class="lessonPanel" id="lessonFinishPanel"><button type="button" id="lessonFinishRound" hidden>라운드 종료·저장</button><p id="lessonFinishStatus" class="lessonMeta" role="status"></p></section><section class="lessonPanel"><h3>보관된 선수별 기록</h3><p class="lessonMeta">이 기기에 보관됩니다. 브라우저 데이터 삭제 시 함께 삭제됩니다.</p><div id="lessonArchiveList"></div></section><div class="lessonNotice">코스레슨 실전 테스트 · 코치 인증/중앙 DB는 아직 연결되지 않았습니다. 선수 이름과 샷 기록은 이 기기 브라우저에만 저장됩니다. 실제 연락처는 입력하지 마세요. 브라우저 데이터 삭제 시 기록이 사라질 수 있습니다. 선수별 SG는 REPORT에서 확인합니다.</div><section class="lessonPanel"><h3>공통 지도 · 선수 볼 위치</h3><p class="lessonMeta">Map Touch와 기록원 GPS는 선택 선수의 위치 후보입니다. 볼 위치 확인 전에는 자동 확정하지 않습니다.</p><div id="lessonMarkerLegend" class="lessonMeta"></div></section><details class="lessonPanel" id="lessonMapDiagnostics"><summary>지도 진단 · 개발 전용</summary><pre id="lessonMapDiagnosticText" style="white-space:pre-wrap;overflow-wrap:anywhere">진단 준비 중</pre></details><div class="lessonPanelStatus" data-lesson-status role="status"></div><div class="lessonActions"><a href="./">기존 JGI HOME</a><button type="button" id="lessonManageDone">지도로 돌아가기</button></div>
       </dialog>
@@ -813,13 +815,25 @@
       for(const c of courses.filter(c=>c.course===el('lessonCourseSelect').value)){
         const option=document.createElement('option');option.value=c.nine;option.textContent=c.nine;el('lessonCourseNine').append(option);
       }
+      const emeralda=el('lessonCourseSelect').value===window.JGIEmeraldaCourses?.CLUB;
+      el('lessonCourseNineField').hidden=emeralda;el('lessonEmeraldaNines').hidden=!emeralda;
+      if(emeralda)syncEmeraldaLessonNines();
       el('lessonCreateGroup').disabled=!el('lessonCourseNine').value;
       el('lessonCourseSelectionInfo').dataset.error=String(!courses.length);
       el('lessonCourseSelectionInfo').textContent=courses.length?'골프장 · 코스 · 선수 수 선택':'선택 가능한 실제 GI·스코어카드 데이터가 없습니다.';
     }
+    function syncEmeraldaLessonNines(){
+      const api=window.JGIEmeraldaCourses,front=el('lessonFrontNine'),back=el('lessonBackNine');
+      if(!api)return;
+      if(!front.options.length)for(const name of api.nines)front.add(new Option(name,name));
+      const selected=back.value;back.replaceChildren();
+      for(const name of api.nines.filter(name=>name!==front.value))back.add(new Option(name,name));
+      if([...back.options].some(o=>o.value===selected))back.value=selected;
+      el('lessonCourseNine').value=api.pair(front.value,back.value)||'';
+    }
     function refreshCourseChoices(){
       const selected=el('lessonCourseSelect').value;
-      courses.splice(builtinCourseCount,courses.length-builtinCourseCount,...(privateCourses?.catalog()||[]));
+      courses.splice(builtinCourseCount,courses.length-builtinCourseCount,...(privateCourses?.catalog()||[]),...(window.JGIEmeraldaCourses?.catalog()||[]));
       el('lessonCourseSelect').replaceChildren();
       for(const course of new Set(courses.map(c=>c.course))){
         const option=document.createElement('option');option.value=course;option.textContent=course;el('lessonCourseSelect').append(option);
@@ -828,6 +842,7 @@
       syncCourseSelection();
     }
     el('lessonCourseSelect').onchange=syncCourseSelection;refreshCourseChoices();
+    el('lessonFrontNine').onchange=syncEmeraldaLessonNines;el('lessonBackNine').onchange=syncEmeraldaLessonNines;
     el('lessonPrivateData').hidden=!!privateCourses?.builtins().length||!privateCourses?.allowed(window.location);
     el('lessonPrivateStatus').textContent=privateError||(!privateCourses?.catalog().length?'개인용 JSON 파일을 선택하세요.':'East / West 각 18홀 · 개인 기기 코스 복원 완료 · Scorecard 미확정 35개');
     let privateBusy=false;
@@ -1095,9 +1110,10 @@
       if(p.registered){
         const draft=p.shotDraft||emptyShotDraft(p.round.currentHole),letter=String.fromCharCode(65+group.players.indexOf(p));
         const h=p.round.holes[p.round.currentHole-1],blocked=h.completed||h.lessonStatus==='AWAITING_PUTTING';
+        for(const option of el('lessonHole').options){const source=window.JGIEmeraldaCourses?.sourceHole(p.round,Number(option.value));option.textContent=option.value+'번 홀'+(source?' · '+source.sourceNine+' '+source.sourceHoleNumber:'');}
         el('lessonShotPlayer').textContent=letter+' · '+p.profile.name+' · '+(h.completed?'HOLE OUT':h.puttingReady?'PUTTING READY':'SHOT '+(h.shots.length+1));
         el('lessonHistoryTitle').textContent=p.profile.name+' · '+h.hole+'번 홀 · 이력 / 취소';
-        el('lessonHoleMeta').textContent='PAR '+(h.par??'미확정')+' · '+p.profile.tee+(privateCourses?.isRound(p.round)&&!Number.isFinite(h.teeDistanceM)?' · 공식 거리 미확정':'');
+        el('lessonHoleMeta').textContent='PAR '+(h.par??'미확정')+' · '+p.profile.tee+((privateCourses?.isRound(p.round)||window.JGIEmeraldaCourses?.isRound(p.round))&&!Number.isFinite(h.teeDistanceM)?' · 공식 거리 미확정':'');
         el('lessonPenaltyOpen').disabled=false;el('lessonPenaltyOpen').setAttribute('aria-label',p.profile.name+' · '+h.hole+'번 홀 · PENALTY 입력');
         el('lessonPenaltyMeta').textContent='Score '+(h.shots.length+h.putts+(h.penalties||0))+' · Putts '+h.putts+' · 벌타 '+h.penalties;
         el('lessonClubCurrent').textContent=draft.club;el('lessonClubOpen').disabled=blocked;
@@ -1247,6 +1263,9 @@
         const saved=restoreGroup(localStorage);group=saved;
         if(courses.some(c=>c.course===group?.course&&c.nine===group.nine)){
           el('lessonCourseSelect').value=group.course;syncCourseSelection();el('lessonCourseNine').value=group.nine;
+          if(window.JGIEmeraldaCourses?.isRound(group)){
+            const [front,back]=group.nine.split(' / ');el('lessonFrontNine').value=front;syncEmeraldaLessonNines();el('lessonBackNine').value=back;syncEmeraldaLessonNines();
+          }
         }
         render();renderArchives();status(saved?'저장된 Group 복원 완료':'저장된 코스레슨 Group이 없습니다.');
       }
